@@ -6,8 +6,8 @@ arch()->preset()->php();
 
 arch()->preset()->security();
 
-arch('it will not use dd(), ddd(), env(), or exit()')
-    ->expect(['dd', 'ddd', 'env', 'exit'])
+arch('it will not use debug, env or exit helpers')
+    ->expect(['dd', 'ddd', 'dump', 'env', 'exit'])
     ->each->not->toBeUsed();
 
 arch('the package source declares strict types')

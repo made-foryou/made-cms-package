@@ -37,14 +37,25 @@ Provider wiring anti-patterns:
 - Registering web-only concerns unconditionally when the package can run in console contexts.
 - Replacing explicit provider methods with `spatie/laravel-package-tools` by default.
 
+## Package Layout
+
+- Domain code lives per bounded context in `src/<Context>/` (`Access`, `Content`). Use `package-architecture` for anything inside a context.
+- Technical layers stay outside the contexts: `src/Http/` (controllers grouped per context), `src/Console/Commands/`, `src/Support/`.
+- Migrations go in `database/migrations` as `create_cms_<table>_table`. Factories go in `database/factories/<Context>/`.
+- Config keys are grouped by feature: `routes.prefix`, `routes.middleware`, `login_code.length`, `login_code.ttl_minutes`. Add new keys together with the feature that reads them.
+- Routes are registered inside the existing group in `routes/made-cms-package.php`, which applies the configured prefix, middleware and the `made-cms-package.` name prefix.
+- UI text goes in `lang/nl` with an English counterpart in `lang/en`.
+
 ## References
 
 - `src/*ServiceProvider.php`
+- `src/<Context>/`
 - `config/*.php`
 - `routes/*.php`
 - `resources/views/`
 - `lang/`
 - `database/migrations/`
+- `database/factories/`
 - `public/`
 - `src/Console/Commands/`
 - `tests/Feature/` and `tests/Unit/`
@@ -52,7 +63,7 @@ Provider wiring anti-patterns:
 ## Examples
 
 - Add an Artisan command: create the command class under `src/Console/Commands`, register it in the `commands` array inside the `runningInConsole()` guard, add a feature test for observable console output, and document the command if it is user-facing.
-- Add a publishable migration: place the migration in `database/migrations`, wire it through a console-guarded `publishesMigrations` call with a `made-cms-package-migrations` tag, and test publish behavior with Testbench.
+- Add a publishable migration: place the migration in `database/migrations` named `create_cms_<table>_table`, wire it through a console-guarded `publishesMigrations` call with a `made-cms-package-migrations` tag, and test publish behavior with Testbench.
 - Wire a new publish tag by adding a `publishes` map inside the existing console-guarded publishing method and naming the tag with `made-cms-package-*`.
 
 ## Anti-Patterns

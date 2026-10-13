@@ -56,7 +56,7 @@ class LoginCode extends Model
     /**
      * @param  QueryBuilder  $query
      */
-    public function newEloquentBuilder($query): LoginCodeBuilder
+    public function newEloquentBuilder(mixed $query): LoginCodeBuilder
     {
         return new LoginCodeBuilder($query);
     }

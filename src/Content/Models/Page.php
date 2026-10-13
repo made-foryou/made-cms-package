@@ -57,7 +57,7 @@ class Page extends Model
     /**
      * @param  QueryBuilder  $query
      */
-    public function newEloquentBuilder($query): PageBuilder
+    public function newEloquentBuilder(mixed $query): PageBuilder
     {
         return new PageBuilder($query);
     }

@@ -29,12 +29,14 @@ if ($models !== []) {
             'Illuminate\Support\Facades',
         ]);
 
-    it('declares its own builder and factory on every model', function (string $model): void {
-        $reflection = new ReflectionClass($model);
+    it('declares its own builder and factory on every model', function (): void {
+        foreach (contextClasses('Models') as $model) {
+            $reflection = new ReflectionClass($model);
 
-        expect($reflection->getMethod('newEloquentBuilder')->getDeclaringClass()->getName())->toBe($model)
-            ->and($reflection->getMethod('newFactory')->getDeclaringClass()->getName())->toBe($model);
-    })->with(contextClasses('Models'));
+            expect($reflection->getMethod('newEloquentBuilder')->getDeclaringClass()->getName())->toBe($model)
+                ->and($reflection->getMethod('newFactory')->getDeclaringClass()->getName())->toBe($model);
+        }
+    });
 }
 
 if ($builders !== []) {

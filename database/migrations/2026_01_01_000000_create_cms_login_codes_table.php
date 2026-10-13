@@ -10,15 +10,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('made_cms_package_placeholder', function (Blueprint $table) {
+        Schema::create('cms_login_codes', function (Blueprint $table): void {
             $table->id();
-            $table->string('name');
+            $table->string('email')->index();
+            $table->string('code_hash');
+            $table->timestamp('expires_at');
+            $table->timestamp('consumed_at')->nullable();
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('made_cms_package_placeholder');
+        Schema::dropIfExists('cms_login_codes');
     }
 };

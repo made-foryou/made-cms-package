@@ -4,6 +4,7 @@ namespace Workbench\Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Made\CmsPackage\Content\Models\Page;
 use Workbench\Database\Factories\UserFactory;
 
 class DatabaseSeeder extends Seeder
@@ -20,6 +21,11 @@ class DatabaseSeeder extends Seeder
         UserFactory::new()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+        ]);
+
+        Page::factory()->create([
+            'title' => 'Home',
+            'slug' => 'home',
         ]);
     }
 }

@@ -18,7 +18,9 @@
     ],
     "require": {
         "php": "^8.3",
-        "illuminate/support": "^12.0||^13.0"
+        "illuminate/database": "^12.0||^13.0",
+        "illuminate/support": "^12.0||^13.0",
+        "lorisleiva/laravel-actions": "^2.12"
     },
     "require-dev": {
         "larastan/larastan": "^3.9",
@@ -32,7 +34,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Made\\CmsPackage\\": "src/"
+            "Made\\CmsPackage\\": "src/",
+            "Made\\CmsPackage\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
@@ -88,10 +91,7 @@
         "laravel": {
             "providers": [
                 "Made\\CmsPackage\\CmsPackageServiceProvider"
-            ],
-            "aliases": {
-                "CmsPackage": "Made\\CmsPackage\\Facades\\CmsPackage"
-            }
+            ]
         }
     },
     "config": {

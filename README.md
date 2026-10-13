@@ -61,7 +61,49 @@ php artisan vendor:publish --tag="made-cms-package-assets"
 
 ## Usage
 
-<!-- Add a basic usage example here. -->
+Issue a one-time login code for an editor. The plain code is only available in memory, so send it right away:
+
+```php
+use Made\CmsPackage\Access\Actions\IssueLoginCode;
+
+$issued = IssueLoginCode::run('editor@example.com');
+
+$issued->code;      // "482913", valid for 10 minutes by default
+$issued->loginCode; // the stored LoginCode model, which only holds a hash
+```
+
+Publish a page and query pages:
+
+```php
+use Made\CmsPackage\Content\Actions\PublishPage;
+use Made\CmsPackage\Content\Models\Page;
+
+PublishPage::run($page);
+
+Page::query()->published()->get();
+Page::query()->recentlyEdited()->limit(3)->get();
+```
+
+Every write dispatches an event (`LoginCodeIssued`, `PagePublished`) that your application can listen to.
+
+## Package Structure
+
+The package is organised per bounded context. Each context holds its own actions, models, query builders, data objects and events:
+
+```
+src/
+├── Access/     login codes and, later, passkeys, remembered devices and invitations
+│   ├── Actions/    write operations, e.g. IssueLoginCode
+│   ├── Builders/   custom Eloquent builders for reading, e.g. LoginCodeBuilder::active()
+│   ├── Data/       immutable data objects
+│   ├── Events/
+│   └── Models/     plain table representations
+├── Content/    pages, blocks and publishing
+│   └── ...
+└── CmsPackageServiceProvider.php
+```
+
+All package tables use the `cms_` prefix.
 
 ## Changelog
 

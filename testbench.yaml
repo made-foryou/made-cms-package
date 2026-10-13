@@ -4,6 +4,7 @@ providers:
   # - Workbench\App\Providers\WorkbenchServiceProvider
 
 migrations:
+  - database/migrations
   - workbench/database/migrations
 
 seeders:

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Made\CmsPackage;
 
 use Illuminate\Support\ServiceProvider;
-use Made\CmsPackage\Console\Commands\CmsPackageCommand;
 
 class CmsPackageServiceProvider extends ServiceProvider
 {
@@ -15,8 +14,6 @@ class CmsPackageServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/made-cms-package.php', 'made-cms-package');
-
-        $this->app->singleton(CmsPackage::class);
     }
 
     /**
@@ -53,9 +50,5 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->publishesMigrations([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], ['made-cms-package', 'made-cms-package-migrations']);
-
-        $this->commands([
-            CmsPackageCommand::class,
-        ]);
     }
 }

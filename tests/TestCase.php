@@ -36,6 +36,8 @@ abstract class TestCase extends Orchestra
             'foreign_key_constraints' => true,
         ]);
 
+        $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('m', 32)));
+
         $app['config']->set('app.locale', 'nl');
         $app['config']->set('app.fallback_locale', 'en');
 

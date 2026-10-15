@@ -86,6 +86,30 @@ Page::query()->recentlyEdited()->limit(3)->get();
 
 Every write dispatches an event (`LoginCodeIssued`, `PagePublished`) that your application can listen to.
 
+## Launcher
+
+Once the package is installed, a MADE tile appears in the bottom-right corner of every full HTML page served through the `web` middleware group. Clicking it opens the Made CMS login panel over the site. There is nothing to publish or register: the middleware, markup, stylesheet, script and fonts (Nunito and Instrument Sans, both SIL Open Font License) are served straight from the package. They are deliberately not publishable, so they always update together.
+
+The tile is only shown to:
+
+- editors whose device was remembered by a previous CMS login (the encrypted `made_cms_editor` cookie), and
+- visitors from the IP addresses in `MADE_CMS_LAUNCHER_IPS`.
+
+```dotenv
+MADE_CMS_LAUNCHER_IPS=203.0.113.5,198.51.100.0/24   # comma separated, CIDR and IPv6 allowed
+MADE_CMS_LAUNCHER_ENABLED=false                      # switch the tile off, e.g. in phpunit.xml
+MADE_CMS_LOCALE=nl                                   # language of the tile and panel, defaults to nl
+```
+
+Paths in `launcher.except` (default `nova*`, `telescope*`, `horizon*`, `pulse*`) and the CMS's own routes never get the tile. JSON, redirects, downloads, Inertia visits and error pages are left untouched.
+
+Keep in mind:
+
+- The tile only hides or shows the door. It never grants access; the login itself does.
+- Behind a load balancer or proxy, the IP allowlist only works when the application trusts the proxy (`trustProxies`), otherwise every visitor has the proxy's IP address.
+- Pages with the tile are sent as `Cache-Control: private, no-store`. A full-page cache in front of the application (a CDN "cache everything" rule, `spatie/laravel-responsecache`) can still store a page with the tile and show it to everyone; exclude those pages or disable the launcher.
+- With a Content Security Policy, allow `'self'` for `script-src`, `style-src` and `font-src`. A Vite CSP nonce is added to the script automatically.
+
 ## Package Structure
 
 The package is organised per bounded context. Each context holds its own actions, models, query builders, data objects and events:
@@ -100,6 +124,7 @@ src/
 │   └── Models/     plain table representations
 ├── Content/    pages, blocks and publishing
 │   └── ...
+├── Http/       technical layer: middleware (the launcher) and controllers, grouped per context
 └── CmsPackageServiceProvider.php
 ```
 

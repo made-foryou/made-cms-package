@@ -11,6 +11,11 @@
 - Dutch and English translations for page statuses.
 - Arch tests that enforce the context layout.
 - Runtime dependencies `illuminate/database` and `lorisleiva/laravel-actions`.
+- Launcher: the MADE tile in the bottom-right corner of every web page that opens the CMS login panel (e-mail step). It is added to the `web` middleware group automatically (`InjectLauncher`) and only shown to remembered editors and allowed IP addresses (`ShowLauncher` action).
+- Config keys `launcher.enabled`, `launcher.allowed_ips`, `launcher.locale` and `launcher.except` (env `MADE_CMS_LAUNCHER_ENABLED`, `MADE_CMS_LAUNCHER_IPS`, `MADE_CMS_LOCALE`).
+- Route `made-cms-package.launcher.asset` that serves the launcher stylesheet, script and self-hosted fonts (Nunito, Instrument Sans; SIL Open Font License) without middleware.
+- Dutch and English launcher translations.
+- Runtime dependencies `illuminate/contracts`, `illuminate/http`, `illuminate/routing`, `illuminate/view`, `symfony/http-foundation` and `symfony/http-kernel`.
 
 ### Removed
 

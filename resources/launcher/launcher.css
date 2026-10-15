@@ -265,10 +265,36 @@ svg {
     gap: 18px;
 }
 
-.merk {
+/* Product logo: MADE word mark, a thin divider and "CMS". */
+.productlogo {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.scheiding {
+    display: block;
+    flex-shrink: 0;
+    width: 1.5px;
+    height: 26px;
+    background: var(--made-rand-sterk);
+}
+
+.product {
+    display: block;
+    padding-top: 2px;
+    font: 700 18px/1 var(--font-kop);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--made-inhoud);
+    white-space: nowrap;
+}
+
+.kop-rechts {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     min-width: 0;
 }
 
@@ -441,6 +467,23 @@ h2 {
 
     h2 {
         font-size: 28px;
+    }
+
+    .productlogo {
+        gap: 10px;
+    }
+
+    .scheiding {
+        height: 22px;
+    }
+
+    .product {
+        font-size: 16px;
+    }
+
+    .sitelabel {
+        font-size: 10px;
+        letter-spacing: .1em;
     }
 }
 

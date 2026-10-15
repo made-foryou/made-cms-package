@@ -169,6 +169,22 @@ it('names the site host from the application url', function (): void {
     visitLauncherPageFrom('203.0.113.5')->assertSee('ttvmerwestad.nl')->assertDontSee('www.ttvmerwestad.nl');
 });
 
+it('shows the application name in the panel header', function (): void {
+    config(['app.name' => 'TTV Merwestad', 'app.url' => 'https://ttvmerwestad.nl']);
+
+    visitLauncherPageFrom('203.0.113.5')->assertSee('<span class="sitelabel">TTV Merwestad</span>', false);
+});
+
+it('falls back to the site host when the application has no name of its own', function (?string $name): void {
+    config(['app.name' => $name, 'app.url' => 'https://ttvmerwestad.nl']);
+
+    visitLauncherPageFrom('203.0.113.5')->assertSee('<span class="sitelabel">ttvmerwestad.nl</span>', false);
+})->with([
+    'laravel default' => 'Laravel',
+    'empty' => '',
+    'missing' => null,
+]);
+
 it('links the launcher assets relative to the current host', function (): void {
     visitLauncherPageFrom('203.0.113.5')
         ->assertSee('href="/cms/launcher/launcher.css?v=', false)

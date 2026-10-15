@@ -7,7 +7,6 @@ return [
     'product' => 'Made CMS',
     'open' => 'Beheer deze site met Made CMS',
     'panel' => 'Inloggen bij Made CMS',
-    'site' => 'CMS · :host',
     'close' => 'Sluiten',
     'step' => 'Stap :current van :total',
     'email' => [

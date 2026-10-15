@@ -119,10 +119,12 @@ final class InjectLauncher
     private function render(Request $request): string
     {
         $locale = $this->locale();
+        $host = $this->host($request);
 
         return view('made-cms-package-launcher::launcher', [
             'locale' => $locale,
-            'host' => $this->host($request),
+            'host' => $host,
+            'site' => $this->siteName($host),
             'stylesheet' => LauncherAssetController::url('launcher.css'),
             'script' => LauncherAssetController::url('launcher.js'),
             'fonts' => [
@@ -144,7 +146,17 @@ final class InjectLauncher
     }
 
     /**
-     * The site name shown in the panel, taken from the configured url rather than the request's Host header.
+     * The name in the panel header: the application name, unless the host never changed Laravel's default.
+     */
+    private function siteName(string $host): string
+    {
+        $name = config('app.name');
+
+        return is_string($name) && trim($name) !== '' && $name !== 'Laravel' ? $name : $host;
+    }
+
+    /**
+     * The site host, taken from the configured url rather than the request's Host header.
      */
     private function host(Request $request): string
     {

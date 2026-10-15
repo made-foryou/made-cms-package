@@ -1,0 +1,570 @@
+/*
+ * Made CMS launcher: the MADE tile in the bottom-right corner and the login panel it opens.
+ * Lives in a shadow root, so nothing here leaks into the host site and nothing from the site leaks in.
+ * Values come from the MADE design system and the motion spec (design "Made CMS — Inloggen", 1.1 and 1.9).
+ */
+
+:host {
+    /* !important wins over host rules on the element itself; display: contents gives it no box (no gap, no stacking). */
+    all: initial !important;
+    display: contents !important;
+    --made-nachtgroen: #0e2b26;
+    --made-amber: #be8a1c;
+    --made-amber-donker: #8a6210;
+    --made-amber-licht: #d9a63a;
+    --made-krijt: #f3f1e8;
+    --made-nevel: #8fa09a;
+    --made-oppervlak: #f3f1e8;
+    --made-oppervlak-verhoogd: #fbfaf5;
+    --made-inhoud: #0e2b26;
+    --made-inhoud-zwak: #47564f;
+    --made-rand: #dedbcd;
+    --made-rand-sterk: #6e7f78;
+    --made-woord: #0e2b26;
+    --made-slash: #be8a1c;
+    --made-stap-huidig: #0e2b26;
+    --made-stap-rest: #dedbcd;
+    --font-kop: "Made CMS Nunito", Nunito, "Trebuchet MS", system-ui, sans-serif;
+    --font-tekst: "Made CMS Instrument Sans", "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+    --ease-uit: cubic-bezier(.2, .8, .2, 1);
+    --rechts: calc(24px + env(safe-area-inset-right, 0px));
+    --onder: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (prefers-color-scheme: dark) {
+    :host {
+        --made-oppervlak: #0e2b26;
+        --made-oppervlak-verhoogd: #1b3d36;
+        --made-inhoud: #f3f1e8;
+        --made-inhoud-zwak: #a9b6b1;
+        --made-rand: #1b3d36;
+        --made-rand-sterk: #6e7f78;
+        --made-woord: #f3f1e8;
+        --made-slash: #d9a63a;
+        --made-stap-huidig: #f3f1e8;
+        --made-stap-rest: #1b3d36;
+    }
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+button,
+input {
+    font: inherit;
+    color: inherit;
+    margin: 0;
+}
+
+h2,
+p {
+    margin: 0;
+}
+
+svg {
+    display: block;
+    flex-shrink: 0;
+}
+
+/* Tile */
+
+/* Only shown once the stylesheet applies and the script is running (data-ready); otherwise it stays [hidden]. */
+:host([data-ready]) .plek {
+    display: flex;
+}
+
+.plek {
+    position: fixed;
+    right: var(--rechts);
+    bottom: var(--onder);
+    z-index: 2147483000;
+    font: 400 16px/1.5 var(--font-tekst);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.beheer {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 13px;
+    background: var(--made-nachtgroen);
+    box-shadow: 0 6px 18px rgba(14, 43, 38, .18);
+    cursor: pointer;
+    animation: tegel-in 360ms var(--ease-uit) 200ms backwards;
+    transition: transform 180ms var(--ease-uit);
+}
+
+.beheer:active {
+    transform: translateY(0) scale(.98);
+}
+
+.beheer:focus-visible {
+    outline: 2px solid var(--made-amber);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--made-krijt);
+}
+
+.label {
+    display: block;
+    max-width: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    text-align: left;
+    white-space: nowrap;
+    transition: max-width 380ms var(--ease-uit), opacity 220ms ease 60ms, padding 380ms var(--ease-uit);
+}
+
+.label-titel {
+    display: block;
+    font: 700 14px/1.2 var(--font-kop);
+    color: var(--made-krijt);
+}
+
+.label-product {
+    display: block;
+    margin-top: 2px;
+    font: 500 10px/1.3 var(--font-tekst);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--made-nevel);
+}
+
+.streep {
+    display: block;
+    width: 0;
+    height: 3px;
+    margin-top: 5px;
+    border-radius: 2px;
+    background: var(--made-amber);
+    transform: skewX(-20deg);
+    transition: width 320ms var(--ease-uit) 160ms;
+}
+
+.beheer:focus-visible .label,
+.beheer.intro .label {
+    max-width: 220px;
+    padding: 0 10px 0 18px;
+    opacity: 1;
+}
+
+.beheer:focus-visible .streep,
+.beheer.intro .streep {
+    width: 34px;
+}
+
+/* Hover only where a real pointer hovers; touch devices get the intro and focus states. */
+.beheer:focus-visible {
+    transform: translateY(-2px);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .beheer:hover {
+        transform: translateY(-2px);
+    }
+
+    .beheer:hover .label {
+        max-width: 220px;
+        padding: 0 10px 0 18px;
+        opacity: 1;
+    }
+
+    .beheer:hover .streep {
+        width: 34px;
+    }
+}
+
+/* Panel */
+
+.paneel {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: 480px;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+    font: 400 16px/1.5 var(--font-tekst);
+    -webkit-font-smoothing: antialiased;
+    color-scheme: light dark;
+    transform-origin: calc(100% - 24px - var(--rechts)) calc(100% - 24px - var(--onder));
+    will-change: transform;
+}
+
+.paneel[open] {
+    animation: paneel-groei 480ms var(--ease-uit) both;
+}
+
+/* The night-green cover the panel grows as, before it lights up to chalk. */
+.paneel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: var(--made-nachtgroen);
+    pointer-events: none;
+    animation: fade-uit 280ms ease-out 220ms both;
+}
+
+.paneel::backdrop {
+    background: rgba(14, 43, 38, .72);
+    animation: fade-in 240ms ease-out both;
+}
+
+@media (prefers-color-scheme: dark) {
+    .paneel::backdrop {
+        background: rgba(10, 33, 28, .8);
+    }
+}
+
+.inhoud {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    height: 100%;
+    padding: 28px 34px 34px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: fade-in 260ms ease-out 300ms both;
+}
+
+.inhoud > * {
+    flex-shrink: 0;
+}
+
+.paneel.sluitend {
+    animation: paneel-krimp 420ms cubic-bezier(.4, 0, .2, 1) 120ms both;
+}
+
+.paneel.sluitend::before {
+    animation: fade-in 120ms ease-in both;
+}
+
+.paneel.sluitend::backdrop {
+    animation: fade-uit 360ms ease-in 160ms both;
+}
+
+.paneel.sluitend .inhoud {
+    animation: fade-uit 120ms ease-in both;
+}
+
+.kop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+/* Product logo: MADE word mark, a thin divider and "CMS". */
+.productlogo {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.scheiding {
+    display: block;
+    flex-shrink: 0;
+    width: 1.5px;
+    height: 26px;
+    background: var(--made-rand-sterk);
+}
+
+.product {
+    display: block;
+    padding-top: 2px;
+    font: 700 18px/1 var(--font-kop);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--made-inhoud);
+    white-space: nowrap;
+}
+
+.kop-rechts {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.woord {
+    stroke: var(--made-woord);
+}
+
+.slash {
+    stroke: var(--made-slash);
+}
+
+.sitelabel,
+.staplabel {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-zwak);
+    white-space: nowrap;
+}
+
+.sitelabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sluit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: 10px;
+    background: none;
+    color: var(--made-inhoud);
+    cursor: pointer;
+}
+
+.sluit:hover {
+    border-color: var(--made-inhoud);
+}
+
+.stappen {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stapbalk {
+    display: block;
+    width: 34px;
+    height: 5px;
+    border-radius: 2px;
+    background: var(--made-stap-rest);
+    transform: skewX(-20deg);
+    transition: background-color 300ms ease;
+}
+
+.stapbalk.huidig {
+    background: var(--made-stap-huidig);
+}
+
+.staplabel {
+    margin-left: 4px;
+}
+
+.stap {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+h2 {
+    font: 700 30px/1.15 var(--font-kop);
+    letter-spacing: -.015em;
+}
+
+.tekst p {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--made-inhoud-zwak);
+}
+
+.veld {
+    display: flex;
+    flex-direction: column;
+}
+
+.veld label {
+    margin-bottom: 8px;
+    font: 700 15px/1.3 var(--font-kop);
+    color: var(--made-inhoud);
+}
+
+.veld input {
+    width: 100%;
+    padding: 15px 18px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: 10px;
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+.veld input::placeholder {
+    color: var(--made-rand-sterk);
+}
+
+.veld input:focus {
+    border-color: var(--made-amber);
+    /* Transparent instead of none, so forced-colors mode still draws a focus outline. */
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+}
+
+.veld .hint {
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--made-inhoud-zwak);
+}
+
+.knop {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 22px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 700 15px/1 var(--font-kop);
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.knop:hover {
+    background: var(--made-amber-donker);
+    color: var(--made-krijt);
+}
+
+.sluit:focus-visible,
+.knop:focus-visible {
+    outline: 2px solid var(--made-amber);
+    outline-offset: 2px;
+}
+
+.voet {
+    margin-top: auto;
+    padding-top: 26px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+@media (max-width: 480px) {
+    .inhoud {
+        padding: 24px;
+    }
+
+    h2 {
+        font-size: 28px;
+    }
+
+    .productlogo {
+        gap: 10px;
+    }
+
+    .scheiding {
+        height: 22px;
+    }
+
+    .product {
+        font-size: 16px;
+    }
+
+    .sitelabel {
+        font-size: 10px;
+        letter-spacing: .1em;
+    }
+}
+
+/* Motion */
+
+@keyframes tegel-in {
+    from { opacity: 0; transform: translateY(8px) scale(.92); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes paneel-groei {
+    from { transform: scale(.08); border-radius: 160px; opacity: .9; }
+    60% { opacity: 1; }
+    to { transform: scale(1); border-radius: 0; opacity: 1; }
+}
+
+/* No from-keyframe: closing during the opening animation shrinks from the current size. */
+@keyframes paneel-krimp {
+    75% { opacity: 1; }
+    to { transform: scale(.1); border-radius: 240px; opacity: 0; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fade-uit {
+    to { opacity: 0; }
+}
+
+/* Same order, same meaning, no movement: only 120 ms fades remain. */
+@media (prefers-reduced-motion: reduce) {
+    .beheer,
+    .paneel[open],
+    .paneel.sluitend,
+    .inhoud,
+    .paneel.sluitend .inhoud {
+        animation-name: fade-in;
+        animation-duration: 120ms;
+        animation-delay: 0ms;
+    }
+
+    .paneel.sluitend,
+    .paneel.sluitend .inhoud {
+        animation-name: fade-uit;
+    }
+
+    .paneel::before,
+    .paneel.sluitend::before {
+        animation: none;
+        opacity: 0;
+    }
+
+    .paneel::backdrop,
+    .paneel.sluitend::backdrop {
+        animation-duration: 120ms;
+        animation-delay: 0ms;
+    }
+
+    .beheer,
+    .label,
+    .streep {
+        transition-duration: 120ms;
+        transition-delay: 0ms;
+    }
+
+    .beheer:hover,
+    .beheer:focus-visible {
+        transform: none;
+    }
+}
+
+@media (forced-colors: active) {
+    .beheer {
+        border: 1px solid ButtonText;
+    }
+}
+
+@media print {
+    :host([data-ready]) .plek {
+        display: none;
+    }
+}

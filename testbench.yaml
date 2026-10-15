@@ -1,7 +1,11 @@
 laravel: '@testbench'
 
 providers:
+  - Made\CmsPackage\CmsPackageServiceProvider
   # - Workbench\App\Providers\WorkbenchServiceProvider
+
+env:
+  - MADE_CMS_LAUNCHER_IPS=127.0.0.1,::1
 
 migrations:
   - database/migrations

@@ -43,7 +43,7 @@ Provider wiring anti-patterns:
 - Technical layers stay outside the contexts: `src/Http/` (controllers grouped per context), `src/Console/Commands/`, `src/Support/`.
 - Migrations go in `database/migrations` as `create_cms_<table>_table`. Factories go in `database/factories/<Context>/`.
 - Config keys are grouped by feature: `routes.prefix`, `routes.middleware`, `login_code.length`, `login_code.ttl_minutes`. Add new keys together with the feature that reads them.
-- Routes are registered inside the existing group in `routes/made-cms-package.php`, which applies the configured prefix, middleware and the `made-cms-package.` name prefix.
+- Routes are registered inside the existing group in `routes/made-cms-package.php`, which applies the configured prefix, middleware and the `made-cms-package.` name prefix. Only static assets (the launcher) go in the second group without middleware.
 - UI text goes in `lang/nl` with an English counterpart in `lang/en`.
 
 ## References

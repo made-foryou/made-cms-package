@@ -175,6 +175,14 @@ it('shows the application name in the panel header', function (): void {
     visitLauncherPageFrom('203.0.113.5')->assertSee('<span class="sitelabel">TTV Merwestad</span>', false);
 });
 
+it('names the application in the introduction of the panel', function (): void {
+    config(['app.name' => 'TTV Merwestad', 'app.url' => 'https://ttvmerwestad.nl']);
+
+    visitLauncherPageFrom('203.0.113.5')
+        ->assertSee('Je gaat TTV Merwestad beheren.')
+        ->assertDontSee('Je gaat ttvmerwestad.nl beheren.');
+});
+
 it('falls back to the site host when the application has no name of its own', function (?string $name): void {
     config(['app.name' => $name, 'app.url' => 'https://ttvmerwestad.nl']);
 

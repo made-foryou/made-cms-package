@@ -11,7 +11,7 @@ return [
     'step' => 'Stap :current van :total',
     'email' => [
         'heading' => 'Welkom terug.',
-        'intro' => 'Je gaat :host beheren. Met welk e-mailadres log je in?',
+        'intro' => 'Je gaat :site beheren. Met welk e-mailadres log je in?',
         'label' => 'E-mailadres',
         'placeholder' => 'naam@bedrijf.nl',
         'hint' => 'Enter werkt ook.',

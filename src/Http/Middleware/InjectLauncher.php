@@ -119,12 +119,10 @@ final class InjectLauncher
     private function render(Request $request): string
     {
         $locale = $this->locale();
-        $host = $this->host($request);
 
         return view('made-cms-package-launcher::launcher', [
             'locale' => $locale,
-            'host' => $host,
-            'site' => $this->siteName($host),
+            'site' => $this->siteName($this->host($request)),
             'stylesheet' => LauncherAssetController::url('launcher.css'),
             'script' => LauncherAssetController::url('launcher.js'),
             'fonts' => [

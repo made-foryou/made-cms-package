@@ -11,7 +11,7 @@ return [
     'step' => 'Step :current of :total',
     'email' => [
         'heading' => 'Welcome back.',
-        'intro' => 'You are about to manage :host. Which e-mail address do you log in with?',
+        'intro' => 'You are about to manage :site. Which e-mail address do you log in with?',
         'label' => 'E-mail address',
         'placeholder' => 'name@company.com',
         'hint' => 'Enter works too.',

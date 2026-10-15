@@ -35,7 +35,7 @@
         <form class="stap" method="dialog">
             <div class="tekst">
                 <h2 id="made-cms-titel">{{ $t('email.heading') }}</h2>
-                <p>{{ $t('email.intro', ['host' => $host]) }}</p>
+                <p>{{ $t('email.intro', ['site' => $site]) }}</p>
             </div>
             <div class="veld">
                 <label for="made-cms-email">{{ $t('email.label') }}</label>

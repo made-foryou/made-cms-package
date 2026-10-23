@@ -129,6 +129,7 @@ final class InjectLauncher
             'view' => $view->value,
             'editor' => Visitor::profile($editor),
             'page' => $page,
+            'arrived' => $request->hasSession() && $request->session()->get('made-cms-package.arrived') === true,
             'endpoints' => Endpoints::all(),
             'site' => Site::name(),
             'stylesheet' => LauncherAssetController::url('launcher.css'),

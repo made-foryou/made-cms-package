@@ -36,5 +36,22 @@ return [
         'home' => 'Home',
         'editor' => 'Ingelogd als :name',
     ],
+    'link' => [
+        'title' => 'Inloggen bij :site',
+        'confirm' => [
+            'heading' => 'Inloggen bij :site',
+            'intro' => 'Je klikte op de link in je mail. Klik op de knop om in te loggen; daarna ga je terug naar de site.',
+            'submit' => 'Inloggen',
+        ],
+        'other_browser' => [
+            'heading' => 'Open de link in dezelfde browser.',
+            'intro' => 'Deze link werkt alleen in de browser waarin je de code aanvroeg. Open de mail daar, of typ de code over in het tabblad waarin je inlogt.',
+        ],
+        'expired' => [
+            'heading' => 'Deze link werkt niet meer.',
+            'intro' => 'Een link werkt één keer en :minutes minuten lang. Vraag op de site een nieuwe code aan.',
+        ],
+        'footer' => 'Je logt in bij :site, gebouwd door MADE.',
+    ],
     'no_access' => 'Nog geen toegang? Vraag de beheerder om een uitnodiging.',
 ];

@@ -35,6 +35,14 @@ final class LoginCodeBuilder extends Builder
         return $this->where('session_hash', hash('sha256', $binding));
     }
 
+    /**
+     * The code whose mail contains this link token.
+     */
+    public function forLink(string $token): self
+    {
+        return $this->where('link_hash', hash('sha256', $token));
+    }
+
     public function withAttemptsBelow(int $max): self
     {
         return $this->where('attempts', '<', $max);

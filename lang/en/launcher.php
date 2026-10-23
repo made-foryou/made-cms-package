@@ -36,5 +36,22 @@ return [
         'home' => 'Home',
         'editor' => 'Logged in as :name',
     ],
+    'link' => [
+        'title' => 'Log in to :site',
+        'confirm' => [
+            'heading' => 'Log in to :site',
+            'intro' => 'You clicked the link in your e-mail. Click the button to log in; then you go back to the site.',
+            'submit' => 'Log in',
+        ],
+        'other_browser' => [
+            'heading' => 'Open the link in the same browser.',
+            'intro' => 'This link only works in the browser where you asked for the code. Open the e-mail there, or type the code in the tab where you are logging in.',
+        ],
+        'expired' => [
+            'heading' => 'This link no longer works.',
+            'intro' => 'A link works once, for :minutes minutes. Ask for a new code on the site.',
+        ],
+        'footer' => 'You are logging in to :site, built by MADE.',
+    ],
     'no_access' => 'No access yet? Ask the administrator for an invitation.',
 ];

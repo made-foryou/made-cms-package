@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Http\Controllers\Access;
 
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Made\CmsPackage\Http\Launcher\LinkPage;
 
 /**
- * The link in the login mail.
+ * Opening the link in the login mail only shows a button: mail scanners open links before the editor does,
+ * and must never use the link up or log anyone in.
  */
 final class LoginLinkController
 {
-    public function __invoke(string $token): never
+    public function __invoke(Request $request, string $token): Response
     {
-        throw new NotFoundHttpException;
+        return LinkPage::make($request, 'confirm', $token);
     }
 }

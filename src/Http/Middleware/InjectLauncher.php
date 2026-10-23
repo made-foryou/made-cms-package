@@ -12,6 +12,9 @@ use Illuminate\Http\Response as IlluminateResponse;
 use Made\CmsPackage\Access\Actions\ShowLauncher;
 use Made\CmsPackage\Access\Data\LauncherVisitor;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
+use Made\CmsPackage\Http\Cookies\EditorDevice;
+use Made\CmsPackage\Support\Locale;
+use Made\CmsPackage\Support\Site;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -27,7 +30,7 @@ final class InjectLauncher
     /**
      * The encrypted cookie that marks a device of an editor who logged in to the CMS before.
      */
-    public const string COOKIE = 'made_cms_editor';
+    public const string COOKIE = EditorDevice::NAME;
 
     private const string MARKER = '<made-cms-launcher';
 
@@ -84,7 +87,7 @@ final class InjectLauncher
     {
         return new LauncherVisitor(
             ip: $request->ip(),
-            remembered: $request->cookie(self::COOKIE) === '1',
+            remembered: EditorDevice::remembered($request),
         );
     }
 
@@ -118,11 +121,9 @@ final class InjectLauncher
 
     private function render(Request $request): string
     {
-        $locale = $this->locale();
-
         return view('made-cms-package-launcher::launcher', [
-            'locale' => $locale,
-            'site' => $this->siteName($this->host($request)),
+            'locale' => Locale::launcher(),
+            'site' => Site::name(),
             'stylesheet' => LauncherAssetController::url('launcher.css'),
             'script' => LauncherAssetController::url('launcher.js'),
             'fonts' => [
@@ -131,40 +132,5 @@ final class InjectLauncher
             ],
             'nonce' => class_exists(Vite::class) ? app(Vite::class)->cspNonce() : null,
         ])->render();
-    }
-
-    /**
-     * The configured locale when the package ships it, English otherwise; never raw translation keys.
-     */
-    private function locale(): string
-    {
-        $locale = config()->string('made-cms-package.launcher.locale', 'nl');
-
-        return app('translator')->hasForLocale('made-cms-package::launcher.title', $locale) ? $locale : 'en';
-    }
-
-    /**
-     * The name in the panel header: the application name, unless the host never changed Laravel's default.
-     */
-    private function siteName(string $host): string
-    {
-        $name = config('app.name');
-
-        return is_string($name) && trim($name) !== '' && $name !== 'Laravel' ? $name : $host;
-    }
-
-    /**
-     * The site host, taken from the configured url rather than the request's Host header.
-     */
-    private function host(Request $request): string
-    {
-        $url = config('app.url');
-        $host = is_string($url) ? parse_url($url, PHP_URL_HOST) : null;
-
-        if (! is_string($host) || $host === '') {
-            $host = $request->getHost();
-        }
-
-        return (string) preg_replace('/^www\./i', '', $host);
     }
 }

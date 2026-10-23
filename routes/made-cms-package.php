@@ -2,8 +2,12 @@
 
 declare(strict_types=1);
 
+use Illuminate\Http\Middleware\SetCacheHeaders;
 use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
+use Made\CmsPackage\Http\Controllers\Access\LoginEmailController;
+use Made\CmsPackage\Http\Controllers\Access\SessionController;
+use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
 
 /** @var string $prefix */
 $prefix = config('made-cms-package.routes.prefix');
@@ -15,7 +19,11 @@ Route::prefix($prefix)
     ->middleware($middleware)
     ->name('made-cms-package.')
     ->group(function (): void {
-        // CMS routes are added here together with their first Http feature.
+        // The launcher talks to these over fetch; the answers differ per browser, so nothing may cache them.
+        Route::middleware([SetLauncherLocale::class, SetCacheHeaders::class.':no_store;private'])->group(function (): void {
+            Route::get('session', SessionController::class)->name('session');
+            Route::post('login/email', LoginEmailController::class)->name('login.email');
+        });
     });
 
 // Static launcher assets load on every host page, so they run without middleware: no session, no cookies.

@@ -17,5 +17,9 @@ return [
         'hint' => 'Enter works too.',
         'submit' => 'Continue',
     ],
+    'errors' => [
+        'email_required' => 'Fill in your e-mail address.',
+        'email_invalid' => "That doesn't look like an e-mail address. Is there an @ in it?",
+    ],
     'no_access' => 'No access yet? Ask the administrator for an invitation.',
 ];

@@ -17,5 +17,9 @@ return [
         'hint' => 'Enter werkt ook.',
         'submit' => 'Verder',
     ],
+    'errors' => [
+        'email_required' => 'Vul je e-mailadres in.',
+        'email_invalid' => 'Dat lijkt geen e-mailadres. Staat er een @ in?',
+    ],
     'no_access' => 'Nog geen toegang? Vraag de beheerder om een uitnodiging.',
 ];

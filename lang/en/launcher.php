@@ -23,6 +23,7 @@ return [
         'password_required' => 'Fill in your password.',
         'password_invalid' => "That password isn't right. Try again, or send yourself a code.",
         'totp_invalid' => "That code isn't right. The code in your app changes every 30 seconds; use the latest one.",
+        'recovery_invalid' => "That recovery code isn't right or has already been used.",
         'setup_not_allowed' => 'Log in again with your password to add an authenticator app.',
         'expired' => 'Your session expired. Start again with your e-mail address.',
         'throttled' => 'Easy does it. Try again in :seconds seconds.',

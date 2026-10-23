@@ -29,4 +29,14 @@ final class EditorBuilder extends Builder
             ->whereNull('two_factor_last_used_timestep')
             ->orWhere('two_factor_last_used_timestep', '<', $timestep));
     }
+
+    /**
+     * Editors whose stored recovery codes are still exactly these, so two requests can never use the same code.
+     *
+     * @param  list<string>  $hashes
+     */
+    public function withRecoveryCodes(array $hashes): self
+    {
+        return $this->where('two_factor_recovery_codes', json_encode($hashes));
+    }
 }

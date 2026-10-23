@@ -23,7 +23,7 @@ final class ConfirmTwoFactor
         $editor = $confirmation->editor;
 
         if ($editor->two_factor_confirmed_at !== null || ! VerifyTwoFactorCode::run($editor, $confirmation->code)) {
-            throw TwoFactorCodeRejected::for($editor);
+            throw TwoFactorCodeRejected::for($editor->id);
         }
 
         $codes = [];

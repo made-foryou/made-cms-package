@@ -15,6 +15,7 @@ final class Endpoints
         'code' => 'made-cms-package.login.code',
         'verify' => 'made-cms-package.login.code.verify',
         'password' => 'made-cms-package.login.password',
+        'two_factor' => 'made-cms-package.login.two-factor',
         'setup' => 'made-cms-package.two-factor.setup',
         'confirm' => 'made-cms-package.two-factor.confirm',
         'logout' => 'made-cms-package.logout',

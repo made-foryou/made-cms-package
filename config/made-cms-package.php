@@ -53,6 +53,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Two-factor authentication
+    |--------------------------------------------------------------------------
+    |
+    | Editors who log in with a password can add an authenticator app. The
+    | window is the number of 30 second periods a code may lag behind or
+    | run ahead; recovery_codes is how many codes they get to save.
+    |
+    */
+
+    'two_factor' => [
+        'window' => 1,
+        'recovery_codes' => 8,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Launcher
     |--------------------------------------------------------------------------
     |

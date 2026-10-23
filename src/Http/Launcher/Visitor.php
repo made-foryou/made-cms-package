@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Launcher;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Made\CmsPackage\Access\Actions\DescribeEditor;
 use Made\CmsPackage\Access\Data\LauncherVisitor;
 use Made\CmsPackage\Access\Models\Editor;
@@ -29,6 +30,18 @@ final class Visitor
         $editor = $request->user(config()->string('made-cms-package.auth.guard'));
 
         return $editor instanceof Editor ? $editor : null;
+    }
+
+    /**
+     * The logged-in editor, or a message that the editor has to log in again.
+     *
+     * @throws ValidationException
+     */
+    public static function requireEditor(Request $request): Editor
+    {
+        return self::editor($request) ?? throw ValidationException::withMessages([
+            'email' => __('made-cms-package::launcher.errors.expired'),
+        ]);
     }
 
     /**

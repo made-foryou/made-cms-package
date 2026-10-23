@@ -19,4 +19,14 @@ final class EditorBuilder extends Builder
     {
         return $this->where('email', mb_strtolower(trim($email)));
     }
+
+    /**
+     * Editors whose last accepted authenticator code is older than this time step, or who never used one.
+     */
+    public function lastUsedTimestepBefore(int $timestep): self
+    {
+        return $this->where(fn (self $query): self => $query
+            ->whereNull('two_factor_last_used_timestep')
+            ->orWhere('two_factor_last_used_timestep', '<', $timestep));
+    }
 }

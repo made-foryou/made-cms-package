@@ -20,6 +20,8 @@ it('merges the package config', function (): void {
         ->and(config('made-cms-package.login_code.length'))->toBe(6)
         ->and(config('made-cms-package.login_code.ttl_minutes'))->toBe(10)
         ->and(config('made-cms-package.login_code.max_attempts'))->toBe(5)
+        ->and(config('made-cms-package.two_factor.window'))->toBe(1)
+        ->and(config('made-cms-package.two_factor.recovery_codes'))->toBe(8)
         ->and(config('made-cms-package.launcher.enabled'))->toBeTrue()
         ->and(config('made-cms-package.launcher.allowed_ips'))->toBe([])
         ->and(config('made-cms-package.launcher.locale'))->toBe('nl')

@@ -123,5 +123,10 @@ class CmsPackageServiceProvider extends ServiceProvider
             Limit::perMinute(10)->by('login|'.$email($request).'|'.$request->ip())->response($throttled),
             Limit::perMinute(30)->by('login-ip|'.$request->ip())->response($throttled),
         ]);
+
+        // Per editor: the one who is logged in, or the one halfway through a password login.
+        RateLimiter::for('made-cms-package.two-factor', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by('two-factor|'.($request->user(config()->string('made-cms-package.auth.guard'))?->getAuthIdentifier() ?? LoginSession::of($request)->pendingTwoFactor()['editor'] ?? 'guest').'|'.$request->ip())
+            ->response($throttled));
     }
 }

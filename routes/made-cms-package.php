@@ -13,6 +13,8 @@ use Made\CmsPackage\Http\Controllers\Access\LoginLinkController;
 use Made\CmsPackage\Http\Controllers\Access\LogoutController;
 use Made\CmsPackage\Http\Controllers\Access\PasswordLoginController;
 use Made\CmsPackage\Http\Controllers\Access\SessionController;
+use Made\CmsPackage\Http\Controllers\Access\TwoFactorConfirmController;
+use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
 
 /** @var string $prefix */
@@ -38,6 +40,12 @@ Route::prefix($prefix)
             Route::post('login/password', PasswordLoginController::class)
                 ->middleware(ThrottleRequests::using('made-cms-package.login'))
                 ->name('login.password');
+            Route::post('two-factor/setup', TwoFactorSetupController::class)
+                ->middleware(ThrottleRequests::using('made-cms-package.two-factor'))
+                ->name('two-factor.setup');
+            Route::post('two-factor/confirm', TwoFactorConfirmController::class)
+                ->middleware(ThrottleRequests::using('made-cms-package.two-factor'))
+                ->name('two-factor.confirm');
             Route::post('logout', LogoutController::class)->name('logout');
         });
 

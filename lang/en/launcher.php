@@ -22,6 +22,8 @@ return [
         'email_invalid' => "That doesn't look like an e-mail address. Is there an @ in it?",
         'password_required' => 'Fill in your password.',
         'password_invalid' => "That password isn't right. Try again, or send yourself a code.",
+        'totp_invalid' => "That code isn't right. The code in your app changes every 30 seconds; use the latest one.",
+        'setup_not_allowed' => 'Log in again with your password to add an authenticator app.',
         'expired' => 'Your session expired. Start again with your e-mail address.',
         'throttled' => 'Easy does it. Try again in :seconds seconds.',
         'code_incomplete' => 'Fill in all digits of the code.',

@@ -22,6 +22,8 @@ return [
         'email_invalid' => 'Dat lijkt geen e-mailadres. Staat er een @ in?',
         'password_required' => 'Vul je wachtwoord in.',
         'password_invalid' => 'Dat wachtwoord klopt niet. Probeer het nog eens, of stuur jezelf een code.',
+        'totp_invalid' => 'Die code klopt niet. De code in je app verandert elke 30 seconden; neem de nieuwste.',
+        'setup_not_allowed' => 'Log opnieuw in met je wachtwoord om een authenticator-app toe te voegen.',
         'expired' => 'Je sessie is verlopen. Begin opnieuw met je e-mailadres.',
         'throttled' => 'Even rustig aan. Probeer het over :seconds seconden opnieuw.',
         'code_incomplete' => 'Vul alle cijfers van de code in.',

@@ -42,6 +42,11 @@ abstract class TestCase extends Orchestra
         $app['config']->set('app.fallback_locale', 'en');
 
         $app['config']->set('hashing.bcrypt.rounds', 4);
+
+        // Rate limiters and sessions in memory, whatever the workbench .env says.
+        $app['config']->set('cache.default', 'array');
+        $app['config']->set('session.driver', 'array');
+        $app['config']->set('mail.default', 'array');
     }
 
     protected function defineDatabaseMigrations(): void

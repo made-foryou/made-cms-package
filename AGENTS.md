@@ -31,6 +31,9 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Http middleware the host must get without configuration is appended to the kernel's `web` group via `callAfterResolving(Kernel)`, never pushed onto the router (that is lost when the kernel re-syncs its groups).
 - The launcher (Blade markup under the `made-cms-package-launcher` view namespace, css, js, fonts) lives in `resources/launcher/`, is never published, and its static assets are served by a whitelisted controller in a route group without middleware; hosts never publish them.
 - The launcher's visibility is UI only and never authorisation.
+- Login endpoints answer `{step, data, csrf_token}` (`StepResponse`); the server decides the next step and the JSON carries data only. All copy lives in `lang/` and the launcher's step templates, never in JS or JSON.
+- Never reveal whether an address has an account: same answer, same message and (with `Timebox`) same time for unknown addresses; rate limits key on what was typed, never on the account.
+- Secrets (login codes, link tokens, TOTP secrets) are stored hashed or encrypted and only travel in memory; events and notifications that carry them are handled synchronously and never queued.
 
 ## Quick Commands
 

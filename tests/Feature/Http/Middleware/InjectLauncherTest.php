@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Illuminate\View\View;
+use Made\CmsPackage\Access\Actions\RememberDevice;
+use Made\CmsPackage\Access\Enums\LoginMethod;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
 function launcherTestPage(): string
@@ -244,3 +248,47 @@ it('names the current page in the edit bar', function (string $uri, string $page
     'the home page' => ['/', 'Site'],
     'the path' => ['over-ons', 'Over ons'],
 ]);
+
+it('renders a template for every login step', function (string $step): void {
+    visitLauncherPageFrom('203.0.113.5')->assertSee('<template data-step="'.$step.'">', false);
+})->with(['email', 'method', 'password', 'code', 'two_factor', 'recovery', 'two_factor_offer', 'two_factor_setup', 'recovery_codes', 'done']);
+
+it('offers no passkey until passkeys work', function (): void {
+    visitLauncherPageFrom('203.0.113.5')
+        ->assertDontSee('passkey', false)
+        ->assertDontSee('Touch ID', false);
+});
+
+it('renders the code boxes as three, a slash and three', function (): void {
+    $content = (string) visitLauncherPageFrom('203.0.113.5')->getContent();
+    $code = Str::betweenFirst($content, '<template data-step="code">', '</template>');
+
+    expect(substr_count($code, 'class="cijfer"'))->toBe(6)
+        ->and(substr_count($code, 'autocomplete="one-time-code"'))->toBe(1)
+        ->and($code)->toMatch('/(class="cijfer".*){3}\s*<span class="cijfer-slash"/s');
+});
+
+it('tells the script where the cms lives, relative to the current host', function (): void {
+    $content = (string) visitLauncherPageFrom('203.0.113.5')->getContent();
+    $config = json_decode(Str::betweenFirst($content, '<script type="application/json" data-config>', '</script>'), true);
+
+    expect($config['endpoints'])->toMatchArray([
+        'session' => '/cms/session',
+        'email' => '/cms/login/email',
+        'verify' => '/cms/login/code/verify',
+        'logout' => '/cms/logout',
+    ])->and($config['texts']['steps'])->toBe([1 => 'Stap 1 van 3', 2 => 'Stap 2 van 3', 3 => 'Stap 3 van 3', 4 => 'Ingelogd']);
+});
+
+it('keeps the csrf token and the greeting out of the page of a visitor', function (): void {
+    $editor = Editor::factory()->create(['name' => 'Menno Tempelaar']);
+    $device = EditorDevice::value(RememberDevice::run($editor, LoginMethod::Code));
+
+    $response = $this->withCookie(InjectLauncher::COOKIE, $device)
+        ->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+        ->get('/');
+
+    $response->assertSee('data-view="tile"', false)
+        ->assertDontSee(session()->token(), false)
+        ->assertDontSee('Menno');
+});

@@ -5,7 +5,12 @@ providers:
   # - Workbench\App\Providers\WorkbenchServiceProvider
 
 env:
+  - APP_NAME="Made CMS Workbench"
   - MADE_CMS_LAUNCHER_IPS=127.0.0.1,::1
+  # A login must survive between requests, and the login code ends up in the log.
+  - SESSION_DRIVER=file
+  - CACHE_STORE=file
+  - MAIL_MAILER=log
 
 migrations:
   - database/migrations

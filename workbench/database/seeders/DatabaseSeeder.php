@@ -4,6 +4,8 @@ namespace Workbench\Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Made\CmsPackage\Access\Actions\CreateEditor;
+use Made\CmsPackage\Access\Data\NewEditor;
 use Made\CmsPackage\Content\Models\Page;
 use Workbench\Database\Factories\UserFactory;
 
@@ -22,6 +24,9 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Logs in with a code (see storage/logs) or with the password "password".
+        CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password'));
 
         Page::factory()->create([
             'title' => 'Home',

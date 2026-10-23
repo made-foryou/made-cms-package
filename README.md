@@ -61,15 +61,19 @@ php artisan vendor:publish --tag="made-cms-package-assets"
 
 ## Usage
 
-Issue a one-time login code for an editor. The plain code is only available in memory, so send it right away:
+Create an editor account. Editors are CMS accounts of their own (the `cms_editors` table): they live next to the users of your site and never mix with them. Leave the password empty for an editor who only logs in with a code from the mail:
+
+```bash
+php artisan made-cms:editor editor@example.com --name="Menno Tempelaar"
+```
+
+Or from code, for example in a seeder:
 
 ```php
-use Made\CmsPackage\Access\Actions\IssueLoginCode;
+use Made\CmsPackage\Access\Actions\CreateEditor;
+use Made\CmsPackage\Access\Data\NewEditor;
 
-$issued = IssueLoginCode::run('editor@example.com');
-
-$issued->code;      // "482913", valid for 10 minutes by default
-$issued->loginCode; // the stored LoginCode model, which only holds a hash
+CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: null));
 ```
 
 Publish a page and query pages:
@@ -84,7 +88,7 @@ Page::query()->published()->get();
 Page::query()->recentlyEdited()->limit(3)->get();
 ```
 
-Every write dispatches an event (`LoginCodeIssued`, `PagePublished`) that your application can listen to.
+Every write dispatches an event that your application can listen to: `EditorCreated`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled` and `PagePublished`.
 
 ## Launcher
 
@@ -94,6 +98,8 @@ The tile is only shown to:
 
 - editors whose device was remembered by a previous CMS login (the encrypted `made_cms_editor` cookie), and
 - visitors from the IP addresses in `MADE_CMS_LAUNCHER_IPS`.
+
+A logged-in editor gets the edit bar instead, from any IP address.
 
 ```dotenv
 MADE_CMS_LAUNCHER_IPS=203.0.113.5,198.51.100.0/24   # comma separated, CIDR and IPv6 allowed
@@ -108,7 +114,36 @@ Keep in mind:
 - The tile only hides or shows the door. It never grants access; the login itself does.
 - Behind a load balancer or proxy, the IP allowlist only works when the application trusts the proxy (`trustProxies`), otherwise every visitor has the proxy's IP address.
 - Pages with the tile are sent as `Cache-Control: private, no-store`. A full-page cache in front of the application (a CDN "cache everything" rule, `spatie/laravel-responsecache`) can still store a page with the tile and show it to everyone; exclude those pages or disable the launcher.
-- With a Content Security Policy, allow `'self'` for `script-src`, `style-src` and `font-src`. A Vite CSP nonce is added to the script automatically.
+- With a Content Security Policy, allow `'self'` for `script-src`, `style-src`, `font-src` and `connect-src`. A Vite CSP nonce is added to the script automatically.
+
+## Logging in
+
+Editors log in from the panel the tile opens, in three steps:
+
+1. their e-mail address;
+2. a login code by mail (with a link that logs in the same browser) or their password;
+3. the code from the mail, or after a password the code from their authenticator app when they added one.
+
+After a password login without an authenticator app, the panel offers to add one: scan a QR code, confirm a code and save the recovery codes. Once logged in, the page gets an edit bar with the name of the page and a logout button.
+
+How it is protected:
+
+- **A guard of its own.** The package registers the session guard `made-cms` (provider `made-cms`, model `Editor`) next to your guards. Logging in to the CMS never logs anyone in to your site, and logging out of the CMS keeps the rest of the session. Define `auth.guards.made-cms` yourself to override it, or rename it with `made-cms-package.auth.guard`.
+- **No account enumeration.** Every e-mail address gets the same answer in the same time. The panel only greets an editor by name on a device that logged in with that address before (the encrypted `made_cms_editor` cookie, which never holds the plain address).
+- **Codes and links are bound to the browser** that asked for them, work once, expire after `login_code.ttl_minutes` (10) and stop after `login_code.max_attempts` (5) wrong tries. Opening the mail link only shows a confirmation page, so mail scanners never use it up.
+- **Rate limits** per typed address and ip address (`made-cms-package.login-code`, `made-cms-package.login`, `made-cms-package.two-factor`). They need a cache store that is shared between your servers and survives a request.
+- **Remember me** keeps an editor logged in for `auth.remember_days` (30) days.
+- **Mail** goes out right after the response through your mail configuration, never through the queue, so the plain code is never stored. Set `MAIL_FROM_ADDRESS` and `APP_URL`: the link in the mail is built from `APP_URL`, never from the request.
+
+Config keys: `auth.guard`, `auth.remember_days`, `login_code.length`, `login_code.ttl_minutes`, `login_code.max_attempts`, `two_factor.window` and `two_factor.recovery_codes`.
+
+The edit bar names the page after its `<title>` without the site name. Set a name of your own with:
+
+```html
+<meta name="made-cms:page" content="Trainingstijden">
+```
+
+The bar is 56px high and moves the page down by setting `padding-top` on `<html>`. A fixed header can use the `--made-cms-bar-height` variable that is set on `<html>` while the bar shows.
 
 ## Package Structure
 
@@ -116,7 +151,7 @@ The package is organised per bounded context. Each context holds its own actions
 
 ```
 src/
-├── Access/     login codes and, later, passkeys, remembered devices and invitations
+├── Access/     editors, login codes, passwords, authenticator apps and remembered devices
 │   ├── Actions/    write operations, e.g. IssueLoginCode
 │   ├── Builders/   custom Eloquent builders for reading, e.g. LoginCodeBuilder::active()
 │   ├── Data/       immutable data objects
@@ -124,7 +159,9 @@ src/
 │   └── Models/     plain table representations
 ├── Content/    pages, blocks and publishing
 │   └── ...
-├── Http/       technical layer: middleware (the launcher) and controllers, grouped per context
+├── Console/    technical layer: artisan commands
+├── Http/       technical layer: middleware (the launcher), controllers grouped per context, the login session
+├── Support/    context-free helpers: site name and url, launcher locale, QR code
 └── CmsPackageServiceProvider.php
 ```
 

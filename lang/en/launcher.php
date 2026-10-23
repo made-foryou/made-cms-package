@@ -20,6 +20,8 @@ return [
     'errors' => [
         'email_required' => 'Fill in your e-mail address.',
         'email_invalid' => "That doesn't look like an e-mail address. Is there an @ in it?",
+        'password_required' => 'Fill in your password.',
+        'password_invalid' => "That password isn't right. Try again, or send yourself a code.",
         'expired' => 'Your session expired. Start again with your e-mail address.',
         'throttled' => 'Easy does it. Try again in :seconds seconds.',
         'code_incomplete' => 'Fill in all digits of the code.',

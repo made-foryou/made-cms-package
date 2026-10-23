@@ -21,6 +21,13 @@ final class EditorFactory extends Factory
     public const string PASSWORD = 'password';
 
     /**
+     * The authenticator secret and recovery codes of the withTwoFactor() state.
+     */
+    public const string TWO_FACTOR_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
+    public const array RECOVERY_CODES = ['herstel-code-een', 'herstel-code-twee'];
+
+    /**
      * @return array<string, mixed>
      */
     public function definition(): array
@@ -40,6 +47,19 @@ final class EditorFactory extends Factory
     {
         return $this->state(fn (): array => [
             'password' => null,
+        ]);
+    }
+
+    /**
+     * An editor who confirmed an authenticator app.
+     */
+    public function withTwoFactor(): self
+    {
+        return $this->state(fn (): array => [
+            'two_factor_secret' => self::TWO_FACTOR_SECRET,
+            'two_factor_recovery_codes' => array_map(fn (string $code): string => hash('sha256', $code), self::RECOVERY_CODES),
+            'two_factor_confirmed_at' => now(),
+            'two_factor_last_used_timestep' => null,
         ]);
     }
 }

@@ -14,6 +14,7 @@ final class Endpoints
         'email' => 'made-cms-package.login.email',
         'code' => 'made-cms-package.login.code',
         'verify' => 'made-cms-package.login.code.verify',
+        'password' => 'made-cms-package.login.password',
         'logout' => 'made-cms-package.logout',
     ];
 

@@ -17,6 +17,15 @@ final readonly class LoginSession
 {
     private const string KEY = 'made-cms-package.login';
 
+    private const string TWO_FACTOR = 'made-cms-package.two_factor';
+
+    private const string PASSWORD_CONFIRMED_AT = 'made-cms-package.password_confirmed_at';
+
+    /**
+     * How long the second factor may be entered after the password.
+     */
+    private const int TWO_FACTOR_SECONDS = 600;
+
     public function __construct(
         private Session $session,
     ) {}
@@ -71,6 +80,48 @@ final readonly class LoginSession
 
     public function forget(): void
     {
-        $this->session->forget(self::KEY);
+        $this->session->forget([self::KEY, self::TWO_FACTOR]);
+    }
+
+    /**
+     * The password was right, the second factor is still to come. The editor stays a guest until then.
+     */
+    public function awaitTwoFactor(int $editorId, bool $remember): void
+    {
+        $this->session->put(self::TWO_FACTOR, [
+            'editor' => $editorId,
+            'remember' => $remember,
+            'expires' => now()->getTimestamp() + self::TWO_FACTOR_SECONDS,
+        ]);
+    }
+
+    /**
+     * @return array{editor: int, remember: bool}|null
+     */
+    public function pendingTwoFactor(): ?array
+    {
+        $pending = $this->session->get(self::TWO_FACTOR);
+
+        if (! is_array($pending) || ! is_int($pending['editor'] ?? null) || ! is_int($pending['expires'] ?? null)
+            || $pending['expires'] < now()->getTimestamp()) {
+            return null;
+        }
+
+        return ['editor' => $pending['editor'], 'remember' => ($pending['remember'] ?? false) === true];
+    }
+
+    /**
+     * Setting up a second factor is only allowed shortly after the password was typed.
+     */
+    public function confirmPassword(): void
+    {
+        $this->session->put(self::PASSWORD_CONFIRMED_AT, now()->getTimestamp());
+    }
+
+    public function passwordConfirmedAt(): ?int
+    {
+        $at = $this->session->get(self::PASSWORD_CONFIRMED_AT);
+
+        return is_int($at) ? $at : null;
     }
 }

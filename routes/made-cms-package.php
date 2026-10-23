@@ -11,6 +11,7 @@ use Made\CmsPackage\Http\Controllers\Access\LoginCodeVerifyController;
 use Made\CmsPackage\Http\Controllers\Access\LoginEmailController;
 use Made\CmsPackage\Http\Controllers\Access\LoginLinkController;
 use Made\CmsPackage\Http\Controllers\Access\LogoutController;
+use Made\CmsPackage\Http\Controllers\Access\PasswordLoginController;
 use Made\CmsPackage\Http\Controllers\Access\SessionController;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
 
@@ -34,6 +35,9 @@ Route::prefix($prefix)
             Route::post('login/code/verify', LoginCodeVerifyController::class)
                 ->middleware(ThrottleRequests::using('made-cms-package.login'))
                 ->name('login.code.verify');
+            Route::post('login/password', PasswordLoginController::class)
+                ->middleware(ThrottleRequests::using('made-cms-package.login'))
+                ->name('login.password');
             Route::post('logout', LogoutController::class)->name('logout');
         });
 

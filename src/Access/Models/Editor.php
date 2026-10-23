@@ -21,6 +21,10 @@ use Made\CmsPackage\Database\Factories\Access\EditorFactory;
  * @property string $email
  * @property string|null $password
  * @property string|null $remember_token
+ * @property string|null $two_factor_secret
+ * @property list<string>|null $two_factor_recovery_codes sha256 hashes of the unused recovery codes
+ * @property CarbonImmutable|null $two_factor_confirmed_at
+ * @property int|null $two_factor_last_used_timestep
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  *
@@ -39,11 +43,17 @@ class Editor extends Model implements AuthenticatableContract
         'name',
         'email',
         'password',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
+        'two_factor_last_used_timestep',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -53,6 +63,10 @@ class Editor extends Model implements AuthenticatableContract
     {
         return [
             'password' => 'hashed',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'array',
+            'two_factor_confirmed_at' => 'immutable_datetime',
+            'two_factor_last_used_timestep' => 'integer',
         ];
     }
 

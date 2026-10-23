@@ -20,6 +20,8 @@ return [
     'errors' => [
         'email_required' => 'Vul je e-mailadres in.',
         'email_invalid' => 'Dat lijkt geen e-mailadres. Staat er een @ in?',
+        'password_required' => 'Vul je wachtwoord in.',
+        'password_invalid' => 'Dat wachtwoord klopt niet. Probeer het nog eens, of stuur jezelf een code.',
         'expired' => 'Je sessie is verlopen. Begin opnieuw met je e-mailadres.',
         'throttled' => 'Even rustig aan. Probeer het over :seconds seconden opnieuw.',
         'code_incomplete' => 'Vul alle cijfers van de code in.',

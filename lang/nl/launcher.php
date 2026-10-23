@@ -22,6 +22,8 @@ return [
         'email_invalid' => 'Dat lijkt geen e-mailadres. Staat er een @ in?',
         'expired' => 'Je sessie is verlopen. Begin opnieuw met je e-mailadres.',
         'throttled' => 'Even rustig aan. Probeer het over :seconds seconden opnieuw.',
+        'code_incomplete' => 'Vul alle cijfers van de code in.',
+        'code_invalid' => 'Die code klopt niet of is verlopen. Probeer het nog eens of vraag een nieuwe aan.',
     ],
     'no_access' => 'Nog geen toegang? Vraag de beheerder om een uitnodiging.',
 ];

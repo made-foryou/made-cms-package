@@ -26,11 +26,13 @@ return [
     | Editors are CMS accounts of their own (the cms_editors table). They log
     | in through this session guard, which the package registers next to the
     | guards of the host. Logging in to the CMS never logs in to the site.
+    | A remembered editor stays logged in for remember_days.
     |
     */
 
     'auth' => [
         'guard' => 'made-cms',
+        'remember_days' => 30,
     ],
 
     /*
@@ -38,13 +40,15 @@ return [
     | Login codes
     |--------------------------------------------------------------------------
     |
-    | The one-time code an editor receives by e-mail to log in.
+    | The one-time code an editor receives by e-mail to log in. After
+    | max_attempts wrong tries the code stops working.
     |
     */
 
     'login_code' => [
         'length' => 6,
         'ttl_minutes' => 10,
+        'max_attempts' => 5,
     ],
 
     /*

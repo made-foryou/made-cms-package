@@ -22,6 +22,8 @@ return [
         'email_invalid' => "That doesn't look like an e-mail address. Is there an @ in it?",
         'expired' => 'Your session expired. Start again with your e-mail address.',
         'throttled' => 'Easy does it. Try again in :seconds seconds.',
+        'code_incomplete' => 'Fill in all digits of the code.',
+        'code_invalid' => "That code isn't right or has expired. Try again or ask for a new one.",
     ],
     'no_access' => 'No access yet? Ask the administrator for an invitation.',
 ];

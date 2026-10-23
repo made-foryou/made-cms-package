@@ -118,5 +118,10 @@ class CmsPackageServiceProvider extends ServiceProvider
             Limit::perMinutes(10, 3)->by('login-code|'.$email($request).'|'.$request->ip())->response($throttled),
             Limit::perHour(20)->by('login-code-ip|'.$request->ip())->response($throttled),
         ]);
+
+        RateLimiter::for('made-cms-package.login', fn (Request $request): array => [
+            Limit::perMinute(10)->by('login|'.$email($request).'|'.$request->ip())->response($throttled),
+            Limit::perMinute(30)->by('login-ip|'.$request->ip())->response($throttled),
+        ]);
     }
 }

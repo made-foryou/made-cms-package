@@ -7,6 +7,7 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Controllers\Access\LoginCodeController;
+use Made\CmsPackage\Http\Controllers\Access\LoginCodeVerifyController;
 use Made\CmsPackage\Http\Controllers\Access\LoginEmailController;
 use Made\CmsPackage\Http\Controllers\Access\LoginLinkController;
 use Made\CmsPackage\Http\Controllers\Access\SessionController;
@@ -29,6 +30,9 @@ Route::prefix($prefix)
             Route::post('login/code', LoginCodeController::class)
                 ->middleware(ThrottleRequests::using('made-cms-package.login-code'))
                 ->name('login.code');
+            Route::post('login/code/verify', LoginCodeVerifyController::class)
+                ->middleware(ThrottleRequests::using('made-cms-package.login'))
+                ->name('login.code.verify');
         });
 
         Route::middleware(SetLauncherLocale::class)->group(function (): void {

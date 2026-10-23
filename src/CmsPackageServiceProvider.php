@@ -7,6 +7,8 @@ namespace Made\CmsPackage;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Foundation\Http\Kernel;
 use Illuminate\Support\ServiceProvider;
+use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Console\Commands\CreateEditorCommand;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
 class CmsPackageServiceProvider extends ServiceProvider
@@ -17,6 +19,8 @@ class CmsPackageServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/made-cms-package.php', 'made-cms-package');
+
+        $this->registerGuard();
     }
 
     /**
@@ -45,6 +49,10 @@ class CmsPackageServiceProvider extends ServiceProvider
             return;
         }
 
+        $this->commands([
+            CreateEditorCommand::class,
+        ]);
+
         $this->publishes([
             __DIR__.'/../config/made-cms-package.php' => config_path('made-cms-package.php'),
         ], ['made-cms-package', 'made-cms-package-config']);
@@ -64,5 +72,23 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->publishesMigrations([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], ['made-cms-package', 'made-cms-package-migrations']);
+    }
+
+    /**
+     * Editors log in through a session guard of their own, so the CMS never touches the users or guards of the host.
+     * A host that defines the guard or provider itself keeps its own definition.
+     */
+    private function registerGuard(): void
+    {
+        $config = $this->app->make('config');
+        $guard = $config->string('made-cms-package.auth.guard');
+
+        if (! $config->has("auth.providers.{$guard}")) {
+            $config->set("auth.providers.{$guard}", ['driver' => 'eloquent', 'model' => Editor::class]);
+        }
+
+        if (! $config->has("auth.guards.{$guard}")) {
+            $config->set("auth.guards.{$guard}", ['driver' => 'session', 'provider' => $guard]);
+        }
     }
 }

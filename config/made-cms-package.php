@@ -20,6 +20,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Authentication
+    |--------------------------------------------------------------------------
+    |
+    | Editors are CMS accounts of their own (the cms_editors table). They log
+    | in through this session guard, which the package registers next to the
+    | guards of the host. Logging in to the CMS never logs in to the site.
+    |
+    */
+
+    'auth' => [
+        'guard' => 'made-cms',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Login codes
     |--------------------------------------------------------------------------
     |

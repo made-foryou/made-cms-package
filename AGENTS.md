@@ -17,13 +17,13 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - A context contains `Actions`, `Builders`, `Data`, `Events`, `Models`, and when needed `Enums`, `Exceptions`, `Listeners`, `Notifications`, `Policies`. Create a folder with its first class, never empty.
 - Contexts never import each other and never use `Http`, `Console`, or the service provider. Communicate across contexts through events.
 - Actions are the only place for writes and business rules: `final`, `use AsAction`, a typed `handle()`, invoked as `Action::run(...)`. Do not use `asController`, `asListener`, `asJob`, `asCommand` or `rules()`.
-- Models only represent a table row: `$table`, `$fillable`, `casts()`, relations, `newEloquentBuilder()` and `newFactory()`. No business logic, no facades.
+- Models only represent a table row: `$table`, `$fillable`, `$hidden`, `casts()`, relations, `newEloquentBuilder()` and `newFactory()`. No business logic, no facades. `Editor` also implements Laravel's `Authenticatable` contract through its trait, so the guard can log it in.
 - Reads go through custom Eloquent Builders (`Page::query()->published()`), one per model, `final`, suffix `Builder`. No repositories, no ad-hoc queries in Actions or controllers.
 - Data objects are `final readonly` plain PHP classes. Events are `final` and `Dispatchable`. Enums are string-backed. Exceptions are `final`.
 - Code identifiers are English. UI text is Dutch in `lang/nl` with an English fallback in `lang/en`. Tables use the `cms_` prefix.
 - Migrations live in `database/migrations` (`create_cms_*_table`), factories in `database/factories/<Context>/`.
 - Do not use Eloquent class attributes such as `#[Table]` or `#[UseEloquentBuilder]`; Laravel 12.0 is still supported.
-- Hosts own users; the package never defines its own user model.
+- The CMS has its own editors (`cms_editors`, `Access\Models\Editor`) and its own session guard (`made-cms-package.auth.guard`, default `made-cms`), registered next to the host's guards. It runs beside the host site and never reads or changes the host's users table, guards or login.
 - Adding a context: add it to `contexts()` in `tests/Pest.php` and start with one Model and one Action, both tested.
 - Arch tests in `tests/Arch/` enforce these rules; a failing arch test means the code is wrong, not the test.
 - Decisions are business rules too, even without a write (e.g. who sees the launcher): put them in a context Action with a Data object as input. Http only translates the request into that Data.

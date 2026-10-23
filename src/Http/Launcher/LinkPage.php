@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Http\Launcher;
 use Illuminate\Foundation\Vite;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Made\CmsPackage\Access\Exceptions\LoginLinkRejected;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\Site;
@@ -17,6 +18,16 @@ use Made\CmsPackage\Support\Site;
  */
 final class LinkPage
 {
+    /**
+     * Why the button did not log in: another browser than the one that asked for the code, or a used or expired link.
+     */
+    public static function rejected(Request $request, LoginLinkRejected $rejected, string $token): Response
+    {
+        return $rejected->otherBrowser
+            ? self::make($request, 'other_browser', $token, 403)
+            : self::make($request, 'expired', $token, 410);
+    }
+
     /**
      * @param  'confirm'|'other_browser'|'expired'  $state
      */

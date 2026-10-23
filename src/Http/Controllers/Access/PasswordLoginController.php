@@ -5,54 +5,26 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Controllers\Access;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 use Made\CmsPackage\Access\Actions\LogInWithPassword;
-use Made\CmsPackage\Access\Data\PasswordLogin;
-use Made\CmsPackage\Access\Enums\LoginStatus;
 use Made\CmsPackage\Access\Exceptions\CredentialsRejected;
-use Made\CmsPackage\Http\Responses\LoggedInResponse;
-use Made\CmsPackage\Http\Responses\StepResponse;
-use Made\CmsPackage\Http\Session\LoginSession;
+use Made\CmsPackage\Http\Requests\Access\PasswordLoginRequest;
+use Made\CmsPackage\Http\Responses\PasswordLoginResponse;
 
 /**
  * Logs in with a password, or continues to the second factor of an editor who turned it on.
  */
 final class PasswordLoginController
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(PasswordLoginRequest $request): JsonResponse
     {
-        /** @var array{password: string} $input */
-        $input = $request->validate([
-            'password' => ['required', 'string', 'max:1024'],
-            'remember' => ['sometimes', 'boolean'],
-        ], [
-            'password.*' => __('made-cms-package::launcher.errors.password_required'),
-        ]);
-
-        $session = LoginSession::of($request);
-        [$email] = $session->require();
-        $remember = $request->boolean('remember');
+        $login = $request->toData();
 
         try {
-            $result = LogInWithPassword::run(new PasswordLogin(email: $email, password: $input['password'], remember: $remember));
+            $result = LogInWithPassword::run($login);
         } catch (CredentialsRejected) {
-            throw ValidationException::withMessages([
-                'password' => __('made-cms-package::launcher.errors.password_invalid'),
-            ]);
+            $request->reject('password', 'password_invalid');
         }
 
-        if ($result->status === LoginStatus::TwoFactorRequired) {
-            // Half way through a login: a new session id, so nobody who knew the old one can finish it.
-            $request->session()->regenerate();
-            $session->awaitTwoFactor($result->editor->id, $remember);
-
-            return StepResponse::make($request, 'two_factor');
-        }
-
-        $response = LoggedInResponse::make($request, $result, $remember, 'two_factor_offer');
-        $session->confirmPassword();
-
-        return $response;
+        return PasswordLoginResponse::make($request, $result, $login->remember);
     }
 }

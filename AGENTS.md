@@ -28,6 +28,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Adding a context: add it to `contexts()` in `tests/Pest.php` and start with one Model and one Action, both tested.
 - Arch tests in `tests/Arch/` enforce these rules; a failing arch test means the code is wrong, not the test.
 - Decisions are business rules too, even without a write (e.g. who sees the launcher): put them in a context Action with a Data object as input. Http only translates the request into that Data.
+- Controllers stay as empty as possible: a FormRequest in `src/Http/Requests/<Context>/` (final, suffix `Request`, extends `LauncherRequest`) validates, holds the translated messages and turns the input into context Data with `toData()`; the controller runs one Action and returns a Response class from `src/Http/Responses/`. A rejection by an Action becomes a field error through `$request->reject($field, $error)`; controllers never validate or build messages themselves.
 - Http middleware the host must get without configuration is appended to the kernel's `web` group via `callAfterResolving(Kernel)`, never pushed onto the router (that is lost when the kernel re-syncs its groups).
 - The launcher (Blade markup under the `made-cms-package-launcher` view namespace, css, js, fonts) lives in `resources/launcher/`, is never published, and its static assets are served by a whitelisted controller in a route group without middleware; hosts never publish them.
 - The launcher's visibility is UI only and never authorisation.

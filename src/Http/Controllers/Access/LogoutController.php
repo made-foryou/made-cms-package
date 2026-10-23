@@ -8,8 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Made\CmsPackage\Access\Actions\LogOutEditor;
-use Made\CmsPackage\Access\Actions\ShowLauncher;
 use Made\CmsPackage\Http\Launcher\Visitor;
+use Made\CmsPackage\Http\Responses\LoggedOutResponse;
 
 /**
  * Logs out of the CMS only. The session itself stays, so a login to the host site and its cart survive.
@@ -22,16 +22,8 @@ final class LogoutController
 
         if ($editor !== null) {
             LogOutEditor::run($editor);
-            $request->session()->regenerateToken();
         }
 
-        if (! $request->expectsJson()) {
-            return redirect()->back();
-        }
-
-        return new JsonResponse([
-            'view' => ShowLauncher::run(Visitor::of($request))->value,
-            'csrf_token' => $request->session()->token(),
-        ]);
+        return LoggedOutResponse::make($request);
     }
 }

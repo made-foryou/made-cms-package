@@ -9,6 +9,7 @@ it('tells a guest that nobody is logged in and hands out a csrf token', function
     $this->getJson('cms/session')
         ->assertOk()
         ->assertJsonPath('authenticated', false)
+        ->assertJsonPath('view', 'hidden')
         ->assertJsonPath('editor', null)
         ->assertJson(['csrf_token' => session()->token()]);
 });
@@ -20,6 +21,7 @@ it('describes the editor who is logged in to the cms', function (): void {
         ->getJson('cms/session')
         ->assertOk()
         ->assertJsonPath('authenticated', true)
+        ->assertJsonPath('view', 'edit_bar')
         ->assertJsonPath('editor', ['first_name' => 'Menno', 'initial' => 'M']);
 });
 

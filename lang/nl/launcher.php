@@ -25,5 +25,11 @@ return [
         'code_incomplete' => 'Vul alle cijfers van de code in.',
         'code_invalid' => 'Die code klopt niet of is verlopen. Probeer het nog eens of vraag een nieuwe aan.',
     ],
+    'bar' => [
+        'label' => 'Made CMS bewerkbalk',
+        'logout' => 'Uitloggen',
+        'home' => 'Home',
+        'editor' => 'Ingelogd als :name',
+    ],
     'no_access' => 'Nog geen toegang? Vraag de beheerder om een uitnodiging.',
 ];

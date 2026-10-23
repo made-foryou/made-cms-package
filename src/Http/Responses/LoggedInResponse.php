@@ -6,10 +6,10 @@ namespace Made\CmsPackage\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Made\CmsPackage\Access\Actions\DescribeEditor;
 use Made\CmsPackage\Access\Actions\RememberDevice;
 use Made\CmsPackage\Access\Data\LoginResult;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
+use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Session\LoginSession;
 
 /**
@@ -23,13 +23,8 @@ final class LoggedInResponse
         $request->session()->regenerateToken();
         LoginSession::of($request)->forget();
 
-        $profile = DescribeEditor::run($result->editor);
-
         $response = StepResponse::make($request, $step, [
-            'editor' => [
-                'first_name' => $profile->firstName,
-                'initial' => $profile->initial,
-            ],
+            'editor' => Visitor::profile($result->editor),
         ]);
 
         if ($remember) {

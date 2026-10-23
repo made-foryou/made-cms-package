@@ -9,10 +9,14 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Vite;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as IlluminateResponse;
+use Illuminate\Support\Str;
 use Made\CmsPackage\Access\Actions\ShowLauncher;
-use Made\CmsPackage\Access\Data\LauncherVisitor;
+use Made\CmsPackage\Access\Enums\LauncherView;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
+use Made\CmsPackage\Http\Launcher\Endpoints;
+use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\Site;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -42,8 +46,13 @@ final class InjectLauncher
         $response = $next($request);
 
         try {
-            if ($this->isFullPage($request, $response) && ShowLauncher::run($this->visitor($request))) {
-                $this->inject($request, $response);
+            if ($this->isFullPage($request, $response)) {
+                $visitor = Visitor::of($request);
+                $view = ShowLauncher::run($visitor);
+
+                if ($view !== LauncherView::Hidden) {
+                    $this->inject($request, $response, $view, $visitor->editor);
+                }
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -83,22 +92,14 @@ final class InjectLauncher
             && ! str_contains($content, self::MARKER);
     }
 
-    private function visitor(Request $request): LauncherVisitor
-    {
-        return new LauncherVisitor(
-            ip: $request->ip(),
-            remembered: EditorDevice::remembered($request),
-        );
-    }
-
-    private function inject(Request $request, Response $response): void
+    private function inject(Request $request, Response $response, LauncherView $view, ?Editor $editor): void
     {
         $content = (string) $response->getContent();
         $original = $response instanceof IlluminateResponse ? $response->original : null;
 
         $response->setContent(substr_replace(
             $content,
-            $this->render($request),
+            $this->render($request, $view, $editor, $this->pageName($request, $content)),
             (int) strripos($content, '</body>'),
             0,
         ));
@@ -119,10 +120,16 @@ final class InjectLauncher
         $response->setEtag(null);
     }
 
-    private function render(Request $request): string
+    private function render(Request $request, LauncherView $view, ?Editor $editor, string $page): string
     {
+        $locale = Locale::launcher();
+
         return view('made-cms-package-launcher::launcher', [
-            'locale' => Locale::launcher(),
+            'locale' => $locale,
+            'view' => $view->value,
+            'editor' => Visitor::profile($editor),
+            'page' => $page,
+            'endpoints' => Endpoints::all(),
             'site' => Site::name(),
             'stylesheet' => LauncherAssetController::url('launcher.css'),
             'script' => LauncherAssetController::url('launcher.js'),
@@ -132,5 +139,39 @@ final class InjectLauncher
             ],
             'nonce' => class_exists(Vite::class) ? app(Vite::class)->cspNonce() : null,
         ])->render();
+    }
+
+    /**
+     * The name of the page in the edit bar: what the host declares, else its title without the site name, else its path.
+     */
+    private function pageName(Request $request, string $content): string
+    {
+        $head = (string) strstr($content, '</head>', true) ?: $content;
+
+        if (preg_match('/<meta\s[^>]*name=["\']made-cms:page["\'][^>]*>/i', $head, $meta) === 1
+            && preg_match('/content=(["\'])(.*?)\1/is', $meta[0], $value) === 1
+            && trim($value[2]) !== '') {
+            return html_entity_decode(trim($value[2]), ENT_QUOTES | ENT_HTML5);
+        }
+
+        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $head, $title) === 1) {
+            $parts = preg_split('/\s+[|\x{2013}\x{2014}\x{00B7}:-]\s+/u', html_entity_decode(trim(strip_tags($title[1])), ENT_QUOTES | ENT_HTML5)) ?: [];
+
+            foreach ($parts as $part) {
+                $part = trim($part);
+
+                if ($part !== '' && strcasecmp($part, Site::name()) !== 0 && strcasecmp($part, Site::host()) !== 0) {
+                    return $part;
+                }
+            }
+        }
+
+        $path = trim($request->path(), '/');
+
+        if ($path === '') {
+            return (string) __('made-cms-package::launcher.bar.home', [], Locale::launcher());
+        }
+
+        return Str::ucfirst(str_replace(['-', '_'], ' ', urldecode((string) Str::afterLast($path, '/'))));
     }
 }

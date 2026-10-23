@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Testing\TestResponse;
 use Illuminate\View\View;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
 function launcherTestPage(): string
@@ -34,6 +35,9 @@ beforeEach(function (): void {
         Route::get('streamed', fn () => response()->stream(function (): void {}, 200, ['Content-Type' => 'text/html']));
         Route::get('file', fn () => response()->file(__DIR__.'/../../../Fixtures/views/page.blade.php', ['Content-Type' => 'text/html']));
         Route::get('cms/page', fn (): string => launcherTestPage())->name('made-cms-package.test-page');
+        Route::get('titled', fn (): string => '<html><head><title>Over ons | TTV Merwestad</title></head><body></body></html>');
+        Route::get('named', fn (): string => '<html><head><title>Iets anders</title><meta name="made-cms:page" content="Trainingstijden"></head><body></body></html>');
+        Route::get('over-ons', fn (): string => '<html><head></head><body></body></html>');
     });
 
     app('view')->addNamespace('made-cms-package-test', __DIR__.'/../../../Fixtures/views');
@@ -213,3 +217,30 @@ it('never breaks the host page when the launcher fails', function (): void {
 
     visitLauncherPageFrom('203.0.113.5')->assertOk()->assertSee('<main>Welkom</main>', false)->assertDontSee('<made-cms-launcher', false);
 });
+
+it('shows the edit bar instead of the tile to a logged-in editor from any ip address', function (): void {
+    $editor = Editor::factory()->create(['name' => 'Menno Tempelaar']);
+
+    $this->actingAs($editor, 'made-cms')
+        ->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+        ->get('/')
+        ->assertSee('data-view="edit_bar"', false)
+        ->assertSee('<span class="avatar" aria-hidden="true">M</span>', false);
+});
+
+it('shows the tile to a visitor who is not logged in', function (): void {
+    visitLauncherPageFrom('203.0.113.5')->assertSee('data-view="tile"', false);
+});
+
+it('names the current page in the edit bar', function (string $uri, string $page): void {
+    config(['app.name' => 'TTV Merwestad']);
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get($uri)
+        ->assertSee('<span class="balk-pagina">'.$page.'</span>', false);
+})->with([
+    'the page meta tag' => ['named', 'Trainingstijden'],
+    'the title without the site name' => ['titled', 'Over ons'],
+    'the home page' => ['/', 'Site'],
+    'the path' => ['over-ons', 'Over ons'],
+]);

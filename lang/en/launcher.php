@@ -25,5 +25,11 @@ return [
         'code_incomplete' => 'Fill in all digits of the code.',
         'code_invalid' => "That code isn't right or has expired. Try again or ask for a new one.",
     ],
+    'bar' => [
+        'label' => 'Made CMS edit bar',
+        'logout' => 'Log out',
+        'home' => 'Home',
+        'editor' => 'Logged in as :name',
+    ],
     'no_access' => 'No access yet? Ask the administrator for an invitation.',
 ];

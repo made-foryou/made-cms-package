@@ -20,6 +20,8 @@ return [
     'errors' => [
         'email_required' => 'Fill in your e-mail address.',
         'email_invalid' => "That doesn't look like an e-mail address. Is there an @ in it?",
+        'expired' => 'Your session expired. Start again with your e-mail address.',
+        'throttled' => 'Easy does it. Try again in :seconds seconds.',
     ],
     'no_access' => 'No access yet? Ask the administrator for an invitation.',
 ];

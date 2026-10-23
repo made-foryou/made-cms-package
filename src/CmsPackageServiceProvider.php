@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Foundation\Http\Kernel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Made\CmsPackage\Access\Events\LoginCodeIssued;
+use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
+use Made\CmsPackage\Http\Responses\ThrottledResponse;
+use Made\CmsPackage\Http\Session\LoginSession;
 
 class CmsPackageServiceProvider extends ServiceProvider
 {
@@ -36,6 +44,11 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/launcher', 'made-cms-package-launcher');
 
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'made-cms-package');
+
+        // Synchronous on purpose: the event carries the plain code, which must never end up in a queue payload.
+        Event::listen(LoginCodeIssued::class, SendLoginCode::class);
+
+        $this->registerRateLimiters();
 
         // Unconditional, because the kernel only resolves for HTTP requests. Appending to the kernel group
         // (instead of the router) survives every later sync of the middleware groups to the router.
@@ -90,5 +103,20 @@ class CmsPackageServiceProvider extends ServiceProvider
         if (! $config->has("auth.guards.{$guard}")) {
             $config->set("auth.guards.{$guard}", ['driver' => 'session', 'provider' => $guard]);
         }
+    }
+
+    /**
+     * Every limit is keyed on what was typed (hashed) and the ip address, never on whether an account exists,
+     * so a limit answers the same for known and unknown addresses. Needs a persistent cache store.
+     */
+    private function registerRateLimiters(): void
+    {
+        $throttled = fn (Request $request, array $headers): mixed => ThrottledResponse::make($headers);
+        $email = fn (Request $request): string => hash('sha256', (string) LoginSession::of($request)->email());
+
+        RateLimiter::for('made-cms-package.login-code', fn (Request $request): array => [
+            Limit::perMinutes(10, 3)->by('login-code|'.$email($request).'|'.$request->ip())->response($throttled),
+            Limit::perHour(20)->by('login-code-ip|'.$request->ip())->response($throttled),
+        ]);
     }
 }

@@ -20,6 +20,8 @@ return [
     'errors' => [
         'email_required' => 'Vul je e-mailadres in.',
         'email_invalid' => 'Dat lijkt geen e-mailadres. Staat er een @ in?',
+        'expired' => 'Je sessie is verlopen. Begin opnieuw met je e-mailadres.',
+        'throttled' => 'Even rustig aan. Probeer het over :seconds seconden opnieuw.',
     ],
     'no_access' => 'Nog geen toegang? Vraag de beheerder om een uitnodiging.',
 ];

@@ -53,6 +53,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Mail
+    |--------------------------------------------------------------------------
+    |
+    | The login mail goes out through the host's mailer and from address,
+    | under the sender name below. With a help_url, it links to help with
+    | logging in.
+    |
+    */
+
+    'mail' => [
+        'from_name' => 'Made CMS',
+        'help_url' => env('MADE_CMS_HELP_URL'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Two-factor authentication
     |--------------------------------------------------------------------------
     |

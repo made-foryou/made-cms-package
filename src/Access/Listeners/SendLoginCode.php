@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Access\Listeners;
 
 use Illuminate\Support\Facades\Notification;
+use Made\CmsPackage\Access\Actions\DescribeEditor;
 use Made\CmsPackage\Access\Events\LoginCodeIssued;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Access\Notifications\LoginCodeNotification;
 use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\Site;
@@ -19,11 +21,16 @@ final class SendLoginCode
     public function handle(LoginCodeIssued $event): void
     {
         $issued = $event->issued;
+        $editor = Editor::query()->forEmail($issued->loginCode->email)->first();
+
         $notification = new LoginCodeNotification(
             code: $issued->code,
             url: Site::url(route('made-cms-package.login.link', ['token' => $issued->linkToken], false)),
-            minutes: config()->integer('made-cms-package.login_code.ttl_minutes'),
             site: Site::name(),
+            requestedAt: ($issued->loginCode->created_at ?? now())->toImmutable(),
+            expiresAt: $issued->loginCode->expires_at,
+            firstName: $editor === null ? null : DescribeEditor::run($editor)->firstName,
+            userAgent: $issued->userAgent,
         );
         $notification->locale(Locale::launcher());
 

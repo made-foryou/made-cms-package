@@ -37,7 +37,7 @@ final class IssueLoginCode
             'expires_at' => now()->addMinutes($ttl),
         ]);
 
-        $issued = new IssuedLoginCode($loginCode, $code, $linkToken);
+        $issued = new IssuedLoginCode($loginCode, $code, $linkToken, $request->userAgent);
 
         LoginCodeIssued::dispatch($issued);
 

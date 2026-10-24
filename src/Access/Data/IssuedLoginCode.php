@@ -15,5 +15,6 @@ final readonly class IssuedLoginCode
         public LoginCode $loginCode,
         public string $code,
         public string $linkToken,
+        public ?string $userAgent = null,
     ) {}
 }

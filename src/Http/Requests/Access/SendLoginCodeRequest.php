@@ -26,7 +26,7 @@ final class SendLoginCodeRequest extends LauncherRequest
     {
         [$email, $binding] = $this->login()->require();
 
-        return new LoginCodeRequest(email: $email, binding: $binding, returnTo: $this->returnTo());
+        return new LoginCodeRequest(email: $email, binding: $binding, returnTo: $this->returnTo(), userAgent: $this->userAgent());
     }
 
     /**

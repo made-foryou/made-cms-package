@@ -34,6 +34,20 @@ it('sends a code to an editor and continues to the code step', function (): void
     Notification::assertSentOnDemandTimes(LoginCodeNotification::class, 1);
 });
 
+it('tells the mail from which browser the code was asked for', function (): void {
+    Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
+    startLogin();
+
+    $this->withHeader('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Version/18.0 Safari/605.1.15')
+        ->postJson('cms/login/code')
+        ->assertOk();
+
+    Notification::assertSentOnDemand(
+        LoginCodeNotification::class,
+        fn (LoginCodeNotification $notification): bool => str_contains((string) $notification->userAgent, 'Macintosh'),
+    );
+});
+
 it('answers an address without an account exactly the same', function (): void {
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
 

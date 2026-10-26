@@ -17,6 +17,20 @@
 - Dutch and English launcher translations.
 - Runtime dependencies `illuminate/contracts`, `illuminate/http`, `illuminate/routing`, `illuminate/view`, `symfony/http-foundation` and `symfony/http-kernel`.
 
+- Editors: CMS accounts of their own in `cms_editors` (`Editor` model, `CreateEditor` action, `EditorCreated` event) and the `made-cms:editor` command. They log in through the session guard `made-cms`, which the package registers next to the host's guards.
+- The full login flow from the website: e-mail step, login code by mail with a link that only works in the requesting browser, password with "remember this device" (30 days) and an edit bar with logout after logging in. Endpoints under `cms/` (`session`, `login/email`, `login/code`, `login/code/verify`, `login/password`, `login/two-factor`, `login/link/{token}`, `two-factor/setup`, `two-factor/confirm`, `logout`), rate limited and never revealing whether an address has an account.
+- Two-factor authentication for password logins: authenticator app (TOTP) with QR code and recovery codes, offered after a password login. Runtime dependencies `pragmarx/google2fa` and `bacon/bacon-qr-code`.
+- The launcher greets an editor by first name on a device that logged in with the same address before; the `made_cms_editor` cookie now holds a keyed hash of the address, the first name and the last method.
+- The login mail of the design (1.10): the code in the subject and in large type, a button that logs in the requesting browser, its expiry time, the device and browser it was asked from, a plain text version, and the sender name "Made CMS". Its views (`made-cms-package::mail.login-code`) can be published with the `made-cms-package-views` tag.
+- Config keys `auth.guard`, `auth.remember_days`, `login_code.max_attempts`, `mail.from_name`, `mail.help_url` (env `MADE_CMS_HELP_URL`), `two_factor.window` and `two_factor.recovery_codes`.
+- Dutch and English translations for every login step, the login mail and the command.
+- Runtime dependencies `illuminate/auth`, `illuminate/cache`, `illuminate/console`, `illuminate/cookie`, `illuminate/hashing`, `illuminate/mail`, `illuminate/notifications` and `illuminate/session`.
+
+### Changed
+
+- `IssueLoginCode::run()` takes a `LoginCodeRequest` (address, browser binding, page to return to) and returns the link token too; `cms_login_codes` gains `attempts`, `session_hash`, `link_hash` and `return_to`.
+- `ShowLauncher::run()` returns a `LauncherView` (hidden, tile or edit bar) instead of a boolean; `LauncherVisitor` gains the logged-in `editor`.
+
 ### Removed
 
 - Scaffold placeholders: the `CmsPackage` class and facade, the placeholder command, migration, view, translation and config key.

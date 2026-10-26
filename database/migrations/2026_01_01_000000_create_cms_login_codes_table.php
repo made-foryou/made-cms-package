@@ -14,6 +14,10 @@ return new class extends Migration
             $table->id();
             $table->string('email')->index();
             $table->string('code_hash');
+            $table->unsignedTinyInteger('attempts')->default(0);
+            $table->string('session_hash', 64);
+            $table->string('link_hash', 64)->unique();
+            $table->string('return_to', 2048)->nullable();
             $table->timestamp('expires_at');
             $table->timestamp('consumed_at')->nullable();
             $table->timestamps();

@@ -9,9 +9,16 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Vite;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as IlluminateResponse;
+use Illuminate\Support\Str;
 use Made\CmsPackage\Access\Actions\ShowLauncher;
-use Made\CmsPackage\Access\Data\LauncherVisitor;
+use Made\CmsPackage\Access\Enums\LauncherView;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
+use Made\CmsPackage\Http\Cookies\EditorDevice;
+use Made\CmsPackage\Http\Launcher\Endpoints;
+use Made\CmsPackage\Http\Launcher\Visitor;
+use Made\CmsPackage\Support\Locale;
+use Made\CmsPackage\Support\Site;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -27,7 +34,7 @@ final class InjectLauncher
     /**
      * The encrypted cookie that marks a device of an editor who logged in to the CMS before.
      */
-    public const string COOKIE = 'made_cms_editor';
+    public const string COOKIE = EditorDevice::NAME;
 
     private const string MARKER = '<made-cms-launcher';
 
@@ -39,8 +46,13 @@ final class InjectLauncher
         $response = $next($request);
 
         try {
-            if ($this->isFullPage($request, $response) && ShowLauncher::run($this->visitor($request))) {
-                $this->inject($request, $response);
+            if ($this->isFullPage($request, $response)) {
+                $visitor = Visitor::of($request);
+                $view = ShowLauncher::run($visitor);
+
+                if ($view !== LauncherView::Hidden) {
+                    $this->inject($request, $response, $view, $visitor->editor);
+                }
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -80,22 +92,14 @@ final class InjectLauncher
             && ! str_contains($content, self::MARKER);
     }
 
-    private function visitor(Request $request): LauncherVisitor
-    {
-        return new LauncherVisitor(
-            ip: $request->ip(),
-            remembered: $request->cookie(self::COOKIE) === '1',
-        );
-    }
-
-    private function inject(Request $request, Response $response): void
+    private function inject(Request $request, Response $response, LauncherView $view, ?Editor $editor): void
     {
         $content = (string) $response->getContent();
         $original = $response instanceof IlluminateResponse ? $response->original : null;
 
         $response->setContent(substr_replace(
             $content,
-            $this->render($request),
+            $this->render($request, $view, $editor, $this->pageName($request, $content)),
             (int) strripos($content, '</body>'),
             0,
         ));
@@ -116,13 +120,18 @@ final class InjectLauncher
         $response->setEtag(null);
     }
 
-    private function render(Request $request): string
+    private function render(Request $request, LauncherView $view, ?Editor $editor, string $page): string
     {
-        $locale = $this->locale();
+        $locale = Locale::launcher();
 
         return view('made-cms-package-launcher::launcher', [
             'locale' => $locale,
-            'site' => $this->siteName($this->host($request)),
+            'view' => $view->value,
+            'editor' => Visitor::profile($editor),
+            'page' => $page,
+            'arrived' => $request->hasSession() && $request->session()->get('made-cms-package.arrived') === true,
+            'endpoints' => Endpoints::all(),
+            'site' => Site::name(),
             'stylesheet' => LauncherAssetController::url('launcher.css'),
             'script' => LauncherAssetController::url('launcher.js'),
             'fonts' => [
@@ -134,37 +143,36 @@ final class InjectLauncher
     }
 
     /**
-     * The configured locale when the package ships it, English otherwise; never raw translation keys.
+     * The name of the page in the edit bar: what the host declares, else its title without the site name, else its path.
      */
-    private function locale(): string
+    private function pageName(Request $request, string $content): string
     {
-        $locale = config()->string('made-cms-package.launcher.locale', 'nl');
+        $head = (string) strstr($content, '</head>', true) ?: $content;
 
-        return app('translator')->hasForLocale('made-cms-package::launcher.title', $locale) ? $locale : 'en';
-    }
-
-    /**
-     * The name in the panel header: the application name, unless the host never changed Laravel's default.
-     */
-    private function siteName(string $host): string
-    {
-        $name = config('app.name');
-
-        return is_string($name) && trim($name) !== '' && $name !== 'Laravel' ? $name : $host;
-    }
-
-    /**
-     * The site host, taken from the configured url rather than the request's Host header.
-     */
-    private function host(Request $request): string
-    {
-        $url = config('app.url');
-        $host = is_string($url) ? parse_url($url, PHP_URL_HOST) : null;
-
-        if (! is_string($host) || $host === '') {
-            $host = $request->getHost();
+        if (preg_match('/<meta\s[^>]*name=["\']made-cms:page["\'][^>]*>/i', $head, $meta) === 1
+            && preg_match('/content=(["\'])(.*?)\1/is', $meta[0], $value) === 1
+            && trim($value[2]) !== '') {
+            return html_entity_decode(trim($value[2]), ENT_QUOTES | ENT_HTML5);
         }
 
-        return (string) preg_replace('/^www\./i', '', $host);
+        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $head, $title) === 1) {
+            $parts = preg_split('/\s+[|\x{2013}\x{2014}\x{00B7}:-]\s+/u', html_entity_decode(trim(strip_tags($title[1])), ENT_QUOTES | ENT_HTML5)) ?: [];
+
+            foreach ($parts as $part) {
+                $part = trim($part);
+
+                if ($part !== '' && strcasecmp($part, Site::name()) !== 0 && strcasecmp($part, Site::host()) !== 0) {
+                    return $part;
+                }
+            }
+        }
+
+        $path = trim($request->path(), '/');
+
+        if ($path === '') {
+            return (string) __('made-cms-package::launcher.bar.home', [], Locale::launcher());
+        }
+
+        return Str::ucfirst(str_replace(['-', '_'], ' ', urldecode((string) Str::afterLast($path, '/'))));
     }
 }

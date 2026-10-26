@@ -10,7 +10,7 @@ use Made\CmsPackage\Http\Cookies\EditorDevice;
 
 function postLoginEmail(string $email): TestResponse
 {
-    return test()->postJson('cms/login/email', ['email' => $email]);
+    return test()->postJson('made-cms/login/email', ['email' => $email]);
 }
 
 it('continues to the method step for a known address', function (): void {
@@ -42,7 +42,7 @@ it('greets the editor on a device that logged in with this address before', func
 
     $this->withCredentials()
         ->withCookie(EditorDevice::NAME, EditorDevice::value(RememberDevice::run($editor, LoginMethod::Password)))
-        ->postJson('cms/login/email', ['email' => 'Menno@made-foryou.nl'])
+        ->postJson('made-cms/login/email', ['email' => 'Menno@made-foryou.nl'])
         ->assertOk()
         ->assertJsonPath('data.name', 'Menno')
         ->assertJsonPath('data.preferred', 'password');
@@ -53,7 +53,7 @@ it('does not greet anyone with the device cookie of another address', function (
 
     $this->withCredentials()
         ->withCookie(EditorDevice::NAME, EditorDevice::value(RememberDevice::run($editor, LoginMethod::Code)))
-        ->postJson('cms/login/email', ['email' => 'iemand@example.com'])
+        ->postJson('made-cms/login/email', ['email' => 'iemand@example.com'])
         ->assertJsonPath('data.name', null)
         ->assertJsonPath('data.preferred', null);
 });
@@ -75,7 +75,7 @@ it('starts a new binding for every address that is entered', function (): void {
 });
 
 it('rejects an invalid address with a translated message', function (array $payload, string $message): void {
-    $this->postJson('cms/login/email', $payload)
+    $this->postJson('made-cms/login/email', $payload)
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['email' => $message]);
 })->with([
@@ -86,6 +86,6 @@ it('rejects an invalid address with a translated message', function (array $payl
 it('rejects in the configured launcher language', function (): void {
     config(['made-cms-package.launcher.locale' => 'en']);
 
-    $this->postJson('cms/login/email', [])
+    $this->postJson('made-cms/login/email', [])
         ->assertJsonValidationErrors(['email' => 'Fill in your e-mail address.']);
 });

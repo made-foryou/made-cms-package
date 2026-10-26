@@ -13,14 +13,14 @@ beforeEach(function (): void {
 
 function enterEmail(string $email = 'menno@made-foryou.nl'): void
 {
-    test()->postJson('cms/login/email', ['email' => $email])->assertOk();
+    test()->postJson('made-cms/login/email', ['email' => $email])->assertOk();
 }
 
 it('logs the editor in and offers to set up a second factor', function (): void {
     Editor::factory()->create(['email' => 'menno@made-foryou.nl', 'name' => 'Menno']);
     enterEmail();
 
-    $this->postJson('cms/login/password', ['password' => EditorFactory::PASSWORD, 'remember' => true])
+    $this->postJson('made-cms/login/password', ['password' => EditorFactory::PASSWORD, 'remember' => true])
         ->assertOk()
         ->assertJsonPath('step', 'two_factor_offer')
         ->assertJsonPath('data.editor.first_name', 'Menno')
@@ -34,7 +34,7 @@ it('does not remember the device when the editor unticks the box', function (): 
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
     enterEmail();
 
-    $this->postJson('cms/login/password', ['password' => EditorFactory::PASSWORD, 'remember' => false])
+    $this->postJson('made-cms/login/password', ['password' => EditorFactory::PASSWORD, 'remember' => false])
         ->assertOk()
         ->assertCookieMissing(EditorDevice::NAME);
 });
@@ -44,7 +44,7 @@ it('continues to the second factor without logging in yet', function (): void {
     enterEmail();
     $sessionId = session()->getId();
 
-    $this->postJson('cms/login/password', ['password' => EditorFactory::PASSWORD, 'remember' => true])
+    $this->postJson('made-cms/login/password', ['password' => EditorFactory::PASSWORD, 'remember' => true])
         ->assertOk()
         ->assertJsonPath('step', 'two_factor')
         ->assertJsonPath('data', []);
@@ -58,7 +58,7 @@ it('rejects a wrong password with a translated message', function (): void {
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
     enterEmail();
 
-    $this->postJson('cms/login/password', ['password' => 'verkeerd'])
+    $this->postJson('made-cms/login/password', ['password' => 'verkeerd'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['password' => 'Dat wachtwoord klopt niet. Probeer het nog eens, of stuur jezelf een code.']);
 });
@@ -66,7 +66,7 @@ it('rejects a wrong password with a translated message', function (): void {
 it('answers an unknown address exactly like a wrong password', function (): void {
     enterEmail('iemand@example.com');
 
-    $this->postJson('cms/login/password', ['password' => 'verkeerd'])
+    $this->postJson('made-cms/login/password', ['password' => 'verkeerd'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['password' => 'Dat wachtwoord klopt niet. Probeer het nog eens, of stuur jezelf een code.']);
 });
@@ -74,7 +74,7 @@ it('answers an unknown address exactly like a wrong password', function (): void
 it('asks for a password', function (): void {
     enterEmail();
 
-    $this->postJson('cms/login/password', ['password' => ''])
+    $this->postJson('made-cms/login/password', ['password' => ''])
         ->assertJsonValidationErrors(['password' => 'Vul je wachtwoord in.']);
 });
 
@@ -82,8 +82,8 @@ it('limits the number of attempts', function (): void {
     enterEmail();
 
     foreach (range(1, 10) as $attempt) {
-        $this->postJson('cms/login/password', ['password' => 'verkeerd']);
+        $this->postJson('made-cms/login/password', ['password' => 'verkeerd']);
     }
 
-    $this->postJson('cms/login/password', ['password' => 'verkeerd'])->assertTooManyRequests();
+    $this->postJson('made-cms/login/password', ['password' => 'verkeerd'])->assertTooManyRequests();
 });

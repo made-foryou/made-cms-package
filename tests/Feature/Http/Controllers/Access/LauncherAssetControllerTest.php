@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 
 it('serves the launcher assets with their content type', function (string $asset, string $contentType): void {
-    $response = $this->get("cms/launcher/{$asset}");
+    $response = $this->get("made-cms/launcher/{$asset}");
 
     $response->assertOk()
         ->assertHeader('Content-Type', $contentType);
@@ -22,7 +22,7 @@ it('serves the launcher assets with their content type', function (string $asset
 ]);
 
 it('serves the assets without a session or cookies', function (): void {
-    $response = $this->get('cms/launcher/launcher.js');
+    $response = $this->get('made-cms/launcher/launcher.js');
 
     expect($response->headers->getCookies())->toBeEmpty();
 });
@@ -30,11 +30,11 @@ it('serves the assets without a session or cookies', function (): void {
 it('only serves known launcher assets', function (string $uri): void {
     $this->get($uri)->assertNotFound();
 })->with([
-    'unknown file' => 'cms/launcher/secret.php',
-    'font licence' => 'cms/launcher/OFL-Nunito.txt',
-    'launcher view' => 'cms/launcher/launcher.blade.php',
-    'path traversal' => 'cms/launcher/..%2F..%2Fcomposer.json',
-    'nested path' => 'cms/launcher/fonts/nunito-700.woff2',
+    'unknown file' => 'made-cms/launcher/secret.php',
+    'font licence' => 'made-cms/launcher/OFL-Nunito.txt',
+    'launcher view' => 'made-cms/launcher/launcher.blade.php',
+    'path traversal' => 'made-cms/launcher/..%2F..%2Fcomposer.json',
+    'nested path' => 'made-cms/launcher/fonts/nunito-700.woff2',
 ]);
 
 it('versions each asset url with a hash of its contents', function (string $asset, string $file): void {
@@ -42,7 +42,7 @@ it('versions each asset url with a hash of its contents', function (string $asse
 
     $url = LauncherAssetController::url($asset);
 
-    expect($url)->toBe("/cms/launcher/{$asset}?v={$hash}");
+    expect($url)->toBe("/made-cms/launcher/{$asset}?v={$hash}");
 
     $this->get($url)->assertOk();
 })->with([
@@ -61,5 +61,5 @@ it('keeps the base path of an app served from a subdirectory', function (): void
     $this->app->instance('request', $request);
     app('url')->setRequest($request);
 
-    expect(LauncherAssetController::url('launcher.css'))->toStartWith('/site/cms/launcher/launcher.css?v=');
+    expect(LauncherAssetController::url('launcher.css'))->toStartWith('/site/made-cms/launcher/launcher.css?v=');
 });

@@ -19,8 +19,8 @@ beforeEach(function (): void {
  */
 function requestCodeFor(string $email = 'menno@made-foryou.nl'): string
 {
-    test()->postJson('cms/login/email', ['email' => $email])->assertOk();
-    test()->postJson('cms/login/code')->assertOk();
+    test()->postJson('made-cms/login/email', ['email' => $email])->assertOk();
+    test()->postJson('made-cms/login/code')->assertOk();
 
     $code = '';
 
@@ -37,7 +37,7 @@ it('logs the editor in and continues to the done step', function (): void {
     $code = requestCodeFor();
     $tokenBefore = session()->token();
 
-    $response = $this->postJson('cms/login/code/verify', ['code' => $code]);
+    $response = $this->postJson('made-cms/login/code/verify', ['code' => $code]);
 
     $response->assertOk()
         ->assertJsonPath('step', 'done')
@@ -53,7 +53,7 @@ it('logs the editor in and continues to the done step', function (): void {
 it('remembers the device so the next login greets the editor', function (): void {
     $code = requestCodeFor();
 
-    $cookie = collect($this->postJson('cms/login/code/verify', ['code' => $code])->headers->getCookies())
+    $cookie = collect($this->postJson('made-cms/login/code/verify', ['code' => $code])->headers->getCookies())
         ->first(fn ($cookie): bool => $cookie->getName() === EditorDevice::NAME);
 
     expect($cookie)->not->toBeNull()
@@ -64,7 +64,7 @@ it('remembers the device so the next login greets the editor', function (): void
 
     $this->withCredentials()
         ->withUnencryptedCookie(EditorDevice::NAME, (string) $cookie->getValue())
-        ->postJson('cms/login/email', ['email' => 'menno@made-foryou.nl'])
+        ->postJson('made-cms/login/email', ['email' => 'menno@made-foryou.nl'])
         ->assertJsonPath('data.name', 'Menno')
         ->assertJsonPath('data.preferred', 'code');
 });
@@ -72,7 +72,7 @@ it('remembers the device so the next login greets the editor', function (): void
 it('rejects a wrong code with one message for every reason', function (): void {
     requestCodeFor();
 
-    $this->postJson('cms/login/code/verify', ['code' => '000000'])
+    $this->postJson('made-cms/login/code/verify', ['code' => '000000'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['code' => 'Die code klopt niet of is verlopen. Probeer het nog eens of vraag een nieuwe aan.']);
 
@@ -80,10 +80,10 @@ it('rejects a wrong code with one message for every reason', function (): void {
 });
 
 it('rejects a code for an address without an account in exactly the same way', function (): void {
-    $this->postJson('cms/login/email', ['email' => 'iemand@example.com'])->assertOk();
-    $this->postJson('cms/login/code')->assertOk();
+    $this->postJson('made-cms/login/email', ['email' => 'iemand@example.com'])->assertOk();
+    $this->postJson('made-cms/login/code')->assertOk();
 
-    $this->postJson('cms/login/code/verify', ['code' => '123456'])
+    $this->postJson('made-cms/login/code/verify', ['code' => '123456'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['code' => 'Die code klopt niet of is verlopen. Probeer het nog eens of vraag een nieuwe aan.']);
 });
@@ -91,13 +91,13 @@ it('rejects a code for an address without an account in exactly the same way', f
 it('asks for all digits', function (mixed $code): void {
     requestCodeFor();
 
-    $this->postJson('cms/login/code/verify', ['code' => $code])
+    $this->postJson('made-cms/login/code/verify', ['code' => $code])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['code' => 'Vul alle cijfers van de code in.']);
 })->with([null, '123', '12345a', '1234567']);
 
 it('asks to start again when no address was entered in this browser', function (): void {
-    $this->postJson('cms/login/code/verify', ['code' => '123456'])
+    $this->postJson('made-cms/login/code/verify', ['code' => '123456'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['email']);
 });
@@ -106,8 +106,8 @@ it('limits the number of attempts', function (): void {
     requestCodeFor();
 
     foreach (range(1, 10) as $attempt) {
-        $this->postJson('cms/login/code/verify', ['code' => '000000']);
+        $this->postJson('made-cms/login/code/verify', ['code' => '000000']);
     }
 
-    $this->postJson('cms/login/code/verify', ['code' => '000000'])->assertTooManyRequests();
+    $this->postJson('made-cms/login/code/verify', ['code' => '000000'])->assertTooManyRequests();
 });

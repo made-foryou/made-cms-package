@@ -38,7 +38,7 @@ beforeEach(function (): void {
         Route::get('gzipped', fn () => response(launcherTestPage(), 200, ['Content-Encoding' => 'gzip']));
         Route::get('streamed', fn () => response()->stream(function (): void {}, 200, ['Content-Type' => 'text/html']));
         Route::get('file', fn () => response()->file(__DIR__.'/../../../Fixtures/views/page.blade.php', ['Content-Type' => 'text/html']));
-        Route::get('cms/page', fn (): string => launcherTestPage())->name('made-cms-package.test-page');
+        Route::get('made-cms/page', fn (): string => launcherTestPage())->name('made-cms-package.test-page');
         Route::get('titled', fn (): string => '<html><head><title>Over ons | TTV Merwestad</title></head><body></body></html>');
         Route::get('named', fn (): string => '<html><head><title>Iets anders</title><meta name="made-cms:page" content="Trainingstijden"></head><body></body></html>');
         Route::get('over-ons', fn (): string => '<html><head></head><body></body></html>');
@@ -105,7 +105,7 @@ it('only injects into successful full html page responses', function (string $me
     'plain text' => ['GET', 'text'],
     'download' => ['GET', 'download'],
     'excluded path' => ['GET', 'nova/resources'],
-    'cms route' => ['GET', 'cms/page'],
+    'cms route' => ['GET', 'made-cms/page'],
     'encoded body' => ['GET', 'gzipped'],
     'streamed response' => ['GET', 'streamed'],
     'file response' => ['GET', 'file'],
@@ -203,8 +203,8 @@ it('falls back to the site host when the application has no name of its own', fu
 
 it('links the launcher assets relative to the current host', function (): void {
     visitLauncherPageFrom('203.0.113.5')
-        ->assertSee('href="/cms/launcher/launcher.css?v=', false)
-        ->assertSee('src="/cms/launcher/launcher.js?v=', false);
+        ->assertSee('href="/made-cms/launcher/launcher.css?v=', false)
+        ->assertSee('src="/made-cms/launcher/launcher.js?v=', false);
 });
 
 it('adds the csp nonce to the launcher stylesheet and script', function (): void {
@@ -273,10 +273,10 @@ it('tells the script where the cms lives, relative to the current host', functio
     $config = json_decode(Str::betweenFirst($content, '<script type="application/json" data-config>', '</script>'), true);
 
     expect($config['endpoints'])->toMatchArray([
-        'session' => '/cms/session',
-        'email' => '/cms/login/email',
-        'verify' => '/cms/login/code/verify',
-        'logout' => '/cms/logout',
+        'session' => '/made-cms/session',
+        'email' => '/made-cms/login/email',
+        'verify' => '/made-cms/login/code/verify',
+        'logout' => '/made-cms/logout',
     ])->and($config['texts']['steps'])->toBe([1 => 'Stap 1 van 3', 2 => 'Stap 2 van 3', 3 => 'Stap 3 van 3', 4 => 'Ingelogd']);
 });
 

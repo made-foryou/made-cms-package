@@ -13,7 +13,7 @@ use Made\CmsPackage\CmsPackageServiceProvider;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
 it('merges the package config', function (): void {
-    expect(config('made-cms-package.routes.prefix'))->toBe('cms')
+    expect(config('made-cms-package.routes.prefix'))->toBe('made-cms')
         ->and(config('made-cms-package.routes.middleware'))->toBe(['web'])
         ->and(config('made-cms-package.auth.guard'))->toBe('made-cms')
         ->and(config('made-cms-package.auth.remember_days'))->toBe(30)
@@ -65,7 +65,7 @@ it('registers the launcher asset route without middleware', function (): void {
     $route = Route::getRoutes()->getByName('made-cms-package.launcher.asset');
 
     expect($route)->not->toBeNull()
-        ->and($route?->uri())->toBe('cms/launcher/{asset}')
+        ->and($route?->uri())->toBe('made-cms/launcher/{asset}')
         ->and($route?->gatherMiddleware())->toBe([]);
 });
 

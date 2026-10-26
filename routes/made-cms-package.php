@@ -11,6 +11,7 @@ use Made\CmsPackage\Http\Controllers\Access\LoginCodeVerifyController;
 use Made\CmsPackage\Http\Controllers\Access\LoginEmailController;
 use Made\CmsPackage\Http\Controllers\Access\LoginLinkConfirmController;
 use Made\CmsPackage\Http\Controllers\Access\LoginLinkController;
+use Made\CmsPackage\Http\Controllers\Access\LoginPageController;
 use Made\CmsPackage\Http\Controllers\Access\LogoutController;
 use Made\CmsPackage\Http\Controllers\Access\PasswordLoginController;
 use Made\CmsPackage\Http\Controllers\Access\SessionController;
@@ -55,6 +56,7 @@ Route::prefix($prefix)
         });
 
         Route::middleware(SetLauncherLocale::class)->group(function (): void {
+            Route::get('/', LoginPageController::class)->name('login');
             Route::get('login/link/{token}', LoginLinkController::class)->name('login.link');
             Route::post('login/link/{token}', LoginLinkConfirmController::class)
                 ->middleware(ThrottleRequests::using('made-cms-package.login'))

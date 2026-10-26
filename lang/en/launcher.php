@@ -97,6 +97,22 @@ return [
         'intro' => 'The site is becoming editable.',
         'intro_secured' => 'Your account now has a second lock. The site is becoming editable.',
         'submit' => 'To the site',
+        'page' => [
+            'intro' => 'We are fetching where you left off.',
+            'intro_secured' => 'Your account now has a second lock. We are fetching where you left off.',
+            'submit' => 'Continue',
+        ],
+    ],
+    'continue' => [
+        'heading' => 'Pick up where you left off?',
+        'intro' => 'This is what you had open last on :site.',
+        'kind' => 'Page',
+        'status' => [
+            'draft' => 'Draft',
+            'live' => 'Live',
+        ],
+        'submit' => 'Continue with :title',
+        'to_site' => 'To the site',
     ],
     'errors' => [
         'email_required' => 'Fill in your e-mail address.',
@@ -135,6 +151,11 @@ return [
             'intro' => 'A link works once, for :minutes minutes. Ask for a new code on the site.',
         ],
         'footer' => 'You are logging in to :site, built by MADE.',
+    ],
+    'page' => [
+        'title' => 'Log in to :site',
+        'footer' => 'You are logging in to :site, built by MADE. Every site has its own door. No access yet? Ask the administrator for an invitation.',
+        'help' => 'Help with logging in',
     ],
     'no_access' => 'No access yet? Ask the administrator for an invitation.',
 ];

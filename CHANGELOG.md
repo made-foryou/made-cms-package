@@ -2,8 +2,13 @@
 
 ## [Unreleased](https://github.com/made-foryou/made-cms-package/compare/v0.1.0...1.x)
 
+### Changed
+
+- The default `routes.prefix` is now `made-cms` (was `cms`): every CMS route, the mail link and the launcher assets moved to `/made-cms/...`.
+
 ### Added
 
+- Login page at `/made-cms` (route `made-cms-package.login`), the second door for a direct link: the same login steps as the panel as a full page, in light and dark mode and on the phone, ending at "Verder waar je was" (static for now). `OpenLoginPage` action decides the step it opens on.
 - Bounded contexts `Access` and `Content` with Actions (`lorisleiva/laravel-actions`), custom Eloquent Builders, Data objects and Events.
 - `IssueLoginCode` action with the `cms_login_codes` table, `LoginCode` model and `LoginCodeIssued` event.
 - `PublishPage` action with the `cms_pages` table, `Page` model, `PageStatus` enum and `PagePublished` event.

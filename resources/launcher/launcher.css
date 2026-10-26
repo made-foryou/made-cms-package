@@ -32,6 +32,7 @@
     --made-balk: #0e2b26;
     --made-mist: #a9b6b1;
     --made-succes-licht: #45a876;
+    --made-status: #1f6b45;
     --font-kop: "Made CMS Nunito", Nunito, "Trebuchet MS", system-ui, sans-serif;
     --font-tekst: "Made CMS Instrument Sans", "Instrument Sans", "Segoe UI", system-ui, sans-serif;
     --ease-uit: cubic-bezier(.2, .8, .2, 1);
@@ -56,6 +57,7 @@
         --made-pil-vlak: #d9a63a;
         --made-pil-tekst: #0e2b26;
         --made-balk: #0a211c;
+        --made-status: #45a876;
     }
 }
 
@@ -766,6 +768,43 @@ h2:focus {
     text-transform: uppercase;
 }
 
+/* Verder waar je was: what the editor had open last, with its state as an outlined pill. */
+
+.pil.draft,
+.pil.live {
+    border: 1.5px solid var(--made-rand-sterk);
+    background: none;
+    color: var(--made-inhoud-zwak);
+}
+
+.pil.live {
+    border-color: var(--made-status);
+    color: var(--made-status);
+}
+
+.keuze-icoon.vlak {
+    border: 0;
+    background: var(--made-pil-vlak);
+    color: var(--made-pil-tekst);
+}
+
+a.keuze,
+a.knop {
+    text-decoration: none;
+}
+
+.knop.secundair {
+    border: 2px solid var(--made-rand-sterk);
+    background: none;
+    color: var(--made-inhoud);
+}
+
+.knop.secundair:hover {
+    border-color: var(--made-inhoud);
+    background: none;
+    color: var(--made-inhoud);
+}
+
 /* Password */
 
 .emailregel {
@@ -1152,9 +1191,9 @@ h2:focus {
     }
 }
 
-/* The page behind the mail link: the panel's content as a page of its own. */
+/* The page behind the mail link and the login page: the panel's content as a page of its own. */
 
-:host([data-view="page"]) .pagina {
+.pagina {
     position: fixed;
     inset: 0;
     display: flex;
@@ -1174,11 +1213,64 @@ h2:focus {
     max-width: 620px;
     min-height: 100%;
     margin: 0 auto;
-    padding: 34px 46px;
+    padding: 34px max(46px, env(safe-area-inset-right, 0px)) max(34px, env(safe-area-inset-bottom, 0px)) max(46px, env(safe-area-inset-left, 0px));
 }
 
-.pagina-inhoud .stap {
+.pagina-inhoud > .stap {
     margin: auto 0;
+}
+
+/* The login page: the head spans the page, the steps sit in a centred column (design 3.1–3.6). */
+:host([data-view="login"]) .pagina-inhoud {
+    max-width: none;
+}
+
+.pagina-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    width: 100%;
+    max-width: 620px;
+    margin: auto;
+}
+
+.pagina-flow > * {
+    flex-shrink: 0;
+}
+
+.voet-pagina {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding-top: 0;
+}
+
+.pagina h2 {
+    font-size: 36px;
+}
+
+.pagina .woordmerk {
+    width: 150px;
+    height: 30px;
+}
+
+.pagina .veld input,
+.pagina .veld input:focus {
+    padding: 17px 20px;
+    font-size: 22px;
+}
+
+.pagina .keuze {
+    padding: 20px 22px;
+}
+
+/* Six boxes, the slash (5 px + 12 px margin) and five gaps of 8 px: shrink before they overflow. */
+.pagina .cijfer {
+    width: min(64px, calc((100% - 57px) / 6));
+    min-width: 0;
+    height: 78px;
+    font-size: 32px;
 }
 
 h1 {
@@ -1189,12 +1281,35 @@ h1 {
 
 @media (max-width: 480px) {
     .pagina-inhoud {
-        padding: 24px;
+        padding: 24px max(24px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
         gap: 26px;
     }
 
-    h1 {
+    h1,
+    .pagina h2 {
         font-size: 32px;
+    }
+
+    .pagina .woordmerk {
+        width: 130px;
+        height: 26px;
+    }
+
+    .pagina .veld input,
+    .pagina .veld input:focus {
+        padding: 16px 18px;
+        font-size: 20px;
+    }
+
+    .pagina .keuze {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .pagina .cijfer {
+        width: min(44px, calc((100% - 57px) / 6));
+        height: 58px;
+        font-size: 24px;
     }
 }
 

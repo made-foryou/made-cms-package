@@ -47,7 +47,7 @@ it('links to the configured site url, never to the host the request came in on',
 
     Notification::assertSentOnDemand(
         LoginCodeNotification::class,
-        fn (LoginCodeNotification $notification): bool => $notification->url === 'https://ttvmerwestad.nl/cms/login/link/'.$issued->linkToken,
+        fn (LoginCodeNotification $notification): bool => $notification->url === 'https://ttvmerwestad.nl/made-cms/login/link/'.$issued->linkToken,
     );
 });
 
@@ -96,7 +96,7 @@ it('renders the mail of the design: greeting, code, button, expiry and where it 
             ->toContain($first)->toContain($second)
             ->toContain('Werkt 10 minuten, tot 11:34.')
             ->toContain('Log direct in op TTV Merwestad')
-            ->toContain('href="https://ttvmerwestad.nl/cms/login/link/'.$issued->linkToken.'"')
+            ->toContain('href="https://ttvmerwestad.nl/made-cms/login/link/'.$issued->linkToken.'"')
             ->toContain('Aangevraagd op 24 oktober om 11:24 vanaf een Mac (Safari).')
             ->toContain('Vroeg jij deze code niet aan?')
             ->toContain('Werkt 10 minuten. Vroeg jij hem niet aan? Negeer deze mail.')
@@ -114,7 +114,7 @@ it('sends a plain text version along', function (): void {
         $text = view($mail->view['text'], $mail->data())->render();
 
         expect($text)->toContain('hier is je inlogcode voor TTV Merwestad: '.substr($issued->code, 0, 3).' '.substr($issued->code, 3))
-            ->toContain('https://ttvmerwestad.nl/cms/login/link/'.$issued->linkToken)
+            ->toContain('https://ttvmerwestad.nl/made-cms/login/link/'.$issued->linkToken)
             ->not->toContain('<');
 
         return true;

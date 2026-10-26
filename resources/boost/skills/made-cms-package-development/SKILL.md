@@ -40,7 +40,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 - editors are CMS accounts of their own (`cms_editors`), separate from the app's users; never point them at `App\Models\User`
 - create one with `php artisan made-cms:editor <email> --name="..."` (empty password = code login only), or `CreateEditor::run(new NewEditor(email: ..., name: ..., password: null))` in a seeder
-- editors log in through the panel the tile opens and the package's own `made-cms` session guard; it never logs anyone in to the app; check a CMS login with `auth('made-cms')->check()`
+- editors log in through the panel the tile opens, or on the login page at `/made-cms` (the `routes.prefix`; link to it from invitation mails with `route('made-cms-package.login')`), both through the package's own `made-cms` session guard; it never logs anyone in to the app; check a CMS login with `auth('made-cms')->check()`
 - set `APP_URL` and `MAIL_FROM_ADDRESS`: the login mail is sent right after the response through the app's mailer, never queued, and its link is built from `APP_URL`
 - use a shared, persistent cache store in production: the login rate limiters live there
 - name a page in the edit bar with `<meta name="made-cms:page" content="...">`; a fixed header can offset itself with the `--made-cms-bar-height` css variable

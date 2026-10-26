@@ -30,10 +30,11 @@ const STEPS = {
     two_factor_setup: 3,
     recovery_codes: 3,
     done: 4,
+    continue: 4,
 };
 
 /* From these steps on the editor is logged in: closing the panel finishes the login instead of cancelling it. */
-const LOGGED_IN_STEPS = new Set(['two_factor_offer', 'two_factor_setup', 'recovery_codes', 'done']);
+const LOGGED_IN_STEPS = new Set(['two_factor_offer', 'two_factor_setup', 'recovery_codes', 'done', 'continue']);
 
 let fontsLoaded = false;
 
@@ -307,7 +308,7 @@ class Digits {
 }
 
 /*
- * The login steps inside the panel (or, later, the login page). It knows nothing about the tile or the edit bar:
+ * The login steps inside the panel or on the login page. It knows nothing about the tile or the edit bar:
  * the launcher passes in what should happen once the editor is logged in and when the flow is finished.
  */
 class LoginFlow {
@@ -426,6 +427,7 @@ class LoginFlow {
             password: 'input[type="password"]',
             recovery: 'input[name="recovery_code"]',
             two_factor_offer: '[data-actie="setup"]',
+            continue: '.keuze',
         }[step] ?? (element.querySelector('.cijfer') ? '.cijfer' : 'h2');
 
         const field = element.querySelector(target) ?? element.querySelector('h2');
@@ -838,6 +840,12 @@ class MadeCmsLauncher extends HTMLElement {
             return;
         }
 
+        if (this.dataset.view === 'login') {
+            this.startPage(root);
+
+            return;
+        }
+
         if (root.querySelector('template[data-step]')) {
             markup = root.innerHTML;
         }
@@ -891,6 +899,35 @@ class MadeCmsLauncher extends HTMLElement {
         } else {
             this.intro();
         }
+    }
+
+    /*
+     * The login page: the same steps as the panel, without tile, dialog or edit bar.
+     * Once logged in, "klaar" leads on to "verder waar je was" instead of the edit bar.
+     */
+    startPage(root) {
+        const config = JSON.parse(root.querySelector('[data-config]')?.textContent ?? '{}');
+
+        this.api = new Api(config.endpoints);
+        this.crossTab = new CrossTab(() => {});
+        this.flow = new LoginFlow(root.querySelector('.pagina-flow'), {
+            api: this.api,
+            texts: config.texts,
+            onLoggedIn: (editor, token, { broadcast = true } = {}) => {
+                shareToken(token);
+
+                if (broadcast) {
+                    this.crossTab.send('login');
+                }
+            },
+            onFinish: () => this.flow.step !== 'continue' && this.flow.go('continue'),
+        });
+
+        this.dataset.ready = '';
+        this.flow.start(this.dataset.start || 'email');
+
+        // A fresh token for this browser, fetched while the editor types; failures are retried by the first request.
+        this.api.session().catch(() => {});
     }
 
     /* Removing an open modal fires no close event, so undo the scroll lock and the Escape listener here. */

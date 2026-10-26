@@ -14,7 +14,7 @@ return [
     */
 
     'routes' => [
-        'prefix' => 'cms',
+        'prefix' => 'made-cms',
         'middleware' => ['web'],
     ],
 

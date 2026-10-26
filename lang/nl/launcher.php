@@ -97,6 +97,22 @@ return [
         'intro' => 'De site wordt bewerkbaar.',
         'intro_secured' => 'Je account heeft nu een tweede slot. De site wordt bewerkbaar.',
         'submit' => 'Naar de site',
+        'page' => [
+            'intro' => 'We halen op waar je gebleven was.',
+            'intro_secured' => 'Je account heeft nu een tweede slot. We halen op waar je gebleven was.',
+            'submit' => 'Verder',
+        ],
+    ],
+    'continue' => [
+        'heading' => 'Verder waar je was?',
+        'intro' => 'Dit had je als laatste open op :site.',
+        'kind' => 'Pagina',
+        'status' => [
+            'draft' => 'Concept',
+            'live' => 'Live',
+        ],
+        'submit' => 'Verder met :title',
+        'to_site' => 'Naar de site',
     ],
     'errors' => [
         'email_required' => 'Vul je e-mailadres in.',
@@ -135,6 +151,11 @@ return [
             'intro' => 'Een link werkt één keer en :minutes minuten lang. Vraag op de site een nieuwe code aan.',
         ],
         'footer' => 'Je logt in bij :site, gebouwd door MADE.',
+    ],
+    'page' => [
+        'title' => 'Inloggen bij :site',
+        'footer' => 'Je logt in bij :site, gebouwd door MADE. Elke site heeft zijn eigen deur. Nog geen toegang? Vraag de beheerder om een uitnodiging.',
+        'help' => 'Hulp bij inloggen',
     ],
     'no_access' => 'Nog geen toegang? Vraag de beheerder om een uitnodiging.',
 ];

@@ -11,7 +11,7 @@ it('logs the editor out and tells the launcher what to show next', function (): 
 
     $this->actingAs($editor, 'made-cms')
         ->withServerVariables(['REMOTE_ADDR' => '203.0.113.5'])
-        ->postJson('cms/logout')
+        ->postJson('made-cms/logout')
         ->assertOk()
         ->assertJsonPath('view', 'tile')
         ->assertJsonPath('csrf_token', session()->token());
@@ -23,14 +23,14 @@ it('logs the editor out and tells the launcher what to show next', function (): 
 it('hides the launcher after logging out from an unknown ip address', function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms')
         ->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
-        ->postJson('cms/logout')
+        ->postJson('made-cms/logout')
         ->assertJsonPath('view', 'hidden');
 });
 
 it('keeps the rest of the session, such as a login to the host site', function (): void {
     session(['host-cart' => ['item']]);
 
-    $this->actingAs(Editor::factory()->create(), 'made-cms')->postJson('cms/logout')->assertOk();
+    $this->actingAs(Editor::factory()->create(), 'made-cms')->postJson('made-cms/logout')->assertOk();
 
     expect(session('host-cart'))->toBe(['item']);
 });
@@ -38,12 +38,12 @@ it('keeps the rest of the session, such as a login to the host site', function (
 it('also works without javascript and goes back to the page', function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms')
         ->from('/over-ons')
-        ->post('cms/logout')
+        ->post('made-cms/logout')
         ->assertRedirect('/over-ons');
 
     expect(auth('made-cms')->check())->toBeFalse();
 });
 
 it('answers a guest without an error', function (): void {
-    $this->postJson('cms/logout')->assertOk()->assertJsonPath('view', 'hidden');
+    $this->postJson('made-cms/logout')->assertOk()->assertJsonPath('view', 'hidden');
 });

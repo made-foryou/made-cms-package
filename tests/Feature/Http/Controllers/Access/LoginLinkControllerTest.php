@@ -22,8 +22,8 @@ beforeEach(function (): void {
  */
 function requestLinkFor(?string $returnTo = null): string
 {
-    test()->postJson('cms/login/email', ['email' => 'menno@made-foryou.nl'])->assertOk();
-    test()->postJson('cms/login/code', ['return_to' => $returnTo])->assertOk();
+    test()->postJson('made-cms/login/email', ['email' => 'menno@made-foryou.nl'])->assertOk();
+    test()->postJson('made-cms/login/code', ['return_to' => $returnTo])->assertOk();
 
     $url = '';
 

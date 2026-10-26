@@ -15,14 +15,14 @@ beforeEach(function (): void {
 
 function startLogin(string $email = 'menno@made-foryou.nl'): void
 {
-    test()->postJson('cms/login/email', ['email' => $email])->assertOk();
+    test()->postJson('made-cms/login/email', ['email' => $email])->assertOk();
 }
 
 it('sends a code to an editor and continues to the code step', function (): void {
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
     startLogin();
 
-    $this->postJson('cms/login/code')
+    $this->postJson('made-cms/login/code')
         ->assertOk()
         ->assertJsonPath('step', 'code')
         ->assertJsonPath('data.email', 'menno@made-foryou.nl')
@@ -39,7 +39,7 @@ it('tells the mail from which browser the code was asked for', function (): void
     startLogin();
 
     $this->withHeader('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Version/18.0 Safari/605.1.15')
-        ->postJson('cms/login/code')
+        ->postJson('made-cms/login/code')
         ->assertOk();
 
     Notification::assertSentOnDemand(
@@ -52,10 +52,10 @@ it('answers an address without an account exactly the same', function (): void {
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
 
     startLogin('menno@made-foryou.nl');
-    $known = $this->postJson('cms/login/code')->json();
+    $known = $this->postJson('made-cms/login/code')->json();
 
     startLogin('iemand@example.com');
-    $unknown = $this->postJson('cms/login/code')->json();
+    $unknown = $this->postJson('made-cms/login/code')->json();
 
     unset($known['csrf_token'], $unknown['csrf_token'], $known['data']['email'], $unknown['data']['email']);
 
@@ -67,7 +67,7 @@ it('remembers a relative page to return to', function (string $returnTo, ?string
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
     startLogin();
 
-    $this->postJson('cms/login/code', ['return_to' => $returnTo])->assertOk();
+    $this->postJson('made-cms/login/code', ['return_to' => $returnTo])->assertOk();
 
     expect(LoginCode::query()->sole()->return_to)->toBe($stored);
 })->with([
@@ -78,7 +78,7 @@ it('remembers a relative page to return to', function (string $returnTo, ?string
 ]);
 
 it('asks to start again when no address was entered in this browser', function (): void {
-    $this->postJson('cms/login/code')
+    $this->postJson('made-cms/login/code')
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['email' => 'Je sessie is verlopen. Begin opnieuw met je e-mailadres.']);
 });
@@ -88,10 +88,10 @@ it('limits the number of codes per address', function (): void {
     startLogin();
 
     foreach (range(1, 3) as $attempt) {
-        $this->postJson('cms/login/code')->assertOk();
+        $this->postJson('made-cms/login/code')->assertOk();
     }
 
-    $this->postJson('cms/login/code')
+    $this->postJson('made-cms/login/code')
         ->assertTooManyRequests()
         ->assertHeader('Retry-After')
         ->assertJsonStructure(['message', 'retry_after']);

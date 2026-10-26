@@ -118,7 +118,12 @@ Keep in mind:
 
 ## Logging in
 
-Editors log in from the panel the tile opens, in three steps:
+Editors log in through one of two doors:
+
+- **from the website:** the panel the tile opens, over the page they are on; once logged in, the page gets the edit bar;
+- **with a direct link:** the login page at `/made-cms` (the `routes.prefix`), for an invitation mail or a bookmark. It opens for every visitor, also without the tile, and follows the visitor's light or dark mode. Once logged in it ends at "Verder waar je was" (still a static example for now). An editor who is already logged in lands there straight away.
+
+Both doors take the same three steps:
 
 1. their e-mail address;
 2. a login code by mail (with a link that logs in the same browser) or their password;
@@ -135,7 +140,9 @@ How it is protected:
 - **Remember me** keeps an editor logged in for `auth.remember_days` (30) days.
 - **Mail** goes out right after the response through your mail configuration, never through the queue, so the plain code is never stored. Set `MAIL_FROM_ADDRESS` and `APP_URL`: the link in the mail is built from `APP_URL`, never from the request. The sender name is "Made CMS" (`mail.from_name`); set `MADE_CMS_HELP_URL` to link to help with logging in. Publish the views (`made-cms-package-views`) to change the mail.
 
-Config keys: `auth.guard`, `auth.remember_days`, `login_code.length`, `login_code.ttl_minutes`, `login_code.max_attempts`, `mail.from_name`, `mail.help_url`, `two_factor.window` and `two_factor.recovery_codes`.
+All CMS routes live under `routes.prefix` (default `made-cms`): the login page, the endpoints the launcher calls, the mail link and the launcher assets.
+
+Config keys: `routes.prefix`, `auth.guard`, `auth.remember_days`, `login_code.length`, `login_code.ttl_minutes`, `login_code.max_attempts`, `mail.from_name`, `mail.help_url`, `two_factor.window` and `two_factor.recovery_codes`.
 
 The edit bar names the page after its `<title>` without the site name. Set a name of your own with:
 

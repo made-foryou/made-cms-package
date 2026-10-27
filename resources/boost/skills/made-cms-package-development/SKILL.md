@@ -39,16 +39,23 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 ### 4. Editors and logging in
 
 - editors are CMS accounts of their own (`cms_editors`), separate from the app's users; never point them at `App\Models\User`
-- create one with `php artisan made-cms:editor <email> --name="..."` (empty password = code login only), or `CreateEditor::run(new NewEditor(email: ..., name: ..., password: null))` in a seeder
+- create one with `php artisan made-cms:editor <email> --name="..." --role=admin` (empty password = code login only; leave `--role` out to pick roles from a list), or `CreateEditor::run(new NewEditor(email: ..., name: ..., password: null, roles: [Role::Admin]))` in a seeder
 - editors log in through the panel the tile opens, or on the login page at `/made-cms` (the `routes.prefix`; link to it from invitation mails with `route('made-cms-package.login')`), both through the package's own `made-cms` session guard; it never logs anyone in to the app; check a CMS login with `auth('made-cms')->check()`
 - set `APP_URL` and `MAIL_FROM_ADDRESS`: the login mail is sent right after the response through the app's mailer, never queued, and its link is built from `APP_URL`
 - use a shared, persistent cache store in production: the login rate limiters live there
 - name a page in the edit bar with `<meta name="made-cms:page" content="...">`; a fixed header can offset itself with the `--made-cms-bar-height` css variable
 
-### 5. Use the actions
+### 5. Roles and screens
+
+- every editor holds at least one fixed role (`Made\CmsPackage\Access\Enums\Role`): `admin` (every screen), `webmaster`, `content-manager`, `seo-specialist`, `owner`; the roles decide which CMS screens (`Screen` enum) the editor opens
+- change roles with `AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [...]))`; it throws `RolesRejected` when the editor making the change may not (only admins and webmasters change roles, only an admin gives or takes `admin`, the last admin keeps it)
+- read access with `ListScreens::run($editor)` or `CheckScreenAccess::run(new ScreenVisit($editor, Screen::Redirects))`, and find editors with `Editor::query()->withRole(Role::Admin)`
+- guard a route of a CMS screen with `->middleware(EnsureScreenAccess::using(Screen::Redirects))`
+
+### 6. Use the actions
 
 - `PublishPage::run($page)` publishes a page; query pages with `Page::query()->published()`
-- listen to `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled` and `PagePublished` for side effects
+- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled` and `PagePublished` for side effects
 
 ## Rules, References, and Templates
 
@@ -60,12 +67,13 @@ Read before executing:
 
 - showing the tile to the office network: add `MADE_CMS_LAUNCHER_IPS=203.0.113.0/24` to the production `.env`
 - a host feature test that snapshots full HTML: disable the launcher in `phpunit.xml` with `<env name="MADE_CMS_LAUNCHER_ENABLED" value="false"/>`
-- a first editor in production: `php artisan made-cms:editor editor@example.com --name="Menno Tempelaar"`
+- a first editor in production: `php artisan made-cms:editor editor@example.com --name="Menno Tempelaar" --role=admin`
 
 ## Anti-patterns
 
 - do not treat the tile's visibility as authorisation; it only hides the door
 - do not add a login form, guard or middleware for editors to the app; the package brings its own
+- do not store roles on the app's users or write `cms_editors.roles` directly; roles change through `AssignRoles` so its rules hold
 - do not queue or log `LoginCodeIssued`: its payload holds the plain code
 - do not put a CDN or response cache in front of pages for allowed visitors without excluding the tile
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

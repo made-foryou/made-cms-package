@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Access\Builders;
 
 use Illuminate\Database\Eloquent\Builder;
+use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 
 /**
@@ -18,6 +19,22 @@ final class EditorBuilder extends Builder
     public function forEmail(string $email): self
     {
         return $this->where('email', mb_strtolower(trim($email)));
+    }
+
+    /**
+     * Editors who hold this role, next to any other roles.
+     */
+    public function withRole(Role $role): self
+    {
+        return $this->whereJsonContains('roles', $role->value);
+    }
+
+    /**
+     * Every editor except this one.
+     */
+    public function otherThan(Editor $editor): self
+    {
+        return $this->whereKeyNot($editor->getKey());
     }
 
     /**

@@ -64,16 +64,19 @@ php artisan vendor:publish --tag="made-cms-package-assets"
 Create an editor account. Editors are CMS accounts of their own (the `cms_editors` table): they live next to the users of your site and never mix with them. Leave the password empty for an editor who only logs in with a code from the mail:
 
 ```bash
-php artisan made-cms:editor editor@example.com --name="Menno Tempelaar"
+php artisan made-cms:editor editor@example.com --name="Menno Tempelaar" --role=admin
 ```
+
+Every editor has at least one role. Pass `--role` once per role, or leave it out to pick them from a list.
 
 Or from code, for example in a seeder:
 
 ```php
 use Made\CmsPackage\Access\Actions\CreateEditor;
 use Made\CmsPackage\Access\Data\NewEditor;
+use Made\CmsPackage\Access\Enums\Role;
 
-CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: null));
+CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: null, roles: [Role::Admin]));
 ```
 
 Publish a page and query pages:
@@ -88,7 +91,51 @@ Page::query()->published()->get();
 Page::query()->recentlyEdited()->limit(3)->get();
 ```
 
-Every write dispatches an event that your application can listen to: `EditorCreated`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled` and `PagePublished`.
+Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled` and `PagePublished`.
+
+## Roles and screens
+
+Every editor holds one or more fixed roles. A role decides which screens of the CMS the editor opens; an editor with several roles opens the screens of all of them.
+
+| Role | Value | Screens |
+|---|---|---|
+| Admin | `admin` | every screen, also screens added later |
+| Webmaster | `webmaster` | pages, news, media, messages, users and roles, forms, backups, log, domain |
+| Content manager | `content-manager` | pages, news, media, messages |
+| SEO specialist | `seo-specialist` | pages, meta tags, alt texts, links, redirects, sitemap, keywords |
+| Owner | `owner` | pages, news, messages |
+
+```php
+use Made\CmsPackage\Access\Actions\AssignRoles;
+use Made\CmsPackage\Access\Actions\CheckScreenAccess;
+use Made\CmsPackage\Access\Actions\ListScreens;
+use Made\CmsPackage\Access\Data\RoleAssignment;
+use Made\CmsPackage\Access\Data\ScreenVisit;
+use Made\CmsPackage\Access\Enums\Role;
+use Made\CmsPackage\Access\Enums\Screen;
+use Made\CmsPackage\Access\Models\Editor;
+
+ListScreens::run($editor);                                      // the screens of all roles, in menu order
+CheckScreenAccess::run(new ScreenVisit($editor, Screen::Redirects));
+Editor::query()->withRole(Role::Admin)->get();
+
+AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [Role::ContentManager, Role::SeoSpecialist]));
+```
+
+`AssignRoles` replaces all roles of an editor and throws `RolesRejected` when the change is not allowed:
+
+- the editor making the change must open the users and roles screen (admins and webmasters);
+- only an admin gives or takes the admin role;
+- the last admin keeps the admin role;
+- every editor keeps at least one role.
+
+The routes of a CMS screen are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
+
+```php
+use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
+
+Route::get('redirects', RedirectsController::class)->middleware(EnsureScreenAccess::using(Screen::Redirects));
+```
 
 ## Launcher
 
@@ -158,7 +205,7 @@ The package is organised per bounded context. Each context holds its own actions
 
 ```
 src/
-├── Access/     editors, login codes, passwords, authenticator apps and remembered devices
+├── Access/     editors, roles and screens, login codes, passwords, authenticator apps and remembered devices
 │   ├── Actions/    write operations, e.g. IssueLoginCode
 │   ├── Builders/   custom Eloquent builders for reading, e.g. LoginCodeBuilder::active()
 │   ├── Data/       immutable data objects

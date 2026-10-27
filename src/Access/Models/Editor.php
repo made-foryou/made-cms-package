@@ -7,10 +7,13 @@ namespace Made\CmsPackage\Access\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
+use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Collection;
 use Made\CmsPackage\Access\Builders\EditorBuilder;
+use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Database\Factories\Access\EditorFactory;
 
 /**
@@ -20,6 +23,7 @@ use Made\CmsPackage\Database\Factories\Access\EditorFactory;
  * @property string $name
  * @property string $email
  * @property string|null $password
+ * @property Collection<int, Role> $roles
  * @property string|null $remember_token
  * @property string|null $two_factor_secret
  * @property list<string>|null $two_factor_recovery_codes sha256 hashes of the unused recovery codes
@@ -43,6 +47,7 @@ class Editor extends Model implements AuthenticatableContract
         'name',
         'email',
         'password',
+        'roles',
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
@@ -63,6 +68,7 @@ class Editor extends Model implements AuthenticatableContract
     {
         return [
             'password' => 'hashed',
+            'roles' => AsEnumCollection::of(Role::class),
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'array',
             'two_factor_confirmed_at' => 'immutable_datetime',

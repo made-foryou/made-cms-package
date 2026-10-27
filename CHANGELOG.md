@@ -4,10 +4,15 @@
 
 ### Changed
 
+- `NewEditor` takes the editor's `roles` (at least one) and `made-cms:editor` gains the `--role` option; without it the command asks for the roles.
 - The default `routes.prefix` is now `made-cms` (was `cms`): every CMS route, the mail link and the launcher assets moved to `/made-cms/...`.
 
 ### Added
 
+- Roles and screens: every editor holds one or more fixed roles (`Role` enum: `admin`, `webmaster`, `content-manager`, `seo-specialist`, `owner`) in the new `roles` column of `cms_editors`. `Role::screens()` grants the screens of the CMS (`Screen` enum, one per menu item); `admin` opens every screen. `ListScreens` lists the screens of an editor, `CheckScreenAccess` decides whether a screen opens, and `EditorBuilder::withRole()` finds the editors with a role.
+- `AssignRoles` action with the `RoleAssignment` data object, the `EditorRolesChanged` event and the `RolesRejected` exception: editors who open the users and roles screen change roles, only an admin gives or takes the admin role, the last admin keeps it and every editor keeps at least one role.
+- `EnsureScreenAccess` middleware for the routes of a CMS screen (`EnsureScreenAccess::using(Screen::Redirects)`): guests go to the login page, editors without a role for the screen get a 403.
+- Dutch and English translations for roles and screens.
 - Login page at `/made-cms` (route `made-cms-package.login`), the second door for a direct link: the same login steps as the panel as a full page, in light and dark mode and on the phone, ending at "Verder waar je was" (static for now). `OpenLoginPage` action decides the step it opens on.
 - Bounded contexts `Access` and `Content` with Actions (`lorisleiva/laravel-actions`), custom Eloquent Builders, Data objects and Events.
 - `IssueLoginCode` action with the `cms_login_codes` table, `LoginCode` model and `LoginCodeIssued` event.

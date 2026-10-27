@@ -25,6 +25,11 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Migrations live in `database/migrations` (`create_cms_*_table`), factories in `database/factories/<Context>/`.
 - Do not use Eloquent class attributes such as `#[Table]` or `#[UseEloquentBuilder]`; Laravel 12.0 is still supported.
 - The CMS has its own editors (`cms_editors`, `Access\Models\Editor`) and its own session guard (`made-cms-package.auth.guard`, default `made-cms`), registered next to the host's guards. It runs beside the host site and never reads or changes the host's users table, guards or login.
+- Editors hold one or more fixed roles (`Access\Enums\Role`, stored in `cms_editors.roles`); `Admin` opens every screen, also screens added later.
+- Which role opens which screen lives only in `Role::screens()`. A new CMS screen is a `Screen` case, granted there, and its route gets `EnsureScreenAccess::using(Screen::X)`.
+- Menus and dashboards list `ListScreens::run($editor)`; hiding a menu item is UI only, the route middleware is the authorisation.
+- Roles change only through `AssignRoles`: the editor making the change needs the `Editors` screen, only an admin gives or takes `Admin`, the last admin keeps it, and every editor has at least one role.
+- `Content` never checks roles; screen access is enforced at the Http boundary.
 - Adding a context: add it to `contexts()` in `tests/Pest.php` and start with one Model and one Action, both tested.
 - Arch tests in `tests/Arch/` enforce these rules; a failing arch test means the code is wrong, not the test.
 - Decisions are business rules too, even without a write (e.g. who sees the launcher): put them in a context Action with a Data object as input. Http only translates the request into that Data.

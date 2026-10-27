@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Database\Factories\Access;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 
 /**
@@ -36,8 +37,19 @@ final class EditorFactory extends Factory
             'name' => fake()->name(),
             'email' => mb_strtolower(fake()->unique()->safeEmail()),
             'password' => self::PASSWORD,
+            'roles' => [Role::ContentManager],
             'remember_token' => Str::random(10),
         ];
+    }
+
+    /**
+     * An editor who holds exactly these roles.
+     */
+    public function withRoles(Role ...$roles): self
+    {
+        return $this->state(fn (): array => [
+            'roles' => array_values($roles),
+        ]);
     }
 
     /**

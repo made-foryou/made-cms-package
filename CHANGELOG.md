@@ -4,6 +4,7 @@
 
 ### Added
 
+- `SaveStripType` writes a strip type to its JSON file, pretty printed in a fixed key order with a `$schema` reference, after checking it by the same rules as reading.
 - `ListStripTypes` reads every strip type of the site from `resources/cms/strips/<key>.json`. Config keys `content.strips_path` and `content.pages_path` move the strip and page folders.
 - Strip types: the kinds of strips the pages of a site are built from, defined as JSON in the host (a `label` and `fields` of the types `text`, `textarea`, `image`, `link` and `list`, a list one level deep), with a JSON Schema for autocomplete in the editor (`resources/schema/strip.json`). `ParseStripType` reads one definition into the `StripType` and `Field` data objects (`FieldType` enum) and refuses a broken one with `InvalidStripType`, naming the field.
 - Start page at `/made-cms/start` (route `made-cms-package.start`) for every logged-in editor (`EnsureEditor` middleware; guests go to the login page): a note of the day, the question what to work on and the four blocks of the design (where you left off, what needs attention, how your site is doing, quick links), in light and dark mode and on the phone. The blocks show the static examples of the design for the editor's role for now and never link to a screen the editor does not open.

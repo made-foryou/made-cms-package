@@ -61,7 +61,7 @@ Route::prefix($prefix)
             Route::post('logout', LogoutController::class)->name('logout');
 
             // The edit mode outlines the strips of the page it is on; only their ids come from the page.
-            Route::get('strips', StripsController::class)
+            Route::get('strips/describe', StripsController::class)
                 ->middleware(EnsureScreenAccess::using(Screen::Pages))
                 ->name('strips');
         });

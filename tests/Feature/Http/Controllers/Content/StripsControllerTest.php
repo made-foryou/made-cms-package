@@ -20,7 +20,7 @@ it('tells the edit mode the type and label of the strips on a page', function ()
     $figures = Strip::factory()->create(['type' => 'cijfers']);
 
     $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->getJson('made-cms/strips?'.http_build_query(['ids' => [$figures->id, $hero->id, 999]]))
+        ->getJson('made-cms/strips/describe?'.http_build_query(['ids' => [$figures->id, $hero->id, 999]]))
         ->assertOk()
         ->assertExactJson(['strips' => [
             ['id' => $hero->id, 'type' => 'hero', 'label' => 'Hero'],
@@ -32,19 +32,19 @@ it('answers every role, because every role opens the pages', function (Role $rol
     $strip = Strip::factory()->create();
 
     $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')
-        ->getJson('made-cms/strips?ids[]='.$strip->id)
+        ->getJson('made-cms/strips/describe?ids[]='.$strip->id)
         ->assertOk();
 })->with(Role::cases());
 
 it('turns a guest away', function (): void {
     $strip = Strip::factory()->create();
 
-    $this->getJson('made-cms/strips?ids[]='.$strip->id)->assertUnauthorized();
+    $this->getJson('made-cms/strips/describe?ids[]='.$strip->id)->assertUnauthorized();
 });
 
 it('refuses a request without valid ids', function (string $query): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->getJson('made-cms/strips'.$query)
+        ->getJson('made-cms/strips/describe'.$query)
         ->assertUnprocessable();
 })->with([
     'no ids' => [''],
@@ -57,7 +57,7 @@ it('is never stored by a cache', function (): void {
     $strip = Strip::factory()->create();
 
     $response = $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->getJson('made-cms/strips?ids[]='.$strip->id);
+        ->getJson('made-cms/strips/describe?ids[]='.$strip->id);
 
     expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
 });

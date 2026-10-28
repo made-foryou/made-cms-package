@@ -865,6 +865,14 @@ class MadeCmsLauncher extends HTMLElement {
             return;
         }
 
+        // A snapshot taken while the edit mode ran (Turbo, bfcache) still holds its outlines, without their handlers.
+        const layer = root.querySelector('.omlijningen');
+
+        if (layer) {
+            layer.replaceChildren();
+            layer.hidden = true;
+        }
+
         if (root.querySelector('template[data-step]')) {
             markup = root.innerHTML;
         }
@@ -1157,10 +1165,22 @@ class MadeCmsLauncher extends HTMLElement {
 
         this.editing ??= import(this.dataset.editScript)
             .then(({ EditMode }) => new EditMode(this.shadowRoot, {
-                describe: (ids) => this.api.strips(ids),
+                describe: (ids) => this.api.strips(ids).catch((error) => {
+                    // The session expired: let the launcher find out what this browser is now.
+                    if (error.status === 401) {
+                        this.reconcile();
+                    }
+
+                    throw error;
+                }),
                 onChange: (state) => this.showStrip(state),
             }))
-            .catch(() => null);
+            .catch((error) => {
+                console.warn('Made CMS: the edit mode could not be loaded.', error);
+                this.editing = null;
+
+                return null;
+            });
 
         const editMode = await this.editing;
 
@@ -1181,7 +1201,12 @@ class MadeCmsLauncher extends HTMLElement {
         holder.hidden = count === 0;
         holder.querySelector('[data-strook-hint]').hidden = selected !== null;
         holder.querySelector('[data-strook-gekozen]').hidden = selected === null;
-        holder.querySelector('[data-strook-label]').textContent = selected?.label ?? '';
+        const label = holder.querySelector('[data-strook-label]');
+        const text = selected?.label ?? '';
+
+        if (label.textContent !== text) {
+            label.textContent = text;
+        }
     }
 
     /* Logging out keeps the page: the bar slides away and the tile (if this visitor gets one) comes back. */

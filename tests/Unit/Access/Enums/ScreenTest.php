@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Routing\Route;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Enums\ScreenGroup;
 
@@ -72,4 +73,14 @@ it('keeps the screens of a group together, in the order of the groups', function
     $groups = array_map(fn (Screen $screen): ScreenGroup => $screen->group(), Screen::cases());
 
     expect(array_values(array_unique($groups, SORT_REGULAR)))->toBe(ScreenGroup::cases());
+});
+
+it('never gives a screen the address of another cms route', function (): void {
+    $screens = array_map(fn (Screen $screen): string => 'made-cms/'.$screen->value, Screen::cases());
+    $others = collect(app('router')->getRoutes()->getRoutes())
+        ->reject(fn (Route $route): bool => str_starts_with((string) $route->getName(), 'made-cms-package.screens.'))
+        ->map(fn (Route $route): string => $route->uri())
+        ->all();
+
+    expect(array_intersect($screens, $others))->toBe([]);
 });

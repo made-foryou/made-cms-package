@@ -204,7 +204,7 @@ or in Vue:
 While the edit bar shows, every element with `data-made-cms-strip` gets an outline with the name of its strip type ("Hero · bewerken").
 
 - **Selecting:** clicking an outline selects the strip and the bar names it. Escape clears the selection.
-- **What the page tells the CMS:** only the strip id. The CMS looks up the type and its label itself (`GET /made-cms/strips`), and only for editors who open the Pages screen.
+- **What the page tells the CMS:** only the strip id. The CMS looks up the type and its label itself (`GET /made-cms/strips/describe`), and only for editors who open the Pages screen.
 - **Following the page:** the outlines keep up with resizes and with pages that Inertia, Livewire or Turbo swap without a reload.
 - **Loading:** the script only loads for logged-in editors. With a Content Security Policy, allow module scripts from your own site (`'self'`, or `'strict-dynamic'` next to the nonce).
 

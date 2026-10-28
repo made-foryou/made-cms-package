@@ -48,7 +48,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Strip types are JSON files in the host (`content.strips_path`, the file name is the key): code, never database rows. Production only reads them (`ListStripTypes`); only `SaveStripType` writes them, and both go through `ParseStripType`.
 - A new field type is a `FieldType` case, handled in `ParseStripType` and `ValidateStripContent`, and added to the enum in `resources/schema/strip.json`.
 - Initial page content lives in `content.pages_path`; `ImportPage` creates a page only when its path does not exist, so content edited in the CMS is never overwritten.
-- A strip on the host page is marked with `data-made-cms-strip="<id>"` and nothing else. The edit mode (`resources/launcher/edit.js`, loaded on demand when the bar shows) asks `GET made-cms/strips` (`DescribeStrips`) for the type and label and never trusts the DOM for more; its outlines live in the launcher's shadow root.
+- A strip on the host page is marked with `data-made-cms-strip="<id>"` and nothing else. The edit mode (`resources/launcher/edit.js`, loaded on demand when the bar shows) asks `GET made-cms/strips/describe` (`DescribeStrips`) for the type and label and never trusts the DOM for more; its outlines live in the launcher's shadow root.
 
 ## Quick Commands
 

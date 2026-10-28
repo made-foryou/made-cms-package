@@ -12,6 +12,16 @@ const STAGGER_START = 120;
 const STAGGER_STEP = 80;
 const SCAN_DELAY = 50;
 
+/* Whether a change of the page added, removed or re-marked a strip; other changes only move outlines. */
+function touchesStrips(record) {
+    if (record.type === 'attributes') {
+        return true;
+    }
+
+    return [...record.addedNodes, ...record.removedNodes].some((node) => node.nodeType === Node.ELEMENT_NODE
+        && (node.hasAttribute(MARKER) || node.querySelector(`[${MARKER}]`) !== null));
+}
+
 export class EditMode {
     /**
      * @param {ShadowRoot} root The launcher's shadow root, holding the outline layer and its template.
@@ -45,15 +55,25 @@ export class EditMode {
         this.layer.hidden = false;
 
         // Inertia, Livewire and Turbo swap parts of the page without a reload: new strips get an outline, gone ones lose it.
-        this.mutations = new MutationObserver(() => this.queueScan());
+        this.mutations = new MutationObserver((records) => {
+            this.schedulePlace();
+
+            if (records.some(touchesStrips)) {
+                this.queueScan();
+            }
+        });
         this.mutations.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: [MARKER] });
 
-        // Outlines sit in page coordinates, so scrolling needs nothing; only a change of layout moves them.
+        // Outlines sit in page coordinates, so scrolling the page itself needs nothing; a change of layout moves them, and
+        // so do scroll containers, transitions and animations (strips can move without resizing), which place them again.
         this.resizes = new ResizeObserver(() => this.schedulePlace());
         this.resizes.observe(document.body);
         this.onLayout = () => this.schedulePlace();
         window.addEventListener('resize', this.onLayout);
         window.addEventListener('load', this.onLayout);
+        document.addEventListener('scroll', this.onLayout, { capture: true, passive: true });
+        document.addEventListener('transitionend', this.onLayout, true);
+        document.addEventListener('animationend', this.onLayout, true);
         document.fonts?.ready.then(this.onLayout);
 
         this.onKey = (event) => {
@@ -76,6 +96,9 @@ export class EditMode {
         this.resizes.disconnect();
         window.removeEventListener('resize', this.onLayout);
         window.removeEventListener('load', this.onLayout);
+        document.removeEventListener('scroll', this.onLayout, { capture: true });
+        document.removeEventListener('transitionend', this.onLayout, true);
+        document.removeEventListener('animationend', this.onLayout, true);
         document.removeEventListener('keydown', this.onKey);
         clearTimeout(this.scanTimer);
 
@@ -107,9 +130,11 @@ export class EditMode {
 
             try {
                 (await this.describe(ids)).forEach((strip) => this.known.set(strip.id, strip));
-            } catch {
-                // No answer: these strips get no outline for now and are asked about again after the next change of the page.
-                ids.forEach((id) => this.asked.delete(id));
+            } catch (error) {
+                // A network or server error is retried after the next change of the page; a refusal (4xx) is not.
+                if (!error?.status || error.status >= 500) {
+                    ids.forEach((id) => this.asked.delete(id));
+                }
             }
         }
 
@@ -163,6 +188,10 @@ export class EditMode {
             if (this.animate) {
                 button.classList.add('in');
                 button.style.animationDelay = `${STAGGER_START + index * STAGGER_STEP}ms`;
+                button.addEventListener('animationend', () => {
+                    button.classList.remove('in');
+                    button.style.animationDelay = '';
+                }, { once: true });
                 index += 1;
             }
 
@@ -179,8 +208,11 @@ export class EditMode {
             }
         });
 
-        // Only the outlines that come with the bar stagger in; strips that appear later show at once.
-        this.animate = false;
+        // Only the outlines that come with the bar stagger in; strips that appear later show at once. A first draw
+        // with nothing to draw keeps the stagger for the outlines that follow.
+        if (index > 0) {
+            this.animate = false;
+        }
 
         if (this.selected && !this.outlines.has(this.selected.id)) {
             this.selected = null;

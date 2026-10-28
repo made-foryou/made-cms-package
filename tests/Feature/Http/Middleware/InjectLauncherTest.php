@@ -283,7 +283,7 @@ it('tells the script where the cms lives, relative to the current host', functio
         'email' => '/made-cms/login/email',
         'verify' => '/made-cms/login/code/verify',
         'logout' => '/made-cms/logout',
-        'strips' => '/made-cms/strips',
+        'strips' => '/made-cms/strips/describe',
     ])->and($config['texts']['steps'])->toBe([1 => 'Stap 1 van 3', 2 => 'Stap 2 van 3', 3 => 'Stap 3 van 3', 4 => 'Ingelogd']);
 });
 
@@ -305,7 +305,7 @@ it('gives the edit mode its script, its outline template and its hint in the bar
         ->get('/')
         ->assertSee('data-edit-script="/made-cms/launcher/edit.js?v=', false)
         ->assertSee('<div class="omlijningen" hidden></div>', false)
-        ->assertSee('<template data-outline><button type="button" class="omlijning" aria-pressed="false"><span class="tab"><span data-label></span> · bewerken</span></button></template>', false)
+        ->assertSee('<template data-outline><button type="button" class="omlijning" aria-pressed="false"><span class="omlijning-tab"><span data-label></span> · bewerken</span></button></template>', false)
         ->assertSee('<span data-strook-hint>Klik op een strook om die te bewerken</span>', false)
         ->assertSee('<span data-strook-gekozen hidden><span data-strook-label></span> geselecteerd</span>', false);
 });

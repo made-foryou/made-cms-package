@@ -599,7 +599,8 @@ h2 {
 
 @media print {
     :host([data-ready]) .plek,
-    :host([data-ready]) .balk {
+    :host([data-ready]) .balk,
+    :host([data-ready]) .omlijningen {
         display: none;
     }
 }
@@ -1211,7 +1212,7 @@ a.knop {
     animation: omlijning-in 240ms var(--ease-uit) both;
 }
 
-.tab {
+.omlijning-tab {
     position: absolute;
     top: -2px;
     left: -2px;

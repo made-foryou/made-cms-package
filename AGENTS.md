@@ -44,6 +44,14 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Login endpoints answer `{step, data, csrf_token}` (`StepResponse`); the server decides the next step and the JSON carries data only. All copy lives in `lang/` and the launcher's step templates, never in JS or JSON.
 - Never reveal whether an address has an account: same answer, same message and (with `Timebox`) same time for unknown addresses; rate limits key on what was typed, never on the account.
 - Secrets (login codes, link tokens, TOTP secrets) are stored hashed or encrypted and only travel in memory; events and notifications that carry them are handled synchronously and never queued.
+- A page is an ordered list of strips (`cms_strips`): `Page::query()->forPath()` finds it, `$page->strips` serialises to `{id, type, content}` for any frontend (Blade, Vue, React, Livewire). Never assume one frontend stack.
+- Strip types are JSON files in the host (`content.strips_path`, the file name is the key): code, never database rows. Production only reads them (`ListStripTypes`); only `SaveStripType` writes them, and both go through `ParseStripType`.
+- A new field type is a `FieldType` case, handled in `ParseStripType` and `ValidateStripContent`, and added to the enum in `resources/schema/strip.json`.
+- Initial page content lives in `content.pages_path`; `ImportPage` creates a page only when its path does not exist, so content edited in the CMS is never overwritten.
+- A page is an ordered list of strips (`cms_strips`): `Page::query()->forPath()` finds it, `$page->strips` serialises to `{id, type, content}` for any frontend (Blade, Vue, React, Livewire). Never assume one frontend stack.
+- Strip types are JSON files in the host (`content.strips_path`, the file name is the key): code, never database rows. Production only reads them (`ListStripTypes`); only `SaveStripType` writes them, and both go through `ParseStripType`.
+- A new field type is a `FieldType` case, handled in `ParseStripType` and `ValidateStripContent`, and added to the enum in `resources/schema/strip.json`.
+- Initial page content lives in `content.pages_path`; `ImportPage` creates a page only when its path does not exist, so content edited in the CMS is never overwritten.
 
 ## Quick Commands
 

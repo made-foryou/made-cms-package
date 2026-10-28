@@ -59,6 +59,13 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - `PublishPage::run($page)` publishes a page; query pages with `Page::query()->published()`
 - listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled` and `PagePublished` for side effects
 
+### 7. Strips (page content)
+
+- strip types are JSON files in `resources/cms/strips/<key>.json` (kebab-case key): a `label` and `fields` of the types `text`, `textarea`, `image`, `link` and `list`; start each file with `"$schema": "../../../vendor/made-foryou/made-cms-package/resources/schema/strip.json"`
+- the initial content of a page goes in `resources/cms/pages/<page>.json` (`path`, `title`, `strips`); run `php artisan made-cms:pages` on every deploy, it only creates pages whose path does not exist yet
+- read a page with `Page::query()->published()->forPath($request->path())->firstOrFail()` and pass `$page->strips` (`{id, type, content}`) to the frontend; render one component per `type`, in Blade, Vue, React or Livewire alike
+- never store strip types in the database and never change them in production: they ship with the components that render them
+
 ## Rules, References, and Templates
 
 Read before executing:

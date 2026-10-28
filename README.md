@@ -93,6 +93,97 @@ Page::query()->recentlyEdited()->limit(3)->get();
 
 Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled` and `PagePublished`.
 
+## Strips
+
+A page is an ordered list of strips: a hero, a row of figures, an about-us section. The strip types of your site live in your application as JSON files, next to the components that render them, so a new field and the code that shows it ship in the same commit. The CMS reads them; editors only change content.
+
+```
+resources/cms/strips/hero.json   one file per strip type; the file name is its key, in kebab-case
+resources/cms/pages/home.json    the initial content of a page
+```
+
+A strip type has a label and fields:
+
+```json
+{
+    "$schema": "../../../vendor/made-foryou/made-cms-package/resources/schema/strip.json",
+    "label": "Hero",
+    "fields": [
+        { "name": "title", "type": "text", "label": "Titel" },
+        { "name": "intro", "type": "textarea", "label": "Introductie" },
+        { "name": "photo", "type": "image", "label": "Foto" },
+        { "name": "buttons", "type": "list", "label": "Knoppen", "fields": [
+            { "name": "link", "type": "link", "label": "Knop" }
+        ] }
+    ]
+}
+```
+
+The `$schema` line gives autocomplete and errors in PhpStorm and VS Code. Field names are written in snake_case. A field holds one of these:
+
+| Type | Content |
+|---|---|
+| `text` | one line of text |
+| `textarea` | several lines of text |
+| `image` | `{"src": "/photos/hall.jpg", "alt": "The sports hall"}` |
+| `link` | `{"label": "Become a member", "url": "/lid-worden"}` |
+| `list` | a list of items, each with the fields of the list (one level deep) |
+
+A page file holds the path, the title and the strips of a page with their content:
+
+```json
+{
+    "$schema": "../../../vendor/made-foryou/made-cms-package/resources/schema/page.json",
+    "path": "/",
+    "title": "Home",
+    "strips": [
+        { "type": "hero", "content": { "title": "TTV Merwestad", "intro": "Since 1982 the place for table tennis." } }
+    ]
+}
+```
+
+Create the pages that do not exist yet. The command never touches a page that already exists, so it is safe to run on every deploy:
+
+```bash
+php artisan made-cms:pages
+```
+
+Read a page with its strips. A strip serialises to `{id, type, content}`, and its content holds every field of its type (empty text, `null` or `[]` when there is no value):
+
+```php
+use Made\CmsPackage\Content\Models\Page;
+
+$page = Page::query()->published()->forPath($request->path())->firstOrFail();
+```
+
+Render one component per strip type, whatever your frontend is. With Blade:
+
+```blade
+@foreach ($page->strips as $strip)
+    @include('strips.'.$strip->type, ['content' => $strip->content])
+@endforeach
+```
+
+With Inertia, pass the strips as a prop (`Inertia::render('page', ['strips' => $page->strips])`) and map the type to a component, in React:
+
+```tsx
+const components = { hero: Hero, cijfers: Figures };
+
+{strips.map((strip) => {
+    const Strip = components[strip.type];
+
+    return Strip ? <Strip key={strip.id} {...strip.content} /> : null;
+})}
+```
+
+or in Vue:
+
+```vue
+<component v-for="strip in strips" :key="strip.id" :is="components[strip.type]" v-bind="strip.content" />
+```
+
+The folders move with the config keys `content.strips_path` and `content.pages_path`.
+
 ## Roles and screens
 
 Every editor holds one or more fixed roles. A role decides which screens of the CMS the editor opens; an editor with several roles opens the screens of all of them.
@@ -219,7 +310,7 @@ src/
 │   ├── Data/       immutable data objects
 │   ├── Events/
 │   └── Models/     plain table representations
-├── Content/    pages, blocks and publishing
+├── Content/    pages, their strips, strip types and publishing
 │   └── ...
 ├── Console/    technical layer: artisan commands
 ├── Http/       technical layer: middleware (the launcher), controllers grouped per context, the login session

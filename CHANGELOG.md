@@ -4,6 +4,7 @@
 
 ### Added
 
+- `made-cms:pages` command: creates the pages of the page files that the site does not have yet, safe to run on every deploy, with Dutch and English output.
 - `ImportPage` creates a published page with its strips from a page file, only when the site has no page at that path yet, and checks every strip before it writes anything.
 - Page files: the initial content of a page in `resources/cms/pages/<page>.json` (`path`, `title` and its `strips` with their content), with a JSON Schema (`resources/schema/page.json`). `ListPageImports` reads them into the `PageImport` and `StripImport` data objects and refuses a broken file with `InvalidPageImport`.
 - `ValidateStripContent` checks the content of a strip against its type, fills fields without a value with an empty value and refuses what does not fit with `InvalidStripContent`, naming the field.

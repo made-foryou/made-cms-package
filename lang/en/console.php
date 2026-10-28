@@ -13,4 +13,10 @@ return [
         'exists' => 'An account for :email already exists.',
         'created' => 'Account for :email created.',
     ],
+    'pages' => [
+        'none' => 'No page files found in :folder.',
+        'created' => 'created with :count strip|created with :count strips',
+        'skipped' => 'already exists, skipped',
+        'failed' => ':path was not created: :reason',
+    ],
 ];

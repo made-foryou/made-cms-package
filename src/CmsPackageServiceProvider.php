@@ -15,6 +15,7 @@ use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
+use Made\CmsPackage\Console\Commands\ImportPagesCommand;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Session\LoginSession;
@@ -64,6 +65,7 @@ class CmsPackageServiceProvider extends ServiceProvider
 
         $this->commands([
             CreateEditorCommand::class,
+            ImportPagesCommand::class,
         ]);
 
         $this->publishes([

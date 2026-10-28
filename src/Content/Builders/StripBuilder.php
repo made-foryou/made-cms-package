@@ -12,4 +12,15 @@ use Made\CmsPackage\Content\Models\Strip;
  *
  * @extends Builder<Strip>
  */
-final class StripBuilder extends Builder {}
+final class StripBuilder extends Builder
+{
+    /**
+     * The strips with these ids, in the order of their ids; an id without a strip is left out.
+     *
+     * @param  list<int>  $ids
+     */
+    public function forIds(array $ids): self
+    {
+        return $this->whereKey($ids)->orderBy('id');
+    }
+}

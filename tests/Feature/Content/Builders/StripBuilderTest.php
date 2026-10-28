@@ -19,6 +19,14 @@ it('gives a page its strips in the order they show', function (): void {
     expect($page->strips->modelKeys())->toBe([$first->id, $second->id]);
 });
 
+it('finds the strips with the given ids, in the order of their ids', function (): void {
+    $first = Strip::factory()->create();
+    Strip::factory()->create();
+    $third = Strip::factory()->create();
+
+    expect(Strip::query()->forIds([$third->id, $first->id, 999])->pluck('id')->all())->toBe([$first->id, $third->id]);
+});
+
 it('serialises a strip to its id, type and content only', function (): void {
     $strip = Strip::factory()->create(['type' => 'hero', 'content' => ['title' => 'TTV Merwestad']]);
 

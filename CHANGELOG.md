@@ -4,6 +4,7 @@
 
 ### Added
 
+- `DescribeStrips` tells the edit mode the type and the label of the strips it found on a page (`StripLookup` and `StripDescription` data objects, `StripBuilder::forIds()`). A strip type without a valid definition keeps its key as label, and a broken definition file is reported instead of hiding every outline.
 - `made-cms:pages` command: creates the pages of the page files that the site does not have yet, safe to run on every deploy, with Dutch and English output.
 - `ImportPage` creates a published page with its strips from a page file, only when the site has no page at that path yet, and checks every strip before it writes anything, and dispatches `PagePublished` for the new page.
 - Page files: the initial content of a page in `resources/cms/pages/<page>.json` (`path`, `title` and its `strips` with their content), with a JSON Schema (`resources/schema/page.json`). `ListPageImports` reads them into the `PageImport` and `StripImport` data objects and refuses a broken file with `InvalidPageImport`.

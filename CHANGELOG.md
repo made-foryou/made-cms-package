@@ -4,6 +4,7 @@
 
 ### Added
 
+- `ValidateStripContent` checks the content of a strip against its type, fills fields without a value with an empty value and refuses what does not fit with `InvalidStripContent`, naming the field.
 - Pages are found by their `path` (`cms_pages.path`, unique; `PageBuilder::forPath()` treats `lid-worden`, `/lid-worden` and `/lid-worden/` as the same page) and hold their strips in order: the `cms_strips` table and `Strip` model (`Page::strips()`), each strip with its type and content, serialised to `{id, type, content}`.
 - `SaveStripType` writes a strip type to its JSON file, pretty printed in a fixed key order with a `$schema` reference, after checking it by the same rules as reading.
 - `ListStripTypes` reads every strip type of the site from `resources/cms/strips/<key>.json`. Config keys `content.strips_path` and `content.pages_path` move the strip and page folders.

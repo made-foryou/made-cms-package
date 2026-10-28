@@ -64,3 +64,8 @@ it('refuses content that does not fit the strip type', function (mixed $content,
     'a list as an object' => [['buttons' => ['link' => ['label' => 'Lid worden', 'url' => '#']]], 'is invalid at [buttons]: expected a list of items'],
     'a broken link in a list' => [['buttons' => [['link' => 'Lid worden']]], 'is invalid at [buttons.0.link]: expected {label, url}'],
 ]);
+
+it('treats an empty image or link like no image or link', function (): void {
+    expect(ValidateStripContent::run($this->hero, ['photo' => [], 'buttons' => [['link' => []]]]))
+        ->toMatchArray(['photo' => null, 'buttons' => [['link' => null]]]);
+});

@@ -88,7 +88,7 @@ final class ValidateStripContent
      */
     private function pair(string $type, mixed $value, string $path, array $keys): ?array
     {
-        if ($value === null) {
+        if ($value === null || $value === []) {
             return null;
         }
 

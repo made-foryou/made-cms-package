@@ -8,9 +8,11 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageImport;
 use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Events\PagePublished;
 use Made\CmsPackage\Content\Exceptions\InvalidStripContent;
 use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Support\PagePath;
 
 /**
  * Creates a page with its strips from its page file, unless the site already has a page at that path:
@@ -28,7 +30,9 @@ final class ImportPage
      */
     public function handle(PageImport $import): bool
     {
-        if (Page::query()->forPath($import->path)->exists()) {
+        $path = PagePath::normalise($import->path);
+
+        if (Page::query()->forPath($path)->exists()) {
             return false;
         }
 
@@ -45,16 +49,20 @@ final class ImportPage
             ];
         }
 
-        DB::transaction(function () use ($import, $strips): void {
+        $page = DB::transaction(function () use ($import, $path, $strips): Page {
             $page = Page::query()->create([
                 'title' => $import->title,
-                'path' => $import->path,
+                'path' => $path,
                 'status' => PageStatus::Published,
                 'published_at' => now(),
             ]);
 
             $page->strips()->createMany($strips);
+
+            return $page;
         });
+
+        PagePublished::dispatch($page);
 
         return true;
     }

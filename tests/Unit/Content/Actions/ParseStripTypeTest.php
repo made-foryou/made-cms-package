@@ -36,6 +36,10 @@ it('refuses a definition that breaks a rule', function (string $key, mixed $defi
     expect(fn () => ParseStripType::run($key, $definition))->toThrow(InvalidStripType::class, $message);
 })->with([
     'a key that is not kebab-case' => ['Over_Ons', ['label' => 'Over ons', 'fields' => []], 'Strip type [Over_Ons] is invalid: the key is not written in kebab-case'],
+    'a key with a trailing newline' => ["hero\n", ['label' => 'Hero', 'fields' => []], 'the key is not written in kebab-case'],
+    'a name with a trailing newline' => ['hero', ['label' => 'Hero', 'fields' => [['name' => "title\n", 'type' => 'text', 'label' => 'Titel']]], 'every field needs a name in snake_case'],
+    'an unknown key in a field' => ['hero', ['label' => 'Hero', 'fields' => [['name' => 'title', 'type' => 'text', 'label' => 'Titel', 'help' => 'x']]], 'field [title] has an unknown key [help]'],
+    'a name used twice in a list' => ['hero', ['label' => 'Hero', 'fields' => [['name' => 'items', 'type' => 'list', 'label' => 'Items', 'fields' => [['name' => 'text', 'type' => 'text', 'label' => 'Tekst'], ['name' => 'text', 'type' => 'textarea', 'label' => 'Tekst']]]]], 'field [items.text] appears twice'],
     'a path as key' => ['../evil', ['label' => 'Evil', 'fields' => []], 'the key is not written in kebab-case'],
     'not an object' => ['hero', 'Hero', 'Strip type [hero] is invalid: the definition is not an object'],
     'an unknown key' => ['hero', ['label' => 'Hero', 'fields' => [], 'feilds' => []], 'the definition has an unknown key [feilds]'],

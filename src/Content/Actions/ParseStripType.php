@@ -18,9 +18,9 @@ final class ParseStripType
 {
     use AsAction;
 
-    private const string KEY = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
+    private const string KEY = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/D';
 
-    private const string NAME = '/^[a-z][a-z0-9_]*$/';
+    private const string NAME = '/^[a-z][a-z0-9_]*$/D';
 
     /**
      * @throws InvalidStripType

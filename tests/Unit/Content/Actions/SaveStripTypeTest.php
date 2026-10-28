@@ -76,3 +76,10 @@ it('refuses a strip type that would not read back', function (): void {
 
     expect(fn () => SaveStripType::run($type))->toThrow(InvalidStripType::class, 'field [items] needs at least one field');
 });
+
+it('refuses a key with a trailing newline and writes nothing', function (): void {
+    expect(fn () => SaveStripType::run(new StripType(key: "hero\n", label: 'Hero', fields: [])))
+        ->toThrow(InvalidStripType::class);
+
+    expect(File::files($this->content.'/strips'))->toBe([]);
+});

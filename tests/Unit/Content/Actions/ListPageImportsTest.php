@@ -67,3 +67,9 @@ it('refuses a page file that breaks a rule', function (string $json, string $mes
     'a strip without type' => ['{"path": "/x", "title": "X", "strips": [{"content": {}}]}', 'strip 0 needs a type, with only its content next to it'],
     'content as text' => ['{"path": "/x", "title": "X", "strips": [{"type": "hero", "content": "TTV"}]}', 'the content of strip 0 must be an object'],
 ]);
+
+it('reads a page file with a schema key', function (): void {
+    File::put($this->content.'/pages/lid-worden.json', '{"$schema": "../../../vendor/made-foryou/made-cms-package/resources/schema/page.json", "path": "/lid-worden", "title": "Lid worden", "strips": []}');
+
+    expect(array_map(fn (PageImport $page): string => $page->path, ListPageImports::run()))->toContain('/lid-worden');
+});

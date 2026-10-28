@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Made\CmsPackage\Content\Actions\ImportPage;
 use Made\CmsPackage\Content\Data\PageImport;
 use Made\CmsPackage\Content\Data\StripImport;
 use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Events\PagePublished;
 use Made\CmsPackage\Content\Exceptions\InvalidStripContent;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Strip;
@@ -78,4 +80,36 @@ it('refuses content that does not fit its strip type, without creating anything'
     ])))->toThrow(InvalidStripContent::class, 'Content of strip type [cijfers] is invalid at [items]: expected a list of items');
 
     expect(Page::query()->count())->toBe(0);
+});
+
+it('stores the path the way the site asks for it', function (): void {
+    ImportPage::run(new PageImport(path: '/lid-worden/', title: 'Lid worden', strips: []));
+
+    expect(Page::query()->forPath('lid-worden')->sole()->path)->toBe('/lid-worden');
+});
+
+it('dispatches PagePublished for the created page', function (): void {
+    Event::fake([PagePublished::class]);
+
+    ImportPage::run(new PageImport(path: '/', title: 'Home', strips: []));
+
+    Event::assertDispatched(PagePublished::class, fn (PagePublished $event): bool => $event->page->path === '/');
+});
+
+it('dispatches nothing for a skipped page', function (): void {
+    Page::factory()->create(['path' => '/']);
+    Event::fake([PagePublished::class]);
+
+    ImportPage::run(new PageImport(path: '/', title: 'Home', strips: []));
+
+    Event::assertNotDispatched(PagePublished::class);
+});
+
+it('dispatches nothing for a refused import', function (): void {
+    Event::fake([PagePublished::class]);
+
+    expect(fn () => ImportPage::run(new PageImport(path: '/', title: 'Home', strips: [new StripImport(type: 'teams')])))
+        ->toThrow(InvalidStripContent::class);
+
+    Event::assertNotDispatched(PagePublished::class);
 });

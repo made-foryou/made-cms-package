@@ -64,6 +64,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - strip types are JSON files in `resources/cms/strips/<key>.json` (kebab-case key): a `label` and `fields` of the types `text`, `textarea`, `image`, `link` and `list`; start each file with `"$schema": "../../../vendor/made-foryou/made-cms-package/resources/schema/strip.json"`
 - the initial content of a page goes in `resources/cms/pages/<page>.json` (`path`, `title`, `strips`); run `php artisan made-cms:pages` on every deploy, it only creates pages whose path does not exist yet
 - read a page with `Page::query()->published()->forPath($request->decodedPath())->firstOrFail()` and pass `$page->strips` (`{id, type, content}`) to the frontend; render one component per `type`, in Blade, Vue, React or Livewire alike
+- put the strip id on the outermost element of every strip component, `data-made-cms-strip="{{ $strip->id }}"` in Blade or `data-made-cms-strip={strip.id}` in JSX and Vue: the edit bar outlines those elements for editors
 - never store strip types in the database and never change them in production: they ship with the components that render them
 
 ## Rules, References, and Templates

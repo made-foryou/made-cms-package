@@ -158,12 +158,19 @@ use Made\CmsPackage\Content\Models\Page;
 $page = Page::query()->published()->forPath($request->decodedPath())->firstOrFail();
 ```
 
-Render one component per strip type, whatever your frontend is. With Blade:
+Render one component per strip type, whatever your frontend is, and put the strip id on its outermost element with `data-made-cms-strip`; that attribute is all the edit mode needs (see below). With Blade:
 
 ```blade
 @foreach ($page->strips as $strip)
-    @includeIf('strips.'.$strip->type, ['content' => $strip->content])
+    @includeIf('strips.'.$strip->type, ['strip' => $strip, 'content' => $strip->content])
 @endforeach
+```
+
+```blade
+{{-- resources/views/strips/hero.blade.php --}}
+<section data-made-cms-strip="{{ $strip->id }}">
+    <h1>{{ $content['title'] }}</h1>
+</section>
 ```
 
 With Inertia, pass the strips as a prop (`Inertia::render('page', ['strips' => $page->strips])`) and map the type to a component, in React:
@@ -174,15 +181,32 @@ const components = { hero: Hero, cijfers: Figures };
 {strips.map((strip) => {
     const Strip = components[strip.type];
 
-    return Strip ? <Strip key={strip.id} {...strip.content} /> : null;
+    return Strip ? <Strip key={strip.id} strip={strip.id} {...strip.content} /> : null;
 })}
+
+// Hero.tsx
+export function Hero({ strip, title }) {
+    return <section data-made-cms-strip={strip}><h1>{title}</h1></section>;
+}
 ```
 
 or in Vue:
 
 ```vue
-<component v-for="strip in strips" :key="strip.id" :is="components[strip.type]" v-bind="strip.content" />
+<component v-for="strip in strips" :key="strip.id" :is="components[strip.type]" :strip="strip.id" v-bind="strip.content" />
+
+<!-- Hero.vue -->
+<section :data-made-cms-strip="strip"><h1>{{ title }}</h1></section>
 ```
+
+### Edit mode
+
+While the edit bar shows, every element with `data-made-cms-strip` gets an outline with the name of its strip type ("Hero · bewerken").
+
+- **Selecting:** clicking an outline selects the strip and the bar names it. Escape clears the selection.
+- **What the page tells the CMS:** only the strip id. The CMS looks up the type and its label itself (`GET /made-cms/strips`), and only for editors who open the Pages screen.
+- **Following the page:** the outlines keep up with resizes and with pages that Inertia, Livewire or Turbo swap without a reload.
+- **Loading:** the script only loads for logged-in editors. With a Content Security Policy, allow module scripts from your own site (`'self'`, or `'strict-dynamic'` next to the nonce).
 
 The folders move with the config keys `content.strips_path` and `content.pages_path`.
 

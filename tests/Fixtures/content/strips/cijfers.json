@@ -1,0 +1,9 @@
+{
+    "label": "Cijfers",
+    "fields": [
+        { "name": "items", "type": "list", "label": "Cijfers", "fields": [
+            { "name": "value", "type": "text", "label": "Waarde" },
+            { "name": "label", "type": "text", "label": "Omschrijving" }
+        ] }
+    ]
+}

@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Made\CmsPackage\Tests\TestCase;
 
 /*
@@ -76,4 +78,31 @@ function contextClasses(string $layer): array
     }
 
     return $classes;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Content folders
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Points the strip and page folders of the content config at a fresh temporary folder, filled with the example
+ * host files of tests/Fixtures/content unless $empty. Returns the root; delete it in afterEach.
+ */
+function useContentFolders(bool $empty = false): string
+{
+    $root = sys_get_temp_dir().'/made-cms-content-'.Str::random(12);
+
+    File::ensureDirectoryExists("{$root}/strips");
+    File::ensureDirectoryExists("{$root}/pages");
+
+    if (! $empty) {
+        File::copyDirectory(__DIR__.'/Fixtures/content', $root);
+    }
+
+    config()->set('made-cms-package.content.strips_path', "{$root}/strips");
+    config()->set('made-cms-package.content.pages_path', "{$root}/pages");
+
+    return $root;
 }

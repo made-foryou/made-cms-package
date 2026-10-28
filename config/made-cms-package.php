@@ -105,4 +105,21 @@ return [
         'except' => ['nova*', 'telescope*', 'horizon*', 'pulse*'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Content
+    |--------------------------------------------------------------------------
+    |
+    | The strip types a site is built from live in the host as JSON files,
+    | one per type, next to the code that renders them: production only
+    | reads them. pages_path holds the initial content of the pages;
+    | `php artisan made-cms:pages` creates the pages that do not exist yet.
+    |
+    */
+
+    'content' => [
+        'strips_path' => resource_path('cms/strips'),
+        'pages_path' => resource_path('cms/pages'),
+    ],
+
 ];

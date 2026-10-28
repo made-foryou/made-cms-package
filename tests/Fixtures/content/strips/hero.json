@@ -1,0 +1,12 @@
+{
+    "label": "Hero",
+    "fields": [
+        { "name": "eyebrow", "type": "text", "label": "Bovenregel" },
+        { "name": "title", "type": "text", "label": "Titel" },
+        { "name": "intro", "type": "textarea", "label": "Introductie" },
+        { "name": "photo", "type": "image", "label": "Foto" },
+        { "name": "buttons", "type": "list", "label": "Knoppen", "fields": [
+            { "name": "link", "type": "link", "label": "Knop" }
+        ] }
+    ]
+}

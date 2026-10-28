@@ -48,10 +48,6 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Strip types are JSON files in the host (`content.strips_path`, the file name is the key): code, never database rows. Production only reads them (`ListStripTypes`); only `SaveStripType` writes them, and both go through `ParseStripType`.
 - A new field type is a `FieldType` case, handled in `ParseStripType` and `ValidateStripContent`, and added to the enum in `resources/schema/strip.json`.
 - Initial page content lives in `content.pages_path`; `ImportPage` creates a page only when its path does not exist, so content edited in the CMS is never overwritten.
-- A page is an ordered list of strips (`cms_strips`): `Page::query()->forPath()` finds it, `$page->strips` serialises to `{id, type, content}` for any frontend (Blade, Vue, React, Livewire). Never assume one frontend stack.
-- Strip types are JSON files in the host (`content.strips_path`, the file name is the key): code, never database rows. Production only reads them (`ListStripTypes`); only `SaveStripType` writes them, and both go through `ParseStripType`.
-- A new field type is a `FieldType` case, handled in `ParseStripType` and `ValidateStripContent`, and added to the enum in `resources/schema/strip.json`.
-- Initial page content lives in `content.pages_path`; `ImportPage` creates a page only when its path does not exist, so content edited in the CMS is never overwritten.
 
 ## Quick Commands
 

@@ -1,0 +1,25 @@
+{
+    "path": "/",
+    "title": "Home",
+    "strips": [
+        {
+            "type": "hero",
+            "content": {
+                "eyebrow": "Tafeltennisvereniging in Dordrecht",
+                "title": "TTV Merwestad",
+                "intro": "Sinds 1982 dé plek voor tafeltennissers van alle niveaus.",
+                "photo": { "src": "/photos/hal.jpg", "alt": "De sporthal" },
+                "buttons": [ { "link": { "label": "Lid worden", "url": "#lid-worden" } } ]
+            }
+        },
+        {
+            "type": "cijfers",
+            "content": {
+                "items": [
+                    { "value": "60+", "label": "Jaar actief" },
+                    { "value": "35+", "label": "Leden" }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Made CMS page",
+    "description": "The initial content of a page: its path, its title and its strips in order. `php artisan made-cms:pages` creates the page when the site has no page at that path yet.",
+    "type": "object",
+    "required": ["path", "title", "strips"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": { "type": "string" },
+        "path": { "type": "string", "pattern": "^/", "description": "The path of the page on the site, e.g. \"/\" or \"/lid-worden\"." },
+        "title": { "type": "string", "minLength": 1 },
+        "strips": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["type"],
+                "additionalProperties": false,
+                "properties": {
+                    "type": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "description": "The key of a strip type in resources/cms/strips." },
+                    "content": { "type": "object", "description": "The values of the fields of the strip type." }
+                }
+            }
+        }
+    }
+}

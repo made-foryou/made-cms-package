@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Launcher;
 
 /**
- * The CMS urls the launcher script calls, without scheme and host and with the base path of apps in a subdirectory.
+ * The CMS urls the launcher script calls or links to, without scheme and host and with the base path of apps in a subdirectory.
  */
 final class Endpoints
 {
@@ -19,6 +19,7 @@ final class Endpoints
         'setup' => 'made-cms-package.two-factor.setup',
         'confirm' => 'made-cms-package.two-factor.confirm',
         'logout' => 'made-cms-package.logout',
+        'start' => 'made-cms-package.start',
     ];
 
     /**

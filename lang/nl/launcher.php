@@ -113,6 +113,7 @@ return [
         ],
         'submit' => 'Verder met :title',
         'to_site' => 'Naar de site',
+        'to_start' => 'Naar de startpagina',
     ],
     'errors' => [
         'email_required' => 'Vul je e-mailadres in.',
@@ -130,6 +131,7 @@ return [
     ],
     'bar' => [
         'label' => 'Made CMS bewerkbalk',
+        'start' => 'Startpagina',
         'logout' => 'Uitloggen',
         'home' => 'Home',
         'editor' => 'Ingelogd als :name',

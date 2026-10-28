@@ -113,6 +113,7 @@ return [
         ],
         'submit' => 'Continue with :title',
         'to_site' => 'To the site',
+        'to_start' => 'To the start page',
     ],
     'errors' => [
         'email_required' => 'Fill in your e-mail address.',
@@ -130,6 +131,7 @@ return [
     ],
     'bar' => [
         'label' => 'Made CMS edit bar',
+        'start' => 'Start page',
         'logout' => 'Log out',
         'home' => 'Home',
         'editor' => 'Logged in as :name',

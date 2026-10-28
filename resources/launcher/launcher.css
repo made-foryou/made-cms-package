@@ -684,6 +684,10 @@ h2:focus {
     font-size: 14px;
 }
 
+.stap > .tekstlink {
+    align-self: flex-start;
+}
+
 .tekstlink:focus-visible,
 .keuze:focus-visible,
 .cijfer:focus-visible,

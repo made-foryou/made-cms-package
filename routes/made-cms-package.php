@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Http\Middleware\SetCacheHeaders;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
+use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Controllers\Access\LoginCodeController;
 use Made\CmsPackage\Http\Controllers\Access\LoginCodeVerifyController;
@@ -15,9 +16,13 @@ use Made\CmsPackage\Http\Controllers\Access\LoginPageController;
 use Made\CmsPackage\Http\Controllers\Access\LogoutController;
 use Made\CmsPackage\Http\Controllers\Access\PasswordLoginController;
 use Made\CmsPackage\Http\Controllers\Access\SessionController;
+use Made\CmsPackage\Http\Controllers\Access\StartPageController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorConfirmController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
+use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
+use Made\CmsPackage\Http\Middleware\EnsureEditor;
+use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
 
 /** @var string $prefix */
@@ -61,6 +66,16 @@ Route::prefix($prefix)
             Route::post('login/link/{token}', LoginLinkConfirmController::class)
                 ->middleware(ThrottleRequests::using('made-cms-package.login'))
                 ->name('login.link.confirm');
+
+            Route::get('start', StartPageController::class)->middleware(EnsureEditor::class)->name('start');
+
+            // Every screen opens at its own address; until a screen is built, it shows that it is coming.
+            foreach (Screen::cases() as $screen) {
+                Route::get($screen->value, UpcomingScreenController::class)
+                    ->middleware(EnsureScreenAccess::using($screen))
+                    ->defaults('screen', $screen->value)
+                    ->name('screens.'.$screen->value);
+            }
         });
     });
 

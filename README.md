@@ -129,13 +129,21 @@ AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [Role::C
 - the last admin keeps the admin role;
 - every editor keeps at least one role.
 
-The routes of a CMS screen are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
+In the menu the screens sit in four groups, in this order: your site (pages), collections (news, media, messages), findability (meta tags, alt texts, links, redirects, sitemap, keywords) and management (users and roles, forms, backups, log, domain). `Screen::group()` gives the `ScreenGroup` of a screen.
+
+Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). Until a screen is built, it shows that it is coming. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
 
 ```php
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 
 Route::get('redirects', RedirectsController::class)->middleware(EnsureScreenAccess::using(Screen::Redirects));
 ```
+
+## Start page
+
+Once logged in, editors start at `/made-cms/start` (named `made-cms-package.start`): a short note of the day, the question what they want to work on, and four blocks that are the same for every role: where you left off, what needs attention, how your site is doing and quick links. The menu behind the button in the top-left corner lists the screens of the editor's roles, grouped as above; it peeks open once and then stays as the editor left it. The page follows the editor's light or dark mode.
+
+The blocks still show the static examples of the design for the editor's role (an admin or an editor with several roles gets the combined example). They never link to a screen the editor does not open. Guests are sent to the login page.
 
 ## Launcher
 
@@ -168,7 +176,7 @@ Keep in mind:
 Editors log in through one of two doors:
 
 - **from the website:** the panel the tile opens, over the page they are on; once logged in, the page gets the edit bar;
-- **with a direct link:** the login page at `/made-cms` (the `routes.prefix`), for an invitation mail or a bookmark. It opens for every visitor, also without the tile, and follows the visitor's light or dark mode. Once logged in it ends at "Verder waar je was" (still a static example for now). An editor who is already logged in lands there straight away.
+- **with a direct link:** the login page at `/made-cms` (the `routes.prefix`), for an invitation mail or a bookmark. It opens for every visitor, also without the tile, and follows the visitor's light or dark mode. Once logged in it ends at "Verder waar je was" (still a static example for now), with a link to the start page. An editor who is already logged in lands there straight away.
 
 Both doors take the same three steps:
 
@@ -176,7 +184,7 @@ Both doors take the same three steps:
 2. a login code by mail (with a link that logs in the same browser) or their password;
 3. the code from the mail, or after a password the code from their authenticator app when they added one.
 
-After a password login without an authenticator app, the panel offers to add one: scan a QR code, confirm a code and save the recovery codes. Once logged in, the page gets an edit bar with the name of the page and a logout button.
+After a password login without an authenticator app, the panel offers to add one: scan a QR code, confirm a code and save the recovery codes. Once logged in, the page gets an edit bar with the name of the page, a link to the start page and a logout button.
 
 How it is protected:
 
@@ -187,7 +195,7 @@ How it is protected:
 - **Remember me** keeps an editor logged in for `auth.remember_days` (30) days.
 - **Mail** goes out right after the response through your mail configuration, never through the queue, so the plain code is never stored. Set `MAIL_FROM_ADDRESS` and `APP_URL`: the link in the mail is built from `APP_URL`, never from the request. The sender name is "Made CMS" (`mail.from_name`); set `MADE_CMS_HELP_URL` to link to help with logging in. Publish the views (`made-cms-package-views`) to change the mail.
 
-All CMS routes live under `routes.prefix` (default `made-cms`): the login page, the endpoints the launcher calls, the mail link and the launcher assets.
+All CMS routes live under `routes.prefix` (default `made-cms`): the login page, the start page, the screens, the endpoints the launcher calls, the mail link and the launcher assets.
 
 Config keys: `routes.prefix`, `auth.guard`, `auth.remember_days`, `login_code.length`, `login_code.ttl_minutes`, `login_code.max_attempts`, `mail.from_name`, `mail.help_url`, `two_factor.window` and `two_factor.recovery_codes`.
 

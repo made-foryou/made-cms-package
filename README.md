@@ -199,16 +199,17 @@ or in Vue:
 <section :data-made-cms-strip="strip"><h1>{{ title }}</h1></section>
 ```
 
+The folders move with the config keys `content.strips_path` and `content.pages_path`.
+
 ### Edit mode
 
 While the edit bar shows, every element with `data-made-cms-strip` gets an outline with the name of its strip type ("Hero · bewerken").
 
 - **Selecting:** clicking an outline selects the strip and the bar names it. Escape clears the selection.
 - **What the page tells the CMS:** only the strip id. The CMS looks up the type and its label itself (`GET /made-cms/strips/describe`), and only for editors who open the Pages screen.
+- **What can be outlined:** the marked element needs a box of its own. A wrapper with `display: contents` measures nothing and is never outlined.
 - **Following the page:** the outlines keep up with resizes and with pages that Inertia, Livewire or Turbo swap without a reload.
 - **Loading:** the script only loads for logged-in editors. With a Content Security Policy, allow module scripts from your own site (`'self'`, or `'strict-dynamic'` next to the nonce).
-
-The folders move with the config keys `content.strips_path` and `content.pages_path`.
 
 ## Roles and screens
 

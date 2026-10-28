@@ -17,7 +17,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - `src/` is organised per bounded context (`Access`, `Content`). Technical layers (`Http`, `Console`, `Support`) live outside the contexts.
 - A context contains `Actions`, `Builders`, `Data`, `Events`, `Models`, and when needed `Enums`, `Exceptions`, `Listeners`, `Notifications`, `Policies`. Create a folder with its first class, never empty.
 - Contexts never import each other and never use `Http`, `Console`, or the service provider. Communicate across contexts through events.
-- `Support` holds final, context-free helpers (site name and url, launcher locale, QR code) that contexts and Http may both use; it never uses a context, `Http` or `Console`.
+- `Support` holds final, context-free helpers (site name and url, launcher locale, QR code, page paths, relative paths) that contexts and Http may both use; it never uses a context, `Http` or `Console`.
 - Actions are the only place for writes and business rules: `final`, `use AsAction`, a typed `handle()`, invoked as `Action::run(...)`. Do not use `asController`, `asListener`, `asJob`, `asCommand` or `rules()`.
 - Models only represent a table row: `$table`, `$fillable`, `$hidden`, `casts()`, relations, `newEloquentBuilder()` and `newFactory()`. No business logic, no facades. `Editor` also implements Laravel's `Authenticatable` contract through its trait, so the guard can log it in.
 - Reads go through custom Eloquent Builders (`Page::query()->published()`), one per model, `final`, suffix `Builder`. No repositories, no ad-hoc queries in Actions or controllers.

@@ -148,19 +148,21 @@ Create the pages that do not exist yet. The command never touches a page that al
 php artisan made-cms:pages
 ```
 
+Run it after `php artisan migrate`; the migrations include the `cms_strips` table, so publish the migrations again when you update the package.
+
 Read a page with its strips. A strip serialises to `{id, type, content}`, and its content holds every field of its type (empty text, `null` or `[]` when there is no value):
 
 ```php
 use Made\CmsPackage\Content\Models\Page;
 
-$page = Page::query()->published()->forPath($request->path())->firstOrFail();
+$page = Page::query()->published()->forPath($request->decodedPath())->firstOrFail();
 ```
 
 Render one component per strip type, whatever your frontend is. With Blade:
 
 ```blade
 @foreach ($page->strips as $strip)
-    @include('strips.'.$strip->type, ['content' => $strip->content])
+    @includeIf('strips.'.$strip->type, ['content' => $strip->content])
 @endforeach
 ```
 
@@ -314,7 +316,7 @@ src/
 │   └── ...
 ├── Console/    technical layer: artisan commands
 ├── Http/       technical layer: middleware (the launcher), controllers grouped per context, the login session
-├── Support/    context-free helpers: site name and url, launcher locale, QR code
+├── Support/    context-free helpers: site name and url, launcher locale, QR code, page paths, relative paths
 └── CmsPackageServiceProvider.php
 ```
 

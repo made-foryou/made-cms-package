@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
 
         Page::factory()->create([
             'title' => 'Home',
-            'slug' => 'home',
+            'path' => '/',
         ]);
     }
 }

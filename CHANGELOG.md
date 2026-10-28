@@ -4,6 +4,7 @@
 
 ### Added
 
+- Pages are found by their `path` (`cms_pages.path`, unique; `PageBuilder::forPath()` treats `lid-worden`, `/lid-worden` and `/lid-worden/` as the same page) and hold their strips in order: the `cms_strips` table and `Strip` model (`Page::strips()`), each strip with its type and content, serialised to `{id, type, content}`.
 - `SaveStripType` writes a strip type to its JSON file, pretty printed in a fixed key order with a `$schema` reference, after checking it by the same rules as reading.
 - `ListStripTypes` reads every strip type of the site from `resources/cms/strips/<key>.json`. Config keys `content.strips_path` and `content.pages_path` move the strip and page folders.
 - Strip types: the kinds of strips the pages of a site are built from, defined as JSON in the host (a `label` and `fields` of the types `text`, `textarea`, `image`, `link` and `list`, a list one level deep), with a JSON Schema for autocomplete in the editor (`resources/schema/strip.json`). `ParseStripType` reads one definition into the `StripType` and `Field` data objects (`FieldType` enum) and refuses a broken one with `InvalidStripType`, naming the field.

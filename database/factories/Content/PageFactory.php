@@ -25,7 +25,7 @@ final class PageFactory extends Factory
 
         return [
             'title' => $title,
-            'slug' => Str::slug($title),
+            'path' => '/'.Str::slug($title),
             'status' => PageStatus::Draft,
             'published_at' => null,
         ];

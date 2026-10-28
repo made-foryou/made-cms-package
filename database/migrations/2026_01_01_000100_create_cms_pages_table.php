@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('cms_pages', function (Blueprint $table): void {
             $table->id();
             $table->string('title');
-            $table->string('slug')->unique();
+            $table->string('path')->unique();
             $table->string('status')->default('draft')->index();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();

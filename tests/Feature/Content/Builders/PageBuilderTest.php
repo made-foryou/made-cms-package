@@ -37,3 +37,17 @@ it('orders pages by the most recent edit first', function (): void {
 
     expect(Page::query()->recentlyEdited()->pluck('id')->all())->toBe([$newest->id, $middle->id, $older->id]);
 });
+
+it('finds a page by its path, however the path is written', function (string $path): void {
+    $page = Page::factory()->create(['path' => '/lid-worden']);
+    Page::factory()->create(['path' => '/']);
+
+    expect(Page::query()->forPath($path)->sole()->is($page))->toBeTrue();
+})->with(['/lid-worden', 'lid-worden', '/lid-worden/']);
+
+it('finds the home page by its path', function (string $path): void {
+    $home = Page::factory()->create(['path' => '/']);
+    Page::factory()->create(['path' => '/lid-worden']);
+
+    expect(Page::query()->forPath($path)->sole()->is($home))->toBeTrue();
+})->with(['/', '']);

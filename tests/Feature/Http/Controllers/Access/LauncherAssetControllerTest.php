@@ -17,6 +17,7 @@ it('serves the launcher assets with their content type', function (string $asset
 })->with([
     ['launcher.css', 'text/css; charset=utf-8'],
     ['launcher.js', 'text/javascript; charset=utf-8'],
+    ['edit.js', 'text/javascript; charset=utf-8'],
     ['cms.css', 'text/css; charset=utf-8'],
     ['cms.js', 'text/javascript; charset=utf-8'],
     ['nunito-700.woff2', 'font/woff2'],

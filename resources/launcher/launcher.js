@@ -151,6 +151,25 @@ class Api {
         return data;
     }
 
+    /* The edit mode asks which strips the ids on the page are; the answer is data only: id, type and label. */
+    async strips(ids) {
+        const query = new URLSearchParams();
+
+        ids.forEach((id) => query.append('ids[]', String(id)));
+
+        const response = await fetch(`${this.endpoints.strips}?${query}`, {
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        });
+
+        if (!response.ok) {
+            throw new ApiError(response.status);
+        }
+
+        return (await response.json()).strips;
+    }
+
     async post(endpoint, body = {}, retried = false) {
         if (!this.token) {
             await this.session();
@@ -934,6 +953,7 @@ class MadeCmsLauncher extends HTMLElement {
     disconnectedCallback() {
         this.timers?.forEach(clearTimeout);
         this.flow?.stop();
+        this.stopEditing();
 
         if (this.onPageShow) {
             window.removeEventListener('pageshow', this.onPageShow);
@@ -1125,6 +1145,43 @@ class MadeCmsLauncher extends HTMLElement {
         if (animate) {
             this.bar.focus({ preventScroll: true });
         }
+
+        this.startEditing({ animate });
+    }
+
+    /* The edit mode (1.7): outlines on the strips of the page while the bar shows. Loaded on first use, never for visitors. */
+    async startEditing({ animate }) {
+        if (!this.dataset.editScript) {
+            return;
+        }
+
+        this.editing ??= import(this.dataset.editScript)
+            .then(({ EditMode }) => new EditMode(this.shadowRoot, {
+                describe: (ids) => this.api.strips(ids),
+                onChange: (state) => this.showStrip(state),
+            }))
+            .catch(() => null);
+
+        const editMode = await this.editing;
+
+        // The bar may have gone again while the script loaded.
+        if (editMode && this.dataset.view === 'edit_bar') {
+            editMode.start({ animate });
+        }
+    }
+
+    stopEditing() {
+        this.editing?.then((editMode) => editMode?.stop());
+    }
+
+    /* The bar names the selected strip, or says how to select one; it says nothing on a page without strips. */
+    showStrip({ selected, count }) {
+        const holder = this.bar.querySelector('[data-strook]');
+
+        holder.hidden = count === 0;
+        holder.querySelector('[data-strook-hint]').hidden = selected !== null;
+        holder.querySelector('[data-strook-gekozen]').hidden = selected === null;
+        holder.querySelector('[data-strook-label]').textContent = selected?.label ?? '';
     }
 
     /* Logging out keeps the page: the bar slides away and the tile (if this visitor gets one) comes back. */
@@ -1153,6 +1210,7 @@ class MadeCmsLauncher extends HTMLElement {
     }
 
     async hideBar(view) {
+        this.stopEditing();
         this.bar.classList.remove('in');
         this.bar.classList.add('uit');
         await animationsDone(this.bar, CLOSE_FALLBACK);

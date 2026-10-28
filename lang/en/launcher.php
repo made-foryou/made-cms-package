@@ -136,6 +136,11 @@ return [
         'home' => 'Home',
         'editor' => 'Logged in as :name',
     ],
+    'edit' => [
+        'edit' => 'edit',
+        'hint' => 'Click a strip to edit it',
+        'selected' => 'selected',
+    ],
     'link' => [
         'title' => 'Log in to :site',
         'confirm' => [

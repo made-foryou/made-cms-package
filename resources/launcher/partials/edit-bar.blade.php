@@ -4,6 +4,7 @@
         <span class="balk-site">{{ $site }}</span>
         <span class="balk-slash" aria-hidden="true">/</span>
         <span class="balk-pagina">{{ $page }}</span>
+        <span class="balk-strook" data-strook hidden aria-live="polite"><span aria-hidden="true">·</span> <span data-strook-hint>{{ $t('edit.hint') }}</span><span data-strook-gekozen hidden><span data-strook-label></span> {{ $t('edit.selected') }}</span></span>
     </div>
     <div class="balk-rechts">
         <a class="balk-link" href="{{ $endpoints['start'] }}">{{ $t('bar.start') }}</a>

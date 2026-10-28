@@ -2,7 +2,7 @@
     $t = fn (string $key, array $replace = []): string => __('made-cms-package::launcher.'.$key, $replace, $locale);
     $mode = 'panel';
 @endphp
-<made-cms-launcher lang="{{ $locale }}" data-view="{{ $view }}"@if ($arrived) data-arrived @endif data-font-heading="{{ $fonts['heading'] }}" data-font-text="{{ $fonts['text'] }}"><template shadowrootmode="open" shadowrootclonable>
+<made-cms-launcher lang="{{ $locale }}" data-view="{{ $view }}"@if ($arrived) data-arrived @endif data-font-heading="{{ $fonts['heading'] }}" data-font-text="{{ $fonts['text'] }}" data-edit-script="{{ $editScript }}"><template shadowrootmode="open" shadowrootclonable>
 <link rel="stylesheet" href="{{ $stylesheet }}"@if ($nonce) nonce="{{ $nonce }}"@endif>
 <div class="plek" hidden>
     <button type="button" class="beheer" aria-label="{{ $t('open') }}" aria-haspopup="dialog">
@@ -22,5 +22,6 @@
     </div>
 </dialog>
 @include('made-cms-package-launcher::partials.edit-bar')
+@include('made-cms-package-launcher::partials.outlines')
 </template></made-cms-launcher>
 <script type="module" src="{{ $script }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>

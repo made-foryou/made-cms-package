@@ -136,6 +136,11 @@ return [
         'home' => 'Home',
         'editor' => 'Ingelogd als :name',
     ],
+    'edit' => [
+        'edit' => 'bewerken',
+        'hint' => 'Klik op een strook om die te bewerken',
+        'selected' => 'geselecteerd',
+    ],
     'link' => [
         'title' => 'Inloggen bij :site',
         'confirm' => [

@@ -1167,6 +1167,69 @@ a.knop {
     font: 700 14px/1 var(--font-kop);
 }
 
+.balk-strook {
+    overflow: hidden;
+    color: var(--made-mist);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Edit mode (1.7): an outline on every strip of the page, under the bar. The same in light and dark (2.7). */
+
+.omlijningen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2147482999;
+    width: 0;
+    height: 0;
+}
+
+.omlijning {
+    position: absolute;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 2px solid var(--made-amber);
+    border-radius: 12px;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+}
+
+.omlijning:hover,
+.omlijning[aria-pressed="true"] {
+    background: rgba(190, 138, 28, .10);
+}
+
+.omlijning:focus-visible {
+    outline: 2px solid var(--made-amber-licht);
+    outline-offset: 2px;
+}
+
+.omlijning.in {
+    animation: omlijning-in 240ms var(--ease-uit) both;
+}
+
+.tab {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    padding: 5px 10px;
+    border-radius: 12px 0 10px 0;
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 700 12px/1.2 var(--font-kop);
+    white-space: nowrap;
+}
+
+@keyframes omlijning-in {
+    from {
+        opacity: 0;
+        transform: scale(.985);
+    }
+}
+
 @media (max-width: 480px) {
     .balk {
         padding: 0 16px;
@@ -1360,7 +1423,8 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
     .stap-in,
     .stap-in.terug,
-    .balk.in {
+    .balk.in,
+    .omlijning.in {
         animation: fade-in 120ms ease-out both;
     }
 

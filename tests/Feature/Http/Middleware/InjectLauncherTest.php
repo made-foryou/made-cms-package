@@ -299,3 +299,22 @@ it('keeps the csrf token and the greeting out of the page of a visitor', functio
         ->assertDontSee(session()->token(), false)
         ->assertDontSee('Menno');
 });
+
+it('gives the edit mode its script, its outline template and its hint in the bar', function (): void {
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('/')
+        ->assertSee('data-edit-script="/made-cms/launcher/edit.js?v=', false)
+        ->assertSee('<div class="omlijningen" hidden></div>', false)
+        ->assertSee('<template data-outline><button type="button" class="omlijning" aria-pressed="false"><span class="tab"><span data-label></span> · bewerken</span></button></template>', false)
+        ->assertSee('<span data-strook-hint>Klik op een strook om die te bewerken</span>', false)
+        ->assertSee('<span data-strook-gekozen hidden><span data-strook-label></span> geselecteerd</span>', false);
+});
+
+it('words the edit mode in English for an English launcher', function (): void {
+    config(['made-cms-package.launcher.locale' => 'en']);
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('/')
+        ->assertSee('<span data-label></span> · edit</span>', false)
+        ->assertSee('<span data-strook-hint>Click a strip to edit it</span>', false);
+});

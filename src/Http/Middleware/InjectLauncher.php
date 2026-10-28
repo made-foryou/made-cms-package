@@ -134,6 +134,7 @@ final class InjectLauncher
             'site' => Site::name(),
             'stylesheet' => LauncherAssetController::url('launcher.css'),
             'script' => LauncherAssetController::url('launcher.js'),
+            'editScript' => LauncherAssetController::url('edit.js'),
             'fonts' => [
                 'heading' => LauncherAssetController::url('nunito-700.woff2'),
                 'text' => LauncherAssetController::url('instrument-sans.woff2'),

@@ -1,0 +1,39 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Made CMS strip type",
+    "description": "A kind of strip the pages of the site are built from: its label and the fields an editor fills in. The file name is its key, in kebab-case.",
+    "type": "object",
+    "required": ["label", "fields"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": { "type": "string" },
+        "label": { "type": "string", "minLength": 1, "description": "The name editors see, e.g. \"Hero\"." },
+        "fields": { "type": "array", "items": { "$ref": "#/$defs/field" } }
+    },
+    "$defs": {
+        "field": {
+            "type": "object",
+            "required": ["name", "type", "label"],
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$", "description": "The key of the value in the content, in snake_case." },
+                "type": { "enum": ["text", "textarea", "image", "link", "list"] },
+                "label": { "type": "string", "minLength": 1, "description": "The name editors see." },
+                "fields": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/item" }, "description": "The fields of every item of a list." }
+            },
+            "if": { "properties": { "type": { "const": "list" } } },
+            "then": { "required": ["fields"] },
+            "else": { "not": { "required": ["fields"] } }
+        },
+        "item": {
+            "type": "object",
+            "required": ["name", "type", "label"],
+            "additionalProperties": false,
+            "properties": {
+                "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+                "type": { "enum": ["text", "textarea", "image", "link"] },
+                "label": { "type": "string", "minLength": 1 }
+            }
+        }
+    }
+}

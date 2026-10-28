@@ -9,6 +9,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Add only the files and dependencies needed for the package behavior being implemented.
 - Prefer explicit Laravel package code over helper abstractions unless the extension point is real. Actions, custom Eloquent Builders and Data objects are the agreed extension points.
 - Keep tests focused on observable package behavior through public APIs, service provider wiring, commands, routes, published resources, and documentation promises.
+- Every change a host or editor notices (public API, routes, config, migrations, commands, translations, screens) gets a line under `## [Unreleased]` in `CHANGELOG.md`, in the same change as the code. Use one heading per type in the order Added, Changed, Deprecated, Removed, Fixed, Security; a breaking change says what the host has to do. Internal refactors and tests stay out.
 
 ## Architecture Guidelines
 

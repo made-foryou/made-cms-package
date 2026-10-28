@@ -2,13 +2,14 @@
 
 ## [Unreleased](https://github.com/made-foryou/made-cms-package/compare/v0.1.0...1.x)
 
-### Changed
-
-- `NewEditor` takes the editor's `roles` (at least one) and `made-cms:editor` gains the `--role` option; without it the command asks for the roles.
-- The default `routes.prefix` is now `made-cms` (was `cms`): every CMS route, the mail link and the launcher assets moved to `/made-cms/...`.
-
 ### Added
 
+- Start page at `/made-cms/start` (route `made-cms-package.start`) for every logged-in editor (`EnsureEditor` middleware; guests go to the login page): a note of the day, the question what to work on and the four blocks of the design (where you left off, what needs attention, how your site is doing, quick links), in light and dark mode and on the phone. The blocks show the static examples of the design for the editor's role for now and never link to a screen the editor does not open.
+- The CMS menu: the screens of the editor's roles under "Je site", "Verzamelingen", "Vindbaarheid" and "Beheer" (`ScreenGroup` enum, `Screen::group()`), behind a button that peeks open once and then keeps the state the editor left it in.
+- A route per screen at `/made-cms/<screen>` (route `made-cms-package.screens.<screen>`), guarded by `EnsureScreenAccess`; until a screen is built it shows that it is coming.
+- Links to the start page from "Verder waar je was" on the login page and from the edit bar.
+- The asset route also serves the stylesheet and script of the CMS pages (`cms.css`, `cms.js`).
+- Dutch and English translations for the CMS pages, the start page and the screen groups.
 - Roles and screens: every editor holds one or more fixed roles (`Role` enum: `admin`, `webmaster`, `content-manager`, `seo-specialist`, `owner`) in the new `roles` column of `cms_editors`. `Role::screens()` grants the screens of the CMS (`Screen` enum, one per menu item); `admin` opens every screen. `ListScreens` lists the screens of an editor, `CheckScreenAccess` decides whether a screen opens, and `EditorBuilder::withRole()` finds the editors with a role.
 - `AssignRoles` action with the `RoleAssignment` data object, the `EditorRolesChanged` event and the `RolesRejected` exception: editors who open the users and roles screen change roles, only an admin gives or takes the admin role, the last admin keeps it and every editor keeps at least one role.
 - `EnsureScreenAccess` middleware for the routes of a CMS screen (`EnsureScreenAccess::using(Screen::Redirects)`): guests go to the login page, editors without a role for the screen get a 403.
@@ -26,7 +27,6 @@
 - Route `made-cms-package.launcher.asset` that serves the launcher stylesheet, script and self-hosted fonts (Nunito, Instrument Sans; SIL Open Font License) without middleware.
 - Dutch and English launcher translations.
 - Runtime dependencies `illuminate/contracts`, `illuminate/http`, `illuminate/routing`, `illuminate/view`, `symfony/http-foundation` and `symfony/http-kernel`.
-
 - Editors: CMS accounts of their own in `cms_editors` (`Editor` model, `CreateEditor` action, `EditorCreated` event) and the `made-cms:editor` command. They log in through the session guard `made-cms`, which the package registers next to the host's guards.
 - The full login flow from the website: e-mail step, login code by mail with a link that only works in the requesting browser, password with "remember this device" (30 days) and an edit bar with logout after logging in. Endpoints under `cms/` (`session`, `login/email`, `login/code`, `login/code/verify`, `login/password`, `login/two-factor`, `login/link/{token}`, `two-factor/setup`, `two-factor/confirm`, `logout`), rate limited and never revealing whether an address has an account.
 - Two-factor authentication for password logins: authenticator app (TOTP) with QR code and recovery codes, offered after a password login. Runtime dependencies `pragmarx/google2fa` and `bacon/bacon-qr-code`.
@@ -38,6 +38,9 @@
 
 ### Changed
 
+- Screen labels moved to `screens.label.<screen>` in the translation files, next to the new `screens.group.<group>`; a host that published the translations republishes them (`made-cms-package-lang`).
+- `NewEditor` takes the editor's `roles` (at least one) and `made-cms:editor` gains the `--role` option; without it the command asks for the roles.
+- The default `routes.prefix` is now `made-cms` (was `cms`): every CMS route, the mail link and the launcher assets moved to `/made-cms/...`.
 - `IssueLoginCode::run()` takes a `LoginCodeRequest` (address, browser binding, page to return to) and returns the link token too; `cms_login_codes` gains `attempts`, `session_hash`, `link_hash` and `return_to`.
 - `ShowLauncher::run()` returns a `LauncherView` (hidden, tile or edit bar) instead of a boolean; `LauncherVisitor` gains the logged-in `editor`.
 

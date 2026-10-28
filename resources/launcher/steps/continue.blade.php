@@ -21,4 +21,5 @@
         @endif
         <a class="knop secundair" href="{{ $home }}"><span>{{ $t('continue.to_site') }}</span></a>
     </div>
+    <a class="tekstlink" href="{{ $endpoints['start'] }}">{{ $t('continue.to_start') }}</a>
 </div>

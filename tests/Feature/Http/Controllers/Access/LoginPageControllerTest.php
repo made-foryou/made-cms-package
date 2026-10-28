@@ -67,6 +67,13 @@ it('takes a logged-in editor straight on to where they were', function (): void 
         ->assertSee('"editor":{"first_name":"Menno","initial":"M"}', false);
 });
 
+it('links from where the editor was to the start page of the cms', function (): void {
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms')
+        ->assertSee('"start":"\\/made-cms\\/start"', false)
+        ->assertSee('<a class="tekstlink" href="/made-cms/start">Naar de startpagina</a>', false);
+});
+
 it('comes back to the page after the link in the mail and shows the editor is in', function (): void {
     Sleep::fake();
     Notification::fake();

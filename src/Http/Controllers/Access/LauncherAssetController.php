@@ -8,7 +8,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Serves the launcher's stylesheet, script and fonts straight from the package, so hosts never publish anything.
+ * Serves the stylesheets, scripts and fonts of the launcher and the CMS pages straight from the package,
+ * so hosts never publish anything.
  */
 final class LauncherAssetController
 {
@@ -20,6 +21,8 @@ final class LauncherAssetController
     private const array ASSETS = [
         'launcher.css' => ['launcher.css', 'text/css; charset=utf-8'],
         'launcher.js' => ['launcher.js', 'text/javascript; charset=utf-8'],
+        'cms.css' => ['cms.css', 'text/css; charset=utf-8'],
+        'cms.js' => ['cms.js', 'text/javascript; charset=utf-8'],
         'nunito-700.woff2' => ['fonts/nunito-700.woff2', 'font/woff2'],
         'instrument-sans.woff2' => ['fonts/instrument-sans.woff2', 'font/woff2'],
     ];

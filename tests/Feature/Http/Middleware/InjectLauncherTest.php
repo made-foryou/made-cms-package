@@ -232,6 +232,12 @@ it('shows the edit bar instead of the tile to a logged-in editor from any ip add
         ->assertSee('<span class="avatar" aria-hidden="true">M</span>', false);
 });
 
+it('links from the edit bar to the start page of the cms', function (): void {
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('/')
+        ->assertSee('<a class="balk-link" href="/made-cms/start">Startpagina</a>', false);
+});
+
 it('shows the tile to a visitor who is not logged in', function (): void {
     visitLauncherPageFrom('203.0.113.5')->assertSee('data-view="tile"', false);
 });

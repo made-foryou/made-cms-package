@@ -50,7 +50,9 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - every editor holds at least one fixed role (`Made\CmsPackage\Access\Enums\Role`): `admin` (every screen), `webmaster`, `content-manager`, `seo-specialist`, `owner`; the roles decide which CMS screens (`Screen` enum) the editor opens
 - change roles with `AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [...]))`; it throws `RolesRejected` when the editor making the change may not (only admins and webmasters change roles, only an admin gives or takes `admin`, the last admin keeps it)
 - read access with `ListScreens::run($editor)` or `CheckScreenAccess::run(new ScreenVisit($editor, Screen::Redirects))`, and find editors with `Editor::query()->withRole(Role::Admin)`
-- guard a route of a CMS screen with `->middleware(EnsureScreenAccess::using(Screen::Redirects))`
+- the package registers a route per screen at `/made-cms/<screen>` (`route('made-cms-package.screens.redirects')`), guarded by `EnsureScreenAccess`; until a screen is built it shows that it is coming
+- guard a route of your own for a CMS screen with `->middleware(EnsureScreenAccess::using(Screen::Redirects))`
+- the CMS start page is `/made-cms/start` (`route('made-cms-package.start')`): every logged-in editor opens it, with a menu of the screens of their roles; the edit bar and the login page link to it, so the host adds nothing
 
 ### 6. Use the actions
 
@@ -74,6 +76,7 @@ Read before executing:
 - do not treat the tile's visibility as authorisation; it only hides the door
 - do not add a login form, guard or middleware for editors to the app; the package brings its own
 - do not store roles on the app's users or write `cms_editors.roles` directly; roles change through `AssignRoles` so its rules hold
+- do not build a menu or dashboard of your own that hides links as authorisation; the route middleware decides, `ListScreens` only feeds the menu
 - do not queue or log `LoginCodeIssued`: its payload holds the plain code
 - do not put a CDN or response cache in front of pages for allowed visitors without excluding the tile
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

@@ -127,6 +127,10 @@ jobs:
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction --no-progress --no-scripts
           composer run prepare
 
+      - name: Check the launcher scripts parse
+        shell: bash
+        run: for file in resources/launcher/*.js; do node --check "$file"; done
+
       - name: Test Suite
         if: runner.os != 'Windows'
         run: composer test:unit

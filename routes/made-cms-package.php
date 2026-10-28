@@ -21,6 +21,7 @@ use Made\CmsPackage\Http\Controllers\Access\TwoFactorConfirmController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
+use Made\CmsPackage\Http\Controllers\Content\StripsController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
@@ -58,6 +59,11 @@ Route::prefix($prefix)
                 ->middleware(ThrottleRequests::using('made-cms-package.two-factor'))
                 ->name('two-factor.confirm');
             Route::post('logout', LogoutController::class)->name('logout');
+
+            // The edit mode outlines the strips of the page it is on; only their ids come from the page.
+            Route::get('strips', StripsController::class)
+                ->middleware(EnsureScreenAccess::using(Screen::Pages))
+                ->name('strips');
         });
 
         Route::middleware(SetLauncherLocale::class)->group(function (): void {

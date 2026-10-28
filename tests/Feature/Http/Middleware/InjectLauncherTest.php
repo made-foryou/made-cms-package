@@ -283,6 +283,7 @@ it('tells the script where the cms lives, relative to the current host', functio
         'email' => '/made-cms/login/email',
         'verify' => '/made-cms/login/code/verify',
         'logout' => '/made-cms/logout',
+        'strips' => '/made-cms/strips',
     ])->and($config['texts']['steps'])->toBe([1 => 'Stap 1 van 3', 2 => 'Stap 2 van 3', 3 => 'Stap 3 van 3', 4 => 'Ingelogd']);
 });
 

@@ -4,6 +4,7 @@
 
 ### Added
 
+- Route `GET /made-cms/strips` (`made-cms-package.strips`, for every editor who opens the Pages screen) tells the edit mode the type and label of up to 100 strip ids (`{strips: [{id, type, label}]}`). The launcher gets its url as `endpoints.strips`.
 - `DescribeStrips` tells the edit mode the type and the label of the strips it found on a page (`StripLookup` and `StripDescription` data objects, `StripBuilder::forIds()`). A strip type without a valid definition keeps its key as label, and a broken definition file is reported instead of hiding every outline.
 - `made-cms:pages` command: creates the pages of the page files that the site does not have yet, safe to run on every deploy, with Dutch and English output.
 - `ImportPage` creates a published page with its strips from a page file, only when the site has no page at that path yet, and checks every strip before it writes anything, and dispatches `PagePublished` for the new page.

@@ -20,6 +20,7 @@ final class Endpoints
         'confirm' => 'made-cms-package.two-factor.confirm',
         'logout' => 'made-cms-package.logout',
         'start' => 'made-cms-package.start',
+        'strips' => 'made-cms-package.strips',
     ];
 
     /**

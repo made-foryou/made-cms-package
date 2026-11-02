@@ -37,3 +37,29 @@ it('orders pages by the most recent edit first', function (): void {
 
     expect(Page::query()->recentlyEdited()->pluck('id')->all())->toBe([$newest->id, $middle->id, $older->id]);
 });
+
+it('starts a page without strips and without a draft', function (): void {
+    $page = Page::factory()->create();
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->strips)->toBe([])
+        ->and($stored->draft_strips)->toBeNull();
+});
+
+it('starts a page made without the factory without strips', function (): void {
+    $page = Page::query()->create(['title' => 'Home', 'slug' => 'home']);
+
+    expect($page->strips)->toBe([])
+        ->and(Page::query()->findOrFail($page->id)->strips)->toBe([]);
+});
+
+it('casts the published and the draft strips to arrays', function (): void {
+    $strips = [storedStrip('hero', ['kop' => 'Welkom'], id: 'a')];
+    $page = Page::factory()->withStrips($strips)->withDraft([])->create();
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->strips)->toBe($strips)
+        ->and($stored->draft_strips)->toBe([]);
+});

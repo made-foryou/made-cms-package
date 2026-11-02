@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Builders;
 
 use Illuminate\Database\Eloquent\Builder;
+use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -21,6 +22,14 @@ final class PageBuilder extends Builder
     public function draft(): self
     {
         return $this->where('status', PageStatus::Draft);
+    }
+
+    /**
+     * The page whose address is the given path.
+     */
+    public function atPath(PagePath $path): self
+    {
+        return $this->whereRelation('route', 'path', '=', $path->value);
     }
 
     /**

@@ -45,6 +45,14 @@ final class PageFactory extends Factory
     }
 
     /**
+     * Gives the page its address on the site, e.g. "/" or "/over-ons/team".
+     */
+    public function at(string $path): self
+    {
+        return $this->has(RouteFactory::new()->at($path), 'route');
+    }
+
+    /**
      * @param  list<StoredStrip>  $strips  the published strips in their stored form
      */
     public function withStrips(array $strips): self

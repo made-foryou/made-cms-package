@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Content\Models;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Made\CmsPackage\Content\Builders\PageBuilder;
 use Made\CmsPackage\Content\Data\Strip;
@@ -25,6 +26,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property list<StoredStrip> $strips the published strips, in order
  * @property list<StoredStrip>|null $draft_strips the draft editors work on; null when there is none
  * @property CarbonImmutable|null $published_at
+ * @property-read Route|null $route the address of the page on the site
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  *
@@ -62,6 +64,14 @@ class Page extends Model
             'draft_strips' => 'array',
             'published_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * @return MorphOne<Route, $this>
+     */
+    public function route(): MorphOne
+    {
+        return $this->morphOne(Route::class, 'routable');
     }
 
     /**

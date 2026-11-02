@@ -6,8 +6,10 @@ namespace Made\CmsPackage;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Kernel;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -15,9 +17,11 @@ use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
+use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
+use Made\CmsPackage\Http\Routing\RouterMixin;
 use Made\CmsPackage\Http\Session\LoginSession;
 
 class CmsPackageServiceProvider extends ServiceProvider
@@ -32,6 +36,10 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->registerGuard();
 
         $this->registerStripTypes();
+
+        // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
+        // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
+        Router::mixin(new RouterMixin);
     }
 
     /**
@@ -52,6 +60,10 @@ class CmsPackageServiceProvider extends ServiceProvider
         Event::listen(LoginCodeIssued::class, SendLoginCode::class);
 
         $this->registerRateLimiters();
+
+        // A short alias instead of the class name in cms_routes, so moving the model never breaks an address.
+        // Added to the host's map; requiring a map for every model is the host's call.
+        Relation::morphMap(['cms_page' => Page::class]);
 
         // Unconditional, because the kernel only resolves for HTTP requests. Appending to the kernel group
         // (instead of the router) survives every later sync of the middleware groups to the router.

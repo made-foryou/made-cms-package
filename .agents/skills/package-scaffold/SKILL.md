@@ -44,6 +44,7 @@ Provider wiring anti-patterns:
 - Migrations go in `database/migrations` as `create_cms_<table>_table`. Factories go in `database/factories/<Context>/`.
 - Config keys are grouped by feature: `routes.prefix`, `routes.middleware`, `login_code.length`, `login_code.ttl_minutes`. Add new keys together with the feature that reads them.
 - Routes are registered inside the existing group in `routes/made-cms-package.php`, which applies the configured prefix, middleware and the `made-cms-package.` name prefix. Only static assets (the launcher) go in the second group without middleware.
+- The one exception are routes the site places itself: route macros live in `src/Http/Routing/RouterMixin.php`, are mixed into the `Router` in `register()` (a site's routes can load before this provider boots) and return the route without a name, so the site can name it, use it twice and cache it.
 - UI text goes in `lang/nl` with an English counterpart in `lang/en`.
 
 ## References

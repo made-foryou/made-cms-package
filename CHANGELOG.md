@@ -4,6 +4,11 @@
 
 ### Added
 
+- `Route::madeCms($responder)`: the site serves the CMS pages with one line, as the last of its web routes. Every `GET` address no route above it claims looks up the published page there and hands it to the responder of the site (a closure or an invokable class) as `Page`; an address without a page, or a page that is not published, answers 404. The route takes the prefix and middleware of its group, has no name (chain `->name()` yourself) and works with `route:cache`. Middleware `ResolvePage` does the lookup.
+- Addresses of the site in the new `cms_routes` table (`Route` model, one unique `path` per row pointing at its content through `routable`), with `Page::route()`, `RouteBuilder::atPath()` and `PageBuilder::atPath()`. Pages are stored under the morph alias `cms_page`, added to the host's morph map without enforcing one.
+- `FindPublishedPage` action and the `PagePath` data object (an address normalised to `/` or `/over-ons/team`).
+- Page factory state `at($path)` and `RouteFactory`.
+
 - Strips per page with a draft and a published version: `cms_pages` gains `strips` (the published strips, `[]` by default) and `draft_strips` (the draft editors work on, `null` when there is none). Every strip has a fixed `id` (uuid), its strip type `type`, `visible` and its `values`.
 - Actions `AddStrip` (type and position, filled with the defaults of the type), `MoveStrip`, `RemoveStrip`, `UpdateStrip` (checks the values against the strip type, cleans them and throws a `ValidationException` keyed by field), `SetStripVisibility` and `DiscardDraft`. They all write to the draft, so visitors keep seeing the published version, and dispatch `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged` or `DraftDiscarded`. A strip that is not on the page throws `StripNotFound`, a position outside the page `InvalidStripPosition`.
 - Data objects `Strip` and `PageStrips` for the stored strips of a page.
@@ -50,6 +55,7 @@
 
 ### Changed
 
+- `cms_pages.slug` is no longer unique: the address of a page is unique in `cms_routes`, so pages under different parents can share a slug. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`) or drops the unique index on `slug` itself.
 - `PublishPage` publishes the draft: its strips become the published strips and the draft is cleared, also on a page that is already published (`published_at` is the last publication). It refuses a draft with a strip that breaks its strip type, hidden strips included, with a `ValidationException` keyed by `strips.<strip id>.<field>`, and still throws `PageAlreadyPublished` for a published page without a draft. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`) or adds the `strips` (json) and `draft_strips` (json, nullable) columns itself.
 
 - Screen labels moved to `screens.label.<screen>` in the translation files, next to the new `screens.group.<group>`; a host that published the translations republishes them (`made-cms-package-lang`).

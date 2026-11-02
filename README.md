@@ -216,6 +216,36 @@ Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(Str
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 
+## Serving pages
+
+Every page lives at an address of the site (`/` for the home page, `/over-ons/team` for a nested one). Serve the pages with one line, as the **last** line of `routes/web.php`:
+
+```php
+use Made\CmsPackage\Content\Models\Page;
+
+// Blade
+Route::madeCms(fn (Page $page) => view('page', ['page' => $page]));
+
+// Inertia (React or Vue)
+Route::madeCms(fn (Page $page) => Inertia::render('Page', [
+    'title' => $page->title,
+    'strips' => $page->strips,
+]));
+
+// or an invokable class of your own
+Route::madeCms(ShowPage::class);
+```
+
+The macro registers a `GET` route for every address that no route above it claims. It looks up the published page at that address and hands it to your responder, which returns the response in whatever stack the site uses. An address without a page, and a page that is not published, answer 404. `$page->strips` holds the published strips as stored: `id`, `type`, `visible` and `values`.
+
+- Routes of the site above the line win; routes below it are never reached. A `Route::fallback()` of the site is no longer reached for `GET` requests: an address without a page gets the 404 page of the site.
+- It takes the prefix and middleware of a surrounding group: `Route::prefix('nl')->group(fn () => Route::madeCms(...))` serves the pages under `/nl`. Call it on `Route::` directly or inside `->group()`; `Route::middleware('x')->madeCms()` does not work.
+- It returns the route without a name, so you can chain `->name('page')` or `->middleware(...)` and use the macro more than once. It works with `php artisan route:cache`.
+- The route parameter is called `path`. Call the parameter of your responder anything else (`$page`), or implicit route binding looks the page up by id and answers 404.
+- A `POST` to an address without a route answers 405 instead of 404, like any catch-all route.
+
+The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`.
+
 ## Launcher
 
 Once the package is installed, a MADE tile appears in the bottom-right corner of every full HTML page served through the `web` middleware group. Clicking it opens the Made CMS login panel over the site. There is nothing to publish or register: the middleware, markup, stylesheet, script and fonts (Nunito and Instrument Sans, both SIL Open Font License) are served straight from the package. They are deliberately not publishable, so they always update together.
@@ -294,7 +324,7 @@ src/
 │   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
 │   └── ...
 ├── Console/    technical layer: artisan commands
-├── Http/       technical layer: middleware (the launcher), controllers grouped per context, the login session
+├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, controllers grouped per context, the login session
 ├── Support/    context-free helpers: site name and url, launcher locale, QR code
 └── CmsPackageServiceProvider.php
 ```

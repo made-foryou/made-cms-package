@@ -7,8 +7,9 @@ use Illuminate\Foundation\Configuration\Middleware;
 use function Orchestra\Testbench\default_skeleton_path;
 
 return Application::configure(basePath: $APP_BASE_PATH ?? default_skeleton_path())
+    // The web routes load through "discovers.web" in testbench.yaml, after the package providers booted:
+    // they use Route::madeCms(), which a bare Testbench helper application (without providers) does not know.
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
     )
     ->withMiddleware(function (Middleware $middleware): void {

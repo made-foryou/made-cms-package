@@ -7,7 +7,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Use Laravel-native package APIs and the existing service provider shape before adding abstractions.
 - Keep package names, namespaces, Composer metadata, publish tags, documentation, and examples aligned with `made-foryou/made-cms-package`.
 - Add only the files and dependencies needed for the package behavior being implemented.
-- Prefer explicit Laravel package code over helper abstractions unless the extension point is real. Actions, custom Eloquent Builders and Data objects are the agreed extension points.
+- Prefer explicit Laravel package code over helper abstractions unless the extension point is real. Actions, custom Eloquent Builders, Data objects and the site's strip types (`Content\Strips\StripType`) are the agreed extension points.
 - Keep tests focused on observable package behavior through public APIs, service provider wiring, commands, routes, published resources, and documentation promises.
 - Every change a host or editor notices (public API, routes, config, migrations, commands, translations, screens) gets a line under `## [Unreleased]` in `CHANGELOG.md`, in the same change as the code. Use one heading per type in the order Added, Changed, Deprecated, Removed, Fixed, Security; a breaking change says what the host has to do. Internal refactors and tests stay out.
 
@@ -15,7 +15,7 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 
 - Work test-first: write the failing test in the mirrored `tests/` path, make it pass, then run `composer analyse` and `composer test`.
 - `src/` is organised per bounded context (`Access`, `Content`). Technical layers (`Http`, `Console`, `Support`) live outside the contexts.
-- A context contains `Actions`, `Builders`, `Data`, `Events`, `Models`, and when needed `Enums`, `Exceptions`, `Listeners`, `Notifications`, `Policies`. Create a folder with its first class, never empty.
+- A context contains `Actions`, `Builders`, `Data`, `Events`, `Models`, and when needed `Enums`, `Exceptions`, `Listeners`, `Notifications`, `Policies`. `Content` also holds `Strips` (the strip type definition API, with `Strips/Fields`). Create a folder with its first class, never empty.
 - Contexts never import each other and never use `Http`, `Console`, or the service provider. Communicate across contexts through events.
 - `Support` holds final, context-free helpers (site name and url, launcher locale, QR code) that contexts and Http may both use; it never uses a context, `Http` or `Console`.
 - Actions are the only place for writes and business rules: `final`, `use AsAction`, a typed `handle()`, invoked as `Action::run(...)`. Do not use `asController`, `asListener`, `asJob`, `asCommand` or `rules()`.
@@ -33,6 +33,8 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - The start page (`made-cms/start`) opens for every logged-in editor (`EnsureEditor`). Its blocks are static design samples in `Http\Cms\StartPageSample` until the contexts deliver them; a sample item never links to a screen the editor does not open.
 - Roles change only through `AssignRoles`: the editor making the change needs the `Editors` screen, only an admin gives or takes `Admin`, the last admin keeps it, and every editor has at least one role.
 - `Content` never checks roles; screen access is enforced at the Http boundary.
+- Editors build pages from strip types the site defines: one class per type in `app/Cms/Strips` (`made-cms-package.strips.path`/`namespace`) extending the abstract `StripType`, with a fixed `key()` that is stored with the content and never derived from the class name. `StripTypes` is the catalogue (a singleton bound in the service provider) and checks every definition when it is built; a broken definition is a developer error and throws.
+- Strip definitions only describe: `StripType` and the immutable fields in `Content\Strips\Fields` (`final`, every setter returns a changed copy) derive validation rules, labels, defaults and normalised values, but never write, dispatch events or use facades. Actions validate and store strip content with them.
 - Adding a context: add it to `contexts()` in `tests/Pest.php` and start with one Model and one Action, both tested.
 - Arch tests in `tests/Arch/` enforce these rules; a failing arch test means the code is wrong, not the test.
 - Decisions are business rules too, even without a write (e.g. who sees the launcher): put them in a context Action with a Data object as input. Http only translates the request into that Data.

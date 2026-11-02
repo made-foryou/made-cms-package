@@ -54,7 +54,14 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - guard a route of your own for a CMS screen with `->middleware(EnsureScreenAccess::using(Screen::Redirects))`
 - the CMS start page is `/made-cms/start` (`route('made-cms-package.start')`): every logged-in editor opens it, with a menu of the screens of their roles; the edit bar and the login page link to it, so the host adds nothing
 
-### 6. Use the actions
+### 6. Strip types
+
+- editors build pages from the site's strip types: one class per type in `app/Cms/Strips` that extends `Made\CmsPackage\Content\Strips\StripType` (config `strips.path` and `strips.namespace`); the package finds them on its own
+- implement `key()` (fixed, lowercase letters, digits and dashes, e.g. `hero`) and `fields()`; optionally `label()`, `description()`, `view()` and `with(array $values)`
+- field types in `Made\CmsPackage\Content\Strips\Fields`: `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button` (text + link), `Choice` (list, `value => label` or a backed enum) and `Items` (a list of items with the same fields, `min()`/`max()`); every field takes `label()`, `hint()`, `required()` and `default()`
+- the field names `id`, `type` and `visible` are reserved; a broken definition throws `InvalidStripType` or `DuplicateStripType` as soon as the catalogue (`app(StripTypes::class)`) is built
+
+### 7. Use the actions
 
 - `PublishPage::run($page)` publishes a page; query pages with `Page::query()->published()`
 - listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled` and `PagePublished` for side effects
@@ -79,4 +86,6 @@ Read before executing:
 - do not build a menu or dashboard of your own that hides links as authorisation; the route middleware decides, `ListScreens` only feeds the menu
 - do not queue or log `LoginCodeIssued`: its payload holds the plain code
 - do not put a CDN or response cache in front of pages for allowed visitors without excluding the tile
+- do not derive `key()` from the class name or change it once content uses it; the key is stored with every strip
+- do not nest `Items` inside `Items`; one list level is supported
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

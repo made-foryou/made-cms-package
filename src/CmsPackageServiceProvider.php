@@ -15,6 +15,7 @@ use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
+use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Session\LoginSession;
@@ -29,6 +30,8 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/made-cms-package.php', 'made-cms-package');
 
         $this->registerGuard();
+
+        $this->registerStripTypes();
     }
 
     /**
@@ -103,6 +106,21 @@ class CmsPackageServiceProvider extends ServiceProvider
         if (! $config->has("auth.guards.{$guard}")) {
             $config->set("auth.guards.{$guard}", ['driver' => 'session', 'provider' => $guard]);
         }
+    }
+
+    /**
+     * The catalogue of the site's strip types. It scans the folder only once, the first time it is needed.
+     */
+    private function registerStripTypes(): void
+    {
+        $this->app->singleton(StripTypes::class, function (): StripTypes {
+            $config = $this->app->make('config');
+
+            return StripTypes::discover(
+                $config->string('made-cms-package.strips.path'),
+                $config->string('made-cms-package.strips.namespace'),
+            );
+        });
     }
 
     /**

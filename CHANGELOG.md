@@ -4,6 +4,12 @@
 
 ### Added
 
+- Strip types: the site defines the kinds of strips editors build pages from, one class per type in `app/Cms/Strips` extending `Made\CmsPackage\Content\Strips\StripType` (fixed `key()`, `fields()`, optional `label()`, `description()`, `view()` and `with()`). A strip type derives its validation rules, labels, defaults and stored values.
+- Field types `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button`, `Choice` and `Items` in `Made\CmsPackage\Content\Strips\Fields`.
+- The strip type catalogue `StripTypes` (`all()`, `has()`, `find()`), bound as a singleton; it checks every definition and throws `InvalidStripType`, `DuplicateStripType` or `UnknownStripType`.
+- Config keys `strips.path` and `strips.namespace`.
+- Dutch and English translations for the link validation and the button fields (`strips`).
+- Runtime dependency `symfony/html-sanitizer` (`^7.4.13||^8.0.13`, the versions without known advisories).
 - Start page at `/made-cms/start` (route `made-cms-package.start`) for every logged-in editor (`EnsureEditor` middleware; guests go to the login page): a note of the day, the question what to work on and the four blocks of the design (where you left off, what needs attention, how your site is doing, quick links), in light and dark mode and on the phone. The blocks show the static examples of the design for the editor's role for now and never link to a screen the editor does not open.
 - The CMS menu: the screens of the editor's roles under "Je site", "Verzamelingen", "Vindbaarheid" and "Beheer" (`ScreenGroup` enum, `Screen::group()`), behind a button that peeks open once and then keeps the state the editor left it in.
 - A route per screen at `/made-cms/<screen>` (route `made-cms-package.screens.<screen>`), guarded by `EnsureScreenAccess`; until a screen is built it shows that it is coming.

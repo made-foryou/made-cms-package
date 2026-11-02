@@ -145,6 +145,64 @@ Once logged in, editors start at `/made-cms/start` (named `made-cms-package.star
 
 The blocks still show the static examples of the design for the editor's role (an admin or an editor with several roles gets the combined example). They never link to a screen the editor does not open. Guests are sent to the login page.
 
+## Strip types
+
+Editors build pages from strips: a hero, a row of cards, opening hours. The site decides which kinds of strips exist, one PHP class per strip type in `app/Cms/Strips`. The package finds every class in that folder and its sub-folders and offers them as the catalogue editors pick from.
+
+```php
+namespace App\Cms\Strips;
+
+use App\Enums\ButtonStyle;
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
+use Made\CmsPackage\Content\Strips\Fields\RichText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Hero extends StripType
+{
+    public function key(): string
+    {
+        return 'hero';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->hint('Korte regel boven de kop.'),
+            Text::make('kop')->required(),
+            RichText::make('intro'),
+            Items::make('knoppen', [
+                Text::make('tekst')->required(),
+                Link::make('gaat_naar')->required(),
+                Choice::make('stijl', ButtonStyle::class),
+            ])->min(1)->max(2),
+        ];
+    }
+}
+```
+
+`key()` is stored with every strip, so it never changes once content uses it, also not when you rename the class. It uses lowercase letters, digits and dashes. Optionally override `label()` (the name in the catalogue, by default the class name), `description()`, `view()` (by default `strips.{key}`) and `with(array $values)` (extra data to render with, such as the latest news).
+
+| Field | Stored value | Notes |
+|---|---|---|
+| `Text::make('kop')` | string | One line, at most 255 characters. |
+| `LongText::make('intro')` | string | Plain text over several lines. |
+| `RichText::make('tekst')` | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. |
+| `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. |
+| `Button::make('knop')` | `{"text": "…", "link": {…}}` | A text and a link. |
+| `Choice::make('stijl', $options)` | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
+| `Items::make('knoppen', [...])` | list of items | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one. One level deep. |
+
+Every field takes `label()` (by default the key as a sentence: `gaat_naar` becomes "Gaat naar"), `hint()`, `required()` and `default()`. Fields are immutable: each of these returns a changed copy.
+
+The field names `id`, `type` and `visible` are reserved for the strip itself. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options) throws an exception that names the strip type.
+
+Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the messages), the values of a new strip (`defaults()`) and the stored form of validated values (`normalize()`).
+
+Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
+
 ## Launcher
 
 Once the package is installed, a MADE tile appears in the bottom-right corner of every full HTML page served through the `web` middleware group. Clicking it opens the Made CMS login panel over the site. There is nothing to publish or register: the middleware, markup, stylesheet, script and fonts (Nunito and Instrument Sans, both SIL Open Font License) are served straight from the package. They are deliberately not publishable, so they always update together.
@@ -219,7 +277,8 @@ src/
 │   ├── Data/       immutable data objects
 │   ├── Events/
 │   └── Models/     plain table representations
-├── Content/    pages, blocks and publishing
+├── Content/    pages, strips and publishing
+│   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
 │   └── ...
 ├── Console/    technical layer: artisan commands
 ├── Http/       technical layer: middleware (the launcher), controllers grouped per context, the login session

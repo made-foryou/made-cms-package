@@ -2,7 +2,7 @@ laravel: '@testbench'
 
 providers:
   - Made\CmsPackage\CmsPackageServiceProvider
-  # - Workbench\App\Providers\WorkbenchServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
 
 env:
   - APP_NAME="Made CMS Workbench"

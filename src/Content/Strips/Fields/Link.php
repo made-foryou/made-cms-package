@@ -1,0 +1,103 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Made\CmsPackage\Content\Strips\Fields;
+
+use Closure;
+use Made\CmsPackage\Content\Models\Page;
+
+/**
+ * A link to a page of the site, stored as {"page": id}, or to an address, stored as {"url": "…"}.
+ *
+ * A page keeps working when its path changes. An address is http(s), mailto, tel,
+ * a path on the site ("/lid-worden") or an anchor ("#over-ons").
+ */
+final class Link extends Field
+{
+    public const int MAX_URL_LENGTH = 2048;
+
+    private const string URL_PATTERN = '~^(?:https?://\S+|mailto:\S+|tel:\S+|/(?!/)\S*|#\S*)$~i';
+
+    public static function make(string $key): self
+    {
+        return new self($key);
+    }
+
+    public function rules(string $path): array
+    {
+        return [$path => [$this->presence(), 'array:page,url', self::target()]];
+    }
+
+    public function normalize(mixed $value): mixed
+    {
+        return self::normalizeTarget($value);
+    }
+
+    /**
+     * The rule that wants exactly one existing page or one valid address.
+     */
+    public static function target(): Closure
+    {
+        return static function (string $attribute, mixed $value, Closure $fail): void {
+            if (! is_array($value)) {
+                return;
+            }
+
+            $page = $value['page'] ?? null;
+            $url = $value['url'] ?? null;
+
+            if (($page === null) === ($url === null)) {
+                $fail(self::message('link'));
+
+                return;
+            }
+
+            if ($page !== null) {
+                if (! self::pageExists($page)) {
+                    $fail(self::message('link_page'));
+                }
+
+                return;
+            }
+
+            if (! is_string($url) || mb_strlen($url) > self::MAX_URL_LENGTH || preg_match(self::URL_PATTERN, $url) !== 1) {
+                $fail(self::message('link_url'));
+            }
+        };
+    }
+
+    /**
+     * Stores a page as its id and an address without the spaces around it.
+     */
+    public static function normalizeTarget(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        if (isset($value['page']) && is_numeric($value['page'])) {
+            return ['page' => (int) $value['page']];
+        }
+
+        if (isset($value['url']) && is_string($value['url'])) {
+            return ['url' => trim($value['url'])];
+        }
+
+        return $value;
+    }
+
+    private static function pageExists(mixed $page): bool
+    {
+        if (! is_int($page) && ! (is_string($page) && ctype_digit($page))) {
+            return false;
+        }
+
+        return Page::query()->whereKey((int) $page)->exists();
+    }
+
+    private static function message(string $key): string
+    {
+        return (string) __('made-cms-package::strips.validation.'.$key);
+    }
+}

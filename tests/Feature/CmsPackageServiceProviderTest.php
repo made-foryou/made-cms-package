@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\CmsPackageServiceProvider;
+use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
 it('merges the package config', function (): void {
@@ -27,7 +28,26 @@ it('merges the package config', function (): void {
         ->and(config('made-cms-package.launcher.enabled'))->toBeTrue()
         ->and(config('made-cms-package.launcher.allowed_ips'))->toBe([])
         ->and(config('made-cms-package.launcher.locale'))->toBe('nl')
-        ->and(config('made-cms-package.launcher.except'))->toBe(['nova*', 'telescope*', 'horizon*', 'pulse*']);
+        ->and(config('made-cms-package.launcher.except'))->toBe(['nova*', 'telescope*', 'horizon*', 'pulse*'])
+        ->and(config('made-cms-package.strips.path'))->toBe(app_path('Cms/Strips'))
+        ->and(config('made-cms-package.strips.namespace'))->toBe('App\\Cms\\Strips');
+});
+
+it('builds the strip type catalogue once from the configured folder', function (): void {
+    config([
+        'made-cms-package.strips.path' => __DIR__.'/../Fixtures/Strips/Valid',
+        'made-cms-package.strips.namespace' => 'Made\\CmsPackage\\Tests\\Fixtures\\Strips\\Valid',
+    ]);
+
+    $catalogue = app(StripTypes::class);
+
+    expect($catalogue->has('hero'))->toBeTrue()
+        ->and($catalogue->has('cards'))->toBeTrue()
+        ->and(app(StripTypes::class))->toBe($catalogue);
+});
+
+it('has an empty catalogue while the site has no strip types', function (): void {
+    expect(app(StripTypes::class)->all())->toBe([]);
 });
 
 it('registers its own session guard and editor provider next to the host guards', function (): void {
@@ -87,7 +107,7 @@ it('ships every translation in Dutch and English', function (string $file): void
     $english = require __DIR__."/../../lang/en/{$file}.php";
 
     expect(array_keys(Arr::dot($english)))->toBe(array_keys(Arr::dot($dutch)));
-})->with(['pages', 'launcher', 'console', 'mail']);
+})->with(['pages', 'launcher', 'console', 'mail', 'strips']);
 
 it('registers the view namespace', function (): void {
     expect(app('view')->getFinder()->getHints())->toHaveKey('made-cms-package');

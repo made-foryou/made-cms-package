@@ -105,4 +105,20 @@ return [
         'except' => ['nova*', 'telescope*', 'horizon*', 'pulse*'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Strips
+    |--------------------------------------------------------------------------
+    |
+    | Editors build pages from the strip types the site defines: one class per
+    | type that extends StripType. The catalogue finds every class in path and
+    | its sub-folders; namespace is the namespace that path maps to (PSR-4).
+    |
+    */
+
+    'strips' => [
+        'path' => app_path('Cms/Strips'),
+        'namespace' => 'App\\Cms\\Strips',
+    ],
+
 ];

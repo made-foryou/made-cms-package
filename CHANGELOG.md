@@ -4,6 +4,12 @@
 
 ### Added
 
+- Strips per page with a draft and a published version: `cms_pages` gains `strips` (the published strips, `[]` by default) and `draft_strips` (the draft editors work on, `null` when there is none). Every strip has a fixed `id` (uuid), its strip type `type`, `visible` and its `values`.
+- Actions `AddStrip` (type and position, filled with the defaults of the type), `MoveStrip`, `RemoveStrip`, `UpdateStrip` (checks the values against the strip type, cleans them and throws a `ValidationException` keyed by field), `SetStripVisibility` and `DiscardDraft`. They all write to the draft, so visitors keep seeing the published version, and dispatch `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged` or `DraftDiscarded`. A strip that is not on the page throws `StripNotFound`, a position outside the page `InvalidStripPosition`.
+- Data objects `Strip` and `PageStrips` for the stored strips of a page.
+- A strip of a type that is no longer in the catalogue keeps its data: it moves, hides, publishes and is discarded like any strip; only `UpdateStrip` refuses it (`UnknownStripType`).
+- Page factory states `withStrips()` and `withDraft()`.
+
 - Strip types: the site defines the kinds of strips editors build pages from, one class per type in `app/Cms/Strips` extending `Made\CmsPackage\Content\Strips\StripType` (fixed `key()`, `fields()`, optional `label()`, `description()`, `view()` and `with()`). A strip type derives its validation rules, labels, defaults and stored values.
 - Field types `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button`, `Choice` and `Items` in `Made\CmsPackage\Content\Strips\Fields`.
 - The strip type catalogue `StripTypes` (`all()`, `has()`, `find()`), bound as a singleton; it checks every definition and throws `InvalidStripType`, `DuplicateStripType` or `UnknownStripType`.
@@ -43,6 +49,8 @@
 - Runtime dependencies `illuminate/auth`, `illuminate/cache`, `illuminate/console`, `illuminate/cookie`, `illuminate/hashing`, `illuminate/mail`, `illuminate/notifications` and `illuminate/session`.
 
 ### Changed
+
+- `PublishPage` publishes the draft: its strips become the published strips and the draft is cleared, also on a page that is already published (`published_at` is the last publication). It refuses a draft with a strip that breaks its strip type, hidden strips included, with a `ValidationException` keyed by `strips.<strip id>.<field>`, and still throws `PageAlreadyPublished` for a published page without a draft. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`) or adds the `strips` (json) and `draft_strips` (json, nullable) columns itself.
 
 - Screen labels moved to `screens.label.<screen>` in the translation files, next to the new `screens.group.<group>`; a host that published the translations republishes them (`made-cms-package-lang`).
 - `NewEditor` takes the editor's `roles` (at least one) and `made-cms:editor` gains the `--role` option; without it the command asks for the roles.

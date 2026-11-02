@@ -9,16 +9,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Made\CmsPackage\Content\Builders\PageBuilder;
+use Made\CmsPackage\Content\Data\Strip;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Database\Factories\Content\PageFactory;
 
 /**
  * A page of the site that editors manage.
  *
+ * @phpstan-import-type StoredStrip from Strip
+ *
  * @property int $id
  * @property string $title
  * @property string $slug
  * @property PageStatus $status
+ * @property list<StoredStrip> $strips the published strips, in order
+ * @property list<StoredStrip>|null $draft_strips the draft editors work on; null when there is none
  * @property CarbonImmutable|null $published_at
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -36,11 +41,14 @@ class Page extends Model
         'title',
         'slug',
         'status',
+        'strips',
+        'draft_strips',
         'published_at',
     ];
 
     protected $attributes = [
         'status' => 'draft',
+        'strips' => '[]',
     ];
 
     /**
@@ -50,6 +58,8 @@ class Page extends Model
     {
         return [
             'status' => PageStatus::class,
+            'strips' => 'array',
+            'draft_strips' => 'array',
             'published_at' => 'immutable_datetime',
         ];
     }

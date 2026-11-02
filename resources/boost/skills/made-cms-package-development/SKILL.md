@@ -63,8 +63,11 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 ### 7. Use the actions
 
-- `PublishPage::run($page)` publishes a page; query pages with `Page::query()->published()`
-- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled` and `PagePublished` for side effects
+- a page holds its published strips (`strips`) and a draft (`draft_strips`, `null` without one); every strip has an `id`, a `type` key, `visible` and `values`
+- `AddStrip::run($page, 'hero', $position)`, `MoveStrip::run($page, $stripId, $position)`, `RemoveStrip::run($page, $stripId)`, `UpdateStrip::run($page, $stripId, $values)` (throws a `ValidationException` keyed by field) and `SetStripVisibility::run($page, $stripId, $visible)` change the draft; visitors keep the published strips
+- `PublishPage::run($page)` makes the draft the published version and refuses a draft with an invalid strip (errors keyed `strips.<id>.<field>`); `DiscardDraft::run($page)` goes back to the published version; query pages with `Page::query()->published()`
+- a strip whose type is no longer in the catalogue keeps its data; only `UpdateStrip` refuses it
+- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished` for side effects
 
 ## Rules, References, and Templates
 

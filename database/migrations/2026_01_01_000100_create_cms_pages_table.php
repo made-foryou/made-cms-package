@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug')->unique();
             $table->string('status')->default('draft')->index();
+            $table->json('strips');
+            $table->json('draft_strips')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });

@@ -79,19 +79,32 @@ use Made\CmsPackage\Access\Enums\Role;
 CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: null, roles: [Role::Admin]));
 ```
 
-Publish a page and query pages:
+Build a page from strips and publish it. Every strip action works on the draft; visitors see the published strips until the draft is published:
 
 ```php
+use Made\CmsPackage\Content\Actions\AddStrip;
+use Made\CmsPackage\Content\Actions\DiscardDraft;
+use Made\CmsPackage\Content\Actions\MoveStrip;
 use Made\CmsPackage\Content\Actions\PublishPage;
+use Made\CmsPackage\Content\Actions\RemoveStrip;
+use Made\CmsPackage\Content\Actions\SetStripVisibility;
+use Made\CmsPackage\Content\Actions\UpdateStrip;
 use Made\CmsPackage\Content\Models\Page;
 
-PublishPage::run($page);
+$strip = AddStrip::run($page, 'hero', 0);                    // type key and position
+UpdateStrip::run($page, $strip->id, ['kop' => 'Welkom']);    // validated against the strip type
+MoveStrip::run($page, $strip->id, 2);
+SetStripVisibility::run($page, $strip->id, false);
+RemoveStrip::run($page, $strip->id);
+
+PublishPage::run($page);   // the draft becomes the published version
+DiscardDraft::run($page);  // or: back to the published version
 
 Page::query()->published()->get();
 Page::query()->recentlyEdited()->limit(3)->get();
 ```
 
-Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled` and `PagePublished`.
+Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished`.
 
 ## Roles and screens
 

@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
 
 /*
@@ -76,4 +80,38 @@ function contextClasses(string $layer): array
     }
 
     return $classes;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Strip helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Binds a catalogue with the fixture strip types "hero" and "cards".
+ */
+function useStripTypes(): StripTypes
+{
+    $catalogue = new StripTypes([new Hero, new Cards]);
+
+    app()->instance(StripTypes::class, $catalogue);
+
+    return $catalogue;
+}
+
+/**
+ * A strip in the form it is stored in cms_pages.
+ *
+ * @param  array<string, mixed>  $values
+ * @return array{id: string, type: string, visible: bool, values: array<string, mixed>}
+ */
+function storedStrip(string $type = 'cards', array $values = [], bool $visible = true, ?string $id = null): array
+{
+    return [
+        'id' => $id ?? (string) Str::uuid(),
+        'type' => $type,
+        'visible' => $visible,
+        'values' => $values,
+    ];
 }

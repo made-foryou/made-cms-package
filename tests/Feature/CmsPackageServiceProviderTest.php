@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\CmsPackageServiceProvider;
+use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
@@ -126,4 +129,22 @@ it('registers the publish tags promised in the README', function (string $tag): 
 
 it('ships the migrations for every context', function (string $table): void {
     expect(Schema::hasTable($table))->toBeTrue();
-})->with(['cms_editors', 'cms_login_codes', 'cms_pages']);
+})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes']);
+
+it('maps the page model to a morph alias without forcing a map on the host', function (): void {
+    expect(Relation::getMorphedModel('cms_page'))->toBe(Page::class)
+        ->and((new Page)->getMorphClass())->toBe('cms_page')
+        ->and(Relation::requiresMorphMap())->toBeFalse();
+});
+
+it('registers the madeCms route macro', function (): void {
+    expect(Route::hasMacro('madeCms'))->toBeTrue();
+});
+
+it('has the route macro ready before any provider boots, so the routes of a site can use it', function (): void {
+    Router::flushMacros();
+
+    (new CmsPackageServiceProvider(app()))->register();
+
+    expect(Router::hasMacro('madeCms'))->toBeTrue();
+});

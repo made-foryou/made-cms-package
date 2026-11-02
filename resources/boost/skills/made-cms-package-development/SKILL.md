@@ -69,6 +69,13 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - a strip whose type is no longer in the catalogue keeps its data; only `UpdateStrip` refuses it
 - listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished` for side effects
 
+### 8. Serve the pages
+
+- serve the CMS pages with one line as the **last** line of `routes/web.php`: `Route::madeCms(fn (Page $page) => view('page', ['page' => $page]))` (Blade), `Route::madeCms(fn (Page $page) => Inertia::render('Page', ['title' => $page->title, 'strips' => $page->strips]))` (Inertia), or `Route::madeCms(ShowPage::class)` with an invokable class
+- the macro catches every `GET` address no route above it claims, looks up the published page there and hands it to the responder; no page or a page that is not published answers 404; routes of the site above it win
+- it takes the prefix and middleware of a surrounding group, returns the route without a name (chain `->name()` or `->middleware()`), can be used more than once and works with `route:cache`
+- the address of a page is `$page->route->path` (`/` for home, `/over-ons/team` nested), stored in `cms_routes`; look up what a visitor sees with `FindPublishedPage::run(PagePath::fromString($path))`
+
 ## Rules, References, and Templates
 
 Read before executing:
@@ -79,6 +86,7 @@ Read before executing:
 
 - showing the tile to the office network: add `MADE_CMS_LAUNCHER_IPS=203.0.113.0/24` to the production `.env`
 - a host feature test that snapshots full HTML: disable the launcher in `phpunit.xml` with `<env name="MADE_CMS_LAUNCHER_ENABLED" value="false"/>`
+- pages in a second language: `Route::prefix('en')->group(fn () => Route::madeCms(fn (Page $page) => view('page', ['page' => $page])));`
 - a first editor in production: `php artisan made-cms:editor editor@example.com --name="Menno Tempelaar" --role=admin`
 
 ## Anti-patterns
@@ -91,4 +99,8 @@ Read before executing:
 - do not put a CDN or response cache in front of pages for allowed visitors without excluding the tile
 - do not derive `key()` from the class name or change it once content uses it; the key is stored with every strip
 - do not nest `Items` inside `Items`; one list level is supported
+- do not put routes of the site below `Route::madeCms()`; they are never reached
+- do not call the responder's parameter `$path`; the route parameter has that name and implicit binding would look the page up by id
+- do not chain `Route::middleware(...)->madeCms()`; wrap the macro in `->group()` instead
+- do not look pages up by `cms_pages.slug`; an address lives in `cms_routes`
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

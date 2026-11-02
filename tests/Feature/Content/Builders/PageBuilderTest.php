@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Builders\PageBuilder;
+use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -62,4 +63,32 @@ it('casts the published and the draft strips to arrays', function (): void {
 
     expect($stored->strips)->toBe($strips)
         ->and($stored->draft_strips)->toBe([]);
+});
+
+it('finds the page at a path', function (): void {
+    Page::factory()->at('/over-ons')->create();
+    $team = Page::factory()->at('/over-ons/team')->create();
+
+    expect(Page::query()->atPath(PagePath::fromString('/over-ons/team'))->pluck('id')->all())->toBe([$team->id]);
+});
+
+it('finds no page at a path without a route', function (): void {
+    Page::factory()->create(['slug' => 'over-ons']);
+
+    expect(Page::query()->atPath(PagePath::fromString('/over-ons'))->exists())->toBeFalse();
+});
+
+it('combines the path with the published pages', function (): void {
+    Page::factory()->at('/concept')->create();
+    $live = Page::factory()->published()->at('/live')->create();
+
+    expect(Page::query()->published()->atPath(PagePath::fromString('/concept'))->exists())->toBeFalse()
+        ->and(Page::query()->published()->atPath(PagePath::fromString('/live'))->pluck('id')->all())->toBe([$live->id]);
+});
+
+it('lets two pages share a slug', function (): void {
+    Page::factory()->at('/over-ons/team')->create(['slug' => 'team']);
+    Page::factory()->at('/vereniging/team')->create(['slug' => 'team']);
+
+    expect(Page::query()->where('slug', 'team')->count())->toBe(2);
 });

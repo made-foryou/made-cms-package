@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Routing\CompiledRouteCollection;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Middleware\ResolvePage;
 use Made\CmsPackage\Tests\Fixtures\Http\ShowPage;
@@ -118,6 +119,17 @@ it('answers 404 to a visitor for a draft page', function (): void {
     $this->get('concept')->assertNotFound();
 });
 
+it('serves a draft page to an editor in the edit mode', function (): void {
+    Page::factory()->at('/concept')->create(['title' => 'Concept']);
+    servePages();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('concept?made-cms=edit')
+        ->assertOk()
+        ->assertSeeText('Pagina: Concept')
+        ->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+});
+
 it('lets a route of the site above the macro win', function (): void {
     Page::factory()->published()->at('/contact')->create();
     Route::get('contact', static fn (): string => 'Formulier van de site');
@@ -201,4 +213,17 @@ it('caches the macro used twice without a name clash', function (): void {
 
     $this->get('en/over-ons')->assertOk()->assertSeeText('EN: Over ons');
     $this->get('over-ons')->assertOk()->assertSeeText('Pagina: Over ons');
+});
+
+it('serves the edit mode from cached routes', function (): void {
+    Page::factory()->at('/concept')->create(['title' => 'Concept']);
+    servePages();
+
+    cacheRoutes();
+
+    $this->get('concept?made-cms=edit')->assertNotFound();
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('concept?made-cms=edit')
+        ->assertOk()
+        ->assertSeeText('Pagina: Concept');
 });

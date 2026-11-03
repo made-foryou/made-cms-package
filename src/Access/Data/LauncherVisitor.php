@@ -15,5 +15,7 @@ final readonly class LauncherVisitor
         public ?string $ip,
         public bool $remembered,
         public ?Editor $editor = null,
+        /** The page is shown in the edit mode, inside the frame of the CMS. */
+        public bool $editing = false,
     ) {}
 }

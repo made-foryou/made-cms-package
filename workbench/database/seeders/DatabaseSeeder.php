@@ -30,7 +30,8 @@ class DatabaseSeeder extends Seeder
         // Logs in with a code (see storage/logs) or with the password "password".
         CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]));
 
-        // Served by Route::madeCms() in workbench/routes/web.php: "/" and "/over-ons" open, "/concept" is a draft and answers 404.
+        // Served by Route::madeCms() in workbench/routes/web.php: "/" and "/over-ons" open. "/concept" is a draft and answers
+        // 404, except to a logged-in editor in the edit mode of the CMS: "/concept?made-cms=edit".
         $about = Page::factory()->published()->at('/over-ons')->withStrips([
             $this->strip('hero', ['kop' => 'Over ons']),
         ])->create(['title' => 'Over ons', 'slug' => 'over-ons']);
@@ -58,7 +59,9 @@ class DatabaseSeeder extends Seeder
             $this->strip('hero', ['kop' => 'Verborgen strook: bezoekers zien deze niet'], visible: false),
         ])->create(['title' => 'Home', 'slug' => 'home']);
 
-        Page::factory()->at('/concept')->create(['title' => 'Concept', 'slug' => 'concept']);
+        Page::factory()->at('/concept')->withDraft([
+            $this->strip('hero', ['kop' => 'Een pagina die nog niet gepubliceerd is']),
+        ])->create(['title' => 'Concept', 'slug' => 'concept']);
     }
 
     /**

@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Made\CmsPackage\Access\Actions\DescribeEditor;
 use Made\CmsPackage\Access\Data\LauncherVisitor;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 
 /**
@@ -22,6 +23,7 @@ final class Visitor
             ip: $request->ip(),
             remembered: EditorDevice::remembered($request),
             editor: self::editor($request),
+            editing: app(EditMode::class)->active,
         );
     }
 

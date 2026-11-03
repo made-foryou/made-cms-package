@@ -10,6 +10,8 @@
 
 - `Route::madeCms($responder)`: the site serves the CMS pages with one line, as the last of its web routes. Every `GET` address no route above it claims looks up the published page there and hands it to the responder of the site (a closure or an invokable class) as `Page`; an address without a page, or a page that is not published, answers 404. The route takes the prefix and middleware of its group, has no name (chain `->name()` yourself) and works with `route:cache`. Middleware `ResolvePage` does the lookup.
 - Addresses of the site in the new `cms_routes` table (`Route` model, one unique `path` per row pointing at its content through `routable`), with `Page::route()`, `RouteBuilder::atPath()` and `PageBuilder::atPath()`. Pages are stored under the morph alias `cms_page`, added to the host's morph map without enforcing one.
+- Edit mode of the site for the frame of the CMS: with `?made-cms=edit`, an editor who opens the pages screen gets the page whatever its status, with its draft rendered by `RenderStrips` and `<x-made-cms::strips>`. The response is sent with `Cache-Control: no-store, private`, `X-Frame-Options: SAMEORIGIN` and `X-Robots-Tag: noindex, nofollow`, and without the launcher. Visitors and guests never see a draft, with or without the parameter. A site that sends `X-Frame-Options: DENY` or `frame-ancestors 'none'` from its own middleware or web server has to allow the same origin; see the README.
+- `FindPage` action: the page at an address whatever its status. `EditMode` data object, bound per request and off by default.
 - `FindPublishedPage` action and the `PagePath` data object (an address normalised to lowercase, `/` or `/over-ons/team`). `/Over-Ons/` serves the page at `/over-ons` on every database, whatever its collation.
 - Page factory state `at($path)` and `RouteFactory`.
 
@@ -67,6 +69,8 @@
 - `NewEditor` takes the editor's `roles` (at least one) and `made-cms:editor` gains the `--role` option; without it the command asks for the roles.
 - The default `routes.prefix` is now `made-cms` (was `cms`): every CMS route, the mail link and the launcher assets moved to `/made-cms/...`.
 - `IssueLoginCode::run()` takes a `LoginCodeRequest` (address, browser binding, page to return to) and returns the link token too; `cms_login_codes` gains `attempts`, `session_hash`, `link_hash` and `return_to`.
+- `RenderStrips::run($page)` renders the draft, or the published strips without a draft, in the edit mode; outside it nothing changes.
+- `LauncherVisitor` gains `editing`; `ShowLauncher` hides the launcher in the edit mode.
 - `ShowLauncher::run()` returns a `LauncherView` (hidden, tile or edit bar) instead of a boolean; `LauncherVisitor` gains the logged-in `editor`.
 
 ### Removed

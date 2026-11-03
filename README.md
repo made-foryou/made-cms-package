@@ -237,7 +237,7 @@ Route::madeCms(fn (Page $page) => Inertia::render('Page', [
 Route::madeCms(ShowPage::class);
 ```
 
-The macro registers a `GET` route for every address that no route above it claims. It looks up the published page at that address and hands it to your responder, which returns the response in whatever stack the site uses. An address without a page, and a page that is not published, answer 404. Render the strips of the page as described in [Rendering strips](#rendering-strips); `$page->strips` holds them only as stored.
+The macro registers a `GET` route for every address that no route above it claims. It looks up the published page at that address and hands it to your responder, which returns the response in whatever stack the site uses. An address without a page, and a page that is not published, answer 404 to visitors; editors see drafts in the [edit mode](#edit-mode). Render the strips of the page as described in [Rendering strips](#rendering-strips); `$page->strips` holds them only as stored.
 
 - Routes of the site above the line win; routes below it are never reached. A `Route::fallback()` of the site is no longer reached for `GET` requests: an address without a page gets the 404 page of the site.
 - It takes the prefix and middleware of a surrounding group: `Route::prefix('nl')->group(fn () => Route::madeCms(...))` serves the pages under `/nl`. Call it on `Route::` directly or inside `->group()`; `Route::middleware('x')->madeCms()` does not work.
@@ -245,11 +245,28 @@ The macro registers a `GET` route for every address that no route above it claim
 - The route parameter is called `path`. Call the parameter of your responder anything else (`$page`), or implicit route binding looks the page up by id and answers 404.
 - A `POST` to an address without a route answers 405 instead of 404, like any catch-all route.
 
-The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. An address is lowercase, without a trailing slash: `/Over-Ons/` serves the page at `/over-ons`. Store a path through `PagePath::fromString($path)->value`, so it matches what visitors ask for. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`.
+The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. An address is lowercase, without a trailing slash: `/Over-Ons/` serves the page at `/over-ons`. Store a path through `PagePath::fromString($path)->value`, so it matches what visitors ask for. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`. `FindPage::run($path)` finds the page at an address whatever its status.
+
+### Edit mode
+
+The CMS edits a page with the site in an iframe on the same origin, at the address of the page with `?made-cms=edit`. For a logged-in editor who opens the pages screen, the same route then serves the edit mode:
+
+- your responder gets the page whatever its status, so also a page that was never published;
+- `RenderStrips::run($page)` and `<x-made-cms::strips>` render the working copy: the draft, or the published strips when there is no draft. Hidden strips stay out;
+- the response is sent with `Cache-Control: no-store, private`, `X-Frame-Options: SAMEORIGIN` and `X-Robots-Tag: noindex, nofollow`, and gets no launcher, because the CMS has a bar of its own.
+
+For a visitor, a guest or any other value the parameter changes nothing: a draft still answers 404. Your responder needs no code for the edit mode, but keep in mind:
+
+- The macro has to sit in the `web` group: without the session the editor is unknown and the parameter is ignored.
+- In the edit mode `$page->status` can be a draft and `$page->published_at` can be `null`; a view that prints the date must cope with that.
+- A link to a page that is not published renders as `null` in the edit mode too, as it does for visitors.
+- The page has to be allowed in a frame of the same origin. The edit mode sets its headers inside the route, so headers from middleware in the `web` group, the global middleware or the web server come on top of them. If the site sends `X-Frame-Options`, use `SAMEORIGIN` instead of `DENY`. With a Content Security Policy, allow `frame-ancestors 'self'` instead of `'none'`. For the public site both are as safe as forbidding every frame, because only the site itself can frame it.
+- Do not let a full-page cache (a CDN rule, `spatie/laravel-responsecache`) store or serve responses with `?made-cms=edit`. Cache headers chained on the route itself (`Route::madeCms(...)->middleware('cache.headers:…')`) are replaced by the edit mode.
+
 
 ## Rendering strips
 
-The site renders the strips itself, in its own stack; the package hands over the data, ready to render. `RenderStrips::run($page)` gives the strips a visitor sees: the published version, in the order of the page, without hidden strips and without strips of a type that is no longer in the catalogue. `->toArray()` gives a list in which every strip is its `id`, its `type` and its rendered fields:
+The site renders the strips itself, in its own stack; the package hands over the data, ready to render. `RenderStrips::run($page)` gives the strips a visitor sees: the published version (the draft in the [edit mode](#edit-mode)), in the order of the page, without hidden strips and without strips of a type that is no longer in the catalogue. `->toArray()` gives a list in which every strip is its `id`, its `type` and its rendered fields:
 
 ```php
 [

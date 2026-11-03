@@ -18,6 +18,7 @@ use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
+use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
@@ -37,6 +38,8 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->registerGuard();
 
         $this->registerStripTypes();
+
+        $this->registerEditMode();
 
         // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
         // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
@@ -124,6 +127,15 @@ class CmsPackageServiceProvider extends ServiceProvider
         if (! $config->has("auth.guards.{$guard}")) {
             $config->set("auth.guards.{$guard}", ['driver' => 'session', 'provider' => $guard]);
         }
+    }
+
+    /**
+     * Off for every request, until the page route switches it on for an editor. Scoped, so a long-running worker
+     * (Octane, queue) forgets it with the other per-request instances.
+     */
+    private function registerEditMode(): void
+    {
+        $this->app->scoped(EditMode::class, static fn (): EditMode => EditMode::off());
     }
 
     /**

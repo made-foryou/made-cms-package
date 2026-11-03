@@ -42,4 +42,25 @@ final class Button extends Field
 
         return $value;
     }
+
+    /**
+     * A button as its text and url; without a text or a url there is no button to show.
+     *
+     * @return array{text: string, url: string}|null
+     */
+    public function render(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $text = $value['text'] ?? null;
+        $url = Link::resolve($value['link'] ?? null);
+
+        if (! is_string($text) || $text === '' || $url === null) {
+            return null;
+        }
+
+        return ['text' => $text, 'url' => $url];
+    }
 }

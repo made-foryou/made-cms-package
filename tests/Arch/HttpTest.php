@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\Component;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 if (is_dir(__DIR__.'/../../src/Http/Controllers')) {
@@ -40,6 +41,14 @@ if (is_dir(__DIR__.'/../../src/Http/Middleware')) {
         ->toBeClasses()
         ->toBeFinal()
         ->toHaveMethod('handle');
+}
+
+if (is_dir(__DIR__.'/../../src/Http/Components')) {
+    arch('blade components for the site are final view components')
+        ->expect('Made\CmsPackage\Http\Components')
+        ->toBeClasses()
+        ->toBeFinal()
+        ->toExtend(Component::class);
 }
 
 if (is_dir(__DIR__.'/../../src/Http')) {

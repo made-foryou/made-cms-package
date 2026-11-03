@@ -13,6 +13,7 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\Compilers\BladeCompiler;
 use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
@@ -53,6 +54,11 @@ class CmsPackageServiceProvider extends ServiceProvider
 
         // The launcher markup belongs to its package-served script and styles, so it is never published.
         $this->loadViewsFrom(__DIR__.'/../resources/launcher', 'made-cms-package-launcher');
+
+        // <x-made-cms::strips>: the Blade components a site renders its CMS pages with.
+        $this->callAfterResolving(BladeCompiler::class, function (BladeCompiler $blade): void {
+            $blade->componentNamespace('Made\\CmsPackage\\Http\\Components', 'made-cms');
+        });
 
         $this->loadTranslationsFrom(__DIR__.'/../lang', 'made-cms-package');
 

@@ -120,4 +120,35 @@ final class Items extends Field
             return $item;
         }, $value);
     }
+
+    /**
+     * Always a list: every item with every field rendered, a missing one from its default.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function render(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach ($value as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $rendered = [];
+
+            foreach ($this->fields as $field) {
+                $key = $field->getKey();
+                $rendered[$key] = $field->render(array_key_exists($key, $item) ? $item[$key] : $field->getDefault());
+            }
+
+            $items[] = $rendered;
+        }
+
+        return $items;
+    }
 }

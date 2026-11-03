@@ -53,8 +53,9 @@ abstract class StripType
 
     /**
      * Extra data from the site to render the strip with, such as the latest news.
+     * Its keys land next to the fields and override a field with the same name.
      *
-     * @param  array<string, mixed>  $values  the stored values of the strip
+     * @param  array<string, mixed>  $values  the rendered values of the strip: every field, links as urls
      * @return array<string, mixed>
      */
     public function with(array $values): array
@@ -125,5 +126,24 @@ abstract class StripType
         }
 
         return $values;
+    }
+
+    /**
+     * The values as the site renders them: every field in the order of the definition,
+     * a missing one from its default, links as urls, and the extra data of with() on top.
+     *
+     * @param  array<string, mixed>  $values  stored values
+     * @return array<string, mixed>
+     */
+    final public function render(array $values): array
+    {
+        $rendered = [];
+
+        foreach ($this->fields() as $field) {
+            $key = $field->getKey();
+            $rendered[$key] = $field->render(array_key_exists($key, $values) ? $values[$key] : $field->getDefault());
+        }
+
+        return [...$rendered, ...$this->with($rendered)];
     }
 }

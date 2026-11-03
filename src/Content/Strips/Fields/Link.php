@@ -34,6 +34,11 @@ final class Link extends Field
         return self::normalizeTarget($value);
     }
 
+    public function render(mixed $value): ?string
+    {
+        return self::resolve($value);
+    }
+
     /**
      * The rule that wants exactly one existing page or one valid address.
      */
@@ -85,6 +90,27 @@ final class Link extends Field
         }
 
         return $value;
+    }
+
+    /**
+     * The url of a stored link: a page as the current path of its address, an address as it is.
+     * A page a visitor cannot open (gone, not published, without an address) has no url.
+     */
+    public static function resolve(mixed $value): ?string
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $page = $value['page'] ?? null;
+
+        if (is_int($page) || (is_string($page) && ctype_digit($page))) {
+            return Page::query()->published()->whereKey((int) $page)->first()?->route?->path;
+        }
+
+        $url = $value['url'] ?? null;
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 
     private static function pageExists(mixed $page): bool

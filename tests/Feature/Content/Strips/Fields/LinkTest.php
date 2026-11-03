@@ -73,3 +73,28 @@ it('leaves an optional link empty', function (): void {
 it('needs the text and the link of a button', function (): void {
     expect(array_keys(linkErrors(['knoppen' => [['knop' => ['text' => '']]]])))->toBe(['knoppen.0.knop.text', 'knoppen.0.knop.link']);
 });
+
+it('renders a page as the current path of its address', function (): void {
+    $page = Page::factory()->published()->at('/over-ons/team')->create();
+
+    expect(Link::make('gaat_naar')->render(['page' => $page->id]))->toBe('/over-ons/team');
+});
+
+it('renders a page a visitor cannot open as null', function (Closure $page): void {
+    expect(Link::make('gaat_naar')->render(['page' => $page()]))->toBeNull();
+})->with([
+    'a draft page' => [fn (): int => Page::factory()->at('/concept')->create()->id],
+    'a page without an address' => [fn (): int => Page::factory()->published()->create()->id],
+    'a page that is gone' => [fn (): int => 999],
+]);
+
+it('renders a button to a page with the path of the page', function (): void {
+    $page = Page::factory()->published()->at('/lid-worden')->create();
+
+    expect(Button::make('knop')->render(['text' => 'Lid worden', 'link' => ['page' => $page->id]]))
+        ->toBe(['text' => 'Lid worden', 'url' => '/lid-worden']);
+});
+
+it('renders a button to a page that is gone as null', function (): void {
+    expect(Button::make('knop')->render(['text' => 'Lid worden', 'link' => ['page' => 999]]))->toBeNull();
+});

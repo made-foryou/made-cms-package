@@ -196,23 +196,23 @@ final class Hero extends StripType
 }
 ```
 
-`key()` is stored with every strip, so it never changes once content uses it, also not when you rename the class. It uses lowercase letters, digits and dashes. Optionally override `label()` (the name in the catalogue, by default the class name), `description()`, `view()` (by default `strips.{key}`) and `with(array $values)` (extra data to render with, such as the latest news).
+`key()` is stored with every strip, so it never changes once content uses it, also not when you rename the class. It uses lowercase letters, digits and dashes. Optionally override `label()` (the name in the catalogue, by default the class name), `description()`, `view()` (the Blade view, by default `strips.{key}`) and `with(array $values)` (extra data to render with, such as the latest news). `with()` receives the rendered values: every field, links as urls. Its keys land next to the fields and override a field with the same name, never `id` or `type`.
 
-| Field | Stored value | Notes |
-|---|---|---|
-| `Text::make('kop')` | string | One line, at most 255 characters. |
-| `LongText::make('intro')` | string | Plain text over several lines. |
-| `RichText::make('tekst')` | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. |
-| `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. |
-| `Button::make('knop')` | `{"text": "…", "link": {…}}` | A text and a link. |
-| `Choice::make('stijl', $options)` | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
-| `Items::make('knoppen', [...])` | list of items | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one. One level deep. |
+| Field | Stored value | Rendered value | Notes |
+|---|---|---|---|
+| `Text::make('kop')` | string | string | One line, at most 255 characters. Print it escaped. |
+| `LongText::make('intro')` | string | string | Plain text over several lines. Print it escaped, e.g. `{!! nl2br(e($strip->intro)) !!}`. |
+| `RichText::make('tekst')` | HTML | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. Cleaned when it is stored, so print it unescaped. |
+| `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published. |
+| `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
+| `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
+| `Items::make('knoppen', [...])` | list of items | list of items | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one. One level deep. Rendered, it is always a list and every item has every field. |
 
 Every field takes `label()` (by default the key as a sentence: `gaat_naar` becomes "Gaat naar"), `hint()`, `required()` and `default()`. Fields are immutable: each of these returns a changed copy.
 
 The field names `id`, `type` and `visible` are reserved for the strip itself. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options) throws an exception that names the strip type.
 
-Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the messages), the values of a new strip (`defaults()`) and the stored form of validated values (`normalize()`).
+Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the messages), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`) and the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top).
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 
@@ -221,6 +221,7 @@ Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namesp
 Every page lives at an address of the site (`/` for the home page, `/over-ons/team` for a nested one). Serve the pages with one line, as the **last** line of `routes/web.php`:
 
 ```php
+use Made\CmsPackage\Content\Actions\RenderStrips;
 use Made\CmsPackage\Content\Models\Page;
 
 // Blade
@@ -229,14 +230,14 @@ Route::madeCms(fn (Page $page) => view('page', ['page' => $page]));
 // Inertia (React or Vue)
 Route::madeCms(fn (Page $page) => Inertia::render('Page', [
     'title' => $page->title,
-    'strips' => $page->strips,
+    'strips' => RenderStrips::run($page)->toArray(),
 ]));
 
 // or an invokable class of your own
 Route::madeCms(ShowPage::class);
 ```
 
-The macro registers a `GET` route for every address that no route above it claims. It looks up the published page at that address and hands it to your responder, which returns the response in whatever stack the site uses. An address without a page, and a page that is not published, answer 404. `$page->strips` holds the published strips as stored: `id`, `type`, `visible` and `values`.
+The macro registers a `GET` route for every address that no route above it claims. It looks up the published page at that address and hands it to your responder, which returns the response in whatever stack the site uses. An address without a page, and a page that is not published, answer 404. Render the strips of the page as described in [Rendering strips](#rendering-strips); `$page->strips` holds them only as stored.
 
 - Routes of the site above the line win; routes below it are never reached. A `Route::fallback()` of the site is no longer reached for `GET` requests: an address without a page gets the 404 page of the site.
 - It takes the prefix and middleware of a surrounding group: `Route::prefix('nl')->group(fn () => Route::madeCms(...))` serves the pages under `/nl`. Call it on `Route::` directly or inside `->group()`; `Route::middleware('x')->madeCms()` does not work.
@@ -245,6 +246,76 @@ The macro registers a `GET` route for every address that no route above it claim
 - A `POST` to an address without a route answers 405 instead of 404, like any catch-all route.
 
 The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`.
+
+## Rendering strips
+
+The site renders the strips itself, in its own stack; the package hands over the data, ready to render. `RenderStrips::run($page)` gives the strips a visitor sees: the published version, in the order of the page, without hidden strips and without strips of a type that is no longer in the catalogue. `->toArray()` gives a list in which every strip is its `id`, its `type` and its rendered fields:
+
+```php
+[
+    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => 'Welkom', 'intro' => '<p>…</p>', 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
+    ['id' => '4f0a…', 'type' => 'cards', 'kop' => 'Trainingen', 'kaarten' => [/* … */], 'aantal' => 3],
+]
+```
+
+A link to a page is the path of its address in `cms_routes` (`/over-ons`), without the prefix of a surrounding route group: a site under `/nl` puts that in front itself.
+
+### Blade
+
+```blade
+{{-- resources/views/page.blade.php --}}
+<x-made-cms::strips :page="$page" />
+```
+
+The component renders every strip with the view of its strip type, `strips.{key}` (`resources/views/strips/hero.blade.php`) or the name `view()` returns, and passes the strip as `$strip`. Read its values as properties; an unknown name is `null`. Print text escaped and rich text unescaped:
+
+```blade
+{{-- resources/views/strips/hero.blade.php --}}
+<section data-cms-strip="{{ $strip->id }}">
+    <h1 data-cms-field="kop">{{ $strip->kop }}</h1>
+    <div data-cms-field="intro">{!! $strip->intro !!}</div>
+
+    @foreach ($strip->knoppen as $knop)
+        <a href="{{ $knop['gaat_naar'] }}">{{ $knop['tekst'] }}</a>
+    @endforeach
+</section>
+```
+
+The component looks up the view of every strip before it renders the first one. A missing view throws `MissingStripView`, which names the strip type, its class and the view it looked for.
+
+### React and Vue (Inertia)
+
+Hand `RenderStrips::run($page)->toArray()` to the page as a prop (see [Serving pages](#serving-pages)) and map every `type` to a component of your own:
+
+```tsx
+const types = { hero: Hero, cards: Cards };
+
+page.strips.map((s) => { const C = types[s.type]; return <C key={s.id} strip={s} />; });
+
+function Hero({ strip }) {
+  return (
+    <section data-cms-strip={strip.id}>
+      <h1 data-cms-field="kop">{strip.kop}</h1>
+      <div data-cms-field="intro" dangerouslySetInnerHTML={{ __html: strip.intro ?? '' }} />
+    </section>
+  );
+}
+```
+
+```vue
+<component v-for="s in page.strips" :key="s.id" :is="types[s.type]" :strip="s" />
+
+<!-- Hero.vue -->
+<section :data-cms-strip="strip.id">
+  <h1 data-cms-field="kop">{{ strip.kop }}</h1>
+  <div data-cms-field="intro" v-html="strip.intro" />
+</section>
+```
+
+### The data-cms attributes
+
+- `data-cms-strip` with the id of the strip on the root element of every strip is required. It is the only dynamic value: the edit mode finds the strip by it.
+- `data-cms-field="kop"` on the element that shows a field, and `data-cms-items="knoppen"` on the element around a list, are optional and static. With them an editor sees a change while typing; without them after the page renders again.
 
 ## Launcher
 
@@ -322,9 +393,10 @@ src/
 │   └── Models/     plain table representations
 ├── Content/    pages, strips and publishing
 │   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
+│   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render
 │   └── ...
 ├── Console/    technical layer: artisan commands
-├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, controllers grouped per context, the login session
+├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips> component, controllers grouped per context, the login session
 ├── Support/    context-free helpers: site name and url, launcher locale, QR code
 └── CmsPackageServiceProvider.php
 ```

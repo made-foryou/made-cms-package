@@ -110,6 +110,14 @@ abstract class Field
     }
 
     /**
+     * The value as the site renders it, from the stored value: what a view or a front-end component gets.
+     */
+    public function render(mixed $value): mixed
+    {
+        return $value;
+    }
+
+    /**
      * @return 'required'|'nullable'
      */
     protected function presence(): string

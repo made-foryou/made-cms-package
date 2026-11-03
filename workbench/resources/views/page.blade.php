@@ -1,4 +1,4 @@
-{{-- A page of the CMS as a site renders it. The strips component arrives with issue #15; until then the strips are listed raw. --}}
+{{-- A page of the CMS as a site renders it: every strip with its view in resources/views/strips. --}}
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -10,17 +10,7 @@
     <main>
         <h1>{{ $page->title }}</h1>
 
-        @foreach ($page->strips as $strip)
-            @continue (! $strip['visible'])
-
-            <section data-cms-strip="{{ $strip['id'] }}">
-                <p><small>{{ $strip['type'] }}</small></p>
-
-                @isset ($strip['values']['kop'])
-                    <h2 data-cms-field="kop">{{ $strip['values']['kop'] }}</h2>
-                @endisset
-            </section>
-        @endforeach
+        <x-made-cms::strips :page="$page" />
     </main>
 </body>
 </html>

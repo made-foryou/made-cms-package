@@ -10,6 +10,7 @@ use Illuminate\View\View;
 use Made\CmsPackage\Access\Actions\RememberDevice;
 use Made\CmsPackage\Access\Enums\LoginMethod;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
@@ -230,6 +231,17 @@ it('shows the edit bar instead of the tile to a logged-in editor from any ip add
         ->get('/')
         ->assertSee('data-view="edit_bar"', false)
         ->assertSee('<span class="avatar" aria-hidden="true">M</span>', false);
+});
+
+it('does not inject the launcher in the edit mode', function (): void {
+    Route::middleware('web')->prefix('site')->group(function (): void {
+        Route::madeCms(fn (Page $page): string => launcherTestPage());
+    });
+    Page::factory()->published()->at('/pagina')->create();
+    $this->actingAs(Editor::factory()->create(), 'made-cms');
+
+    $this->get('site/pagina')->assertSee('<made-cms-launcher', false);
+    $this->get('site/pagina?made-cms=edit')->assertOk()->assertSee('<main>Welkom</main>', false)->assertDontSee('<made-cms-launcher', false);
 });
 
 it('links from the edit bar to the start page of the cms', function (): void {

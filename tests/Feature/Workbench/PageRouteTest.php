@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -53,4 +54,24 @@ it('answers 404 for a draft page of the workbench', function (): void {
     Page::factory()->at('/concept')->create();
 
     $this->get('concept')->assertNotFound();
+});
+
+it('serves the draft of a workbench page to an editor in the edit mode', function (): void {
+    Page::factory()->at('/concept')->withDraft([
+        storedStrip('hero', ['kop' => 'Nog niet gepubliceerd'], id: 'nieuw'),
+        storedStrip('hero', ['kop' => 'Verborgen'], visible: false, id: 'verborgen'),
+    ])->create(['title' => 'Concept']);
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('concept?made-cms=edit')
+        ->assertOk()
+        ->assertSee('<title>Concept · Made CMS Workbench</title>', false)
+        ->assertSee('data-cms-strip="nieuw"', false)
+        ->assertSeeText('Nog niet gepubliceerd')
+        ->assertDontSee('data-cms-strip="verborgen"', false)
+        ->assertDontSee('<made-cms-launcher', false)
+        ->assertHeader('X-Frame-Options', 'SAMEORIGIN')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+
+    expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
 });

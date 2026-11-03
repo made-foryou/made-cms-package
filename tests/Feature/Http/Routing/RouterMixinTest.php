@@ -97,6 +97,13 @@ it('ignores a trailing slash', function (): void {
     $this->get('over-ons/')->assertOk()->assertSeeText('Pagina: Over ons');
 });
 
+it('ignores uppercase letters in the address', function (): void {
+    Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+    servePages();
+
+    $this->get('Over-Ons')->assertOk()->assertSeeText('Pagina: Over ons');
+});
+
 it('answers 404 when no page lives at the path', function (): void {
     Page::factory()->published()->at('/over-ons')->create();
     servePages();

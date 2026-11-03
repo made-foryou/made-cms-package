@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Made\CmsPackage\Content\Data\PagePath;
 
-it('normalises an address to one leading slash and no trailing slash', function (string $raw, string $expected): void {
+it('normalises an address to lowercase with one leading slash and no trailing slash', function (string $raw, string $expected): void {
     expect(PagePath::fromString($raw)->value)->toBe($expected);
 })->with([
     'home' => ['/', '/'],
@@ -15,6 +15,8 @@ it('normalises an address to one leading slash and no trailing slash', function 
     'nested' => ['over-ons/team', '/over-ons/team'],
     'repeated slashes' => ['//over-ons///team//', '/over-ons/team'],
     'surrounding whitespace' => [' /over-ons ', '/over-ons'],
+    'uppercase' => ['/Over-Ons/TEAM', '/over-ons/team'],
+    'uppercase with accents' => ['/CAFÉ', '/café'],
 ]);
 
 it('knows the home address', function (): void {

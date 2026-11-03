@@ -245,7 +245,7 @@ The macro registers a `GET` route for every address that no route above it claim
 - The route parameter is called `path`. Call the parameter of your responder anything else (`$page`), or implicit route binding looks the page up by id and answers 404.
 - A `POST` to an address without a route answers 405 instead of 404, like any catch-all route.
 
-The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`.
+The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. An address is lowercase, without a trailing slash: `/Over-Ons/` serves the page at `/over-ons`. Store a path through `PagePath::fromString($path)->value`, so it matches what visitors ask for. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`.
 
 ## Rendering strips
 

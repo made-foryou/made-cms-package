@@ -10,7 +10,7 @@
 
 - `Route::madeCms($responder)`: the site serves the CMS pages with one line, as the last of its web routes. Every `GET` address no route above it claims looks up the published page there and hands it to the responder of the site (a closure or an invokable class) as `Page`; an address without a page, or a page that is not published, answers 404. The route takes the prefix and middleware of its group, has no name (chain `->name()` yourself) and works with `route:cache`. Middleware `ResolvePage` does the lookup.
 - Addresses of the site in the new `cms_routes` table (`Route` model, one unique `path` per row pointing at its content through `routable`), with `Page::route()`, `RouteBuilder::atPath()` and `PageBuilder::atPath()`. Pages are stored under the morph alias `cms_page`, added to the host's morph map without enforcing one.
-- `FindPublishedPage` action and the `PagePath` data object (an address normalised to `/` or `/over-ons/team`).
+- `FindPublishedPage` action and the `PagePath` data object (an address normalised to lowercase, `/` or `/over-ons/team`). `/Over-Ons/` serves the page at `/over-ons` on every database, whatever its collation.
 - Page factory state `at($path)` and `RouteFactory`.
 
 - Strips per page with a draft and a published version: `cms_pages` gains `strips` (the published strips, `[]` by default) and `draft_strips` (the draft editors work on, `null` when there is none). Every strip has a fixed `id` (uuid), its strip type `type`, `visible` and its `values`.

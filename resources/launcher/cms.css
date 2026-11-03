@@ -1028,14 +1028,16 @@ h2 {
     min-width: 0;
     height: 100%;
     border: 0;
-    /* The site keeps its own colours: a site without a colour scheme of its own gets the white canvas visitors see. */
+    /* The site keeps its own colours: a site without a colour scheme or background of its own is white, as visitors see it. */
     color-scheme: normal;
+    background: #fff;
 }
 
 .bewerkframe-leeg {
     box-sizing: border-box;
     padding: 46px;
     color-scheme: inherit;
+    background: none;
 }
 
 .bewerkpaneel {

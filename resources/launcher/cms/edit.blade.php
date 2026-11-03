@@ -53,6 +53,7 @@
         .omlijning { position: absolute; box-sizing: border-box; margin: 0; padding: 0; border: 2px dashed rgb(110 127 120 / .55); border-radius: 12px; background: transparent; cursor: pointer; text-align: left; transition: border-color 120ms ease, background-color 120ms ease; }
         .omlijning:hover, .omlijning.actief { border-color: #be8a1c; border-style: solid; }
         .omlijning.actief { background: rgb(190 138 28 / .08); }
+        .omlijning[hidden] { display: none; }
         .omlijning:focus-visible { outline: 2px solid #be8a1c; outline-offset: 2px; }
         .tab { position: absolute; top: -2px; left: -2px; display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 12px 0 10px 0; background: #6e7f78; color: #f3f1e8; font: 700 12px/1.2 "Made CMS Nunito", Nunito, "Trebuchet MS", system-ui, sans-serif; white-space: nowrap; }
         .omlijning.actief .tab { background: #be8a1c; color: #0e2b26; }

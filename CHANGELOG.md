@@ -75,7 +75,12 @@
 - Dutch and English translations for every login step, the login mail and the command.
 - Runtime dependencies `illuminate/auth`, `illuminate/cache`, `illuminate/console`, `illuminate/cookie`, `illuminate/hashing`, `illuminate/mail`, `illuminate/notifications` and `illuminate/session`.
 
+- `StripType::merge($stored, $values)` and `Field::merge($stored, $value)`: how new values combine with stored ones. A field replaces its stored value; `Items` merges its items by id.
+
 ### Changed
+
+- `UpdateStrip::run($page, $stripId, $values)` merges the values with the stored values of the strip instead of replacing them: a field left out keeps its value instead of falling back to its default. To clear a field, pass it as `null` (or `[]` for a list); a host that relied on leaving fields out to reset them passes them explicitly. A list replaces the stored list, but an item with the `id` of a stored item keeps the fields it leaves out. The merged values are validated as a whole, so a field that was not passed can still be refused; `StripUpdated` is unchanged.
+- Every item of an `Items` field has a fixed `id` (a uuid), given when the strip is stored by `AddStrip` or `UpdateStrip` and rendered as the first key of every item (`null` for an item stored without one). An item may no longer have a field named `id`: a strip type that has one renames it, or the catalogue throws `InvalidStripType`.
 
 - `cms_pages` gains `parent_id` (the page it lies under), `position` (its place among its siblings), `in_menu` and `deleted_at`: deleting a page is a soft delete, which frees its address and keeps its content for 30 days. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`).
 - The CMS menu lists under "Je site" the overview "Alle pagina’s" followed by every page in the menu, indented under its parent; the pages screen is no longer listed as coming.

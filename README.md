@@ -92,7 +92,7 @@ use Made\CmsPackage\Content\Actions\UpdateStrip;
 use Made\CmsPackage\Content\Models\Page;
 
 $strip = AddStrip::run($page, 'hero', 0);                    // type key and position
-UpdateStrip::run($page, $strip->id, ['kop' => 'Welkom']);    // validated against the strip type
+UpdateStrip::run($page, $strip->id, ['kop' => 'Welkom']);    // only the fields you pass change
 MoveStrip::run($page, $strip->id, 2);
 SetStripVisibility::run($page, $strip->id, false);
 RemoveStrip::run($page, $strip->id);
@@ -102,6 +102,20 @@ DiscardDraft::run($page);  // or: back to the published version
 
 Page::query()->published()->get();
 Page::query()->recentlyEdited()->limit(3)->get();
+```
+
+`UpdateStrip` merges the values you pass with the stored values of the strip, so a seeder or an import can change one field without repeating the others. A field you leave out keeps its value; pass `null` (or `[]` for a list) to clear it. A list replaces the stored list, in the order you pass it, but every stored item has an `id` and an item you pass with that id keeps the fields you leave out. An item without a known id is new and gets an id. The merged values are checked against the strip type as a whole and refused with a `ValidationException` keyed by field:
+
+```php
+$strip = UpdateStrip::run($page, $strip->id, ['knoppen' => [
+    ['tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden']],
+]]);
+$button = $strip->values['knoppen'][0]['id'];
+
+UpdateStrip::run($page, $strip->id, ['knoppen' => [
+    ['id' => $button, 'tekst' => 'Word lid'],                        // keeps its link
+    ['tekst' => 'Contact', 'gaat_naar' => ['url' => '/contact']],    // a new button
+]]);
 ```
 
 Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished`.
@@ -229,13 +243,13 @@ final class Hero extends StripType
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
-| `Items::make('knoppen', [...])` | list of items | list of items | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one. One level deep. Rendered, it is always a list and every item has every field. |
+| `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one. One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
 
 Every field takes `label()` (by default the key as a sentence: `gaat_naar` becomes "Gaat naar"), `hint()`, `required()` and `default()`. Fields are immutable: each of these returns a changed copy.
 
-The field names `id`, `type` and `visible` are reserved for the strip itself. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options) throws an exception that names the strip type.
+The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options) throws an exception that names the strip type.
 
-Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the messages), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`) and the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top).
+Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the messages), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top) and how new values combine with stored ones (`merge()`, which `UpdateStrip` uses).
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 

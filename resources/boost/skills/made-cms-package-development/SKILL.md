@@ -58,15 +58,16 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 - editors build pages from the site's strip types: one class per type in `app/Cms/Strips` that extends `Made\CmsPackage\Content\Strips\StripType` (config `strips.path` and `strips.namespace`); the package finds them on its own
 - implement `key()` (fixed, lowercase letters, digits and dashes, e.g. `hero`) and `fields()`; optionally `label()`, `description()`, `view()` (the Blade view, default `strips.{key}`) and `with(array $values)` (extra data such as the latest news; it receives the rendered values and its keys land next to the fields)
-- field types in `Made\CmsPackage\Content\Strips\Fields`: `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button` (text + link), `Choice` (list, `value => label` or a backed enum) and `Items` (a list of items with the same fields, `min()`/`max()`); every field takes `label()`, `hint()`, `required()` and `default()`
-- the field names `id`, `type` and `visible` are reserved; a broken definition throws `InvalidStripType` or `DuplicateStripType` as soon as the catalogue (`app(StripTypes::class)`) is built
+- field types in `Made\CmsPackage\Content\Strips\Fields`: `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button` (text + link), `Choice` (list, `value => label` or a backed enum) and `Items` (a list of items with the same fields, `min()`/`max()`; every item gets a fixed `id`); every field takes `label()`, `hint()`, `required()` and `default()`
+- the field names `id`, `type` and `visible` are reserved, and `id` inside an item; a broken definition throws `InvalidStripType` or `DuplicateStripType` as soon as the catalogue (`app(StripTypes::class)`) is built
 
 ### 7. Use the actions
 
 - a page holds its published strips (`strips`) and a draft (`draft_strips`, `null` without one); every strip has an `id`, a `type` key, `visible` and `values`
-- `AddStrip::run($page, 'hero', $position)`, `MoveStrip::run($page, $stripId, $position)`, `RemoveStrip::run($page, $stripId)`, `UpdateStrip::run($page, $stripId, $values)` (throws a `ValidationException` keyed by field) and `SetStripVisibility::run($page, $stripId, $visible)` change the draft; visitors keep the published strips
+- `AddStrip::run($page, 'hero', $position)`, `MoveStrip::run($page, $stripId, $position)`, `RemoveStrip::run($page, $stripId)`, `UpdateStrip::run($page, $stripId, $values)` (merges with the stored values: pass only the fields to change, `null` clears one; throws a `ValidationException` keyed by field) and `SetStripVisibility::run($page, $stripId, $visible)` change the draft; visitors keep the published strips
 - `PublishPage::run($page)` makes the draft the published version and refuses a draft with an invalid strip (errors keyed `strips.<id>.<field>`); `DiscardDraft::run($page)` goes back to the published version; query pages with `Page::query()->published()`
 - a strip whose type is no longer in the catalogue keeps its data; only `UpdateStrip` refuses it
+- to change one item of a list, pass the whole list: items with the `id` of a stored item keep the fields you leave out, items without a known `id` are new, items you leave out are removed
 - editors manage pages at `/made-cms/pages` (`route('made-cms-package.screens.pages')`): the tree in menu order, a new page at `pages.create`, one page at `pages.show`, deleting and restoring; the host adds nothing
 - pages form a tree: `parent_id`, `position` among the siblings and `in_menu`; the address is the parent's address plus the slug (`/` + slug at the top and under the home page) and every write keeps the addresses of the pages under it in step
 - create and change pages with `CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about->id))`, `UpdatePage::run($page, new PageChanges(...))`, `MovePage::run($page, $parentId, $position)`, `DeletePage::run($page)` and `RestorePage::run($page)`; read the tree with `ListPages::run()` (`PageTree`, `->flatten()` in menu order, `->inMenu()` for a site menu); never write `parent_id`, `position` or `cms_routes.path` yourself
@@ -86,7 +87,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 ### 9. Render the strips
 
 - `RenderStrips::run($page)` gives the strips a visitor sees: published (the draft in the edit mode), in order, without hidden strips or strips of a type that left the catalogue; `->toArray()` is `[{id, type, ...fields}]`
-- rendered values: a `Link` is a url (a page as its current path, `null` when it is gone or not published), a `Button` is `{text, url}` or `null`, `Items` is always a list with every field in every item, a missing field gets its default, `RichText` is cleaned HTML
+- rendered values: a `Link` is a url (a page as its current path, `null` when it is gone or not published), a `Button` is `{text, url}` or `null`, `Items` is always a list with the `id` and every field in every item (use the `id` as the key of a list), a missing field gets its default, `RichText` is cleaned HTML
 - Blade: `<x-made-cms::strips :page="$page" />` renders every strip with `resources/views/strips/<key>.blade.php` (or the `view()` of its type) and passes `$strip`: `{{ $strip->kop }}`, `{!! $strip->intro !!}`; a missing view throws `MissingStripView`
 - React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own; print rich text with `dangerouslySetInnerHTML` or `v-html`
 - put `data-cms-strip` with the strip id on the root element of every strip (required); `data-cms-field="<field>"` and `data-cms-items="<field>"` are optional and static

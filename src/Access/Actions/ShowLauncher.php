@@ -11,7 +11,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
 
 /**
  * Decides what the CMS launcher shows a visitor. The tile only hides the door, it never grants access;
- * a logged-in editor always gets the edit bar, so logging out stays possible from anywhere.
+ * a logged-in editor always gets the edit bar, so logging out stays possible from anywhere. In the edit mode the
+ * page sits in the frame of the CMS, which has a bar of its own, so the launcher stays away.
  */
 final class ShowLauncher
 {
@@ -20,6 +21,10 @@ final class ShowLauncher
     public function handle(LauncherVisitor $visitor): LauncherView
     {
         if (! config()->boolean('made-cms-package.launcher.enabled', true)) {
+            return LauncherView::Hidden;
+        }
+
+        if ($visitor->editing) {
             return LauncherView::Hidden;
         }
 

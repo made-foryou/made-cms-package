@@ -32,6 +32,12 @@ it('shows the edit bar to a logged-in editor from any ip address', function (): 
     expect(ShowLauncher::run($visitor))->toBe(LauncherView::EditBar);
 });
 
+it('hides the launcher from an editor in the edit mode', function (): void {
+    $visitor = new LauncherVisitor(ip: '203.0.113.5', remembered: true, editor: Editor::factory()->make(), editing: true);
+
+    expect(ShowLauncher::run($visitor))->toBe(LauncherView::Hidden);
+});
+
 it('hides the launcher from an unknown visitor', function (?string $ip, array $allowed): void {
     config(['made-cms-package.launcher.allowed_ips' => $allowed]);
 

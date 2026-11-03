@@ -112,6 +112,28 @@ abstract class StripType
     }
 
     /**
+     * The values to validate when an editor changes a strip: the stored values with the new ones on top.
+     * A field it gets replaces the stored value (a list merges its items by id), a field it does not get
+     * keeps its stored value. Keys the type does not know are left for the validation to drop.
+     *
+     * @param  array<string, mixed>  $stored  stored values
+     * @param  array<string, mixed>  $values  new values, any number of fields
+     * @return array<string, mixed>
+     */
+    final public function merge(array $stored, array $values): array
+    {
+        foreach ($this->fields() as $field) {
+            $key = $field->getKey();
+
+            if (array_key_exists($key, $values)) {
+                $values[$key] = $field->merge($stored[$key] ?? null, $values[$key]);
+            }
+        }
+
+        return [...$stored, ...$values];
+    }
+
+    /**
      * The values as they are stored: rich text cleaned, links in their stored form.
      *
      * @param  array<string, mixed>  $values  validated values

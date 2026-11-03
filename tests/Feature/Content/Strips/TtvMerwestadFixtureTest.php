@@ -81,14 +81,28 @@ it('describes eight valid strip types', function (): void {
     ]);
 });
 
-it('has content that its strip types accept and store unchanged', function (): void {
+it('has content that its strip types accept and store unchanged, apart from the ids its items get', function (): void {
     $types = ttvStripTypes();
 
     foreach (ttvContent()['strips'] as $strip) {
         $type = $types->find($strip['type']);
         $validated = Validator::make($strip['values'], $type->rules(), [], $type->attributes())->validate();
+        $stored = [...$type->defaults(), ...$type->normalize($validated)];
+        $withoutIds = [];
 
-        expect([...$type->defaults(), ...$type->normalize($validated)])->toEqual($strip['values']);
+        foreach ($stored as $key => $value) {
+            if (is_array($value) && array_is_list($value)) {
+                foreach ($value as $item) {
+                    expect($item)->toBeArray()->toHaveKey('id')->and($item['id'] ?? null)->toBeUuid();
+                }
+
+                $value = array_map(static fn (mixed $item): mixed => is_array($item) ? array_diff_key($item, ['id' => true]) : $item, $value);
+            }
+
+            $withoutIds[$key] = $value;
+        }
+
+        expect($withoutIds)->toEqual($strip['values']);
     }
 });
 

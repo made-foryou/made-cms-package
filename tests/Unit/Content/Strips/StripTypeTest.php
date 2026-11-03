@@ -50,7 +50,7 @@ it('collects the rules of all its fields by path', function (): void {
     expect(array_keys((new Hero)->rules()))->toBe([
         'label', 'kop', 'intro', 'tekst',
         'actie', 'actie.text', 'actie.link',
-        'knoppen', 'knoppen.*', 'knoppen.*.tekst', 'knoppen.*.gaat_naar', 'knoppen.*.stijl',
+        'knoppen', 'knoppen.*', 'knoppen.*.id', 'knoppen.*.tekst', 'knoppen.*.gaat_naar', 'knoppen.*.stijl',
     ]);
 });
 
@@ -105,14 +105,40 @@ it('cleans the values after validation, also inside items', function (): void {
         'kop' => '<b>Welkom</b>',
         'tekst' => '<h2>Over</h2><p>Wij <strong>spelen</strong>.</p><script>x</script>',
         'actie' => ['text' => 'Ga', 'link' => ['page' => '4']],
-        'knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['url' => ' /lid-worden ']]],
+        'knoppen' => [['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'tekst' => 'Ga', 'gaat_naar' => ['url' => ' /lid-worden ']]],
     ]);
 
     expect($normalized)->toBe([
         'kop' => '<b>Welkom</b>',
         'tekst' => 'Over<p>Wij <strong>spelen</strong>.</p>',
         'actie' => ['text' => 'Ga', 'link' => ['page' => 4]],
-        'knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['url' => '/lid-worden']]],
+        'knoppen' => [['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'tekst' => 'Ga', 'gaat_naar' => ['url' => '/lid-worden']]],
+    ]);
+});
+
+it('merges new values into the stored ones: a field it gets replaces, a field it does not get stays', function (): void {
+    $stored = [
+        'kop' => 'Oud',
+        'intro' => 'Blijft',
+        'knoppen' => [['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary']],
+        'oud' => 'x',
+    ];
+
+    expect((new Hero)->merge($stored, [
+        'kop' => 'Nieuw',
+        'tekst' => null,
+        'knoppen' => [['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'tekst' => 'Word lid'], ['tekst' => 'Contact']],
+        'onbekend' => 'y',
+    ]))->toBe([
+        'kop' => 'Nieuw',
+        'intro' => 'Blijft',
+        'knoppen' => [
+            ['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'tekst' => 'Word lid', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary'],
+            ['tekst' => 'Contact'],
+        ],
+        'oud' => 'x',
+        'tekst' => null,
+        'onbekend' => 'y',
     ]);
 });
 
@@ -136,12 +162,12 @@ it('renders the links and buttons inside its fields', function (): void {
     ]);
 
     expect($rendered['actie'])->toBe(['text' => 'Ga', 'url' => '/ga'])
-        ->and($rendered['knoppen'])->toBe([['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => null]]);
+        ->and($rendered['knoppen'])->toBe([['id' => null, 'tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => null]]);
 });
 
 it('adds the extra data of the site to the rendered values', function (): void {
     expect((new Cards)->render(['kaarten' => [['titel' => 'Een'], ['titel' => 'Twee']]]))->toBe([
-        'kaarten' => [['titel' => 'Een'], ['titel' => 'Twee']],
+        'kaarten' => [['id' => null, 'titel' => 'Een'], ['id' => null, 'titel' => 'Twee']],
         'aantal' => 2,
     ]);
 });

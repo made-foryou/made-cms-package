@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Strips\Fields;
 
+use Illuminate\Support\Str;
+
 /**
  * A list of items that all have the same fields, such as buttons, cards or opening hours.
  *
  * The editor adds, removes and orders the items; required() asks for at least one.
+ * Every stored item has an id of its own (a uuid) that stays the same when the list changes.
  */
 final class Items extends Field
 {
@@ -79,8 +82,8 @@ final class Items extends Field
             $list[] = 'max:'.$this->max;
         }
 
-        $keys = array_map(static fn (Field $field): string => $field->getKey(), $this->fields);
-        $rules = [$path => $list, "{$path}.*" => ['array:'.implode(',', $keys)]];
+        $keys = ['id', ...$this->keys()];
+        $rules = [$path => $list, "{$path}.*" => ['array:'.implode(',', $keys)], "{$path}.*.id" => ['nullable', 'uuid']];
 
         foreach ($this->fields as $field) {
             $rules = [...$rules, ...$field->rules("{$path}.*.{$field->getKey()}")];
@@ -100,16 +103,30 @@ final class Items extends Field
         return $attributes;
     }
 
+    /**
+     * Every item with an id first: the id it has, or a new one when it has none or shares it with an item above.
+     */
     public function normalize(mixed $value): mixed
     {
         if (! is_array($value)) {
             return $value;
         }
 
-        return array_map(function (mixed $item): mixed {
+        $seen = [];
+
+        return array_map(function (mixed $item) use (&$seen): mixed {
             if (! is_array($item)) {
                 return $item;
             }
+
+            $id = $item['id'] ?? null;
+
+            if (! is_string($id) || $id === '' || isset($seen[$id])) {
+                $id = (string) Str::uuid();
+            }
+
+            $seen[$id] = true;
+            unset($item['id']);
 
             foreach ($this->fields as $field) {
                 if (array_key_exists($field->getKey(), $item)) {
@@ -117,12 +134,53 @@ final class Items extends Field
                 }
             }
 
-            return $item;
+            return ['id' => $id, ...$item];
         }, $value);
     }
 
     /**
-     * Always a list: every item with every field rendered, a missing one from its default.
+     * The list the editor sends is the list: its order, its items, nothing more.
+     *
+     * An item with the id of a stored item keeps the fields it leaves out; an item without an id,
+     * with an unknown id or with an id an item above already took is new and gets its id when it is stored.
+     */
+    public function merge(mixed $stored, mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $keys = array_flip($this->keys());
+        $known = [];
+
+        foreach (is_array($stored) ? $stored : [] as $item) {
+            if (is_array($item) && is_string($item['id'] ?? null)) {
+                $known[$item['id']] = array_intersect_key($item, $keys);
+            }
+        }
+
+        return array_map(static function (mixed $item) use (&$known): mixed {
+            if (! is_array($item)) {
+                return $item;
+            }
+
+            $id = $item['id'] ?? null;
+            unset($item['id']);
+
+            if (! is_string($id) || ! isset($known[$id])) {
+                return $item;
+            }
+
+            $merged = ['id' => $id, ...$known[$id], ...$item];
+            unset($known[$id]);
+
+            return $merged;
+        }, $value);
+    }
+
+    /**
+     * Always a list: every item with its id (null for an item stored without one) and every field rendered,
+     * a missing one from its default.
      *
      * @return list<array<string, mixed>>
      */
@@ -139,7 +197,7 @@ final class Items extends Field
                 continue;
             }
 
-            $rendered = [];
+            $rendered = ['id' => is_string($item['id'] ?? null) ? $item['id'] : null];
 
             foreach ($this->fields as $field) {
                 $key = $field->getKey();
@@ -150,5 +208,13 @@ final class Items extends Field
         }
 
         return $items;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function keys(): array
+    {
+        return array_map(static fn (Field $field): string => $field->getKey(), $this->fields);
     }
 }

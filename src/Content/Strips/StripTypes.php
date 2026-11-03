@@ -30,6 +30,11 @@ final class StripTypes
      */
     public const array RESERVED_FIELDS = ['id', 'type', 'visible'];
 
+    /**
+     * Field names the stored and rendered items of a list already use.
+     */
+    public const array RESERVED_ITEM_FIELDS = ['id'];
+
     private const string KEY_PATTERN = '/^[a-z][a-z0-9-]*$/';
 
     private const string FIELD_KEY_PATTERN = '/^[a-z][a-z0-9_]*$/';
@@ -161,7 +166,7 @@ final class StripTypes
                 throw InvalidStripType::fieldKey($type, $key);
             }
 
-            if (! $inItems && in_array($key, self::RESERVED_FIELDS, true)) {
+            if (in_array($key, $inItems ? self::RESERVED_ITEM_FIELDS : self::RESERVED_FIELDS, true)) {
                 throw InvalidStripType::reservedField($type, $key);
             }
 

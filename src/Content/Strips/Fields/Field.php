@@ -102,6 +102,17 @@ abstract class Field
     }
 
     /**
+     * The value to validate when an editor changes this field: by default the new value replaces the stored one.
+     *
+     * @param  mixed  $stored  the stored value, null when there is none
+     * @param  mixed  $value  the value the editor sends
+     */
+    public function merge(mixed $stored, mixed $value): mixed
+    {
+        return $value;
+    }
+
+    /**
      * The value as it is stored, after validation.
      */
     public function normalize(mixed $value): mixed

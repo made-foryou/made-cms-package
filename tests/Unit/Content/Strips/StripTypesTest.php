@@ -76,6 +76,7 @@ it('refuses a definition that breaks the rules', function (string $key, Closure 
     'a key with a dot' => ['site.hero', fn (): array => [Text::make('kop')], 'has an invalid key [site.hero]'],
     'a field key with a dash' => ['hero', fn (): array => [Text::make('gaat-naar')], 'has an invalid field key [gaat-naar]'],
     'a reserved field' => ['hero', fn (): array => [Text::make('type')], 'may not use the reserved field [type]'],
+    'a reserved field in an item' => ['hero', fn (): array => [Items::make('kaarten', [Text::make('id')])], 'may not use the reserved field [id]'],
     'a field twice' => ['hero', fn (): array => [Text::make('kop'), Text::make('kop')], 'has the field [kop] twice'],
     'a field twice in an item' => ['hero', fn (): array => [Items::make('kaarten', [Text::make('titel'), Text::make('titel')])], 'has the field [titel] twice'],
     'a negative minimum' => ['hero', fn (): array => [Items::make('kaarten', [Text::make('titel')])->min(-1)], 'field [kaarten] has an invalid min or max'],
@@ -86,8 +87,8 @@ it('refuses a definition that breaks the rules', function (string $key, Closure 
     'items inside items' => ['hero', fn (): array => [Items::make('rijen', [Items::make('kaarten', [Text::make('titel')])])], 'field [kaarten] is a list inside a list'],
 ]);
 
-it('allows a reserved name inside an item', function (): void {
-    $catalogue = new StripTypes([new InlineStripType('hero', [Items::make('kaarten', [Text::make('type')])])]);
+it('allows the names type and visible inside an item', function (): void {
+    $catalogue = new StripTypes([new InlineStripType('hero', [Items::make('kaarten', [Text::make('type'), Text::make('visible')])])]);
 
     expect($catalogue->has('hero'))->toBeTrue();
 });

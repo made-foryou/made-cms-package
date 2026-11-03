@@ -37,14 +37,17 @@ it('stores the validated and cleaned values in the draft', function (): void {
 
     $stored = Page::query()->findOrFail($page->id);
 
-    expect($strip->values)->toBe([
-        'label' => null,
-        'kop' => 'TTV Merwestad',
-        'intro' => null,
-        'tekst' => '<p>Wij <strong>spelen</strong>.</p>',
-        'actie' => null,
-        'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary']],
-    ])
+    $itemId = $strip->values['knoppen'][0]['id'] ?? null;
+
+    expect($itemId)->toBeUuid()
+        ->and($strip->values)->toBe([
+            'label' => null,
+            'kop' => 'TTV Merwestad',
+            'intro' => null,
+            'tekst' => '<p>Wij <strong>spelen</strong>.</p>',
+            'actie' => null,
+            'knoppen' => [['id' => $itemId, 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary']],
+        ])
         ->and($stored->draft_strips)->toBe([$strip->toArray()])
         ->and($stored->strips)->toBe($published);
 });

@@ -19,7 +19,7 @@ it('renders the visible strips of a page in order as their id, type and rendered
     ])->create();
 
     expect(RenderStrips::run($page)->toArray())->toBe([
-        ['id' => 'a', 'type' => 'cards', 'kaarten' => [['titel' => 'Een']], 'aantal' => 1],
+        ['id' => 'a', 'type' => 'cards', 'kaarten' => [['id' => null, 'titel' => 'Een']], 'aantal' => 1],
         [
             'id' => 'b',
             'type' => 'hero',
@@ -28,9 +28,18 @@ it('renders the visible strips of a page in order as their id, type and rendered
             'intro' => null,
             'tekst' => null,
             'actie' => null,
-            'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => null]],
+            'knoppen' => [['id' => null, 'tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => null]],
         ],
     ]);
+});
+
+it('renders every item of a list with its id', function (): void {
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('cards', ['kaarten' => [['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'titel' => 'Een']]], id: 'a'),
+    ])->create();
+
+    expect(RenderStrips::run($page)->toArray()[0]['kaarten'] ?? null)
+        ->toBe([['id' => '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c', 'titel' => 'Een']]);
 });
 
 it('leaves out hidden strips', function (): void {

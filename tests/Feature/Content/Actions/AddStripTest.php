@@ -8,6 +8,10 @@ use Made\CmsPackage\Content\Events\StripAdded;
 use Made\CmsPackage\Content\Exceptions\InvalidStripPosition;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -33,6 +37,22 @@ it('adds a strip of a type to the draft with the defaults of the type', function
         ])
         ->and($stored->draft_strips)->toBe([$strip->toArray()])
         ->and($stored->strips)->toBe([]);
+});
+
+it('gives the items of a list in the defaults an id', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([
+        new InlineStripType('uren', [Items::make('regels', [Text::make('dag')])->default([['dag' => 'Maandag'], ['dag' => 'Dinsdag']])]),
+    ]));
+
+    $strip = AddStrip::run(Page::factory()->create(), 'uren', 0);
+
+    /** @var list<array<string, mixed>> $regels */
+    $regels = $strip->values['regels'];
+
+    expect(array_column($regels, 'dag'))->toBe(['Maandag', 'Dinsdag'])
+        ->and($regels[0]['id'] ?? null)->toBeUuid()
+        ->and($regels[1]['id'] ?? null)->toBeUuid()
+        ->and($regels[0]['id'] ?? null)->not->toBe($regels[1]['id'] ?? null);
 });
 
 it('starts the draft as a copy of the published strips', function (): void {

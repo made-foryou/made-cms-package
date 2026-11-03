@@ -23,7 +23,7 @@ final class AddStrip
     ) {}
 
     /**
-     * Places a new strip of a type in the draft, filled with the defaults of the type.
+     * Places a new strip of a type in the draft, filled with the defaults of the type in their stored form.
      *
      * @param  int  $position  0 places it first, the number of strips places it last
      *
@@ -39,7 +39,7 @@ final class AddStrip
             throw InvalidStripPosition::for($page, $position, $strips->count());
         }
 
-        $strip = new Strip((string) Str::uuid(), $definition->key(), true, $definition->defaults());
+        $strip = new Strip((string) Str::uuid(), $definition->key(), true, $definition->normalize($definition->defaults()));
 
         $page->draft_strips = $strips->insert($strip, $position)->toArray();
         $page->save();

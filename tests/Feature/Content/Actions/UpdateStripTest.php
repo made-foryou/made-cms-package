@@ -52,6 +52,105 @@ it('stores the validated and cleaned values in the draft', function (): void {
         ->and($stored->strips)->toBe($published);
 });
 
+/**
+ * The stored values of a valid hero strip, with two buttons that have an id.
+ *
+ * @return array<string, mixed>
+ */
+function storedHeroValues(): array
+{
+    return [
+        'label' => 'Tafeltennis',
+        'kop' => 'TTV Merwestad',
+        'intro' => null,
+        'tekst' => '<p>Wij spelen.</p>',
+        'actie' => null,
+        'knoppen' => [
+            ['id' => '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary'],
+            ['id' => '1b4f6c0d-2e3a-4b7c-9d8e-0f1a2b3c4d5e', 'tekst' => 'Contact', 'gaat_naar' => ['url' => '/contact'], 'stijl' => 'secondary'],
+        ],
+    ];
+}
+
+it('changes one field and leaves the other fields of the strip alone', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
+
+    $strip = UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV']);
+
+    expect($strip->values)->toBe([...storedHeroValues(), 'kop' => 'Welkom bij TTV'])
+        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$strip->toArray()]);
+});
+
+it('starts from the published strip when the page has no draft', function (): void {
+    $published = [storedStrip('hero', storedHeroValues(), id: 'a')];
+    $page = Page::factory()->published()->withStrips($published)->create();
+
+    $strip = UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.']);
+
+    expect($strip->values)->toBe([...storedHeroValues(), 'intro' => 'Sinds 1962.'])
+        ->and(Page::query()->findOrFail($page->id)->strips)->toBe($published);
+});
+
+it('clears a field that it gets as null', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
+
+    $strip = UpdateStrip::run($page, 'a', ['label' => null, 'tekst' => null]);
+
+    expect($strip->values['label'])->toBeNull()
+        ->and($strip->values['tekst'])->toBeNull()
+        ->and($strip->values['kop'])->toBe('TTV Merwestad');
+});
+
+it('merges the items of a list by their id', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
+
+    $strip = UpdateStrip::run($page, 'a', ['knoppen' => [
+        ['tekst' => 'Agenda', 'gaat_naar' => ['url' => '/agenda']],
+        ['id' => '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', 'tekst' => 'Word lid'],
+    ]]);
+
+    /** @var list<array<string, mixed>> $knoppen */
+    $knoppen = $strip->values['knoppen'];
+
+    expect($knoppen[0]['id'] ?? null)->toBeUuid()
+        ->and($knoppen[0]['id'] ?? null)->not->toBeIn(['0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', '1b4f6c0d-2e3a-4b7c-9d8e-0f1a2b3c4d5e'])
+        ->and($knoppen)->toBe([
+            ['id' => $knoppen[0]['id'] ?? null, 'tekst' => 'Agenda', 'gaat_naar' => ['url' => '/agenda']],
+            ['id' => '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', 'tekst' => 'Word lid', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary'],
+        ]);
+});
+
+it('keeps the ids of the items when other fields change', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
+    $first = UpdateStrip::run($page, 'a', heroValues());
+
+    $second = UpdateStrip::run($page, 'a', ['kop' => 'Nieuw']);
+
+    expect($second->values['knoppen'])->toBe($first->values['knoppen']);
+});
+
+it('checks the merged values, also the fields it does not get', function (): void {
+    Event::fake([StripUpdated::class]);
+    $draft = [storedStrip('hero', [...storedHeroValues(), 'kop' => null], id: 'a')];
+    $page = Page::factory()->withDraft($draft)->create();
+
+    try {
+        UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.']);
+        $this->fail('The values were accepted.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('kop')->not->toHaveKey('intro');
+    }
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    Event::assertNotDispatched(StripUpdated::class);
+});
+
+it('drops stored values of fields the type no longer has', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', [...storedHeroValues(), 'oud' => 'x'], id: 'a')])->create();
+
+    expect(UpdateStrip::run($page, 'a', ['kop' => 'Nieuw'])->values)->not->toHaveKey('oud');
+});
+
 it('keeps the id, type and visibility of the strip', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', visible: false, id: 'a')])->create();
 

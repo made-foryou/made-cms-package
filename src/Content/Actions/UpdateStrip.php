@@ -24,11 +24,14 @@ final class UpdateStrip
     ) {}
 
     /**
-     * Replaces the values of a strip in the draft after checking them against its strip type.
+     * Changes the values of a strip in the draft after checking them against its strip type.
      *
-     * Values the type does not know are dropped; fields left out get their default.
+     * The values are merged with the stored values: a field left out keeps its value, a field sent as
+     * null is cleared. A list replaces the stored list, but an item with the id of a stored item keeps
+     * the fields it leaves out; an item without a known id is new and gets an id. The merged values are
+     * checked as a whole, so a field left out can still be refused. Values the type does not know are dropped.
      *
-     * @param  array<string, mixed>  $values  every value of the strip, keyed by field
+     * @param  array<string, mixed>  $values  the fields to change, keyed by field
      *
      * @throws StripNotFound
      * @throws UnknownStripType when the type of the strip is no longer in the catalogue
@@ -40,8 +43,10 @@ final class UpdateStrip
         $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
         $type = $this->types->find($strip->type);
 
+        $merged = $type->merge([...$type->defaults(), ...$strip->values], $values);
+
         /** @var array<string, mixed> $validated */
-        $validated = Validator::make($values, $type->rules(), [], $type->attributes())->validate();
+        $validated = Validator::make($merged, $type->rules(), [], $type->attributes())->validate();
 
         $strip = $strip->withValues([...$type->defaults(), ...$type->normalize($validated)]);
 

@@ -59,6 +59,7 @@
 
 ### Changed
 
+- Requires PHP 8.4 or newer; PHP 8.3 is no longer supported. A host on PHP 8.3 upgrades PHP before it updates the package.
 - `cms_pages.slug` is no longer unique: the address of a page is unique in `cms_routes`, so pages under different parents can share a slug. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`) or drops the unique index on `slug` itself.
 - `PublishPage` publishes the draft: its strips become the published strips and the draft is cleared, also on a page that is already published (`published_at` is the last publication). It refuses a draft with a strip that breaks its strip type, hidden strips included, with a `ValidationException` keyed by `strips.<strip id>.<field>`, and still throws `PageAlreadyPublished` for a published page without a draft. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`) or adds the `strips` (json) and `draft_strips` (json, nullable) columns itself.
 

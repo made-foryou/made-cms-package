@@ -19,7 +19,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 ### 1. Inspect the Laravel app context
 
-- confirm the app is a Laravel 12 or 13 project on PHP 8.3+
+- confirm the app is a Laravel 12 or 13 project on PHP 8.4+
 - inspect the target code paths where the package should be applied
 
 ### 2. Install

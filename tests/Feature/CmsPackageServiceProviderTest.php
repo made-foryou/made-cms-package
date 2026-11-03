@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\Compilers\BladeCompiler;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\CmsPackageServiceProvider;
 use Made\CmsPackage\Content\Models\Page;
@@ -114,6 +115,11 @@ it('ships every translation in Dutch and English', function (string $file): void
 
 it('registers the view namespace', function (): void {
     expect(app('view')->getFinder()->getHints())->toHaveKey('made-cms-package');
+});
+
+it('registers the made-cms blade component namespace', function (): void {
+    expect(app(BladeCompiler::class)->getClassComponentNamespaces())
+        ->toHaveKey('made-cms', 'Made\\CmsPackage\\Http\\Components');
 });
 
 it('registers the publish tags promised in the README', function (string $tag): void {

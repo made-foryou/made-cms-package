@@ -69,6 +69,7 @@
 - `NewEditor` takes the editor's `roles` (at least one) and `made-cms:editor` gains the `--role` option; without it the command asks for the roles.
 - The default `routes.prefix` is now `made-cms` (was `cms`): every CMS route, the mail link and the launcher assets moved to `/made-cms/...`.
 - `IssueLoginCode::run()` takes a `LoginCodeRequest` (address, browser binding, page to return to) and returns the link token too; `cms_login_codes` gains `attempts`, `session_hash`, `link_hash` and `return_to`.
+- `Route::madeCms()` and `ResolvePage` redirect another form of the address of a page to the canonical one: a `GET` or `HEAD` for `/Over-Ons`, `/over-ons/` or `//over-ons` answers a `301` to `/over-ons`, under the prefix of the route group and with the query string, instead of serving the page with a 200. An address without a page still answers 404; a `POST` is never redirected.
 - `RenderStrips::run($page)` renders the draft, or the published strips without a draft, in the edit mode; outside it nothing changes.
 - `LauncherVisitor` gains `editing`; `ShowLauncher` hides the launcher in the edit mode.
 - `ShowLauncher::run()` returns a `LauncherView` (hidden, tile or edit bar) instead of a boolean; `LauncherVisitor` gains the logged-in `editor`.

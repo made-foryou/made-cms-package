@@ -13,6 +13,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\CmsPackageServiceProvider;
+use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
@@ -52,6 +53,18 @@ it('builds the strip type catalogue once from the configured folder', function (
 
 it('has an empty catalogue while the site has no strip types', function (): void {
     expect(app(StripTypes::class)->all())->toBe([]);
+});
+
+it('binds the edit mode off', function (): void {
+    expect(app(EditMode::class)->active)->toBeFalse();
+});
+
+it('forgets the edit mode of a request with the scoped instances', function (): void {
+    app()->instance(EditMode::class, EditMode::on());
+
+    app()->forgetScopedInstances();
+
+    expect(app(EditMode::class)->active)->toBeFalse();
 });
 
 it('registers its own session guard and editor provider next to the host guards', function (): void {

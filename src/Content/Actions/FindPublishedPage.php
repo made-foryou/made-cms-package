@@ -14,7 +14,7 @@ final class FindPublishedPage
 
     /**
      * The page a visitor sees at an address: only a published page, never a draft.
-     * Showing the draft to an editor in the edit mode is a decision of its own, not a flag here.
+     * The edit mode finds a draft for an editor with FindPage instead; there is no flag here.
      */
     public function handle(PagePath $path): ?Page
     {

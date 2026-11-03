@@ -6,6 +6,7 @@ use Illuminate\Support\Carbon;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -68,34 +69,43 @@ it('shows the menu of the editor’s roles', function (array $roles, array $menu
     expect(startPageMenu(startPageFor(...$roles)))->toBe($menu);
 })->with([
     'content manager' => [[Role::ContentManager], [
-        'Je site' => ['Pagina’s'],
+        'Je site' => ['Alle pagina’s'],
         'Verzamelingen' => ['Nieuws', 'Media', 'Berichten'],
     ]],
     'seo specialist' => [[Role::SeoSpecialist], [
-        'Je site' => ['Pagina’s'],
+        'Je site' => ['Alle pagina’s'],
         'Vindbaarheid' => ['Meta-overzicht', 'Alt-teksten', 'Links', 'Redirects', 'Sitemap', 'Zoekwoorden'],
     ]],
     'webmaster' => [[Role::Webmaster], [
-        'Je site' => ['Pagina’s'],
+        'Je site' => ['Alle pagina’s'],
         'Verzamelingen' => ['Nieuws', 'Media', 'Berichten'],
         'Beheer' => ['Gebruikers en rollen', 'Formulieren', 'Back-ups', 'Logboek', 'Domein en certificaat'],
     ]],
     'owner' => [[Role::Owner], [
-        'Je site' => ['Pagina’s'],
+        'Je site' => ['Alle pagina’s'],
         'Verzamelingen' => ['Nieuws', 'Berichten'],
     ]],
     'admin' => [[Role::Admin], [
-        'Je site' => ['Pagina’s'],
+        'Je site' => ['Alle pagina’s'],
         'Verzamelingen' => ['Nieuws', 'Media', 'Berichten'],
         'Vindbaarheid' => ['Meta-overzicht', 'Alt-teksten', 'Links', 'Redirects', 'Sitemap', 'Zoekwoorden'],
         'Beheer' => ['Gebruikers en rollen', 'Formulieren', 'Back-ups', 'Logboek', 'Domein en certificaat'],
     ]],
     'content manager and seo specialist' => [[Role::ContentManager, Role::SeoSpecialist], [
-        'Je site' => ['Pagina’s'],
+        'Je site' => ['Alle pagina’s'],
         'Verzamelingen' => ['Nieuws', 'Media', 'Berichten'],
         'Vindbaarheid' => ['Meta-overzicht', 'Alt-teksten', 'Links', 'Redirects', 'Sitemap', 'Zoekwoorden'],
     ]],
 ]);
+
+it('lists the pages of the menu under the site', function (): void {
+    $about = Page::factory()->atPosition(1)->at('/over-ons')->create(['title' => 'Over ons']);
+    Page::factory()->atPosition(0)->at('/')->create(['title' => 'Home']);
+    Page::factory()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);
+    Page::factory()->atPosition(2)->inMenu(false)->at('/bedankt')->create(['title' => 'Bedankt']);
+
+    expect(startPageMenu(startPageFor(Role::Owner))['Je site'])->toBe(['Alle pagina’s', 'Home', 'Over ons', 'Team']);
+});
 
 it('links only to the screens the editor opens, from the menu and from the blocks', function (Role $role): void {
     $html = startPageFor($role);

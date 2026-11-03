@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Made\CmsPackage\Content\Events;
+
+use Illuminate\Foundation\Events\Dispatchable;
+use Made\CmsPackage\Content\Data\PagePath;
+use Made\CmsPackage\Content\Models\Page;
+
+final class PageDeleted
+{
+    use Dispatchable;
+
+    /**
+     * @param  PagePath  $path  the address the page had
+     */
+    public function __construct(
+        public readonly Page $page,
+        public readonly PagePath $path,
+    ) {}
+}

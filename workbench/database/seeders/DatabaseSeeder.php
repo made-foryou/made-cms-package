@@ -31,14 +31,44 @@ class DatabaseSeeder extends Seeder
         CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]));
 
         // Served by Route::madeCms() in workbench/routes/web.php: "/" and "/over-ons" open, "/concept" is a draft and answers 404.
-        Page::factory()->published()->at('/')->withStrips([
-            ['id' => (string) Str::uuid(), 'type' => 'hero', 'visible' => true, 'values' => ['kop' => 'Welkom bij de workbench']],
-        ])->create(['title' => 'Home', 'slug' => 'home']);
-
-        Page::factory()->published()->at('/over-ons')->withStrips([
-            ['id' => (string) Str::uuid(), 'type' => 'hero', 'visible' => true, 'values' => ['kop' => 'Over ons']],
+        $about = Page::factory()->published()->at('/over-ons')->withStrips([
+            $this->strip('hero', ['kop' => 'Over ons']),
         ])->create(['title' => 'Over ons', 'slug' => 'over-ons']);
 
+        // The home page shows every kind of value: rich text, buttons to a page and an address, cards and a hidden strip.
+        Page::factory()->published()->at('/')->withStrips([
+            $this->strip('hero', [
+                'label' => 'Made CMS',
+                'kop' => 'Welkom bij de workbench',
+                'intro' => '<p>Een pagina uit <strong>stroken</strong>, gerenderd met de Blade-component.</p>',
+                'knoppen' => [
+                    ['knop' => ['text' => 'Over ons', 'link' => ['page' => $about->id]]],
+                    ['knop' => ['text' => 'Mail ons', 'link' => ['url' => 'mailto:info@example.com']]],
+                ],
+            ]),
+            $this->strip('cards', [
+                'kop' => 'Wat je kunt doen',
+                'kolommen' => '2',
+                'kaarten' => [
+                    ['titel' => 'Lees over ons', 'tekst' => "Wie we zijn\nen wat we doen.", 'link' => ['page' => $about->id]],
+                    ['titel' => 'Bekijk de broncode', 'tekst' => null, 'link' => ['url' => 'https://github.com/made-foryou/made-cms-package']],
+                    ['titel' => 'Zonder link', 'tekst' => 'Een kaart hoeft nergens heen.', 'link' => null],
+                ],
+            ]),
+            $this->strip('hero', ['kop' => 'Verborgen strook: bezoekers zien deze niet'], visible: false),
+        ])->create(['title' => 'Home', 'slug' => 'home']);
+
         Page::factory()->at('/concept')->create(['title' => 'Concept', 'slug' => 'concept']);
+    }
+
+    /**
+     * A strip in the form it is stored in cms_pages.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array{id: string, type: string, visible: bool, values: array<string, mixed>}
+     */
+    private function strip(string $type, array $values, bool $visible = true): array
+    {
+        return ['id' => (string) Str::uuid(), 'type' => $type, 'visible' => $visible, 'values' => $values];
     }
 }

@@ -10,9 +10,13 @@ use Illuminate\Foundation\Vite;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as IlluminateResponse;
 use Illuminate\Support\Str;
+use Made\CmsPackage\Access\Actions\CheckScreenAccess;
 use Made\CmsPackage\Access\Actions\ShowLauncher;
+use Made\CmsPackage\Access\Data\ScreenVisit;
 use Made\CmsPackage\Access\Enums\LauncherView;
+use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Launcher\Endpoints;
@@ -129,6 +133,7 @@ final class InjectLauncher
             'view' => $view->value,
             'editor' => Visitor::profile($editor),
             'page' => $page,
+            'edit' => $this->editUrl($request, $editor),
             'arrived' => $request->hasSession() && $request->session()->get('made-cms-package.arrived') === true,
             'endpoints' => Endpoints::all(),
             'site' => Site::name(),
@@ -140,6 +145,25 @@ final class InjectLauncher
             ],
             'nonce' => class_exists(Vite::class) ? app(Vite::class)->cspNonce() : null,
         ])->render();
+    }
+
+    /**
+     * Where the edit bar opens the edit shell: only on a page of the CMS, and only for an editor who opens the pages.
+     * A visitor who still has to log in gets it too, hidden until the bar appears; the route decides who gets in.
+     */
+    private function editUrl(Request $request, ?Editor $editor): ?string
+    {
+        $page = $request->route()?->parameter(ResolvePage::PARAMETER);
+
+        if (! $page instanceof Page) {
+            return null;
+        }
+
+        if ($editor !== null && ! CheckScreenAccess::run(new ScreenVisit(editor: $editor, screen: Screen::Pages))) {
+            return null;
+        }
+
+        return $request->getBaseUrl().route('made-cms-package.pages.edit', ['page' => $page], false);
     }
 
     /**

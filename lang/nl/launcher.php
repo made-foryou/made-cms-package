@@ -131,6 +131,7 @@ return [
     ],
     'bar' => [
         'label' => 'Made CMS bewerkbalk',
+        'edit' => 'Bewerken',
         'start' => 'Startpagina',
         'logout' => 'Uitloggen',
         'home' => 'Home',

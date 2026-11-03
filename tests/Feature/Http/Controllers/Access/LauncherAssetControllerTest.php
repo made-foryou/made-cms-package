@@ -19,6 +19,7 @@ it('serves the launcher assets with their content type', function (string $asset
     ['launcher.js', 'text/javascript; charset=utf-8'],
     ['cms.css', 'text/css; charset=utf-8'],
     ['cms.js', 'text/javascript; charset=utf-8'],
+    ['edit.js', 'text/javascript; charset=utf-8'],
     ['nunito-700.woff2', 'font/woff2'],
     ['instrument-sans.woff2', 'font/woff2'],
 ]);
@@ -52,6 +53,7 @@ it('versions each asset url with a hash of its contents', function (string $asse
     ['launcher.js', 'launcher.js'],
     ['cms.css', 'cms.css'],
     ['cms.js', 'cms.js'],
+    ['edit.js', 'edit.js'],
     ['nunito-700.woff2', 'fonts/nunito-700.woff2'],
     ['instrument-sans.woff2', 'fonts/instrument-sans.woff2'],
 ]);

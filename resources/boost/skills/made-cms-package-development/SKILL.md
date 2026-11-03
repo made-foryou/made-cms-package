@@ -85,6 +85,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - Blade: `<x-made-cms::strips :page="$page" />` renders every strip with `resources/views/strips/<key>.blade.php` (or the `view()` of its type) and passes `$strip`: `{{ $strip->kop }}`, `{!! $strip->intro !!}`; a missing view throws `MissingStripView`
 - React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own; print rich text with `dangerouslySetInnerHTML` or `v-html`
 - put `data-cms-strip` with the strip id on the root element of every strip (required); `data-cms-field="<field>"` and `data-cms-items="<field>"` are optional and static
+- the edit shell (`/made-cms/pages/{page}/edit`, "Bewerken" in the edit bar) outlines every `data-cms-strip` in the frame, also strips rendered in the browser after load; a visible strip without it is reported in the browser console, and links and forms of the site do nothing in the frame
 - a page link is the path in `cms_routes` without the prefix of a route group; a site under `/nl` adds that itself
 
 ## Rules, References, and Templates
@@ -118,5 +119,5 @@ Read before executing:
 - do not print a `Text` or `LongText` field unescaped; only `RichText` is cleaned HTML
 - do not send `X-Frame-Options: DENY` or `Content-Security-Policy: frame-ancestors 'none'` from the site's middleware or web server; the edit mode needs a frame of the same origin (`SAMEORIGIN`, `frame-ancestors 'self'`)
 - do not let a full-page cache store responses with `?made-cms=edit`
-- do not leave out `data-cms-strip` on the root element of a strip view; the edit mode finds the strip by it
+- do not leave out `data-cms-strip` on the root element of a strip view; the edit shell finds the strip by it
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

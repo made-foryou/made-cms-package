@@ -91,18 +91,18 @@ it('serves a page for a head request', function (): void {
     $this->head('over-ons')->assertOk();
 });
 
-it('ignores a trailing slash', function (): void {
-    Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+it('redirects a trailing slash to the address without it', function (): void {
+    Page::factory()->published()->at('/over-ons')->create();
     servePages();
 
-    $this->get('over-ons/')->assertOk()->assertSeeText('Pagina: Over ons');
+    requestAsTyped('/over-ons/')->assertStatus(301)->assertRedirect('/over-ons');
 });
 
-it('ignores uppercase letters in the address', function (): void {
-    Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+it('redirects uppercase letters to the lowercase address', function (): void {
+    Page::factory()->published()->at('/over-ons')->create();
     servePages();
 
-    $this->get('Over-Ons')->assertOk()->assertSeeText('Pagina: Over ons');
+    $this->get('Over-Ons')->assertStatus(301)->assertRedirect('/over-ons');
 });
 
 it('answers 404 when no page lives at the path', function (): void {
@@ -166,6 +166,8 @@ it('serves pages under the prefix of the surrounding group', function (): void {
     });
 
     $this->get('nl/over-ons')->assertOk()->assertSeeText('NL: Over ons');
+    $this->get('nl/Over-Ons')->assertStatus(301)->assertRedirect('/nl/over-ons');
+    requestAsTyped('/nl/over-ons/')->assertStatus(301)->assertRedirect('/nl/over-ons');
     $this->get('over-ons')->assertNotFound();
 });
 
@@ -189,6 +191,7 @@ it('serves pages from cached routes with a closure responder', function (): void
     cacheRoutes();
 
     $this->get('over-ons')->assertOk()->assertSeeText('Pagina: Over ons');
+    $this->get('Over-Ons')->assertStatus(301)->assertRedirect('/over-ons');
     $this->get('bestaat-niet')->assertNotFound();
 });
 
@@ -212,6 +215,7 @@ it('caches the macro used twice without a name clash', function (): void {
     cacheRoutes();
 
     $this->get('en/over-ons')->assertOk()->assertSeeText('EN: Over ons');
+    $this->get('en/Over-Ons')->assertStatus(301)->assertRedirect('/en/over-ons');
     $this->get('over-ons')->assertOk()->assertSeeText('Pagina: Over ons');
 });
 

@@ -16,7 +16,7 @@ beforeEach(function (): void {
         Route::get('kop/{path?}', fn (Page $page): string => 'Kop: '.RenderStrips::run($page)->strips[0]->kop)->where('path', '.*');
         Route::get('eigen-frame/{path?}', fn (Page $page) => response('Pagina: '.$page->title)->header('X-Frame-Options', 'DENY'))->where('path', '.*');
         Route::get('anders/{path?}', fn (Page $whatever): string => 'Anders: '.$whatever->title)->where('path', '.*');
-        Route::get('verzoek/{path?}', fn (Request $request, Page $page): string => $request->method().' '.$page->title)->where('path', '.*');
+        Route::match(['GET', 'POST'], 'verzoek/{path?}', fn (Request $request, Page $page): string => $request->method().' '.$page->title)->where('path', '.*');
         Route::get('{path?}', fn (Page $page): string => 'Pagina: '.$page->title)->where('path', '.*');
     });
 });
@@ -144,5 +144,96 @@ it('leaves the edit mode behind once the response is sent', function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms');
 
     $this->get('kop/over-ons?made-cms=edit')->assertSeeText('Kop: Concept');
+    $this->get('kop/over-ons')->assertSeeText('Kop: Live');
+});
+
+it('redirects permanently to the lowercase address', function (): void {
+    Page::factory()->published()->at('/over-ons')->create();
+
+    $this->get('Over-Ons')->assertStatus(301)->assertRedirect('/over-ons');
+});
+
+it('redirects permanently to the address without a trailing slash', function (): void {
+    Page::factory()->published()->at('/over-ons')->create();
+
+    requestAsTyped('/over-ons/')->assertStatus(301)->assertRedirect('/over-ons');
+});
+
+it('redirects permanently to the address with single slashes', function (): void {
+    Page::factory()->published()->at('/over-ons/team')->create();
+
+    requestAsTyped('//over-ons//team')->assertStatus(301)->assertRedirect('/over-ons/team');
+});
+
+it('redirects to the home page without extra slashes', function (): void {
+    Page::factory()->published()->at('/')->create();
+
+    requestAsTyped('//')->assertStatus(301)->assertRedirect('/');
+});
+
+it('keeps the query string when it redirects', function (): void {
+    Page::factory()->published()->at('/over-ons')->create();
+
+    $this->get('Over-Ons?b=2&a=1')->assertStatus(301)->assertRedirect('/over-ons?a=1&b=2');
+});
+
+it('redirects a head request', function (): void {
+    Page::factory()->published()->at('/over-ons')->create();
+
+    $this->head('Over-Ons')->assertStatus(301)->assertRedirect('/over-ons');
+});
+
+it('keeps the fixed segments of the route when it redirects', function (): void {
+    Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+
+    $this->get('anders/Over-Ons')->assertStatus(301)->assertRedirect('/anders/over-ons');
+});
+
+it('does not redirect the canonical address', function (): void {
+    Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+
+    $this->get('over-ons?b=2&a=1')->assertOk()->assertSeeText('Pagina: Over ons');
+});
+
+it('answers 404 and no redirect when no page lives at the address', function (): void {
+    requestAsTyped('/Bestaat-Niet/')->assertNotFound();
+});
+
+it('does not redirect a post', function (): void {
+    Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+
+    $this->post('verzoek/Over-Ons')->assertOk()->assertSeeText('POST Over ons');
+});
+
+it('compares the address decoded, so an encoded address is canonical too', function (): void {
+    Page::factory()->published()->at('/café')->create(['title' => 'Café']);
+
+    $this->get('caf%C3%A9')->assertOk()->assertSeeText('Pagina: Café');
+    $this->get('CAF%C3%89')->assertStatus(301)->assertRedirect('/caf%C3%A9');
+});
+
+it('redirects in the edit mode and keeps the parameter', function (): void {
+    Page::factory()->at('/concept')->create();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('Concept?made-cms=edit')
+        ->assertStatus(301)
+        ->assertRedirect('/concept?made-cms=edit');
+});
+
+it('answers 404 and no redirect to a visitor at another form of the address of a draft', function (): void {
+    Page::factory()->at('/concept')->create();
+
+    $this->get('Concept?made-cms=edit')->assertNotFound();
+});
+
+it('leaves the edit mode behind after a redirect', function (): void {
+    Page::factory()->published()->at('/over-ons')
+        ->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])
+        ->withDraft([storedStrip('hero', ['kop' => 'Concept'], id: 'a')])
+        ->create();
+    $this->actingAs(Editor::factory()->create(), 'made-cms');
+
+    $this->get('kop/Over-Ons?made-cms=edit')->assertStatus(301);
     $this->get('kop/over-ons')->assertSeeText('Kop: Live');
 });

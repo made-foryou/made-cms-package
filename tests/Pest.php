@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
+use Illuminate\Testing\TestResponse;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
+use Symfony\Component\HttpFoundation\Response;
 
 /*
 |--------------------------------------------------------------------------
@@ -169,4 +173,20 @@ function storedStrip(string $type = 'cards', array $values = [], bool $visible =
         'visible' => $visible,
         'values' => $values,
     ];
+}
+
+/**
+ * Sends the address exactly as typed. The test client of Laravel trims a trailing slash and turns "//over-ons" into
+ * "/over-ons" before the request is made, so $this->get() cannot ask for those addresses.
+ *
+ * @return TestResponse<Response>
+ */
+function requestAsTyped(string $uri): TestResponse
+{
+    $kernel = app(Kernel::class);
+    $request = Request::create('http://localhost'.$uri);
+    $response = $kernel->handle($request);
+    $kernel->terminate($request, $response);
+
+    return TestResponse::fromBaseResponse($response, $request);
 }

@@ -1054,7 +1054,8 @@ button.tekstlink {
 }
 
 .boom,
-.stroken {
+.stroken,
+ul.lijst {
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1361,6 +1362,7 @@ button.tekstlink {
 }
 
 .stapkop {
+    margin-bottom: 12px;
     padding: 0;
 }
 

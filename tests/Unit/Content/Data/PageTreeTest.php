@@ -93,3 +93,10 @@ it('replaces the children of a node', function (): void {
     expect($node->children[0]->id)->toBe(3)
         ->and($node->id)->toBe(2);
 });
+
+it('lifts the pages under a page into its place', function (): void {
+    $tree = sampleTree()->lift(2);
+
+    expect(array_map(fn (PageNode $node): array => [$node->id, $node->depth], $tree->flatten()))
+        ->toBe([[1, 0], [3, 0], [4, 1], [5, 0], [6, 0], [7, 1]]);
+});

@@ -46,9 +46,10 @@ it('only links to the site for a live page', function (): void {
     expect(pageScreen($page))->not->toContain('Bekijk op de site');
 });
 
-it('shows the basics in a form with every other page as a parent', function (): void {
+it('shows the basics in a form with the other pages as a parent', function (): void {
     $home = Page::factory()->atPosition(0)->at('/')->create(['title' => 'Home']);
     $about = Page::factory()->atPosition(1)->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+    $contact = Page::factory()->atPosition(2)->at('/contact')->create(['title' => 'Contact']);
     $team = Page::factory()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);
 
     expect(pageScreen($about))
@@ -56,9 +57,11 @@ it('shows the basics in a form with every other page as a parent', function (): 
         ->toContain('<input type="hidden" name="_method" value="PUT">')
         ->toContain('value="Over ons"')
         ->toContain('value="over-ons"')
-        ->toContain('<option value="'.$home->id.'">Home</option>')
+        ->toContain('<option value="" selected>Bovenaan</option>')
+        ->toContain('<option value="'.$contact->id.'">Contact</option>')
+        ->not->toContain('<option value="'.$home->id.'"')
         ->not->toContain('<option value="'.$team->id.'"')
-        ->toContain('Plek 2 van 2 in het menu.');
+        ->toContain('Plek 2 van 3 in het menu.');
 });
 
 it('chooses the current parent', function (): void {

@@ -51,6 +51,14 @@ final readonly class PageTree
     }
 
     /**
+     * The tree without a page, with the pages under it in its place, one level up.
+     */
+    public function lift(int $id): self
+    {
+        return new self(self::liftFrom($this->roots, $id, 0));
+    }
+
+    /**
      * Only the pages in the menu; a page outside the menu takes the pages under it along.
      */
     public function inMenu(): self
@@ -80,6 +88,25 @@ final readonly class PageTree
         }
 
         return $flat;
+    }
+
+    /**
+     * @param  list<PageNode>  $nodes
+     * @return list<PageNode>
+     */
+    private static function liftFrom(array $nodes, int $id, int $depth): array
+    {
+        $kept = [];
+
+        foreach ($nodes as $node) {
+            if ($node->id === $id) {
+                array_push($kept, ...array_map(static fn (PageNode $child): PageNode => $child->atDepth($depth), $node->children));
+            } else {
+                $kept[] = $node->withChildren(self::liftFrom($node->children, $id, $depth + 1));
+            }
+        }
+
+        return $kept;
     }
 
     /**

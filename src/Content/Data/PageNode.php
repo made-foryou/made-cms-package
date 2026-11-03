@@ -49,6 +49,18 @@ final readonly class PageNode
     }
 
     /**
+     * The node at another depth, the pages under it along.
+     */
+    public function atDepth(int $depth): self
+    {
+        return new self(
+            $this->id, $this->title, $this->slug, $this->path, $this->status, $this->inMenu, $this->position,
+            $this->parentId, $depth, $this->hasDraft, $this->isEmpty, $this->updatedAt,
+            array_map(static fn (PageNode $child): PageNode => $child->atDepth($depth + 1), $this->children),
+        );
+    }
+
+    /**
      * @return PageNodeArray
      */
     public function toArray(): array

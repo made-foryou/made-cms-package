@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Database\Factories\Content;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Data\Strip;
@@ -27,8 +28,11 @@ final class PageFactory extends Factory
         $title = fake()->unique()->sentence(3);
 
         return [
+            'parent_id' => null,
             'title' => $title,
             'slug' => Str::slug($title),
+            'position' => 0,
+            'in_menu' => true,
             'status' => PageStatus::Draft,
             'strips' => [],
             'draft_strips' => null,
@@ -42,6 +46,32 @@ final class PageFactory extends Factory
             'status' => PageStatus::Published,
             'published_at' => now(),
         ]);
+    }
+
+    /**
+     * Puts the page under a parent; give it its address with at() as well.
+     */
+    public function under(Page $parent): self
+    {
+        return $this->state(fn (): array => ['parent_id' => $parent->id]);
+    }
+
+    public function atPosition(int $position): self
+    {
+        return $this->state(fn (): array => ['position' => $position]);
+    }
+
+    public function inMenu(bool $inMenu = true): self
+    {
+        return $this->state(fn (): array => ['in_menu' => $inMenu]);
+    }
+
+    /**
+     * Deletes the page at a moment. A deleted page has no address, so never combine this with at().
+     */
+    public function deletedAt(CarbonInterface $moment): self
+    {
+        return $this->state(fn (): array => ['deleted_at' => $moment]);
     }
 
     /**

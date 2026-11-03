@@ -26,4 +26,12 @@ final readonly class PagePath
     {
         return $this->value === self::HOME;
     }
+
+    /**
+     * The address of a page with this slug under the page at this address: "/" and "team" give "/team".
+     */
+    public function child(string $slug): self
+    {
+        return self::fromString($this->value.'/'.$slug);
+    }
 }

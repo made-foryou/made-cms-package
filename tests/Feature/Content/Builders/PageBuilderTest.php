@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Made\CmsPackage\Content\Builders\PageBuilder;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Enums\PageStatus;
@@ -91,4 +93,91 @@ it('lets two pages share a slug', function (): void {
     Page::factory()->at('/vereniging/team')->create(['slug' => 'team']);
 
     expect(Page::query()->where('slug', 'team')->count())->toBe(2);
+});
+
+it('starts a page at position 0 in the menu without a parent', function (): void {
+    $page = Page::query()->create(['title' => 'Home', 'slug' => 'home'])->refresh();
+
+    expect($page->parent_id)->toBeNull()
+        ->and($page->position)->toBe(0)
+        ->and($page->in_menu)->toBeTrue()
+        ->and($page->deleted_at)->toBeNull();
+});
+
+it('knows its parent and its children', function (): void {
+    $parent = Page::factory()->create();
+    $child = Page::factory()->under($parent)->create();
+
+    expect($child->parent?->is($parent))->toBeTrue()
+        ->and($parent->children->pluck('id')->all())->toBe([$child->id]);
+});
+
+it('only returns the root pages', function (): void {
+    $root = Page::factory()->create();
+    Page::factory()->under($root)->create();
+
+    expect(Page::query()->roots()->pluck('id')->all())->toBe([$root->id]);
+});
+
+it('returns the children of a page, or the root pages for none', function (): void {
+    $root = Page::factory()->create();
+    $child = Page::factory()->under($root)->create();
+
+    expect(Page::query()->childrenOf($root)->pluck('id')->all())->toBe([$child->id])
+        ->and(Page::query()->childrenOf(null)->pluck('id')->all())->toBe([$root->id]);
+});
+
+it('orders siblings by position and then by id', function (): void {
+    $third = Page::factory()->atPosition(2)->create();
+    $first = Page::factory()->atPosition(0)->create();
+    $secondA = Page::factory()->atPosition(1)->create();
+    $secondB = Page::factory()->atPosition(1)->create();
+
+    expect(Page::query()->inMenuOrder()->pluck('id')->all())->toBe([$first->id, $secondA->id, $secondB->id, $third->id]);
+});
+
+it('stores whether a page is in the menu', function (): void {
+    $page = Page::factory()->inMenu(false)->create();
+
+    expect($page->refresh()->in_menu)->toBeFalse();
+});
+
+it('refuses to remove a parent that still has children for good', function (): void {
+    $parent = Page::factory()->create();
+    Page::factory()->under($parent)->create();
+
+    expect(fn (): ?bool => $parent->forceDelete())->toThrow(QueryException::class);
+});
+
+it('hides a deleted page from queries', function (): void {
+    $page = Page::factory()->create();
+
+    $page->delete();
+
+    expect(Page::query()->find($page->id))->toBeNull()
+        ->and(Page::query()->withTrashed()->find($page->id)?->deleted_at)->toBeInstanceOf(CarbonImmutable::class);
+});
+
+it('hides deleted children', function (): void {
+    $parent = Page::factory()->create();
+    Page::factory()->under($parent)->trashed()->create();
+
+    expect(Page::query()->childrenOf($parent)->exists())->toBeFalse();
+});
+
+it('only returns pages deleted before a moment, oldest first', function (): void {
+    $older = Page::factory()->deletedAt(now()->subDays(40))->create();
+    $old = Page::factory()->deletedAt(now()->subDays(31))->create();
+    Page::factory()->deletedAt(now()->subDays(5))->create();
+    Page::factory()->create();
+
+    expect(Page::query()->trashedBefore(now()->subDays(30)->toImmutable())->pluck('id')->all())->toBe([$older->id, $old->id]);
+});
+
+it('orders deleted pages by the most recent deletion first', function (): void {
+    $older = Page::factory()->deletedAt(now()->subDays(3))->create();
+    $newest = Page::factory()->deletedAt(now()->subDay())->create();
+    Page::factory()->create();
+
+    expect(Page::query()->onlyTrashed()->recentlyDeleted()->pluck('id')->all())->toBe([$newest->id, $older->id]);
 });

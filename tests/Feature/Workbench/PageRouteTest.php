@@ -2,15 +2,10 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Content\Models\Page;
-use Made\CmsPackage\Content\Strips\StripTypes;
 
 beforeEach(function (): void {
-    app()->instance(StripTypes::class, StripTypes::discover(__DIR__.'/../../../workbench/app/Cms/Strips', 'Workbench\App\Cms\Strips'));
-    app('view')->addLocation(__DIR__.'/../../../workbench/resources/views');
-
-    Route::middleware('web')->group(__DIR__.'/../../../workbench/routes/web.php');
+    useWorkbenchSite();
 });
 
 it('serves the published pages of the workbench through the macro', function (): void {

@@ -57,7 +57,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 ### 6. Strip types
 
 - editors build pages from the site's strip types: one class per type in `app/Cms/Strips` that extends `Made\CmsPackage\Content\Strips\StripType` (config `strips.path` and `strips.namespace`); the package finds them on its own
-- implement `key()` (fixed, lowercase letters, digits and dashes, e.g. `hero`) and `fields()`; optionally `label()`, `description()`, `view()` and `with(array $values)`
+- implement `key()` (fixed, lowercase letters, digits and dashes, e.g. `hero`) and `fields()`; optionally `label()`, `description()`, `view()` (the Blade view, default `strips.{key}`) and `with(array $values)` (extra data such as the latest news; it receives the rendered values and its keys land next to the fields)
 - field types in `Made\CmsPackage\Content\Strips\Fields`: `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button` (text + link), `Choice` (list, `value => label` or a backed enum) and `Items` (a list of items with the same fields, `min()`/`max()`); every field takes `label()`, `hint()`, `required()` and `default()`
 - the field names `id`, `type` and `visible` are reserved; a broken definition throws `InvalidStripType` or `DuplicateStripType` as soon as the catalogue (`app(StripTypes::class)`) is built
 
@@ -71,10 +71,19 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 ### 8. Serve the pages
 
-- serve the CMS pages with one line as the **last** line of `routes/web.php`: `Route::madeCms(fn (Page $page) => view('page', ['page' => $page]))` (Blade), `Route::madeCms(fn (Page $page) => Inertia::render('Page', ['title' => $page->title, 'strips' => $page->strips]))` (Inertia), or `Route::madeCms(ShowPage::class)` with an invokable class
+- serve the CMS pages with one line as the **last** line of `routes/web.php`: `Route::madeCms(fn (Page $page) => view('page', ['page' => $page]))` (Blade), `Route::madeCms(fn (Page $page) => Inertia::render('Page', ['title' => $page->title, 'strips' => RenderStrips::run($page)->toArray()]))` (Inertia), or `Route::madeCms(ShowPage::class)` with an invokable class
 - the macro catches every `GET` address no route above it claims, looks up the published page there and hands it to the responder; no page or a page that is not published answers 404; routes of the site above it win
 - it takes the prefix and middleware of a surrounding group, returns the route without a name (chain `->name()` or `->middleware()`), can be used more than once and works with `route:cache`
 - the address of a page is `$page->route->path` (`/` for home, `/over-ons/team` nested), stored in `cms_routes`; look up what a visitor sees with `FindPublishedPage::run(PagePath::fromString($path))`
+
+### 9. Render the strips
+
+- `RenderStrips::run($page)` gives the strips a visitor sees: published, in order, without hidden strips or strips of a type that left the catalogue; `->toArray()` is `[{id, type, ...fields}]`
+- rendered values: a `Link` is a url (a page as its current path, `null` when it is gone or not published), a `Button` is `{text, url}` or `null`, `Items` is always a list with every field in every item, a missing field gets its default, `RichText` is cleaned HTML
+- Blade: `<x-made-cms::strips :page="$page" />` renders every strip with `resources/views/strips/<key>.blade.php` (or the `view()` of its type) and passes `$strip`: `{{ $strip->kop }}`, `{!! $strip->intro !!}`; a missing view throws `MissingStripView`
+- React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own; print rich text with `dangerouslySetInnerHTML` or `v-html`
+- put `data-cms-strip` with the strip id on the root element of every strip (required); `data-cms-field="<field>"` and `data-cms-items="<field>"` are optional and static
+- a page link is the path in `cms_routes` without the prefix of a route group; a site under `/nl` adds that itself
 
 ## Rules, References, and Templates
 
@@ -103,4 +112,7 @@ Read before executing:
 - do not call the responder's parameter `$path`; the route parameter has that name and implicit binding would look the page up by id
 - do not chain `Route::middleware(...)->madeCms()`; wrap the macro in `->group()` instead
 - do not look pages up by `cms_pages.slug`; an address lives in `cms_routes`
+- do not hand `$page->strips` to a view or a prop; it is the stored form with page ids and hidden strips, render through `RenderStrips`
+- do not print a `Text` or `LongText` field unescaped; only `RichText` is cleaned HTML
+- do not leave out `data-cms-strip` on the root element of a strip view; the edit mode finds the strip by it
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

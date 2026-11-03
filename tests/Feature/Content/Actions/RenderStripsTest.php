@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Actions\RenderStrips;
+use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Teaser;
@@ -78,6 +79,42 @@ it('renders the published strips, not the draft', function (): void {
         ->create();
 
     expect(RenderStrips::run($page)->strips[0]->kop)->toBe('Live');
+});
+
+it('renders the draft instead of the published strips in the edit mode', function (): void {
+    app()->instance(EditMode::class, EditMode::on());
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])
+        ->withDraft([storedStrip('hero', ['kop' => 'Concept'], id: 'a'), storedStrip('cards', id: 'b')])
+        ->create();
+
+    expect(RenderStrips::run($page)->strips[0]->kop)->toBe('Concept')
+        ->and(array_column(RenderStrips::run($page)->toArray(), 'id'))->toBe(['a', 'b']);
+});
+
+it('renders the published strips in the edit mode when the page has no draft', function (): void {
+    app()->instance(EditMode::class, EditMode::on());
+    $page = Page::factory()->published()->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])->create();
+
+    expect(RenderStrips::run($page)->strips[0]->kop)->toBe('Live');
+});
+
+it('renders the draft of a page that was never published in the edit mode', function (): void {
+    app()->instance(EditMode::class, EditMode::on());
+    $page = Page::factory()->withDraft([storedStrip('hero', ['kop' => 'Nieuw'], id: 'a')])->create();
+
+    expect(RenderStrips::run($page)->strips[0]->kop)->toBe('Nieuw');
+});
+
+it('leaves hidden strips and unknown types out of the draft in the edit mode', function (): void {
+    app()->instance(EditMode::class, EditMode::on());
+    $page = Page::factory()->withDraft([
+        storedStrip('cards', id: 'a', visible: false),
+        storedStrip('oud', ['x' => 1], id: 'b'),
+        storedStrip('cards', id: 'c'),
+    ])->create();
+
+    expect(array_column(RenderStrips::run($page)->toArray(), 'id'))->toBe(['c']);
 });
 
 it('keeps the id and type of a strip when the extra data of the site uses those names', function (): void {

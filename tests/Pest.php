@@ -19,7 +19,9 @@ use Made\CmsPackage\Tests\TestCase;
 | also get a fresh in-memory database. Arch tests stay on the plain PHPUnit
 | base: they only inspect source files and never boot the application.
 | Browser tests drive Chromium through Playwright against the app in this
-| process; they form the group "browser" that only composer test:browser runs.
+| process; they form the suite "Browser" that only composer test:browser runs.
+| Other runs exclude the suite, not a group: loading a browser test already
+| starts Playwright.
 |
 */
 
@@ -27,7 +29,7 @@ pest()->extend(TestCase::class)->in('Unit');
 
 pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
 
-pest()->extend(TestCase::class)->use(RefreshDatabase::class)->group('browser')->in('Browser');
+pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Browser');
 
 /*
 |--------------------------------------------------------------------------

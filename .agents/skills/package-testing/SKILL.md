@@ -32,7 +32,7 @@ Prove package behavior with Pest 4/5, Orchestra Testbench, and the local `tests/
 ## Browser Tests
 
 - Use a browser test when the behaviour lives in JavaScript (the launcher, the edit shell, the scan); use a feature test when the server answer is the behaviour.
-- They live in `tests/Browser/`, form the group `browser` and run only with `composer test:browser`; `composer test` and `composer test:unit` skip them. One-time setup: `npm ci && npx playwright install chromium`.
+- They live in `tests/Browser/`, form the testsuite `Browser` and run only with `composer test:browser`; `composer test` and `composer test:unit` skip them with `--exclude-testsuite=Browser`. Never filter them out with a group: the plugin starts Playwright as soon as a browser test file is loaded, so a run without Node fails. One-time setup: `npm ci && npx playwright install chromium`.
 - `pestphp/pest-plugin-browser` drives Chromium through Playwright against the app in the test process, so factories, Actions, `RefreshDatabase` and `actingAs($editor, 'made-cms')` work as in feature tests.
 - Start with `useWorkbenchSite()` (workbench strip types, views and `Route::madeCms()`) and create the page you visit, e.g. `Page::factory()->published()->at('/')`.
 - The launcher only shows to allowed addresses: `config(['made-cms-package.launcher.allowed_ips' => ['127.0.0.1', '::1']])`.

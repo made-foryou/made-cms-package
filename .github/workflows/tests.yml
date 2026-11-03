@@ -133,7 +133,7 @@ jobs:
 
       - name: Test Suite (Windows)
         if: runner.os == 'Windows'
-        run: vendor/bin/pest --exclude-group=browser
+        run: vendor/bin/pest --exclude-testsuite=Browser
 
   # Browser tests drive Chromium through Playwright; behaviour in the browser does not differ per PHP or Laravel version,
   # so the newest stack is enough. Windows runs too, for paths and the Playwright driver on another OS.

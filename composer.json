@@ -93,10 +93,10 @@
             "vendor/bin/pest --type-coverage --no-cache --min=100"
         ],
         "test:unit": [
-            "vendor/bin/pest --parallel --exclude-group=browser"
+            "vendor/bin/pest --parallel --exclude-testsuite=Browser"
         ],
         "test:browser": [
-            "vendor/bin/pest --group=browser"
+            "vendor/bin/pest --testsuite=Browser"
         ],
         "test": [
             "@analyse",

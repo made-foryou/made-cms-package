@@ -50,7 +50,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - every editor holds at least one fixed role (`Made\CmsPackage\Access\Enums\Role`): `admin` (every screen), `webmaster`, `content-manager`, `seo-specialist`, `owner`; the roles decide which CMS screens (`Screen` enum) the editor opens
 - change roles with `AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [...]))`; it throws `RolesRejected` when the editor making the change may not (only admins and webmasters change roles, only an admin gives or takes `admin`, the last admin keeps it)
 - read access with `ListScreens::run($editor)` or `CheckScreenAccess::run(new ScreenVisit($editor, Screen::Redirects))`, and find editors with `Editor::query()->withRole(Role::Admin)`
-- the package registers a route per screen at `/made-cms/<screen>` (`route('made-cms-package.screens.redirects')`), guarded by `EnsureScreenAccess`; until a screen is built it shows that it is coming
+- the package registers a route per screen at `/made-cms/<screen>` (`route('made-cms-package.screens.redirects')`), guarded by `EnsureScreenAccess`; the pages screen is built, the other screens show that they are coming until they are
 - guard a route of your own for a CMS screen with `->middleware(EnsureScreenAccess::using(Screen::Redirects))`
 - the CMS start page is `/made-cms/start` (`route('made-cms-package.start')`): every logged-in editor opens it, with a menu of the screens of their roles; the edit bar and the login page link to it, so the host adds nothing
 
@@ -67,7 +67,12 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - `AddStrip::run($page, 'hero', $position)`, `MoveStrip::run($page, $stripId, $position)`, `RemoveStrip::run($page, $stripId)`, `UpdateStrip::run($page, $stripId, $values)` (throws a `ValidationException` keyed by field) and `SetStripVisibility::run($page, $stripId, $visible)` change the draft; visitors keep the published strips
 - `PublishPage::run($page)` makes the draft the published version and refuses a draft with an invalid strip (errors keyed `strips.<id>.<field>`); `DiscardDraft::run($page)` goes back to the published version; query pages with `Page::query()->published()`
 - a strip whose type is no longer in the catalogue keeps its data; only `UpdateStrip` refuses it
-- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished` for side effects
+- editors manage pages at `/made-cms/pages` (`route('made-cms-package.screens.pages')`): the tree in menu order, a new page at `pages.create`, one page at `pages.show`, deleting and restoring; the host adds nothing
+- pages form a tree: `parent_id`, `position` among the siblings and `in_menu`; the address is the parent's address plus the slug (`/` + slug at the top and under the home page) and every write keeps the addresses of the pages under it in step
+- create and change pages with `CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about->id))`, `UpdatePage::run($page, new PageChanges(...))`, `MovePage::run($page, $parentId, $position)`, `DeletePage::run($page)` and `RestorePage::run($page)`; read the tree with `ListPages::run()` (`PageTree`, `->flatten()` in menu order, `->inMenu()` for a site menu); never write `parent_id`, `position` or `cms_routes.path` yourself
+- refusals are exceptions: `PagePathTaken`, `InvalidPageSlug`, `CircularPageMove`, `HomePageProtected` (the home page keeps `/`, stays at the top and is never deleted), `PageHasChildren` (move or delete the pages below first)
+- deleting is a soft delete that frees the address; `made-cms:prune` removes pages deleted more than `pages.keep_deleted_days` (30) days ago and the package schedules it daily, so run the scheduler (`schedule:run`) in production
+- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled`, `PageCreated`, `PageUpdated`, `PageMoved` (old and new address), `PageDeleted`, `PageRestored`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished` for side effects
 
 ### 8. Serve the pages
 
@@ -108,6 +113,7 @@ Read before executing:
 - do not store roles on the app's users or write `cms_editors.roles` directly; roles change through `AssignRoles` so its rules hold
 - do not build a menu or dashboard of your own that hides links as authorisation; the route middleware decides, `ListScreens` only feeds the menu
 - do not queue or log `LoginCodeIssued`: its payload holds the plain code
+- do not create pages or addresses with `Page::create()` or `$page->route()->create()` in app code; `CreatePage` keeps the tree and the addresses consistent
 - do not put a CDN or response cache in front of pages for allowed visitors without excluding the tile
 - do not derive `key()` from the class name or change it once content uses it; the key is stored with every strip
 - do not nest `Items` inside `Items`; one list level is supported

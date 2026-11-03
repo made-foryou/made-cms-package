@@ -4,6 +4,16 @@
 
 ### Added
 
+- Pages screen at `/made-cms/pages` (route `made-cms-package.screens.pages`, for every editor who opens `Screen::Pages`): every page in the order of the menu, the pages under a page indented below it, with its address, status, what still needs doing and when it changed, and links to its overview and its edit shell. Deleted pages are listed below it with the address they get back and a "Terugzetten" button.
+- One page at `/made-cms/pages/{page}` (`pages.show`, saved with `PUT` to `pages.update`): its name, address, parent ("Ligt onder") and menu flag, the pages under it with "Pagina hieronder", and deleting it with a confirmation (`DELETE` to `pages.destroy`). The home page keeps its address and has no delete; a page with pages under it cannot be deleted until they are moved or deleted.
+- New page at `/made-cms/pages/new` (`pages.create`, `POST` to `pages.store`): one question per step, the name (the address follows it, or the editor types one) and then the place and the menu flag. The page starts as an empty draft, last among its siblings, and the next screen says it is ready and opens it on the site. Without script both steps show on one form. `?parent=<id>` chooses the parent beforehand.
+- Restoring a deleted page with `POST` to `/made-cms/pages/{page}/restore` (`pages.restore`), also from the notice that follows a delete.
+- The `made-cms:prune` command removes pages deleted more than `pages.keep_deleted_days` (30) days ago for good. The package schedules it daily through the host's scheduler, so the host only runs `schedule:run`.
+- Actions `CreatePage` (`NewPage`), `UpdatePage` (`PageChanges`), `MovePage` (parent and place among the siblings), `DeletePage`, `RestorePage`, `PrunePages`, `ListPages` (`PageTree` of `PageNode`s), `ListParentOptions` and `ListDeletedPages` (`DeletedPages` of `DeletedPage`s). Every write keeps the addresses of a page and the pages under it in step: the address of a page is the address of its parent plus its slug, `/` + slug at the top and under the home page. They dispatch `PageCreated`, `PageUpdated`, `PageMoved`, `PageDeleted` and `PageRestored`, and refuse with `InvalidPageSlug`, `PagePathTaken`, `CircularPageMove`, `InvalidPagePosition`, `HomePageProtected`, `PageHasChildren`, `PageNotDeleted`, `ParentPageNotFound` or `ParentPageDeleted`.
+- `Page::parent()` and `Page::children()`, builder scopes `roots()`, `childrenOf()`, `inMenuOrder()`, `trashedBefore()` and `recentlyDeleted()`, `PagePath::child()`, the `PageSlug` data object, and factory states `under()`, `atPosition()`, `inMenu()` and `deletedAt()`.
+- Config key `pages.keep_deleted_days`.
+- Dutch and English translations for the pages screen (`pages`) and the prune command (`console.prune`).
+
 - Edit shell at `/made-cms/pages/{page}/edit` (route `made-cms-package.pages.edit`, guarded by `EnsureScreenAccess::using(Screen::Pages)`): the page in the edit mode of the site in a frame of the same origin, with a bar (site, page, status, "Voorvertoning" and "Publiceren", which work in a later release) and a side panel. Every `[data-cms-strip]` gets an outline with the name of its strip type and its number of fields; clicking one chooses it and the panel shows "Strook n van m", also after the frame reloads. A visible strip without the attribute on its root is reported in the browser console. Links and forms of the site do nothing inside the frame. The bar and panel follow `prefers-color-scheme`; the site in the frame does not change.
 - "Bewerken" in the edit bar on a page of the CMS opens its edit shell.
 - `ListEditableStrips` action with the `EditableStrips` and `EditableStrip` data objects: the strips of the working copy an editor can choose, in order, with the name and number of fields of their type, hidden strips included.
@@ -66,6 +76,11 @@
 - Runtime dependencies `illuminate/auth`, `illuminate/cache`, `illuminate/console`, `illuminate/cookie`, `illuminate/hashing`, `illuminate/mail`, `illuminate/notifications` and `illuminate/session`.
 
 ### Changed
+
+- `cms_pages` gains `parent_id` (the page it lies under), `position` (its place among its siblings), `in_menu` and `deleted_at`: deleting a page is a soft delete, which frees its address and keeps its content for 30 days. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`).
+- The CMS menu lists under "Je site" the overview "Alle pagina’s" followed by every page in the menu, indented under its parent; the pages screen is no longer listed as coming.
+- `Shell::respond()` and `Menu::groups()` take the page tree and the open page as optional arguments; menu items carry their `depth`.
+- A strip that links to a deleted page renders no url, like a link to a draft, and a draft with that link is refused by `PublishPage` until the link changes or the page is restored.
 
 - Requires PHP 8.4 or newer; PHP 8.3 is no longer supported. A host on PHP 8.3 upgrades PHP before it updates the package.
 - `cms_pages.slug` is no longer unique: the address of a page is unique in `cms_routes`, so pages under different parents can share a slug. A host that already ran the `cms_pages` migration runs it again (`migrate:fresh`) or drops the unique index on `slug` itself.

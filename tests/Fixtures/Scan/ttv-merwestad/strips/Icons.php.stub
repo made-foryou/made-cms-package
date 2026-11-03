@@ -1,0 +1,21 @@
+<?php
+
+namespace App\Cms\Strips;
+
+/**
+ * The icons editors can pick for a card. The React components map each
+ * value to a lucide icon.
+ */
+final class Icons
+{
+    public const array OPTIONS = [
+        'users' => 'Mensen',
+        'heart' => 'Hart',
+        'trophy' => 'Beker',
+        'clock' => 'Klok',
+        'map-pin' => 'Locatie',
+        'building' => 'Gebouw',
+        'car' => 'Auto',
+        'mail' => 'Mail',
+    ];
+}

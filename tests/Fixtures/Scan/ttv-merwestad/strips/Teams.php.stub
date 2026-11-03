@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Teams extends StripType
+{
+    public function key(): string
+    {
+        return 'teams';
+    }
+
+    public function description(): ?string
+    {
+        return 'De competitieteams met spelers en een link naar de uitslagen.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('anker')->default('teams')->hint('Het #-adres van deze strook in het menu.'),
+            Text::make('label'),
+            Text::make('kop')->required(),
+            LongText::make('intro'),
+            Items::make('teams', [
+                Text::make('naam')->required(),
+                Text::make('competitie'),
+                Text::make('klasse'),
+                Text::make('poule'),
+                LongText::make('spelers')->hint('Eén naam per regel.'),
+                LongText::make('reserves')->hint('Eén naam per regel.'),
+                Link::make('uitslagen'),
+            ]),
+        ];
+    }
+}

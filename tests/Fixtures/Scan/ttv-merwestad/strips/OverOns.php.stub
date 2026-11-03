@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class OverOns extends StripType
+{
+    public function key(): string
+    {
+        return 'over-ons';
+    }
+
+    public function label(): string
+    {
+        return 'Over ons';
+    }
+
+    public function description(): ?string
+    {
+        return 'Kop met intro en kaarten met een icoon.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('anker')->default('over-ons')->hint('Het #-adres van deze strook in het menu.'),
+            Text::make('label'),
+            Text::make('kop')->required(),
+            LongText::make('intro'),
+            Items::make('kaarten', [
+                Choice::make('icoon', Icons::OPTIONS)->default('users'),
+                Text::make('titel')->required(),
+                LongText::make('tekst'),
+            ])->max(6),
+        ];
+    }
+}

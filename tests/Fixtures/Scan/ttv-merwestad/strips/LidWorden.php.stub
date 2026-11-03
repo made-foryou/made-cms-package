@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class LidWorden extends StripType
+{
+    public function key(): string
+    {
+        return 'lid-worden';
+    }
+
+    public function label(): string
+    {
+        return 'Lid worden';
+    }
+
+    public function description(): ?string
+    {
+        return 'Donkere oproep met een tekst en twee knoppen.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('anker')->default('lid-worden')->hint('Het #-adres van deze strook in het menu.'),
+            Text::make('label'),
+            Text::make('kop')->required(),
+            LongText::make('tekst'),
+            Button::make('knop'),
+            Button::make('tweede_knop'),
+        ];
+    }
+}

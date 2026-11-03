@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Locatie extends StripType
+{
+    public function key(): string
+    {
+        return 'locatie';
+    }
+
+    public function description(): ?string
+    {
+        return 'Kaart van de locatie met uitleg over gebouw, parkeren en ingang.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('anker')->default('locatie')->hint('Het #-adres van deze strook in het menu.'),
+            Text::make('label'),
+            Text::make('kop')->required(),
+            LongText::make('intro'),
+            Text::make('kaart_alt')->label('Beschrijving van de kaart'),
+            Button::make('kaart_knop')->label('Knop op de kaart'),
+            Items::make('blokken', [
+                Choice::make('icoon', Icons::OPTIONS)->default('map-pin'),
+                Text::make('titel')->required(),
+                LongText::make('tekst'),
+            ])->max(4),
+        ];
+    }
+}

@@ -250,6 +250,36 @@ it('links from the edit bar to the start page of the cms', function (): void {
         ->assertSee('<a class="balk-link" href="/made-cms/start">Startpagina</a>', false);
 });
 
+it('links from the edit bar to the edit shell of the page of the cms', function (): void {
+    Route::middleware('web')->prefix('site')->group(function (): void {
+        Route::madeCms(fn (Page $page): string => launcherTestPage());
+    });
+    $page = Page::factory()->published()->at('/pagina')->create();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('site/pagina')
+        ->assertSee('<a class="balk-link" href="/made-cms/pages/'.$page->id.'/edit" data-edit>Bewerken</a>', false);
+});
+
+it('hides the edit link until a visitor on a page of the cms has logged in', function (): void {
+    Route::middleware('web')->prefix('site')->group(function (): void {
+        Route::madeCms(fn (Page $page): string => launcherTestPage());
+    });
+    $page = Page::factory()->published()->at('/pagina')->create();
+
+    $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.5'])
+        ->get('site/pagina')
+        ->assertSee('data-view="tile"', false)
+        ->assertSee('<a class="balk-link" href="/made-cms/pages/'.$page->id.'/edit" data-edit hidden>Bewerken</a>', false);
+});
+
+it('offers no edit link on a page of the host that is not a page of the cms', function (): void {
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('/')
+        ->assertSee('data-view="edit_bar"', false)
+        ->assertDontSee('data-edit', false);
+});
+
 it('shows the tile to a visitor who is not logged in', function (): void {
     visitLauncherPageFrom('203.0.113.5')->assertSee('data-view="tile"', false);
 });

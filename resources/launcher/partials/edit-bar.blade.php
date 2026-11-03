@@ -6,6 +6,7 @@
         <span class="balk-pagina">{{ $page }}</span>
     </div>
     <div class="balk-rechts">
+        @if ($edit ?? null)<a class="balk-link" href="{{ $edit }}" data-edit{{ $editor === null ? ' hidden' : '' }}>{{ $t('bar.edit') }}</a>@endif
         <a class="balk-link" href="{{ $endpoints['start'] }}">{{ $t('bar.start') }}</a>
         <form class="uitloggen" method="post" action="{{ $endpoints['logout'] }}">
             @if ($view === 'edit_bar')<input type="hidden" name="_token" value="{{ csrf_token() }}">@endif

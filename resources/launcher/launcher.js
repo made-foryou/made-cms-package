@@ -1117,6 +1117,9 @@ class MadeCmsLauncher extends HTMLElement {
             this.bar.querySelector('.avatar').textContent = editor.initial;
         }
 
+        // Rendered hidden for a visitor who logs in on this page; the edit shell itself checks who may open it.
+        this.bar.querySelector('[data-edit]')?.removeAttribute('hidden');
+
         this.dataset.view = 'edit_bar';
         this.shiftPage();
         this.bar.classList.remove('uit');

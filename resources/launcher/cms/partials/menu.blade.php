@@ -5,7 +5,7 @@
             <div class="navblok">
                 <p class="navgroep">{{ $group['label'] }}</p>
                 @foreach ($group['items'] as $item)
-                    <a class="navitem{{ $item['current'] ? ' actief' : '' }}" href="{{ $item['url'] }}"@if ($item['current']) aria-current="page"@endif><span class="merk" aria-hidden="true"></span>{{ $item['label'] }}</a>
+                    <a class="navitem{{ $item['current'] ? ' actief' : '' }}"@if ($item['depth'] > 0) data-diepte="{{ min($item['depth'], 3) }}"@endif href="{{ $item['url'] }}"@if ($item['current']) aria-current="page"@endif><span class="merk" aria-hidden="true"></span>{{ $item['label'] }}</a>
                 @endforeach
             </div>
         @endforeach

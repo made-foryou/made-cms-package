@@ -35,6 +35,10 @@ pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
 
 pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Browser');
 
+// The longest a browser action or assertion waits; a passing test takes no longer for it. The Windows runner in CI
+// serves the first pages of a run slowly enough (cold PHP server, views compiled on first use) to pass the default 5 s.
+pest()->browser()->timeout(15_000);
+
 /*
 |--------------------------------------------------------------------------
 | Architecture helpers
@@ -119,25 +123,42 @@ function useWorkbenchSite(): void
 */
 
 /**
- * A script for $page->script() that resolves to true once the JavaScript condition holds,
- * or to false after the timeout. Browser assertions do not wait; use this after an animation.
+ * A script for $page->script() that resolves to true once the JavaScript condition holds. Browser assertions do not
+ * wait for it; use this after an animation or a reload.
+ *
+ * Pest gives every attempt of a script one second and tries again until the browser timeout when an attempt fails.
+ * So one attempt watches for a little under a second and throws when the condition still does not hold: a slow
+ * machine gets more attempts, a fast one is done at once, and a condition that never holds fails with its own text.
  */
-function waitUntil(string $condition, int $milliseconds = 5000): string
+function waitUntil(string $condition): string
 {
+    $quoted = json_encode($condition, JSON_THROW_ON_ERROR);
+
     return <<<JS
-        () => new Promise((resolve) => {
-            const until = Date.now() + {$milliseconds};
+        () => new Promise((resolve, reject) => {
+            const until = Date.now() + 800;
             const check = () => {
                 if ({$condition}) {
                     resolve(true);
                 } else if (Date.now() > until) {
-                    resolve(false);
+                    reject(new Error('Still waiting for ' + {$quoted}));
                 } else {
                     setTimeout(check, 50);
                 }
             };
             check();
         })
+        JS;
+}
+
+/**
+ * A script for $page->script() that resolves to the value of the JavaScript expression after a moment, within a
+ * single attempt: to check that something does not happen, such as a navigation.
+ */
+function valueAfter(string $expression, int $milliseconds = 800): string
+{
+    return <<<JS
+        () => new Promise((resolve) => setTimeout(() => resolve({$expression}), {$milliseconds}))
         JS;
 }
 

@@ -13,4 +13,7 @@ return [
         'exists' => 'An account for :email already exists.',
         'created' => 'Account for :email created.',
     ],
+    'prune' => [
+        'pruned' => '{0} No pages removed for good.|{1} 1 page removed for good.|[2,*] :count pages removed for good.',
+    ],
 ];

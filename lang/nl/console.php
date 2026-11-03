@@ -13,4 +13,7 @@ return [
         'exists' => 'Er bestaat al een account voor :email.',
         'created' => 'Account voor :email aangemaakt.',
     ],
+    'prune' => [
+        'pruned' => '{0} Geen pagina’s definitief verwijderd.|{1} 1 pagina definitief verwijderd.|[2,*] :count pagina’s definitief verwijderd.',
+    ],
 ];

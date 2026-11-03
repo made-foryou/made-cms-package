@@ -22,6 +22,13 @@ use Made\CmsPackage\Http\Controllers\Access\TwoFactorConfirmController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
+use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
+use Made\CmsPackage\Http\Controllers\Content\NewPageController;
+use Made\CmsPackage\Http\Controllers\Content\PagesController;
+use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
+use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
+use Made\CmsPackage\Http\Controllers\Content\StorePageController;
+use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
@@ -70,19 +77,36 @@ Route::prefix($prefix)
 
             Route::get('start', StartPageController::class)->middleware(EnsureEditor::class)->name('start');
 
-            // Every screen opens at its own address; until a screen is built, it shows that it is coming.
+            // Every screen opens at its own address; until a screen is built, it shows that it is coming. A built screen
+            // leaves the loop and keeps the name screens.<screen>, which the menu links to.
             foreach (Screen::cases() as $screen) {
+                if ($screen === Screen::Pages) {
+                    continue;
+                }
+
                 Route::get($screen->value, UpcomingScreenController::class)
                     ->middleware(EnsureScreenAccess::using($screen))
                     ->defaults('screen', $screen->value)
                     ->name('screens.'.$screen->value);
             }
 
-            // The edit shell: the page in the edit mode of the site, in a frame of the CMS.
-            Route::get('pages/{page}/edit', EditPageController::class)
-                ->middleware(EnsureScreenAccess::using(Screen::Pages))
-                ->whereNumber('page')
-                ->name('pages.edit');
+            // The pages screen: the pages in the order of the menu, a page with its basics, a new page, deleting and
+            // restoring. Plain forms; a refusal goes back to the form with the error.
+            Route::middleware(EnsureScreenAccess::using(Screen::Pages))->group(function (): void {
+                Route::get('pages', PagesController::class)->name('screens.pages');
+                Route::get('pages/new', NewPageController::class)->name('pages.create');
+                Route::post('pages', StorePageController::class)->name('pages.store');
+                Route::get('pages/{page}', ShowPageController::class)->whereNumber('page')->name('pages.show');
+                Route::put('pages/{page}', UpdatePageController::class)->whereNumber('page')->name('pages.update');
+                Route::delete('pages/{page}', DeletePageController::class)->whereNumber('page')->name('pages.destroy');
+                Route::post('pages/{page}/restore', RestorePageController::class)
+                    ->whereNumber('page')
+                    ->withTrashed()
+                    ->name('pages.restore');
+
+                // The edit shell: the page in the edit mode of the site, in a frame of the CMS.
+                Route::get('pages/{page}/edit', EditPageController::class)->whereNumber('page')->name('pages.edit');
+            });
         });
     });
 

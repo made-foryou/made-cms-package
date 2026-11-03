@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Routing\Router;
@@ -88,6 +90,19 @@ it('keeps a guard and provider the host defined itself', function (): void {
 
 it('registers the editor command', function (): void {
     expect(Artisan::all())->toHaveKey('made-cms:editor');
+});
+
+it('registers the prune command and runs it every day', function (): void {
+    $events = collect(app(Schedule::class)->events())
+        ->filter(fn (Event $event): bool => str_contains((string) $event->command, 'made-cms:prune'));
+
+    expect(Artisan::all())->toHaveKey('made-cms:prune')
+        ->and($events)->toHaveCount(1)
+        ->and($events->first()?->expression)->toBe('0 0 * * *');
+});
+
+it('keeps deleted pages for thirty days', function (): void {
+    expect(config('made-cms-package.pages.keep_deleted_days'))->toBe(30);
 });
 
 it('appends the launcher middleware to the web middleware group', function (): void {

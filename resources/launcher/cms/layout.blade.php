@@ -13,6 +13,7 @@
     <div class="romp">
         @include('made-cms-package-launcher::cms.partials.menu')
         <div class="hoofd">
+            @include('made-cms-package-launcher::cms.partials.notice')
             <main class="inhoud" aria-labelledby="made-cms-titel">
                 @yield('content')
             </main>

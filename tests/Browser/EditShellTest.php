@@ -65,7 +65,7 @@ it('keeps the frame on the page when the editor clicks a link on the site', func
 
     $shell->script("() => { const site = document.querySelector('.bewerkframe').contentDocument; const link = site.createElement('a'); link.href = '/elders'; link.textContent = 'Elders'; site.body.prepend(link); link.click(); }");
 
-    expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentWindow.location.pathname === '/elders'", 1000)))->toBeFalse();
+    expect($shell->script(valueAfter("document.querySelector('.bewerkframe').contentWindow.location.pathname")))->not->toBe('/elders');
 
     $shell->assertNoJavaScriptErrors();
 });

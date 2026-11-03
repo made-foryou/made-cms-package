@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage;
 
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Kernel;
@@ -18,6 +19,7 @@ use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
+use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
@@ -88,7 +90,13 @@ class CmsPackageServiceProvider extends ServiceProvider
 
         $this->commands([
             CreateEditorCommand::class,
+            PrunePagesCommand::class,
         ]);
+
+        // Deleted pages can be restored for a while; after that they go for good, with the host's scheduler.
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('made-cms:prune')->daily();
+        });
 
         $this->publishes([
             __DIR__.'/../config/made-cms-package.php' => config_path('made-cms-package.php'),

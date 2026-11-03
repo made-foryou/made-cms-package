@@ -30,14 +30,19 @@ class DatabaseSeeder extends Seeder
         // Logs in with a code (see storage/logs) or with the password "password".
         CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]));
 
-        // Served by Route::madeCms() in workbench/routes/web.php: "/" and "/over-ons" open. "/concept" is a draft and answers
-        // 404, except to a logged-in editor in the edit mode of the CMS: "/concept?made-cms=edit".
-        $about = Page::factory()->published()->at('/over-ons')->withStrips([
+        // Served by Route::madeCms() in workbench/routes/web.php: "/", "/over-ons" and "/over-ons/team" open. "/concept" is
+        // a draft and answers 404, except to a logged-in editor in the edit mode of the CMS: "/concept?made-cms=edit".
+        // The positions give the order of the menu and of the pages screen.
+        $about = Page::factory()->published()->atPosition(1)->at('/over-ons')->withStrips([
             $this->strip('hero', ['kop' => 'Over ons']),
         ])->create(['title' => 'Over ons', 'slug' => 'over-ons']);
 
+        Page::factory()->published()->under($about)->at('/over-ons/team')->withStrips([
+            $this->strip('hero', ['kop' => 'Ons team']),
+        ])->create(['title' => 'Team', 'slug' => 'team']);
+
         // The home page shows every kind of value: rich text, buttons to a page and an address, cards and a hidden strip.
-        Page::factory()->published()->at('/')->withStrips([
+        Page::factory()->published()->atPosition(0)->at('/')->withStrips([
             $this->strip('hero', [
                 'label' => 'Made CMS',
                 'kop' => 'Welkom bij de workbench',
@@ -59,7 +64,7 @@ class DatabaseSeeder extends Seeder
             $this->strip('hero', ['kop' => 'Verborgen strook: bezoekers zien deze niet'], visible: false),
         ])->create(['title' => 'Home', 'slug' => 'home']);
 
-        Page::factory()->at('/concept')->withDraft([
+        Page::factory()->atPosition(2)->at('/concept')->withDraft([
             $this->strip('hero', ['kop' => 'Een pagina die nog niet gepubliceerd is']),
         ])->create(['title' => 'Concept', 'slug' => 'concept']);
     }

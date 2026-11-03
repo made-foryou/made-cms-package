@@ -23,3 +23,12 @@ it('knows the home address', function (): void {
     expect(PagePath::fromString('')->isHome())->toBeTrue()
         ->and(PagePath::fromString('/over-ons')->isHome())->toBeFalse();
 });
+
+it('gives the address of a child', function (string $parent, string $slug, string $expected): void {
+    expect(PagePath::fromString($parent)->child($slug)->value)->toBe($expected);
+})->with([
+    'under home' => ['/', 'team', '/team'],
+    'nested' => ['/over-ons', 'team', '/over-ons/team'],
+    'uppercase' => ['/over-ons', 'TEAM', '/over-ons/team'],
+    'with slashes' => ['/over-ons', '/team/', '/over-ons/team'],
+]);

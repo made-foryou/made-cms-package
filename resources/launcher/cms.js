@@ -108,3 +108,112 @@ if (button && menu) {
 
     document.querySelector('.hoofd')?.addEventListener('click', () => closeOverlay(false));
 }
+
+/*
+ * The new-page wizard (design 15.3–15.5): one form in two steps, one question per step. Without this script both
+ * steps show and the form works the same. The address preview follows the name; the server makes the real address.
+ * All copy comes from the markup.
+ */
+
+const wizard = document.querySelector('form[data-wizard]');
+
+/* Roughly what the server does with a name: lowercase ascii, words joined by dashes. */
+function slugify(text) {
+    return text
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+if (wizard) {
+    const steps = [...wizard.querySelectorAll('[data-stap]')];
+    const title = wizard.elements.namedItem('title');
+    const slug = wizard.elements.namedItem('slug');
+    const slugField = wizard.querySelector('[data-slug-veld]');
+    const slugEdit = wizard.querySelector('[data-slug-edit]');
+    const previews = wizard.querySelectorAll('[data-slug-preview]');
+    const echo = wizard.querySelector('[data-title-echo]');
+    const untitled = echo ? echo.textContent : '';
+    const note = wizard.querySelector('[data-stapnoot]');
+    let custom = slug.value !== '';
+
+    const sync = () => {
+        const value = slugify(custom ? slug.value : title.value);
+
+        previews.forEach((preview) => {
+            preview.textContent = value;
+        });
+
+        if (echo) {
+            echo.textContent = title.value.trim() || untitled;
+        }
+    };
+
+    const show = (step, focus) => {
+        steps.forEach((fieldset) => {
+            fieldset.hidden = fieldset.dataset.stap !== String(step);
+        });
+
+        wizard.querySelectorAll('[data-balk]').forEach((bar) => {
+            bar.classList.toggle('actief', bar.dataset.balk === String(step));
+            bar.classList.toggle('gedaan', Number(bar.dataset.balk) < step);
+        });
+
+        if (note) {
+            note.textContent = note.getAttribute(`data-tekst-${step}`) ?? note.textContent;
+        }
+
+        if (focus) {
+            steps[step - 1]?.querySelector('input:not([type="hidden"])')?.focus();
+        }
+    };
+
+    const next = () => {
+        if (title.reportValidity()) {
+            show(2, true);
+        }
+    };
+
+    wizard.querySelectorAll('[data-stappen], [data-next], [data-back]').forEach((element) => {
+        element.hidden = false;
+    });
+
+    if (slugField && slugEdit && !slugField.hasAttribute('data-open')) {
+        slugField.hidden = true;
+        slugEdit.hidden = false;
+    }
+
+    slugEdit?.addEventListener('click', () => {
+        slugField.hidden = false;
+        slugEdit.hidden = true;
+        custom = true;
+        slug.value = slug.value || slugify(title.value);
+        slug.focus();
+        sync();
+    });
+
+    title.addEventListener('input', sync);
+    slug.addEventListener('input', () => {
+        custom = slug.value !== '';
+        sync();
+    });
+
+    wizard.querySelector('[data-next]')?.addEventListener('click', next);
+    wizard.querySelector('[data-back]')?.addEventListener('click', () => show(1, true));
+
+    /* Enter in the first step goes on to the second, instead of creating the page with the first place. */
+    steps[0]?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+            event.preventDefault();
+            next();
+        }
+    });
+
+    /* After a refusal the form opens on the step with the error. */
+    const failed = wizard.querySelector('.veld.fout, .veld-fout');
+
+    sync();
+    show(Number(failed?.closest('[data-stap]')?.dataset.stap ?? 1), false);
+}

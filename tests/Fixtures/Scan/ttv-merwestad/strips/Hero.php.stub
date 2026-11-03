@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Hero extends StripType
+{
+    public function key(): string
+    {
+        return 'hero';
+    }
+
+    public function description(): ?string
+    {
+        return 'Grote openingsstrook met foto, kop en knoppen.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->hint('Korte regel boven de kop.'),
+            Text::make('kop')->required(),
+            Text::make('kop_accent')->label('Kop, gekleurd deel')->hint('Komt in kleur achter de kop.'),
+            LongText::make('intro'),
+            Items::make('knoppen', [
+                Text::make('tekst')->required(),
+                Link::make('gaat_naar')->required(),
+                Choice::make('stijl', ['primair' => 'Primair', 'secundair' => 'Secundair'])->default('primair'),
+            ])->max(2),
+        ];
+    }
+}

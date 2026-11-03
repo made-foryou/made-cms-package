@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Trainingstijden extends StripType
+{
+    public function key(): string
+    {
+        return 'trainingstijden';
+    }
+
+    public function description(): ?string
+    {
+        return 'De trainingsavonden met tijden en wat er die avond gebeurt.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('anker')->default('trainingstijden')->hint('Het #-adres van deze strook in het menu.'),
+            Text::make('label'),
+            Text::make('kop')->required(),
+            LongText::make('intro'),
+            Items::make('avonden', [
+                Choice::make('dag', [
+                    'maandag' => 'Maandag',
+                    'dinsdag' => 'Dinsdag',
+                    'woensdag' => 'Woensdag',
+                    'donderdag' => 'Donderdag',
+                    'vrijdag' => 'Vrijdag',
+                    'zaterdag' => 'Zaterdag',
+                    'zondag' => 'Zondag',
+                ])->required(),
+                Text::make('tijd')->required()->hint('Bijvoorbeeld 19:30 – 22:00.'),
+                Text::make('activiteiten')->hint('Gescheiden door komma\'s, bijvoorbeeld: Vrij spelen, competitie.'),
+                Choice::make('kleur', ['blauw' => 'Blauw', 'lichtblauw' => 'Lichtblauw'])->default('blauw'),
+            ])->min(1),
+            Text::make('adres'),
+        ];
+    }
+}

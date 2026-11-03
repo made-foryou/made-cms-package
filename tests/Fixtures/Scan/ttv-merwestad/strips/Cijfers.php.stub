@@ -1,0 +1,31 @@
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Cijfers extends StripType
+{
+    public function key(): string
+    {
+        return 'cijfers';
+    }
+
+    public function description(): ?string
+    {
+        return 'Een balk met kerncijfers die optellen in beeld.';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Items::make('cijfers', [
+                Text::make('waarde')->required()->hint('Alleen het getal, bijvoorbeeld 60.'),
+                Text::make('achtervoegsel')->hint('Bijvoorbeeld + of ×.'),
+                Text::make('label')->required(),
+            ])->min(1)->max(4),
+        ];
+    }
+}

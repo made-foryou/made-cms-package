@@ -1,0 +1,227 @@
+{
+    "path": "/",
+    "title": "Home",
+    "strips": [
+        {
+            "type": "hero",
+            "visible": true,
+            "values": {
+                "kop": "TTV",
+                "intro": "Sinds 1962 dé plek voor tafeltennissers van alle niveaus. Van recreant tot competitiespeler — iedereen is welkom aan onze tafels.",
+                "label": "Tafeltennisvereniging in Dordrecht",
+                "knoppen": [
+                    {
+                        "stijl": "primair",
+                        "tekst": "Lid worden",
+                        "gaat_naar": {
+                            "url": "#lid-worden"
+                        }
+                    },
+                    {
+                        "stijl": "secundair",
+                        "tekst": "Meer ontdekken",
+                        "gaat_naar": {
+                            "url": "#over-ons"
+                        }
+                    }
+                ],
+                "kop_accent": "Merwestad"
+            }
+        },
+        {
+            "type": "cijfers",
+            "visible": true,
+            "values": {
+                "cijfers": [
+                    {
+                        "label": "Jaar actief",
+                        "waarde": "60",
+                        "achtervoegsel": "+"
+                    },
+                    {
+                        "label": "Leden",
+                        "waarde": "35",
+                        "achtervoegsel": "+"
+                    },
+                    {
+                        "label": "Competitieteams",
+                        "waarde": "3",
+                        "achtervoegsel": ""
+                    },
+                    {
+                        "label": "Per week training",
+                        "waarde": "2",
+                        "achtervoegsel": "×"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "over-ons",
+            "visible": true,
+            "values": {
+                "kop": "Meer dan alleen tafeltennis",
+                "anker": "over-ons",
+                "intro": "Bij TTV Merwestad draait het om sport, plezier en verbinding. Of je nu jong of oud bent, beginner of gevorderd — je bent welkom.",
+                "label": "Over ons",
+                "kaarten": [
+                    {
+                        "icoon": "users",
+                        "tekst": "Of je nu voor het eerst een batje vasthoudt of al jaren competitie speelt — bij ons vind je altijd een passende tafel.",
+                        "titel": "Alle niveaus"
+                    },
+                    {
+                        "icoon": "heart",
+                        "tekst": "Meer dan alleen sport. Na de training schuiven we aan de bar aan voor een drankje en een goed gesprek.",
+                        "titel": "Gezelligheid"
+                    },
+                    {
+                        "icoon": "trophy",
+                        "tekst": "Met 3 teams strijden we in de regionale duocompetitie.",
+                        "titel": "Competitie"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "trainingstijden",
+            "visible": true,
+            "values": {
+                "kop": "Wanneer kun je spelen?",
+                "adres": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht",
+                "anker": "trainingstijden",
+                "intro": "We trainen meerdere keren per week in de sporthal. Kies de avond die bij jou past en kom gerust een keer vrijblijvend meespelen.",
+                "label": "Trainingstijden",
+                "avonden": [
+                    {
+                        "dag": "dinsdag",
+                        "tijd": "19:30 – 22:00",
+                        "kleur": "blauw",
+                        "activiteiten": "Vrij spelen, competitie"
+                    },
+                    {
+                        "dag": "donderdag",
+                        "tijd": "19:30 – 22:00",
+                        "kleur": "lichtblauw",
+                        "activiteiten": "Vrij spelen, competitie"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "teams",
+            "visible": true,
+            "values": {
+                "kop": "Onze teams",
+                "anker": "teams",
+                "intro": "Met drie teams zijn we actief in de regionale duocompetitie van de NTTB. Bekijk de uitslagen en standen via de links bij elk team.",
+                "label": "Competitie",
+                "teams": [
+                    {
+                        "naam": "Merwestad 1",
+                        "poule": "Poule G",
+                        "klasse": "4e klasse",
+                        "spelers": "Gert-Jan\nStefan",
+                        "reserves": "",
+                        "uitslagen": {
+                            "url": "https://ttapp.nl/poule/5022335"
+                        },
+                        "competitie": "West - Senioren DUO"
+                    },
+                    {
+                        "naam": "Merwestad 2",
+                        "poule": "Poule F",
+                        "klasse": "6e klasse",
+                        "spelers": "Jaap\nGerrit\nDesmond\nArjan",
+                        "reserves": "",
+                        "uitslagen": {
+                            "url": "https://ttapp.nl/poule/5022362"
+                        },
+                        "competitie": "West - Senioren DUO"
+                    },
+                    {
+                        "naam": "Merwestad 3",
+                        "poule": "Poule A",
+                        "klasse": "7e klasse",
+                        "spelers": "Rob\nRuud\nHenk\nAbdol Majid",
+                        "reserves": "",
+                        "uitslagen": {
+                            "url": "https://ttapp.nl/poule/5022369"
+                        },
+                        "competitie": "West - Senioren DUO"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "locatie",
+            "visible": true,
+            "values": {
+                "kop": "Zo vind je ons",
+                "anker": "locatie",
+                "intro": "We spelen in het gebouw van Mountain Network op het Leerpark in Dordrecht. Hieronder zie je precies waar je kunt parkeren en hoe je bij de ingang komt.",
+                "label": "Locatie",
+                "blokken": [
+                    {
+                        "icoon": "building",
+                        "tekst": "Ons gebouw heet Mountain Network en bevindt zich op het Leerpark in Dordrecht. We zitten in Zaal 1 op de begane grond.",
+                        "titel": "Mountain Network"
+                    },
+                    {
+                        "icoon": "car",
+                        "tekst": "Je kunt gratis parkeren aan de achterkant van het gebouw. Let op: de ingang van het gebouw bevindt zich aan de voorkant, aan de kant van het Leerpark.",
+                        "titel": "Parkeren"
+                    },
+                    {
+                        "icoon": "map-pin",
+                        "tekst": "Loop vanaf de parkeerplaats om het gebouw heen naar de voorzijde (kant Leerpark). Daar vind je de hoofdingang van Mountain Network.",
+                        "titel": "Ingang"
+                    }
+                ],
+                "kaart_alt": "Satellietbeeld van de locatie van TTV Merwestad bij Mountain Network op het Leerpark in Dordrecht",
+                "kaart_knop": {
+                    "link": {
+                        "url": "https://maps.google.com/?q=Maria+Montessorilaan+3+Dordrecht"
+                    },
+                    "text": "Open in Google Maps"
+                }
+            }
+        },
+        {
+            "type": "lid-worden",
+            "visible": true,
+            "values": {
+                "kop": "Klaar om mee te spelen?",
+                "knop": {
+                    "link": {
+                        "url": "mailto:info@ttvmerwestad.nl"
+                    },
+                    "text": "Neem contact op"
+                },
+                "anker": "lid-worden",
+                "label": "Lid worden",
+                "tekst": "Word lid van TTV Merwestad en ontdek de leukste tafeltennisvereniging van de regio. Je mag als nieuwkomer 3 keer langs komen om te kijken of het iets voor je is — kom gerust langs om kennis te maken.",
+                "tweede_knop": {
+                    "link": {
+                        "url": "#trainingstijden"
+                    },
+                    "text": "Bekijk trainingstijden"
+                }
+            }
+        },
+        {
+            "type": "contact",
+            "visible": true,
+            "values": {
+                "kop": "Stuur ons een bericht",
+                "adres": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht",
+                "anker": "contact",
+                "email": "info@ttvmerwestad.nl",
+                "intro": "Heb je een vraag, wil je je aanmelden of gewoon even kennismaken? Vul het formulier in en we nemen zo snel mogelijk contact met je op.",
+                "label": "Contact",
+                "bedankt_kop": "Bericht verstuurd!",
+                "bedankt_tekst": "Bedankt voor je bericht. We nemen zo snel mogelijk contact met je op."
+            }
+        }
+    ]
+}

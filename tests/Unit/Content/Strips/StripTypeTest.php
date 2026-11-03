@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Validator;
 use Made\CmsPackage\Content\Strips\StripType;
+use Made\CmsPackage\Tests\Fixtures\Strips\Teaser;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 
@@ -112,5 +113,44 @@ it('cleans the values after validation, also inside items', function (): void {
         'tekst' => 'Over<p>Wij <strong>spelen</strong>.</p>',
         'actie' => ['text' => 'Ga', 'link' => ['page' => 4]],
         'knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['url' => '/lid-worden']]],
+    ]);
+});
+
+it('renders every field in the order of its definition, a missing one from its default', function (): void {
+    expect((new Hero)->render(['tekst' => '<p>Hoi</p>', 'kop' => 'TTV Merwestad', 'oud' => 'x']))->toBe([
+        'label' => null,
+        'kop' => 'TTV Merwestad',
+        'intro' => null,
+        'tekst' => '<p>Hoi</p>',
+        'actie' => null,
+        'knoppen' => [],
+    ]);
+
+    expect((new Hero)->render([])['kop'])->toBe('Welkom');
+});
+
+it('renders the links and buttons inside its fields', function (): void {
+    $rendered = (new Hero)->render([
+        'actie' => ['text' => 'Ga', 'link' => ['url' => '/ga']],
+        'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden']]],
+    ]);
+
+    expect($rendered['actie'])->toBe(['text' => 'Ga', 'url' => '/ga'])
+        ->and($rendered['knoppen'])->toBe([['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => null]]);
+});
+
+it('adds the extra data of the site to the rendered values', function (): void {
+    expect((new Cards)->render(['kaarten' => [['titel' => 'Een'], ['titel' => 'Twee']]]))->toBe([
+        'kaarten' => [['titel' => 'Een'], ['titel' => 'Twee']],
+        'aantal' => 2,
+    ]);
+});
+
+it('hands the extra data the rendered values and lets it override a field', function (): void {
+    expect((new Teaser)->render(['kop' => 'Van de redacteur', 'lees_meer' => ['url' => '/nieuws']]))->toBe([
+        'kop' => 'Uit with',
+        'lees_meer' => '/nieuws',
+        'doel' => '/nieuws',
+        'type' => 'overschreven',
     ]);
 });

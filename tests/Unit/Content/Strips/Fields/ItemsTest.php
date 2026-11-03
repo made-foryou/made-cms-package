@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\RichText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 
@@ -54,4 +56,32 @@ it('cleans the rich text in every item', function (): void {
 
 it('leaves a value that is not a list of items alone', function (): void {
     expect(Items::make('kaarten', [Text::make('titel')])->normalize('geen lijst'))->toBe('geen lijst');
+});
+
+it('renders every item with every field, a missing one from its default', function (): void {
+    $items = Items::make('knoppen', [
+        Text::make('tekst'),
+        Link::make('gaat_naar'),
+        Choice::make('stijl', ['primary', 'secondary'])->default('primary'),
+    ]);
+
+    expect($items->render([
+        ['tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'secondary'],
+        ['tekst' => 'Contact'],
+    ]))->toBe([
+        ['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'secondary'],
+        ['tekst' => 'Contact', 'gaat_naar' => null, 'stijl' => 'primary'],
+    ]);
+});
+
+it('renders no list as an empty list', function (mixed $value): void {
+    expect(Items::make('kaarten', [Text::make('titel')])->render($value))->toBe([]);
+})->with([
+    'nothing' => [null],
+    'no array' => ['geen lijst'],
+]);
+
+it('leaves out what is not an item and fields the type no longer has', function (): void {
+    expect(Items::make('kaarten', [Text::make('titel')])->render([['titel' => 'Een', 'oud' => 'x'], 'geen item']))
+        ->toBe([['titel' => 'Een']]);
 });

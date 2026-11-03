@@ -44,3 +44,33 @@ it('stores the link of a button like a link', function (): void {
     expect(Button::make('knop')->normalize(['text' => 'Lid worden', 'link' => ['page' => '3']]))
         ->toBe(['text' => 'Lid worden', 'link' => ['page' => 3]]);
 });
+
+it('renders an address as its url', function (): void {
+    expect(Link::make('gaat_naar')->render(['url' => '/lid-worden']))->toBe('/lid-worden')
+        ->and(Link::make('gaat_naar')->render(['url' => 'mailto:info@example.com']))->toBe('mailto:info@example.com');
+});
+
+it('renders no link as null', function (mixed $value): void {
+    expect(Link::make('gaat_naar')->render($value))->toBeNull();
+})->with([
+    'nothing' => [null],
+    'no array' => ['/lid-worden'],
+    'no target' => [['page' => null]],
+    'an empty address' => [['url' => '']],
+]);
+
+it('renders a button as its text and url', function (): void {
+    expect(Button::make('knop')->render(['text' => 'Lid worden', 'link' => ['url' => '/lid-worden']]))
+        ->toBe(['text' => 'Lid worden', 'url' => '/lid-worden']);
+});
+
+it('renders a button without a text or a link as null', function (mixed $value): void {
+    expect(Button::make('knop')->render($value))->toBeNull();
+})->with([
+    'nothing' => [null],
+    'no array' => ['Lid worden'],
+    'no text' => [['link' => ['url' => '/lid-worden']]],
+    'an empty text' => [['text' => '', 'link' => ['url' => '/lid-worden']]],
+    'no link' => [['text' => 'Lid worden']],
+    'an empty link' => [['text' => 'Lid worden', 'link' => null]],
+]);

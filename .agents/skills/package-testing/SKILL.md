@@ -29,6 +29,19 @@ Prove package behavior with Pest 4/5, Orchestra Testbench, and the local `tests/
 - Arch tests live in `tests/Arch/`, one file per concern. They run without booting the app. Guard every rule with `contextNamespaces()` so a layer is only checked once it has classes.
 - A new context must be added to `contexts()` in `tests/Pest.php`, otherwise the arch tests ignore it.
 
+## Browser Tests
+
+- Use a browser test when the behaviour lives in JavaScript (the launcher, the edit shell, the scan); use a feature test when the server answer is the behaviour.
+- They live in `tests/Browser/`, form the group `browser` and run only with `composer test:browser`; `composer test` and `composer test:unit` skip them. One-time setup: `npm ci && npx playwright install chromium`.
+- `pestphp/pest-plugin-browser` drives Chromium through Playwright against the app in the test process, so factories, Actions, `RefreshDatabase` and `actingAs($editor, 'made-cms')` work as in feature tests.
+- Start with `useWorkbenchSite()` (workbench strip types, views and `Route::madeCms()`) and create the page you visit, e.g. `Page::factory()->published()->at('/')`.
+- The launcher only shows to allowed addresses: `config(['made-cms-package.launcher.allowed_ips' => ['127.0.0.1', '::1']])`.
+- A first visit opens the login panel by itself; set `localStorage` key `made-cms-launcher-intro` and `refresh()` when the test opens it by hand.
+- CSS selectors reach into the launcher's open shadow root: `click('.beheer')`, `type('#made-cms-email', ...)`. Prefer data attributes from the markup (`[data-methode="password"]`, `form[data-form="email"] button[type="submit"]`) over copy, and take copy from `lang/` with `__()`.
+- Clicks wait for their element, assertions do not: after an animation wait with `expect($page->script(waitUntil('<js condition>')))->toBeTrue()` before asserting.
+- End every browser test with `assertNoJavaScriptErrors()`.
+- Prove a new browser test fails without the behaviour (wrong password, no login) before trusting a first green run. A failure saves a screenshot in `tests/Browser/Screenshots/` (ignored by git, uploaded by CI).
+
 ## References
 
 - `tests/TestCase.php`
@@ -36,6 +49,7 @@ Prove package behavior with Pest 4/5, Orchestra Testbench, and the local `tests/
 - `tests/Feature/`
 - `tests/Unit/`
 - `tests/Arch/`
+- `tests/Browser/`
 - `composer.json` scripts
 
 ## Examples

@@ -19,6 +19,7 @@ Keep package code, dependencies, and workflows compatible with the supported Lar
 3. Review `.github/workflows/tests.yml` for dependency stability lanes, prefer-lowest coverage, prefer-stable coverage, and Windows concerns.
 4. When changing dependencies, confirm constraints still allow the intended Laravel and Testbench versions.
 5. Validate with the smallest local command available, then rely on CI for full OS and dependency matrix coverage.
+6. The browser plugin needs `ext-sockets` in every CI job (dev dependencies install everywhere) and resolves to 4.x on the Laravel 12 lanes and 5.x on Laravel 13. The browser tests run in the `browser` job on the newest stack only; the PHP matrix excludes the `browser` group.
 
 ## References
 

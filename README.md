@@ -264,6 +264,14 @@ For a visitor, a guest or any other value the parameter changes nothing: a draft
 - The page has to be allowed in a frame of the same origin. The edit mode sets its headers inside the route, so headers from middleware in the `web` group, the global middleware or the web server come on top of them. If the site sends `X-Frame-Options`, use `SAMEORIGIN` instead of `DENY`. With a Content Security Policy, allow `frame-ancestors 'self'` instead of `'none'`. For the public site both are as safe as forbidding every frame, because only the site itself can frame it.
 - Do not let a full-page cache (a CDN rule, `spatie/laravel-responsecache`) store or serve responses with `?made-cms=edit`. Cache headers chained on the route itself (`Route::madeCms(...)->middleware('cache.headers:…')`) are replaced by the edit mode.
 
+### Edit shell
+
+On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who opens the pages screen links to "Bewerken": the edit shell of the CMS at `/made-cms/pages/{page}/edit` (route `made-cms-package.pages.edit`). It shows the page in the edit mode in a frame, with a bar on top and a side panel on the right. Every element with `data-cms-strip` gets an outline with the name of its strip type and its number of fields; clicking one chooses that strip, also after the frame reloads. The outlines sit in a shadow root of their own, so the css of the site needs nothing for them.
+
+- A visible strip of the page whose view has no `data-cms-strip` on its root cannot be chosen; the shell warns in the browser console which strip and strip type it is.
+- Strips that the site renders in the browser after the page loaded (React or Vue without SSR) get their outline as soon as they appear.
+- Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
+
 
 ## Rendering strips
 
@@ -332,7 +340,7 @@ function Hero({ strip }) {
 
 ### The data-cms attributes
 
-- `data-cms-strip` with the id of the strip on the root element of every strip is required. It is the only dynamic value: the edit mode finds the strip by it.
+- `data-cms-strip` with the id of the strip on the root element of every strip is required. It is the only dynamic value: the [edit shell](#edit-shell) finds the strip by it.
 - `data-cms-field="kop"` on the element that shows a field, and `data-cms-items="knoppen"` on the element around a list, are optional and static. With them an editor sees a change while typing; without them after the page renders again.
 
 ## Launcher

@@ -74,11 +74,12 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - serve the CMS pages with one line as the **last** line of `routes/web.php`: `Route::madeCms(fn (Page $page) => view('page', ['page' => $page]))` (Blade), `Route::madeCms(fn (Page $page) => Inertia::render('Page', ['title' => $page->title, 'strips' => RenderStrips::run($page)->toArray()]))` (Inertia), or `Route::madeCms(ShowPage::class)` with an invokable class
 - the macro catches every `GET` address no route above it claims, looks up the published page there and hands it to the responder; no page or a page that is not published answers 404; routes of the site above it win
 - it takes the prefix and middleware of a surrounding group, returns the route without a name (chain `->name()` or `->middleware()`), can be used more than once and works with `route:cache`
+- the edit mode: the CMS loads a page in an iframe on the same origin with `?made-cms=edit`; for a logged-in editor the responder gets the page whatever its status and `RenderStrips`/`<x-made-cms::strips>` render the draft, sent with `no-store`, `X-Frame-Options: SAMEORIGIN` and `noindex` and without the launcher; the responder needs no code for it, but must cope with a draft page (`published_at` can be `null`)
 - the address of a page is `$page->route->path` (`/` for home, `/over-ons/team` nested), stored in `cms_routes`; look up what a visitor sees with `FindPublishedPage::run(PagePath::fromString($path))`
 
 ### 9. Render the strips
 
-- `RenderStrips::run($page)` gives the strips a visitor sees: published, in order, without hidden strips or strips of a type that left the catalogue; `->toArray()` is `[{id, type, ...fields}]`
+- `RenderStrips::run($page)` gives the strips a visitor sees: published (the draft in the edit mode), in order, without hidden strips or strips of a type that left the catalogue; `->toArray()` is `[{id, type, ...fields}]`
 - rendered values: a `Link` is a url (a page as its current path, `null` when it is gone or not published), a `Button` is `{text, url}` or `null`, `Items` is always a list with every field in every item, a missing field gets its default, `RichText` is cleaned HTML
 - Blade: `<x-made-cms::strips :page="$page" />` renders every strip with `resources/views/strips/<key>.blade.php` (or the `view()` of its type) and passes `$strip`: `{{ $strip->kop }}`, `{!! $strip->intro !!}`; a missing view throws `MissingStripView`
 - React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own; print rich text with `dangerouslySetInnerHTML` or `v-html`
@@ -114,5 +115,7 @@ Read before executing:
 - do not look pages up by `cms_pages.slug`; an address lives in `cms_routes`
 - do not hand `$page->strips` to a view or a prop; it is the stored form with page ids and hidden strips, render through `RenderStrips`
 - do not print a `Text` or `LongText` field unescaped; only `RichText` is cleaned HTML
+- do not send `X-Frame-Options: DENY` or `Content-Security-Policy: frame-ancestors 'none'` from the site's middleware or web server; the edit mode needs a frame of the same origin (`SAMEORIGIN`, `frame-ancestors 'self'`)
+- do not let a full-page cache store responses with `?made-cms=edit`
 - do not leave out `data-cms-strip` on the root element of a strip view; the edit mode finds the strip by it
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

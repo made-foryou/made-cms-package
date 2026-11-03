@@ -131,6 +131,7 @@ return [
     ],
     'bar' => [
         'label' => 'Made CMS edit bar',
+        'edit' => 'Edit',
         'start' => 'Start page',
         'logout' => 'Log out',
         'home' => 'Home',

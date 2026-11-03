@@ -6,6 +6,7 @@ use Illuminate\Http\Middleware\SetCacheHeaders;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Access\Enums\Screen;
+use Made\CmsPackage\Http\Controllers\Access\EditPageController;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Controllers\Access\LoginCodeController;
 use Made\CmsPackage\Http\Controllers\Access\LoginCodeVerifyController;
@@ -76,6 +77,12 @@ Route::prefix($prefix)
                     ->defaults('screen', $screen->value)
                     ->name('screens.'.$screen->value);
             }
+
+            // The edit shell: the page in the edit mode of the site, in a frame of the CMS.
+            Route::get('pages/{page}/edit', EditPageController::class)
+                ->middleware(EnsureScreenAccess::using(Screen::Pages))
+                ->whereNumber('page')
+                ->name('pages.edit');
         });
     });
 

@@ -59,7 +59,8 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - Full validation: `composer test`
 - Formatting check: `composer lint:check`
 - Static analysis: `composer analyse`
-- Pest tests: `composer test:unit`
+- Pest tests: `composer test:unit` (without the browser tests)
+- Browser tests: `composer test:browser` (once: `npm ci && npx playwright install chromium`)
 - Workbench build: `composer build`
 - Workbench server: `composer serve`
 

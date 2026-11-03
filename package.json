@@ -1,0 +1,8 @@
+{
+  "name": "made-cms-package",
+  "private": true,
+  "description": "Playwright for the browser tests (composer test:browser); the package itself ships no JavaScript toolchain.",
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

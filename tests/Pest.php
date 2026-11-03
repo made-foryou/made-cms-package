@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
@@ -17,12 +18,18 @@ use Made\CmsPackage\Tests\TestCase;
 | Feature and Unit tests boot the package through Testbench. Feature tests
 | also get a fresh in-memory database. Arch tests stay on the plain PHPUnit
 | base: they only inspect source files and never boot the application.
+| Browser tests drive Chromium through Playwright against the app in this
+| process; they form the suite "Browser" that only composer test:browser runs.
+| Other runs exclude the suite, not a group: loading a browser test already
+| starts Playwright.
 |
 */
 
 pest()->extend(TestCase::class)->in('Unit');
 
 pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Feature');
+
+pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Browser');
 
 /*
 |--------------------------------------------------------------------------
@@ -80,6 +87,54 @@ function contextClasses(string $layer): array
     }
 
     return $classes;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Workbench helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Serves the workbench site: its strip types, its views and its routes with Route::madeCms().
+ */
+function useWorkbenchSite(): void
+{
+    $workbench = __DIR__.'/../workbench';
+
+    app()->instance(StripTypes::class, StripTypes::discover($workbench.'/app/Cms/Strips', 'Workbench\\App\\Cms\\Strips'));
+    app('view')->addLocation($workbench.'/resources/views');
+
+    Route::middleware('web')->group($workbench.'/routes/web.php');
+}
+
+/*
+|--------------------------------------------------------------------------
+| Browser helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * A script for $page->script() that resolves to true once the JavaScript condition holds,
+ * or to false after the timeout. Browser assertions do not wait; use this after an animation.
+ */
+function waitUntil(string $condition, int $milliseconds = 5000): string
+{
+    return <<<JS
+        () => new Promise((resolve) => {
+            const until = Date.now() + {$milliseconds};
+            const check = () => {
+                if ({$condition}) {
+                    resolve(true);
+                } else if (Date.now() > until) {
+                    resolve(false);
+                } else {
+                    setTimeout(check, 50);
+                }
+            };
+            check();
+        })
+        JS;
 }
 
 /*

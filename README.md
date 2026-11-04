@@ -243,13 +243,13 @@ final class Hero extends StripType
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
-| `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one. One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
+| `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one, `itemLabel('Knop')` names one item in the side panel ("Knop toevoegen", "Item" by default). One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
 
 Every field takes `label()` (by default the key as a sentence: `gaat_naar` becomes "Gaat naar"), `hint()`, `required()` and `default()`. Fields are immutable: each of these returns a changed copy.
 
 The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options) throws an exception that names the strip type.
 
-Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the messages), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top) and how new values combine with stored ones (`merge()`, which `UpdateStrip` uses).
+Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the labels and `messages()` for Dutch and English messages of the package, which take the place of the host's `validation.*` lines), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top) how new values combine with stored ones (`merge()`, which `UpdateStrip` uses) and the description the side panel builds its controls from (`describe()`: the key, name and fields, each field with its `type()`, label, hint, default and what its type adds).
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 
@@ -308,6 +308,23 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - A visible strip of the page whose view has no `data-cms-strip` on its root cannot be chosen; the shell warns in the browser console which strip and strip type it is.
 - Strips that the site renders in the browser after the page loaded (React or Vue without SSR) get their outline as soon as they appear.
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
+
+The side panel shows the fields of the chosen strip, built from its strip type, with the values of the draft:
+
+| Field | Control |
+|---|---|
+| `Text` | One line. |
+| `LongText` | A text area. |
+| `RichText` | A text with a fixed toolbar: bold, italic, link and list. Pasted text arrives without its markup; the package cleans the HTML again when it stores it. |
+| `Link` | One input that suggests the pages of the site. A chosen page, or the exact address of a page, is stored as that page and follows it when its address changes; anything else is stored as an address. |
+| `Button` | Its text and its link side by side. |
+| `Choice` | A select with the options in their order; "Geen keuze" when the field is not required. |
+| `Items` | A row per item with its title (the first field that has a value), a grip and "Bewerken". The grip drags the item, or moves it with the arrow keys. "Bewerken" opens the item with a breadcrumb ("← Hero / Knoppen / Lid worden"); adding stops at `max()`, removing at `min()`. |
+
+- Every change is saved as the draft: a moment after the editor stops typing, when a field loses focus, when another strip is chosen and with "Opslaan als concept". The panel always sends every field of the strip to `UpdateStrip`, and the frame reloads at the same scroll position. Visitors keep seeing the published version until the page is published.
+- A value the strip type refuses is not saved. Its message appears under the field once the editor leaves it (or presses "Opslaan als concept"), and the panel says how many fields still need a fix. The shell warns before it is closed with changes that were not saved.
+- "Strook zichtbaar op de site" shows or hides the strip (`SetStripVisibility`). A hidden strip is not on the site in the edit mode either; the panel lists hidden strips so the editor can choose one and show it again.
+- The panel talks JSON with `GET`/`PUT /made-cms/pages/{page}/strips/{strip}` and `PUT …/visibility` (routes `made-cms-package.pages.strips.show`, `.update` and `.visibility`), under the same `Screen::Pages` access as the shell. The host adds nothing for it.
 
 
 ## Rendering strips

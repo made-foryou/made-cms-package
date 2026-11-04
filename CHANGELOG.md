@@ -4,6 +4,9 @@
 
 ### Added
 
+- JSON endpoints for the side panel of the edit shell, for every editor who opens `Screen::Pages`: `GET /made-cms/pages/{page}/strips/{strip}` (`pages.strips.show`) answers the fields and draft values of a strip and the pages of the site a link can go to; `PUT` to the same address (`pages.strips.update`, `{values}`) saves every field in the draft through `UpdateStrip` and answers what it stored, new items with their id; `PUT …/visibility` (`pages.strips.visibility`, `{visible}`) shows or hides the strip through `SetStripVisibility`. A refused value answers 422 with a message per field path (`kop`, `knoppen.0.knop.text`), a strip that is not on the page or whose type left the catalogue 404, a guest 401. The answers are never stored by a cache.
+- Validation messages of strips name an item of a list by its item name ("Item heeft niet de juiste vorm.").
+
 - `Field::type()` (`text`, `long_text`, `rich_text`, `link`, `button`, `choice`, `items`), `Field::describe()` and `StripType::describe()`: a strip type and its fields as the side panel builds them, with the key, type, label, hint, default and whether a field is required, and what a type adds (the longest text, the options of a choice in order, the labels of the parts of a button, the limits, item name and fields of a list).
 - `DescribeStrip::run($page, $stripId)` with the `StripDescription` data object: a strip of the working copy with the fields of its type and the stored value of every field (a missing one from its default). It throws `StripNotFound` or `UnknownStripType`.
 - `Items::itemLabel('Knop')`: the name of one item of a list, as in "Knop toevoegen" (`getItemLabel()`, "Item" by default).

@@ -39,9 +39,10 @@ it('validates the list, every item, its id and the fields in an item', function 
     ]);
 });
 
-it('labels the list and the fields in an item', function (): void {
-    expect(Items::make('kaarten', [Text::make('titel')])->attributes('kaarten'))->toBe([
+it('labels the list, an item by its name and the fields in an item', function (): void {
+    expect(Items::make('kaarten', [Text::make('titel')])->itemLabel('Kaart')->attributes('kaarten'))->toBe([
         'kaarten' => 'Kaarten',
+        'kaarten.*' => 'Kaart',
         'kaarten.*.titel' => 'Titel',
     ]);
 });

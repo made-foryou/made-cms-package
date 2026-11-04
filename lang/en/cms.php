@@ -34,5 +34,9 @@ return [
         'fields' => '{0} No fields|{1} :count field|[2,*] :count fields',
         'unknown' => 'Strip',
         'missing' => 'Made CMS: strip :id (:type) is on the page, but the site shows no element with data-cms-strip=":id". Put that attribute on the root of the view of this strip type, or editors cannot choose the strip.',
+        'errors' => [
+            'values' => 'The panel did not send the content of the strip. Reload the page and try again.',
+            'visible' => 'The panel did not say whether the strip should be visible. Reload the page and try again.',
+        ],
     ],
 ];

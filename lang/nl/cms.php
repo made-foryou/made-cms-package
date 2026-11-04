@@ -34,5 +34,9 @@ return [
         'fields' => '{0} Geen velden|{1} :count veld|[2,*] :count velden',
         'unknown' => 'Strook',
         'missing' => 'Made CMS: strook :id (:type) staat op de pagina, maar de site toont geen element met data-cms-strip=":id". Zet dat attribuut op de root van de view van dit striptype, anders kan een redacteur de strook niet kiezen.',
+        'errors' => [
+            'values' => 'Het paneel stuurde de inhoud van de strook niet mee. Herlaad de pagina en probeer het opnieuw.',
+            'visible' => 'Het paneel stuurde niet mee of de strook zichtbaar moet zijn. Herlaad de pagina en probeer het opnieuw.',
+        ],
     ],
 ];

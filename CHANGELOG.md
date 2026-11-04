@@ -5,6 +5,7 @@
 ### Added
 
 - `Field::type()` (`text`, `long_text`, `rich_text`, `link`, `button`, `choice`, `items`), `Field::describe()` and `StripType::describe()`: a strip type and its fields as the side panel builds them, with the key, type, label, hint, default and whether a field is required, and what a type adds (the longest text, the options of a choice in order, the labels of the parts of a button, the limits, item name and fields of a list).
+- `DescribeStrip::run($page, $stripId)` with the `StripDescription` data object: a strip of the working copy with the fields of its type and the stored value of every field (a missing one from its default). It throws `StripNotFound` or `UnknownStripType`.
 - `Items::itemLabel('Knop')`: the name of one item of a list, as in "Knop toevoegen" (`getItemLabel()`, "Item" by default).
 - `StripType::messages()`: Dutch and English validation messages for every rule the fields use (`strips.validation.*`).
 

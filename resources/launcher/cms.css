@@ -1708,6 +1708,412 @@ ul.lijst {
     white-space: nowrap;
 }
 
+/* The side panel (design 11.1–11.3): the fields of the chosen strip, a list per group of items, one item with a
+   breadcrumb, the switch for the site and the state of saving. */
+
+.paneel,
+.paneel-deel,
+.paneel-velden,
+.paneel-voet {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.paneel-deel[hidden],
+.paneel[hidden] {
+    display: none;
+}
+
+.paneel-voet {
+    gap: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--made-rand);
+}
+
+.paneel .veld {
+    gap: 6px;
+}
+
+.paneel .veld label,
+.veld-label,
+.paneel .schakel-label {
+    font: 700 13px/1.3 var(--font-kop);
+    color: var(--made-inhoud);
+}
+
+.paneel .veld input,
+.paneel .veld select,
+.paneel .veld textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    font: 400 15px/1.5 var(--font-tekst);
+}
+
+.paneel .veld select {
+    padding: 9px 12px;
+    font-size: 14px;
+}
+
+.paneel .veld textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.paneel .veld input:focus,
+.paneel .veld select:focus,
+.paneel .veld textarea:focus {
+    border-color: var(--made-accent);
+}
+
+.paneel .veld.fout > input,
+.paneel .veld.fout > select,
+.paneel .veld.fout > textarea,
+.paneel .veld.fout > .koppeling input,
+.paneel .veld.fout > .opmaak {
+    border-color: var(--made-alarm);
+}
+
+.paneel .veld-hint,
+.paneel .veld-fout {
+    font-size: 12.5px;
+}
+
+.paneel .veld-fout:empty {
+    display: none;
+}
+
+.paneel .schakelrij {
+    padding: 12px 14px;
+}
+
+.veldgroep {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.veldgroep legend {
+    margin-bottom: 6px;
+    padding: 0;
+}
+
+.veldgroep-delen {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.veldgroep-delen .veld label {
+    font-family: var(--font-tekst);
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--made-inhoud-zwak);
+}
+
+/* Rich text: a fixed toolbar above the text. */
+
+.opmaak {
+    overflow: hidden;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.opmaak:focus-within {
+    border-color: var(--made-accent);
+}
+
+.opmaak-balk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px;
+    border-bottom: 1px solid var(--made-rand);
+}
+
+.opmaak-knop {
+    min-width: 32px;
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--made-inhoud);
+    font: 600 13px/1 var(--font-tekst);
+    cursor: pointer;
+}
+
+.opmaak-knop:hover {
+    background: var(--made-oppervlak);
+}
+
+.opmaak-knop[aria-pressed="true"] {
+    background: var(--made-accent);
+    color: var(--made-op-accent);
+}
+
+.opmaak-tekst {
+    min-height: 110px;
+    padding: 11px 14px;
+    font: 400 15px/1.5 var(--font-tekst);
+    color: var(--made-inhoud);
+    outline: none;
+}
+
+.opmaak-tekst p,
+.opmaak-tekst ul,
+.opmaak-tekst ol {
+    margin: 0 0 .6em;
+}
+
+.opmaak-tekst ul,
+.opmaak-tekst ol {
+    padding-left: 1.3em;
+}
+
+.opmaak-tekst a {
+    color: var(--made-link);
+}
+
+.opmaak-link {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--made-rand);
+}
+
+.opmaak-link .knoppen {
+    gap: 12px;
+}
+
+/* A link: suggestions from the pages of the site below the input. */
+
+.koppeling {
+    position: relative;
+}
+
+.koppeling-lijst {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 4px);
+    right: 0;
+    left: 0;
+    max-height: 264px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 4px;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    box-shadow: 0 10px 30px rgb(14 43 38 / .18);
+    list-style: none;
+}
+
+.koppeling-optie {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.koppeling-optie:hover,
+.koppeling-optie[aria-selected="true"] {
+    background: var(--made-oppervlak);
+}
+
+.koppeling-optie[aria-selected="true"] {
+    outline: 2px solid var(--made-accent);
+    outline-offset: -2px;
+}
+
+.koppeling-titel {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.koppeling-pad {
+    font-size: 12.5px;
+    color: var(--made-inhoud-subtiel);
+}
+
+/* Lists: one row per item with a grip, its title and "Bewerken". */
+
+.lijstveld-kop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.lijstveld-rijen {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lijstrij {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.lijstrij.fout {
+    border-color: var(--made-alarm);
+}
+
+.lijstrij.sleept {
+    position: relative;
+    z-index: 1;
+    border-color: var(--made-accent);
+    box-shadow: 0 8px 24px rgb(14 43 38 / .18);
+}
+
+.greep {
+    display: flex;
+    flex-shrink: 0;
+    padding: 4px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--made-inhoud-subtiel);
+    cursor: grab;
+    touch-action: none;
+}
+
+.greep:active {
+    cursor: grabbing;
+}
+
+.lijstrij-tekst {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 2px;
+    min-width: 0;
+}
+
+.lijstrij-titel {
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lijstrij-sub,
+.lijstrij-fout {
+    overflow: hidden;
+    font-size: 12.5px;
+    color: var(--made-inhoud-subtiel);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lijstrij-fout {
+    font-weight: 600;
+    color: var(--made-alarm);
+}
+
+.lijst-toevoegen {
+    align-self: flex-start;
+}
+
+.paneel .actie[disabled],
+.paneel .tekstlink[disabled] {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.paneel .actie[disabled]:hover {
+    border-color: var(--made-rand-sterk);
+    background: transparent;
+    color: var(--made-inhoud);
+}
+
+.kruimel-hier {
+    font-weight: 600;
+    color: var(--made-inhoud);
+}
+
+/* The state of saving: a dot in front of the text. */
+
+.paneel-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 1.45em;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--made-inhoud-zwak);
+}
+
+.paneel-status:empty {
+    display: none;
+}
+
+.paneel-status::before {
+    content: "";
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--made-rand-sterk);
+}
+
+.paneel-status[data-state="saved"]::before {
+    background: var(--made-status);
+}
+
+.paneel-status[data-state="saving"]::before,
+.paneel-status[data-state="unsaved"]::before {
+    background: var(--made-accent);
+}
+
+.paneel-status[data-state="error"] {
+    color: var(--made-alarm);
+}
+
+.paneel-status[data-state="error"]::before {
+    background: var(--made-alarm);
+}
+
+.verborgen-stroken {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.verborgen-stroken ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lijstrij.sleept {
+        box-shadow: none;
+    }
+}
+
 @media (prefers-color-scheme: dark) {
     .bewerkbalk {
         background: #0a211c;

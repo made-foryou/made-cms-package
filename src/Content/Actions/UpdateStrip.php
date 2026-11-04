@@ -46,7 +46,7 @@ final class UpdateStrip
         $merged = $type->merge([...$type->defaults(), ...$strip->values], $values);
 
         /** @var array<string, mixed> $validated */
-        $validated = Validator::make($merged, $type->rules(), [], $type->attributes())->validate();
+        $validated = Validator::make($merged, $type->rules(), $type->messages(), $type->attributes())->validate();
 
         $strip = $strip->withValues([...$type->defaults(), ...$type->normalize($validated)]);
 

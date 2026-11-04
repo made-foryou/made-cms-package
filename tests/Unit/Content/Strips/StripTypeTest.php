@@ -64,6 +64,7 @@ it('labels every path for the validation messages', function (): void {
         'actie.text' => 'Tekst',
         'actie.link' => 'Gaat naar',
         'knoppen' => 'Knoppen',
+        'knoppen.*' => 'Item',
         'knoppen.*.tekst' => 'Tekst',
         'knoppen.*.gaat_naar' => 'Gaat naar',
         'knoppen.*.stijl' => 'Stijl',

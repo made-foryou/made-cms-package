@@ -127,7 +127,7 @@ final class Items extends Field
 
     public function attributes(string $path): array
     {
-        $attributes = [$path => $this->getLabel()];
+        $attributes = [$path => $this->getLabel(), "{$path}.*" => $this->getItemLabel()];
 
         foreach ($this->fields as $field) {
             $attributes = [...$attributes, ...$field->attributes("{$path}.*.{$field->getKey()}")];

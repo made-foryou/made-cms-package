@@ -27,8 +27,11 @@ use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
+use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
 use Made\CmsPackage\Http\Controllers\Content\StorePageController;
+use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
+use Made\CmsPackage\Http\Controllers\Content\UpdateStripController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
@@ -106,6 +109,20 @@ Route::prefix($prefix)
 
                 // The edit shell: the page in the edit mode of the site, in a frame of the CMS.
                 Route::get('pages/{page}/edit', EditPageController::class)->whereNumber('page')->name('pages.edit');
+
+                // The side panel of the edit shell talks JSON, so the shell and the site in its frame stay loaded.
+                Route::get('pages/{page}/strips/{strip}', ShowStripController::class)
+                    ->whereNumber('page')
+                    ->where('strip', '[A-Za-z0-9-]+')
+                    ->name('pages.strips.show');
+                Route::put('pages/{page}/strips/{strip}', UpdateStripController::class)
+                    ->whereNumber('page')
+                    ->where('strip', '[A-Za-z0-9-]+')
+                    ->name('pages.strips.update');
+                Route::put('pages/{page}/strips/{strip}/visibility', StripVisibilityController::class)
+                    ->whereNumber('page')
+                    ->where('strip', '[A-Za-z0-9-]+')
+                    ->name('pages.strips.visibility');
             });
         });
     });

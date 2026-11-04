@@ -178,3 +178,34 @@ it('leaves a value that is not a list of items alone when it merges', function (
         ->and($items->merge([['id' => ITEM_A, 'tekst' => 'Een']], null))->toBeNull()
         ->and($items->merge([], ['geen item']))->toBe(['geen item']);
 });
+
+it('names one item, "Item" when the site does not', function (): void {
+    $items = Items::make('knoppen', [Text::make('tekst')]);
+    $named = $items->itemLabel('Knop');
+
+    expect($items->getItemLabel())->toBe('Item')
+        ->and($named->getItemLabel())->toBe('Knop')
+        ->and($named)->not->toBe($items);
+});
+
+it('describes its limits, the name of an item and the fields of every item', function (): void {
+    $description = Items::make('knoppen', [Text::make('tekst')->required(), Link::make('gaat_naar')])
+        ->itemLabel('Knop')
+        ->min(1)
+        ->max(2)
+        ->describe();
+
+    expect($description['min'])->toBe(1)
+        ->and($description['max'])->toBe(2)
+        ->and($description['item_label'])->toBe('Knop')
+        ->and($description['default'])->toBe([])
+        ->and(array_column($description['fields'], 'key'))->toBe(['tekst', 'gaat_naar'])
+        ->and($description['fields'][0])->toMatchArray(['type' => 'text', 'required' => true]);
+});
+
+it('describes a list without limits', function (): void {
+    $description = Items::make('knoppen', [Text::make('tekst')])->describe();
+
+    expect($description['min'])->toBeNull()
+        ->and($description['max'])->toBeNull();
+});

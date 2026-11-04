@@ -16,6 +16,16 @@ final class Text extends Field
         return new self($key);
     }
 
+    public function type(): string
+    {
+        return 'text';
+    }
+
+    protected function details(): array
+    {
+        return ['max_length' => self::MAX_LENGTH];
+    }
+
     public function rules(string $path): array
     {
         return [$path => [$this->presence(), 'string', 'max:'.self::MAX_LENGTH]];

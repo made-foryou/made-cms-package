@@ -180,3 +180,43 @@ it('hands the extra data the rendered values and lets it override a field', func
         'type' => 'overschreven',
     ]);
 });
+
+it('describes itself for the side panel: its key, name, explanation and fields in order', function (): void {
+    $description = (new Cards)->describe();
+
+    expect($description['key'])->toBe('cards')
+        ->and($description['label'])->toBe('Kaarten')
+        ->and($description['description'])->toBe('Een rij kaarten met een titel.')
+        ->and(array_column($description['fields'], 'key'))->toBe(['kaarten'])
+        ->and(array_column((new Hero)->describe()['fields'], 'type'))
+        ->toBe(['text', 'text', 'long_text', 'rich_text', 'button', 'items']);
+});
+
+it('validates with messages of its own, in the language of the CMS', function (array $values, string $path, string $message): void {
+    app()->setLocale('nl');
+    $hero = new Hero;
+
+    $errors = Validator::make([...validHero(), ...$values], $hero->rules(), $hero->messages(), $hero->attributes())
+        ->errors()
+        ->toArray();
+
+    expect($errors[$path][0] ?? null)->toBe($message);
+})->with([
+    'required' => [['kop' => null], 'kop', 'Vul Kop in.'],
+    'string' => [['label' => ['a']], 'label', 'Label moet tekst zijn.'],
+    'too long' => [['label' => str_repeat('a', 256)], 'label', 'Label mag niet langer zijn dan 255 tekens.'],
+    'not a list' => [['knoppen' => 'nee'], 'knoppen', 'Knoppen heeft niet de juiste vorm.'],
+    'too few' => [['knoppen' => []], 'knoppen', 'Knoppen heeft er minstens 1 nodig.'],
+    'too many' => [['knoppen' => array_fill(0, 3, validHero()['knoppen'][0])], 'knoppen', 'Knoppen mag er niet meer dan 2 hebben.'],
+    'not one of the options' => [['knoppen' => [[...validHero()['knoppen'][0], 'stijl' => 'groot']]], 'knoppen.0.stijl', 'Kies bij Stijl een van de mogelijkheden.'],
+    'part of a button' => [['actie' => ['link' => ['url' => '/']]], 'actie.text', 'Vul Tekst in.'],
+]);
+
+it('validates with English messages too', function (): void {
+    app()->setLocale('en');
+    $hero = new Hero;
+
+    $errors = Validator::make(['kop' => null], $hero->rules(), $hero->messages(), $hero->attributes())->errors();
+
+    expect($errors->first('kop'))->toBe('Fill in Kop.');
+});

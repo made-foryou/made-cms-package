@@ -96,6 +96,44 @@ abstract class StripType
     }
 
     /**
+     * The messages for the validation of its values, in the language of the CMS, for every rule its fields use.
+     * They take the place of the host's validation messages, so an editor never gets them in another language.
+     *
+     * @return array<string, string|array<string, string>>
+     */
+    final public function messages(): array
+    {
+        $message = static fn (string $key): string => (string) __('made-cms-package::strips.validation.'.$key);
+
+        return [
+            'required' => $message('required'),
+            'required_with' => $message('required'),
+            'string' => $message('string'),
+            'array' => $message('array'),
+            'list' => $message('list'),
+            'in' => $message('in'),
+            'uuid' => $message('uuid'),
+            'max' => ['string' => $message('max_string'), 'array' => $message('max_array')],
+            'min' => ['string' => $message('min_string'), 'array' => $message('min_array')],
+        ];
+    }
+
+    /**
+     * The strip type as the side panel builds it: its key, name, explanation and its fields in order.
+     *
+     * @return array{key: string, label: string, description: string|null, fields: list<array<string, mixed>>}
+     */
+    final public function describe(): array
+    {
+        return [
+            'key' => $this->key(),
+            'label' => $this->label(),
+            'description' => $this->description(),
+            'fields' => array_map(static fn (Field $field): array => $field->describe(), $this->fields()),
+        ];
+    }
+
+    /**
      * The values a new strip starts with.
      *
      * @return array<string, mixed>

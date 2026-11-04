@@ -85,6 +85,30 @@ abstract class Field
     }
 
     /**
+     * The kind of field, so the side panel knows which control to show: "text", "items", …
+     */
+    abstract public function type(): string;
+
+    /**
+     * The field as the side panel builds it: its key, type, label, hint, whether it is required and its default,
+     * with what the type adds (the options of a choice, the fields of an item, …).
+     *
+     * @return array<string, mixed>
+     */
+    final public function describe(): array
+    {
+        return [
+            'key' => $this->key,
+            'type' => $this->type(),
+            'label' => $this->getLabel(),
+            'hint' => $this->hint,
+            'required' => $this->required,
+            'default' => $this->default,
+            ...$this->details(),
+        ];
+    }
+
+    /**
      * The Laravel validation rules for this field at the given path, keyed by path.
      *
      * @return array<string, list<mixed>>
@@ -126,6 +150,16 @@ abstract class Field
     public function render(mixed $value): mixed
     {
         return $value;
+    }
+
+    /**
+     * What a type adds to its description.
+     *
+     * @return array<string, mixed>
+     */
+    protected function details(): array
+    {
+        return [];
     }
 
     /**

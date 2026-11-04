@@ -39,7 +39,13 @@ final class EditPageResponse
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
             'frameUrl' => $path === null ? null : request()->getBaseUrl().$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
             'editScript' => LauncherAssetController::url('edit.js'),
+            'panelScript' => LauncherAssetController::url('panel.js'),
             'config' => [
+                // The side panel talks JSON with the server, so the shell and the site in its frame stay loaded.
+                'csrf_token' => csrf_token(),
+                'urls' => [
+                    'strip' => request()->getBaseUrl().route('made-cms-package.pages.strips.show', ['page' => $page, 'strip' => ':strip'], false),
+                ],
                 'strips' => array_map(static fn (EditableStrip $strip): array => [
                     'id' => $strip->id,
                     'type' => $strip->type,
@@ -51,8 +57,23 @@ final class EditPageResponse
                     'position' => $t('position'),
                     'unknown' => $t('unknown'),
                     'missing' => $t('missing'),
+                    'hidden' => $t('hidden'),
+                    'panel' => self::panelTexts($locale),
                 ],
             ],
         ]);
+    }
+
+    /**
+     * The texts the side panel fills in itself (counts, names of items, the state of saving); the fixed ones are in
+     * the templates of the view.
+     *
+     * @return array<string, string>
+     */
+    private static function panelTexts(string $locale): array
+    {
+        $texts = __('made-cms-package::cms.edit.panel_texts', [], $locale);
+
+        return is_array($texts) ? array_map(strval(...), $texts) : [];
     }
 }

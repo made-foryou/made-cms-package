@@ -4,6 +4,10 @@
 
 ### Added
 
+- Side panel of the edit shell (design 11.1–11.3): choosing a strip shows its fields, built from its strip type, with their draft values. Text, long text, rich text (a fixed toolbar with bold, italic, link and list; pasting brings plain text), link (a page of the site from suggestions, or an address), button, choice and lists (a row per item with a grip to drag it or move it with the arrow keys, "Bewerken" to open the item with a breadcrumb, adding up to `max` and removing down to `min`). Everything the editor changes is saved as the draft a moment after typing, when leaving a field and with "Opslaan als concept"; the frame then reloads at the same scroll position. A refused value shows its message under the field once the editor leaves it, and the panel says whether the draft is saved. "Strook zichtbaar op de site" shows or hides the strip; hidden strips are listed in the panel so they can be shown again. The shell warns before it is left with changes that were not saved.
+- The asset route also serves the script of the side panel (`panel.js`).
+- Dutch and English translations for the side panel (`cms.edit`, `cms.edit.panel_texts`) and the messages of its endpoints (`cms.edit.errors`).
+
 - JSON endpoints for the side panel of the edit shell, for every editor who opens `Screen::Pages`: `GET /made-cms/pages/{page}/strips/{strip}` (`pages.strips.show`) answers the fields and draft values of a strip and the pages of the site a link can go to; `PUT` to the same address (`pages.strips.update`, `{values}`) saves every field in the draft through `UpdateStrip` and answers what it stored, new items with their id; `PUT …/visibility` (`pages.strips.visibility`, `{visible}`) shows or hides the strip through `SetStripVisibility`. A refused value answers 422 with a message per field path (`kop`, `knoppen.0.knop.text`), a strip that is not on the page or whose type left the catalogue 404, a guest 401. The answers are never stored by a cache.
 - Validation messages of strips name an item of a list by its item name ("Item heeft niet de juiste vorm.").
 

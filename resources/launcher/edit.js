@@ -25,6 +25,8 @@ const panel = {
     strip: shell?.querySelector('[data-slot="strip"]'),
     name: shell?.querySelector('[data-slot="name"]'),
     position: shell?.querySelector('[data-slot="position"]'),
+    hidden: shell?.querySelector('[data-slot="hidden-strips"]'),
+    hiddenList: shell?.querySelector('[data-slot="hidden-list"]'),
 };
 
 // The chosen strip outlives the document in the frame, so it stays chosen when the frame reloads.
@@ -178,6 +180,7 @@ class Outlines {
 
 function select(id) {
     selected = id;
+    shell.dispatchEvent(new CustomEvent('made-cms:select', { detail: { id } }));
 
     for (const button of outlines?.buttons.values() ?? []) {
         button.classList.toggle('actief', button.dataset.strip === id);
@@ -190,19 +193,60 @@ function select(id) {
 /*
  * The panel names the chosen strip and where it is on the page. While the frame reloads the strip is briefly
  * not there; the panel then keeps what it showed, and the outline is chosen again once the strip is back.
+ * A hidden strip is not on the site in the edit mode, so the panel says it is hidden instead.
  */
 function showPanel() {
-    const position = selected === null ? null : outlines?.positionOf(selected);
+    if (selected === null) {
+        return;
+    }
 
-    if (! position) {
+    const position = outlines?.positionOf(selected);
+    const hidden = strips.get(selected)?.visible === false;
+
+    if (! position && ! hidden) {
         return;
     }
 
     panel.choose.hidden = true;
     panel.strip.hidden = false;
     panel.name.textContent = labelOf(selected);
-    panel.position.textContent = format(texts.position, position);
+    panel.position.textContent = position ? format(texts.position, position) : texts.hidden;
     shell.dataset.selected = selected;
+    showHidden();
+}
+
+/* Hidden strips are not in the frame, so the panel lists them: choosing one lets the editor show it again. */
+function showHidden() {
+    const hidden = [...strips.values()].filter((strip) => strip.visible === false && strip.id !== selected);
+
+    panel.hiddenList.replaceChildren(...hidden.map((strip) => {
+        const item = document.createElement('li');
+        const button = document.createElement('button');
+
+        button.type = 'button';
+        button.className = 'actie klein';
+        button.textContent = strip.label;
+        button.addEventListener('click', () => select(strip.id));
+        item.append(button);
+
+        return item;
+    }));
+    panel.hidden.hidden = hidden.length === 0;
+}
+
+/* After a save the frame shows the draft again, at the place the editor was looking at. */
+function reloadFrame() {
+    const win = frame?.contentWindow;
+
+    if (! win) {
+        return;
+    }
+
+    const x = win.scrollX;
+    const y = win.scrollY;
+
+    frame.addEventListener('load', () => frame.contentWindow?.scrollTo(x, y), { once: true });
+    win.location.reload();
 }
 
 function attach() {
@@ -214,6 +258,24 @@ function attach() {
     }
 
     outlines = new Outlines(doc);
+
+    // The first scan ran inside the constructor, while outlines still pointed at the document before the reload.
+    showPanel();
+}
+
+if (shell && panel.hidden) {
+    shell.addEventListener('made-cms:saved', reloadFrame);
+    shell.addEventListener('made-cms:visibility', (event) => {
+        const strip = strips.get(event.detail.id);
+
+        if (strip) {
+            strip.visible = event.detail.visible;
+        }
+
+        showPanel();
+        showHidden();
+    });
+    showHidden();
 }
 
 if (frame && overlay) {

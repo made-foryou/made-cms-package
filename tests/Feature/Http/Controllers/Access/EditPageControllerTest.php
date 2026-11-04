@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -116,6 +117,27 @@ it('hands the strips of the working copy and the texts to the script', function 
         'position' => 'Strook :n van :m',
         'unknown' => 'Strook',
     ])->and($config['texts']['missing'])->toContain('data-cms-strip=":id"');
+});
+
+it('hands the side panel the address of a strip, the csrf token and its texts', function (): void {
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $config = editShellConfig((string) $response->getContent());
+
+    expect($config['urls']['strip'])->toBe('/made-cms/pages/'.$page->id.'/strips/:strip')
+        ->and($config['csrf_token'])->toBe(session()->token())
+        ->and($config['texts']['hidden'])->toBe('Verborgen')
+        ->and($config['texts']['panel'])->toMatchArray([
+            'saved' => 'Opgeslagen als concept',
+            'add' => ':item toevoegen',
+            'position' => 'Item :n van :m',
+        ]);
+
+    $response->assertSee('Strook zichtbaar op de site')
+        ->assertSee('Opslaan als concept')
+        ->assertSee('<template data-field="rich_text">', false)
+        ->assertSee(LauncherAssetController::url('panel.js'), false);
 });
 
 it('speaks English when the launcher locale is English', function (): void {

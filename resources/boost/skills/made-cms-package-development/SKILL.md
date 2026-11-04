@@ -58,7 +58,8 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 - editors build pages from the site's strip types: one class per type in `app/Cms/Strips` that extends `Made\CmsPackage\Content\Strips\StripType` (config `strips.path` and `strips.namespace`); the package finds them on its own
 - implement `key()` (fixed, lowercase letters, digits and dashes, e.g. `hero`) and `fields()`; optionally `label()`, `description()`, `view()` (the Blade view, default `strips.{key}`) and `with(array $values)` (extra data such as the latest news; it receives the rendered values and its keys land next to the fields)
-- field types in `Made\CmsPackage\Content\Strips\Fields`: `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button` (text + link), `Choice` (list, `value => label` or a backed enum) and `Items` (a list of items with the same fields, `min()`/`max()`; every item gets a fixed `id`); every field takes `label()`, `hint()`, `required()` and `default()`
+- field types in `Made\CmsPackage\Content\Strips\Fields`: `Text`, `LongText`, `RichText` (cleaned HTML: p, strong, em, ul, ol, li, a), `Link` (`{"page": id}` or `{"url": "…"}`), `Button` (text + link), `Choice` (list, `value => label` or a backed enum) and `Items` (a list of items with the same fields, `min()`/`max()`, `itemLabel('Knop')` for "Knop toevoegen" in the side panel; every item gets a fixed `id`); every field takes `label()`, `hint()`, `required()` and `default()`; labels and hints are what editors see in the side panel, so write them in the editors' language
+- strip values are validated with the package's own Dutch and English messages (`StripType::messages()`, `strips.validation.*` in the published translations), not the app's `validation.*` lines
 - the field names `id`, `type` and `visible` are reserved, and `id` inside an item; a broken definition throws `InvalidStripType` or `DuplicateStripType` as soon as the catalogue (`app(StripTypes::class)`) is built
 
 ### 7. Use the actions
@@ -92,6 +93,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own; print rich text with `dangerouslySetInnerHTML` or `v-html`
 - put `data-cms-strip` with the strip id on the root element of every strip (required); `data-cms-field="<field>"` and `data-cms-items="<field>"` are optional and static
 - the edit shell (`/made-cms/pages/{page}/edit`, "Bewerken" in the edit bar) outlines every `data-cms-strip` in the frame, also strips rendered in the browser after load; a visible strip without it is reported in the browser console, and links and forms of the site do nothing in the frame
+- choosing a strip opens its fields in the side panel; editors' changes are saved as the draft (always every field, through `UpdateStrip`) and the frame reloads, so a strip view needs nothing extra to show them; the panel's JSON routes (`made-cms-package.pages.strips.*`) need no code in the app
 - a page link is the path in `cms_routes` without the prefix of a route group; a site under `/nl` adds that itself
 
 ## Rules, References, and Templates

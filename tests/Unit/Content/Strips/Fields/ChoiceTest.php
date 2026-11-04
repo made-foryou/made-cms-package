@@ -38,3 +38,10 @@ it('only accepts one of the options', function (): void {
         ->and($rules['stijl'][2])->toBeInstanceOf(In::class)
         ->and((string) $rules['stijl'][2])->toBe('in:"primary","secondary"');
 });
+
+it('describes its options as a list, so their order survives the way to the panel', function (): void {
+    expect(Choice::make('kolommen', ['3' => 'Drie', '2' => 'Twee'])->describe()['options'])->toBe([
+        ['value' => '3', 'label' => 'Drie'],
+        ['value' => '2', 'label' => 'Twee'],
+    ]);
+});

@@ -23,6 +23,8 @@ final class Items extends Field
 
     private ?int $max = null;
 
+    private ?string $itemLabel = null;
+
     protected mixed $default = [];
 
     /**
@@ -34,6 +36,11 @@ final class Items extends Field
         $field->fields = $fields;
 
         return $field;
+    }
+
+    public function type(): string
+    {
+        return 'items';
     }
 
     public function min(int $min): self
@@ -48,6 +55,17 @@ final class Items extends Field
     {
         $field = clone $this;
         $field->max = $max;
+
+        return $field;
+    }
+
+    /**
+     * The name of one item, as in "Knop toevoegen".
+     */
+    public function itemLabel(string $label): self
+    {
+        $field = clone $this;
+        $field->itemLabel = $label;
 
         return $field;
     }
@@ -68,6 +86,21 @@ final class Items extends Field
     public function getMax(): ?int
     {
         return $this->max;
+    }
+
+    public function getItemLabel(): string
+    {
+        return $this->itemLabel ?? 'Item';
+    }
+
+    protected function details(): array
+    {
+        return [
+            'min' => $this->min,
+            'max' => $this->max,
+            'item_label' => $this->getItemLabel(),
+            'fields' => array_map(static fn (Field $field): array => $field->describe(), $this->fields),
+        ];
     }
 
     public function rules(string $path): array

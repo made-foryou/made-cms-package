@@ -14,6 +14,21 @@ final class Button extends Field
         return new self($key);
     }
 
+    public function type(): string
+    {
+        return 'button';
+    }
+
+    protected function details(): array
+    {
+        return [
+            'parts' => [
+                'text' => (string) __('made-cms-package::strips.button.text'),
+                'link' => (string) __('made-cms-package::strips.button.link'),
+            ],
+        ];
+    }
+
     public function rules(string $path): array
     {
         return [

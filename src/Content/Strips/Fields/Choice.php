@@ -32,6 +32,11 @@ final class Choice extends Field
         return $field;
     }
 
+    public function type(): string
+    {
+        return 'choice';
+    }
+
     /**
      * The options as value => label.
      *
@@ -56,6 +61,20 @@ final class Choice extends Field
         }
 
         return $options;
+    }
+
+    /**
+     * The options as a list of {value, label}: an object keyed by digits would lose its order in JavaScript.
+     */
+    protected function details(): array
+    {
+        $options = [];
+
+        foreach ($this->getOptions() as $value => $label) {
+            $options[] = ['value' => (string) $value, 'label' => $label];
+        }
+
+        return ['options' => $options];
     }
 
     public function rules(string $path): array

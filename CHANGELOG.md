@@ -4,6 +4,10 @@
 
 ### Added
 
+- `Field::type()` (`text`, `long_text`, `rich_text`, `link`, `button`, `choice`, `items`), `Field::describe()` and `StripType::describe()`: a strip type and its fields as the side panel builds them, with the key, type, label, hint, default and whether a field is required, and what a type adds (the longest text, the options of a choice in order, the labels of the parts of a button, the limits, item name and fields of a list).
+- `Items::itemLabel('Knop')`: the name of one item of a list, as in "Knop toevoegen" (`getItemLabel()`, "Item" by default).
+- `StripType::messages()`: Dutch and English validation messages for every rule the fields use (`strips.validation.*`).
+
 - Pages screen at `/made-cms/pages` (route `made-cms-package.screens.pages`, for every editor who opens `Screen::Pages`): every page in the order of the menu, the pages under a page indented below it, with its address, status, what still needs doing and when it changed, and links to its overview and its edit shell. Deleted pages are listed below it with the address they get back and a "Terugzetten" button.
 - One page at `/made-cms/pages/{page}` (`pages.show`, saved with `PUT` to `pages.update`): its name, address, parent ("Ligt onder") and menu flag, the pages under it with "Pagina hieronder", and deleting it with a confirmation (`DELETE` to `pages.destroy`). The home page keeps its address and has no delete; a page with pages under it cannot be deleted until they are moved or deleted.
 - New page at `/made-cms/pages/new` (`pages.create`, `POST` to `pages.store`): one question per step, the name (the address follows it, or the editor types one) and then the place and the menu flag. The page starts as an empty draft, last among its siblings, and the next screen says it is ready and opens it on the site. Without script both steps show on one form. `?parent=<id>` chooses the parent beforehand.

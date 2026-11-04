@@ -24,6 +24,11 @@ final class Link extends Field
         return new self($key);
     }
 
+    public function type(): string
+    {
+        return 'link';
+    }
+
     public function rules(string $path): array
     {
         return [$path => [$this->presence(), 'array:page,url', self::target()]];

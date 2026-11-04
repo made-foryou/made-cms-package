@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+use Made\CmsPackage\Content\Actions\DescribeStrip;
+use Made\CmsPackage\Content\Exceptions\StripNotFound;
+use Made\CmsPackage\Content\Exceptions\UnknownStripType;
+use Made\CmsPackage\Content\Models\Page;
+
+beforeEach(function (): void {
+    useStripTypes();
+});
+
+it('describes a strip with the fields of its type and its values', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('cards', ['kaarten' => [['id' => 'k1', 'titel' => 'Een']]], id: 'a')])->create();
+
+    $strip = DescribeStrip::run($page, 'a');
+
+    expect($strip->toArray())->toMatchArray([
+        'id' => 'a',
+        'type' => 'cards',
+        'label' => 'Kaarten',
+        'visible' => true,
+        'values' => ['kaarten' => [['id' => 'k1', 'titel' => 'Een']]],
+    ])->and(array_column($strip->fields, 'key'))->toBe(['kaarten'])
+        ->and($strip->fields[0]['type'])->toBe('items');
+});
+
+it('describes the draft instead of the published strip', function (): void {
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])
+        ->withDraft([storedStrip('hero', ['kop' => 'Concept'], visible: false, id: 'a')])
+        ->create();
+
+    $strip = DescribeStrip::run($page, 'a');
+
+    expect($strip->values['kop'])->toBe('Concept')
+        ->and($strip->visible)->toBeFalse();
+});
+
+it('describes the published strip of a page without a draft', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])->create();
+
+    expect(DescribeStrip::run($page, 'a')->values['kop'])->toBe('Live');
+});
+
+it('gives every field a value, a missing one its default, in the order of the type', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', ['intro' => 'Hallo'], id: 'a')])->create();
+
+    expect(DescribeStrip::run($page, 'a')->values)->toBe([
+        'label' => null,
+        'kop' => 'Welkom',
+        'intro' => 'Hallo',
+        'tekst' => null,
+        'actie' => null,
+        'knoppen' => [],
+    ]);
+});
+
+it('leaves out stored values of fields the type no longer has', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('cards', ['kaarten' => [], 'oud' => 'weg'], id: 'a')])->create();
+
+    expect(DescribeStrip::run($page, 'a')->values)->toBe(['kaarten' => []]);
+});
+
+it('refuses a strip that is not on the page', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    expect(fn (): mixed => DescribeStrip::run($page, 'x'))->toThrow(StripNotFound::class);
+});
+
+it('refuses a strip of a type that is no longer in the catalogue', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('oud', ['x' => 1], id: 'a')])->create();
+
+    expect(fn (): mixed => DescribeStrip::run($page, 'a'))->toThrow(UnknownStripType::class);
+});

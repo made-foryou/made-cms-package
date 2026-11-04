@@ -67,7 +67,7 @@ final class PublishPage
 
             $type = $this->types->find($strip->type);
 
-            foreach (Validator::make($strip->values, $type->rules(), [], $type->attributes())->errors()->toArray() as $path => $messages) {
+            foreach (Validator::make($strip->values, $type->rules(), $type->messages(), $type->attributes())->errors()->toArray() as $path => $messages) {
                 $errors["strips.{$strip->id}.{$path}"] = $messages;
             }
         }

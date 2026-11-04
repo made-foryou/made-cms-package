@@ -83,6 +83,8 @@
 
 ### Changed
 
+- `UpdateStrip` and `PublishPage` refuse strip values with the messages of the package in the language of the CMS (`StripType::messages()`, "Vul Kop in.") instead of the host's validation messages. A host that relied on its own `validation.*` lines for strips publishes the translations (`made-cms-package-lang`) and changes `strips.validation.*` there.
+
 - `UpdateStrip::run($page, $stripId, $values)` merges the values with the stored values of the strip instead of replacing them: a field left out keeps its value instead of falling back to its default. To clear a field, pass it as `null` (or `[]` for a list); a host that relied on leaving fields out to reset them passes them explicitly. A list replaces the stored list, but an item with the `id` of a stored item keeps the fields it leaves out. The merged values are validated as a whole, so a field that was not passed can still be refused; `StripUpdated` is unchanged.
 - Every item of an `Items` field has a fixed `id` (a uuid), given when the strip is stored by `AddStrip` or `UpdateStrip` and rendered as the first key of every item (`null` for an item stored without one). An item may no longer have a field named `id`: a strip type that has one renames it, or the catalogue throws `InvalidStripType`.
 

@@ -93,7 +93,8 @@ it('refuses a draft with a strip that breaks its definition, also when it is hid
         PublishPage::run($page);
         $this->fail('The draft was published.');
     } catch (ValidationException $exception) {
-        expect(array_keys($exception->errors()))->toBe(['strips.broken.kop', 'strips.broken.knoppen']);
+        expect(array_keys($exception->errors()))->toBe(['strips.broken.kop', 'strips.broken.knoppen'])
+            ->and($exception->errors()['strips.broken.kop'][0] ?? '')->toBe('Vul Kop in.');
     }
 
     $stored = Page::query()->findOrFail($page->id);

@@ -205,6 +205,21 @@ it('labels the fields in the validation messages', function (): void {
     }
 });
 
+it('refuses with the messages of the CMS, in its language', function (string $locale, string $message): void {
+    app()->setLocale($locale);
+    $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    try {
+        UpdateStrip::run($page, 'a', [...heroValues(), 'kop' => null]);
+        $this->fail('The values were accepted.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors()['kop'][0] ?? '')->toBe($message);
+    }
+})->with([
+    'Dutch' => ['nl', 'Vul Kop in.'],
+    'English' => ['en', 'Fill in Kop.'],
+]);
+
 it('refuses a strip that is not on the page', function (): void {
     Event::fake([StripUpdated::class]);
     $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();

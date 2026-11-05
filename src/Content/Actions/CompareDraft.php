@@ -10,17 +10,23 @@ use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Data\Strip;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
 
 final class CompareDraft
 {
     use AsAction;
 
+    public function __construct(
+        private readonly StripTypes $types,
+    ) {}
+
     /**
      * The strips the working copy adds, changes, removes or moves compared to the published strips.
      *
      * A strip counts once: a strip that moved and changed is changed. Moved are the strips outside the longest run that
-     * kept its order, so one strip dragged to the top is one change. Values are compared without the order of their keys
-     * and without the ids of list items, which a restored item gets anew.
+     * kept its order, so one strip dragged to the top is one change. Values are compared as the strip renders them, a
+     * missing field as its default, without the order of their keys and without the ids of list items, which a restored
+     * item gets anew.
      */
     public function handle(Page $page): DraftChanges
     {
@@ -76,7 +82,22 @@ final class CompareDraft
     {
         return $before->type === $after->type
             && $before->visible === $after->visible
-            && $this->comparable($before->values) === $this->comparable($after->values);
+            && $this->comparable($this->filled($before)) === $this->comparable($this->filled($after));
+    }
+
+    /**
+     * The values with every field of the type, a missing one from its default; a type that left the catalogue keeps
+     * the values it has.
+     *
+     * @return array<string, mixed>
+     */
+    private function filled(Strip $strip): array
+    {
+        if (! $this->types->has($strip->type)) {
+            return $strip->values;
+        }
+
+        return [...$this->types->find($strip->type)->defaults(), ...$strip->values];
     }
 
     /**

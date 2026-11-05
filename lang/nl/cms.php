@@ -25,6 +25,10 @@ return [
         'start' => 'Naar de startpagina',
         'preview' => 'Voorvertoning',
         'publish' => 'Publiceren',
+        'changes' => '{0} Geen wijzigingen|{1} Concept · 1 wijziging|[2,*] Concept · :count wijzigingen',
+        'unpublished' => 'Nog niet gepubliceerd',
+        'discard_text' => '{0} Er is niets weg te gooien.|{1} Je wijziging gaat weg.|[2,*] Je :count wijzigingen gaan weg.',
+        'discard_live' => 'De live versie blijft zoals hij is.',
         'frame' => 'De pagina :page zoals bezoekers hem zien',
         'no_address' => 'Deze pagina heeft nog geen adres op de site, dus er is nog niets te tonen.',
         'hidden' => 'Verborgen',
@@ -83,6 +87,7 @@ return [
         'errors' => [
             'values' => 'Het paneel stuurde de inhoud van de strook niet mee. Herlaad de pagina en probeer het opnieuw.',
             'visible' => 'Het paneel stuurde niet mee of de strook zichtbaar moet zijn. Herlaad de pagina en probeer het opnieuw.',
+            'nothing_to_publish' => 'Er is niets te publiceren: deze pagina is al live zoals hij is.',
         ],
     ],
 ];

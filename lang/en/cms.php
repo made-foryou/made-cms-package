@@ -25,6 +25,10 @@ return [
         'start' => 'To the start page',
         'preview' => 'Preview',
         'publish' => 'Publish',
+        'changes' => '{0} No changes|{1} Draft · 1 change|[2,*] Draft · :count changes',
+        'unpublished' => 'Not published yet',
+        'discard_text' => '{0} There is nothing to throw away.|{1} Your change will be gone.|[2,*] Your :count changes will be gone.',
+        'discard_live' => 'The live version stays as it is.',
         'frame' => 'The page :page as visitors see it',
         'no_address' => 'This page has no address on the site yet, so there is nothing to show.',
         'hidden' => 'Hidden',
@@ -83,6 +87,7 @@ return [
         'errors' => [
             'values' => 'The panel did not send the content of the strip. Reload the page and try again.',
             'visible' => 'The panel did not say whether the strip should be visible. Reload the page and try again.',
+            'nothing_to_publish' => 'There is nothing to publish: this page is already live as it is.',
         ],
     ],
 ];

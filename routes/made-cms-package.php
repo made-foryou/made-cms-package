@@ -23,9 +23,12 @@ use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
+use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
+use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
+use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
 use Made\CmsPackage\Http\Controllers\Content\StorePageController;
@@ -123,6 +126,11 @@ Route::prefix($prefix)
                     ->whereNumber('page')
                     ->where('strip', '[A-Za-z0-9-]+')
                     ->name('pages.strips.visibility');
+
+                // The bar of the edit shell talks JSON too: the state of the draft, publishing it and throwing it away.
+                Route::get('pages/{page}/draft', ShowDraftController::class)->whereNumber('page')->name('pages.draft.show');
+                Route::delete('pages/{page}/draft', DiscardDraftController::class)->whereNumber('page')->name('pages.draft.destroy');
+                Route::post('pages/{page}/publish', PublishPageController::class)->whereNumber('page')->name('pages.publish');
             });
         });
     });

@@ -157,3 +157,59 @@ it('adds an item that links to a page of the site', function (): void {
 
     $shell->assertNoJavaScriptErrors();
 });
+
+it('undoes the saved changes of a strip one step at a time', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Welkom bij de club'");
+    $heading = "document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"] h2')?.textContent";
+
+    expect($shell->script("() => document.querySelector('[data-slot=\"undo\"]').disabled"))->toBeTrue();
+
+    $shell->type('[data-path="kop"] input', 'Samen');
+
+    expect($shell->script(waitUntil(savedAsDraft()." && {$heading} === 'Samen'")))->toBeTrue();
+
+    $shell->type('[data-path="kop"] input', 'Samen tafeltennissen');
+
+    expect($shell->script(waitUntil("{$heading} === 'Samen tafeltennissen' && document.querySelector('[data-slot=\"bar-state\"]').textContent === 'Concept · 1 wijziging'")))->toBeTrue();
+
+    $shell->click('[data-slot="undo"]');
+
+    expect($shell->script(waitUntil("{$heading} === 'Samen' && document.querySelector('[data-path=\"kop\"] input').value === 'Samen'")))->toBeTrue()
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe('Samen');
+
+    $shell->assertSeeIn('[data-slot="announce"]', 'De laatste wijziging is ongedaan gemaakt.')
+        ->click('[data-slot="undo"]');
+
+    expect($shell->script(waitUntil("{$heading} === 'Welkom bij de club' && document.querySelector('[data-slot=\"bar-state\"]').textContent === 'Geen wijzigingen'")))->toBeTrue()
+        ->and($shell->script("() => [document.querySelector('[data-path=\"kop\"] input').value, document.querySelector('[data-slot=\"undo\"]').disabled]"))->toBe(['Welkom bij de club', true])
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe('Welkom bij de club');
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('undoes hiding a strip', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('#paneel-zichtbaar')?.checked === true");
+
+    $shell->uncheck('#paneel-zichtbaar');
+
+    expect($shell->script(waitUntil("! document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"]') && ! document.querySelector('[data-slot=\"undo\"]').disabled")))->toBeTrue();
+
+    $shell->click('[data-slot="undo"]');
+
+    expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"]') !== null && document.querySelector('#paneel-zichtbaar').checked")))->toBeTrue()
+        ->and(draftOf($this->page, 'hero')['visible'] ?? null)->toBeTrue();
+
+    $shell->assertSeeIn('[data-slot="position"]', 'Strook 1 van 2')
+        ->assertNoJavaScriptErrors();
+});
+
+it('throws away what was typed but not saved yet', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Welkom bij de club'");
+
+    $shell->script("() => { const input = document.querySelector('[data-path=\"kop\"] input'); input.value = 'Half getypt'; input.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('[data-slot=\"undo\"]').click(); }");
+
+    expect($shell->script(valueAfter("[document.querySelector('[data-path=\"kop\"] input').value, document.querySelector('[data-slot=\"status\"]').textContent]", 900)))->toBe(['Welkom bij de club', ''])
+        ->and(draftOf($this->page, 'hero'))->toBe([]);
+
+    $shell->assertNoJavaScriptErrors();
+});

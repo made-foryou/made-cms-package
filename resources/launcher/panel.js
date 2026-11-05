@@ -7,6 +7,9 @@
  * type. It talks JSON, so the shell and the site in its frame stay loaded. edit.js tells which strip is chosen
  * (made-cms:select) and reloads the frame after a save (made-cms:saved). The bar (bar.js) waits for the panel before
  * it publishes (made-cms:flush) or throws the draft away (made-cms:discarding).
+ *
+ * "Ongedaan maken" lives in the panel only: every strip keeps what the server stored before each save, for as long as
+ * the shell is open, and a step back saves that again through the same endpoints.
  */
 
 const SAVE_AFTER = 700;
@@ -33,6 +36,7 @@ const ui = {
     done: slot('done'),
     remove: slot('remove'),
     saveRow: slot('save-row'),
+    undo: slot('undo'),
     status: slot('status'),
     announce: slot('announce'),
 };
@@ -145,6 +149,10 @@ async function open(id) {
             fields: data.strip.fields,
             values: data.strip.values,
             visible: data.strip.visible,
+            // What the server holds now, and what it held before each save: the steps "Ongedaan maken" goes back.
+            stored: { values: clone(data.strip.values), visible: data.strip.visible },
+            history: [],
+            undoing: false,
             errors: {},
             touched: new Set(),
             showAll: false,
@@ -213,21 +221,26 @@ async function save(state) {
     }
 
     state.dirty = false;
+    const undoing = state.undoing;
     const lists = listsOf(state);
     const values = clone(state.values);
+
+    state.undoing = false;
 
     state.saving = request('PUT', stripUrl(state.id), { values })
         .catch(() => ({ status: 0, data: null }))
         .then(({ status, data }) => {
             if (status === 200) {
+                // A new item gets its id here, and so does an item that came back with "Ongedaan maken".
                 for (const { key, items } of lists) {
                     (data.strip.values[key] ?? []).forEach((stored, index) => {
-                        if (items[index] && ! items[index].id) {
+                        if (items[index] && items[index].id !== stored.id) {
                             items[index].id = stored.id;
                         }
                     });
                 }
 
+                remember(state, { values: clone(data.strip.values), visible: state.stored.visible }, undoing);
                 state.errors = {};
                 state.failed = null;
                 state.saved = true;
@@ -281,6 +294,7 @@ function showStatus(state) {
 
     ui.status.textContent = text ?? '';
     ui.status.dataset.state = state.saving ? 'saving' : (state.dirty ? 'unsaved' : (state.failed ? 'error' : (state.saved ? 'saved' : '')));
+    ui.undo.disabled = ! undoable(state);
 }
 
 function unsaved() {
@@ -1081,6 +1095,109 @@ function removeItem(state) {
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
+ * "Ongedaan maken": one step back per click, through the same endpoints as every other change.
+ * ------------------------------------------------------------------------------------------------------------ */
+
+function same(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/* The server stored a change: what it held before becomes a step back, unless this was a step back itself. */
+function remember(state, stored, undoing) {
+    if (! undoing && ! same(state.stored, stored)) {
+        state.history.push(state.stored);
+    }
+
+    state.stored = stored;
+}
+
+/* Something typed and not stored yet, or a step the server stored before. */
+function undoable(state) {
+    return state.dirty || state.failed !== null || state.history.length > 0;
+}
+
+async function setVisibility(state, visible, undoing = false) {
+    const { status, data } = await request('PUT', stripUrl(state.id, '/visibility'), { visible })
+        .catch(() => ({ status: 0, data: null }));
+
+    if (status !== 200) {
+        if (state === current) {
+            ui.visible.checked = state.visible;
+        }
+
+        state.failed = status === 419 ? 'expired' : 'failed';
+        showStatus(state);
+
+        return false;
+    }
+
+    state.visible = data.strip.visible;
+    remember(state, { values: state.stored.values, visible: state.visible }, undoing);
+
+    if (state === current) {
+        ui.visible.checked = state.visible;
+    }
+
+    shell.dispatchEvent(new CustomEvent('made-cms:visibility', { detail: { id: state.id, visible: state.visible } }));
+    shell.dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: state.id } }));
+    showStatus(state);
+
+    return true;
+}
+
+async function undo(state) {
+    window.clearTimeout(state.timer);
+    await state.saving;
+
+    state.item = null;
+
+    // What the editor typed since the last save never reached the server: the fields go back to what it holds.
+    if (state.dirty || state.failed !== null) {
+        state.values = clone(state.stored.values);
+        state.dirty = false;
+        state.failed = null;
+        state.errors = {};
+        render();
+        announce(texts.undone);
+
+        return;
+    }
+
+    const step = state.history.pop();
+
+    if (! step) {
+        return;
+    }
+
+    if (step.visible !== state.stored.visible && ! await setVisibility(state, step.visible, true)) {
+        state.history.push(step);
+
+        return;
+    }
+
+    if (! same(step.values, state.stored.values)) {
+        state.values = clone(step.values);
+        state.dirty = true;
+        state.undoing = true;
+        render();
+        await save(state);
+
+        // A step the server refused stays a step: the next click puts the fields back to what it holds.
+        if (state.failed !== null) {
+            state.history.push(step);
+
+            return;
+        }
+    }
+
+    if (state === current) {
+        render();
+    }
+
+    announce(texts.undone);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
  * Publishing and discarding: the bar asks the panel first.
  * ------------------------------------------------------------------------------------------------------------ */
 
@@ -1180,22 +1297,8 @@ if (shell && ui.form) {
     ui.done.addEventListener('click', () => current?.item && closeItem(current));
     ui.remove.addEventListener('click', () => current?.item && removeItem(current));
 
-    ui.visible.addEventListener('change', async () => {
-        const state = current;
-        const visible = ui.visible.checked;
-        const { status, data } = await request('PUT', stripUrl(state.id, '/visibility'), { visible })
-            .catch(() => ({ status: 0, data: null }));
-
-        if (status === 200) {
-            state.visible = data.strip.visible;
-            shell.dispatchEvent(new CustomEvent('made-cms:visibility', { detail: { id: state.id, visible: state.visible } }));
-            shell.dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: state.id } }));
-        } else {
-            ui.visible.checked = state.visible;
-            state.failed = status === 419 ? 'expired' : 'failed';
-            showStatus(state);
-        }
-    });
+    ui.visible.addEventListener('change', () => current && setVisibility(current, ui.visible.checked));
+    ui.undo.addEventListener('click', () => current && undo(current));
 
     window.addEventListener('beforeunload', (event) => {
         if (unsaved()) {

@@ -82,6 +82,7 @@
                 <div class="paneel-voet">
                     <div class="knoppen" data-slot="save-row">
                         <button type="submit" class="knop" data-slot="save">{{ $t('cms.edit.save') }}</button>
+                        <button type="button" class="tekstlink" data-slot="undo" disabled>{{ $t('cms.edit.undo') }}</button>
                     </div>
                     <p class="paneel-status" role="status" data-slot="status"></p>
                     <p class="veld-hint">{{ $t('cms.edit.note') }}</p>

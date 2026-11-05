@@ -93,8 +93,35 @@ it('ignores any other value of the parameter', function (): void {
     Page::factory()->at('/concept')->create();
 
     $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->get('concept?made-cms=preview')
+        ->get('concept?made-cms=anders')
         ->assertNotFound();
+});
+
+it('shows the working copy in the preview for an editor who opens the pages screen', function (): void {
+    Page::factory()->at('/concept')->create(['title' => 'Concept']);
+    Page::factory()->published()->at('/over-ons')
+        ->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])
+        ->withDraft([storedStrip('hero', ['kop' => 'Concept'], id: 'a')])
+        ->create();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms');
+
+    $this->get('concept?made-cms=preview')->assertOk()->assertSeeText('Pagina: Concept');
+    $this->get('kop/over-ons?made-cms=preview')
+        ->assertOk()
+        ->assertSeeText('Kop: Concept')
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
+});
+
+it('ignores the preview parameter for a visitor', function (): void {
+    Page::factory()->at('/concept')->create();
+    Page::factory()->published()->at('/over-ons')
+        ->withStrips([storedStrip('hero', ['kop' => 'Live'], id: 'a')])
+        ->withDraft([storedStrip('hero', ['kop' => 'Concept'], id: 'a')])
+        ->create();
+
+    $this->get('concept?made-cms=preview')->assertNotFound();
+    $this->get('kop/over-ons?made-cms=preview')->assertOk()->assertSeeText('Kop: Live');
 });
 
 it('answers 404 in the edit mode for an address without a page', function (): void {

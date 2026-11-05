@@ -29,7 +29,8 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * With `?made-cms=edit` an editor who opens the pages screen gets the edit mode, for the frame of the CMS: the page
  * whatever its status, its working copy through RenderStrips, and a response that is never stored, may be framed by
- * the same origin and is not indexed. For anyone else the parameter changes nothing: a draft stays a 404.
+ * the same origin and is not indexed. `?made-cms=preview` gives the same outside the frame, for "Voorvertoning" in a
+ * tab of its own. For anyone else the parameter changes nothing: a draft stays a 404.
  */
 final class ResolvePage
 {
@@ -39,11 +40,13 @@ final class ResolvePage
     public const string PARAMETER = 'path';
 
     /**
-     * The query parameter and value the CMS loads a page in its frame with.
+     * The query parameter and the values the CMS loads a page with: in its frame, or as the preview in a tab of its own.
      */
     public const string QUERY = 'made-cms';
 
     public const string EDIT = 'edit';
+
+    public const string PREVIEW = 'preview';
 
     /**
      * @param  Closure(Request): Response  $next
@@ -111,7 +114,7 @@ final class ResolvePage
 
     private function editing(Request $request): bool
     {
-        return $request->query(self::QUERY) === self::EDIT
+        return in_array($request->query(self::QUERY), [self::EDIT, self::PREVIEW], true)
             && CheckScreenAccess::run(new ScreenVisit(editor: Visitor::editor($request), screen: Screen::Pages));
     }
 }

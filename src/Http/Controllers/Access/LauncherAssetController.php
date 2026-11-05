@@ -25,6 +25,7 @@ final class LauncherAssetController
         'cms.js' => ['cms.js', 'text/javascript; charset=utf-8'],
         'edit.js' => ['edit.js', 'text/javascript; charset=utf-8'],
         'panel.js' => ['panel.js', 'text/javascript; charset=utf-8'],
+        'bar.js' => ['bar.js', 'text/javascript; charset=utf-8'],
         'nunito-700.woff2' => ['fonts/nunito-700.woff2', 'font/woff2'],
         'instrument-sans.woff2' => ['fonts/instrument-sans.woff2', 'font/woff2'],
     ];

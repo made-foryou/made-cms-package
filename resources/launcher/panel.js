@@ -5,7 +5,8 @@
  * fields come from the definition of the strip type (GET …/strips/{id}). This file builds the controls, keeps the
  * values and sends every field of the strip to the server (PUT …/strips/{id}), which checks them against the strip
  * type. It talks JSON, so the shell and the site in its frame stay loaded. edit.js tells which strip is chosen
- * (made-cms:select) and reloads the frame after a save (made-cms:saved).
+ * (made-cms:select) and reloads the frame after a save (made-cms:saved). The bar (bar.js) waits for the panel before
+ * it publishes (made-cms:flush) or throws the draft away (made-cms:discarding).
  */
 
 const SAVE_AFTER = 700;
@@ -42,6 +43,9 @@ let pages = [];
 let current = null;
 let opening = 0;
 let uid = 0;
+
+// While the bar throws the draft away nothing is saved, so no late save brings a draft back.
+let paused = false;
 
 /* Fills :placeholders like Laravel does: the longest name first, so :id never eats into :identifier. */
 function format(text, replace = {}) {
@@ -191,6 +195,10 @@ function listsOf(state) {
 
 async function save(state) {
     window.clearTimeout(state.timer);
+
+    if (paused) {
+        return null;
+    }
 
     if (state.saving) {
         state.again = state.again || state.dirty;
@@ -1073,11 +1081,81 @@ function removeItem(state) {
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
+ * Publishing and discarding: the bar asks the panel first.
+ * ------------------------------------------------------------------------------------------------------------ */
+
+function pending() {
+    return [...states.values()].filter((state) => state.dirty || state.saving);
+}
+
+/* Saves what is still open in every strip; true once everything the panel holds is stored. */
+async function flush() {
+    for (let waiting = pending(); waiting.length > 0; waiting = pending()) {
+        for (const state of waiting) {
+            state.showAll = true;
+        }
+
+        await Promise.all(waiting.map((state) => save(state)));
+    }
+
+    return ! unsaved();
+}
+
+/*
+ * Stops saving and waits for the saves on their way. Once the draft is gone the shell reloads, so the panel forgets
+ * what it held and does not warn about it; when throwing it away failed, the panel saves what is still open.
+ */
+async function discarding(done) {
+    paused = true;
+    ui.form.inert = true;
+
+    for (const state of states.values()) {
+        window.clearTimeout(state.timer);
+    }
+
+    await Promise.all([...states.values()].map((state) => state.saving).filter(Boolean));
+
+    done.then((discarded) => {
+        if (discarded) {
+            states.clear();
+            current = null;
+
+            return;
+        }
+
+        paused = false;
+        ui.form.inert = false;
+
+        for (const state of states.values()) {
+            if (state.dirty) {
+                changed(state);
+            }
+        }
+    });
+
+    return true;
+}
+
+/* The bar chooses a strip that stopped the publication and hands its errors along; the fields show them. */
+async function select(id, errors) {
+    await open(id);
+
+    if (errors && current?.id === id) {
+        current.errors = errors;
+        current.showAll = true;
+        current.item = null;
+        render();
+    }
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
  * Wiring
  * ------------------------------------------------------------------------------------------------------------ */
 
 if (shell && ui.form) {
-    shell.addEventListener('made-cms:select', (event) => open(event.detail.id));
+    shell.addEventListener('made-cms:select', (event) => select(event.detail.id, event.detail.errors ?? null));
+    shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush()));
+    shell.addEventListener('made-cms:discarding', (event) => event.detail.wait(discarding(event.detail.done)));
 
     ui.form.addEventListener('submit', (event) => {
         event.preventDefault();

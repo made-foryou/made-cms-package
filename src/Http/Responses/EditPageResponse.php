@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Http\Responses;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Data\DraftChanges;
 use Made\CmsPackage\Content\Data\EditableStrip;
 use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
@@ -24,11 +25,13 @@ final class EditPageResponse
     /**
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
         $path = $page->route?->path;
+        $base = request()->getBaseUrl();
+        $draft = DraftResponse::data($changes);
 
         return Shell::respond('made-cms-package-launcher::cms.edit', $editor, $screens, Screen::Pages, [
             'page' => [
@@ -36,16 +39,22 @@ final class EditPageResponse
                 'status' => $page->status->value,
                 'live' => $page->status === PageStatus::Published,
             ],
+            'draft' => $draft,
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
-            'frameUrl' => $path === null ? null : request()->getBaseUrl().$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
+            'frameUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
+            'previewUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
             'editScript' => LauncherAssetController::url('edit.js'),
             'panelScript' => LauncherAssetController::url('panel.js'),
+            'barScript' => LauncherAssetController::url('bar.js'),
             'config' => [
-                // The side panel talks JSON with the server, so the shell and the site in its frame stay loaded.
+                // The side panel and the bar talk JSON with the server, so the shell and the site in its frame stay loaded.
                 'csrf_token' => csrf_token(),
                 'urls' => [
-                    'strip' => request()->getBaseUrl().route('made-cms-package.pages.strips.show', ['page' => $page, 'strip' => ':strip'], false),
+                    'strip' => $base.route('made-cms-package.pages.strips.show', ['page' => $page, 'strip' => ':strip'], false),
+                    'draft' => $base.route('made-cms-package.pages.draft.show', ['page' => $page], false),
+                    'publish' => $base.route('made-cms-package.pages.publish', ['page' => $page], false),
                 ],
+                'draft' => $draft,
                 'strips' => array_map(static fn (EditableStrip $strip): array => [
                     'id' => $strip->id,
                     'type' => $strip->type,
@@ -59,6 +68,11 @@ final class EditPageResponse
                     'missing' => $t('missing'),
                     'hidden' => $t('hidden'),
                     'panel' => self::panelTexts($locale),
+                    'bar' => [
+                        'live' => (string) __('made-cms-package::pages.status.'.PageStatus::Published->value, [], $locale),
+                        'draft' => (string) __('made-cms-package::pages.status.'.PageStatus::Draft->value, [], $locale),
+                        ...self::texts('cms.edit.bar_texts', $locale),
+                    ],
                 ],
             ],
         ]);
@@ -72,7 +86,15 @@ final class EditPageResponse
      */
     private static function panelTexts(string $locale): array
     {
-        $texts = __('made-cms-package::cms.edit.panel_texts', [], $locale);
+        return self::texts('cms.edit.panel_texts', $locale);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function texts(string $key, string $locale): array
+    {
+        $texts = __('made-cms-package::'.$key, [], $locale);
 
         return is_array($texts) ? array_map(strval(...), $texts) : [];
     }

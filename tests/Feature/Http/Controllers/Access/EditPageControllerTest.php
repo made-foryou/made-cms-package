@@ -92,12 +92,75 @@ it('names the site, the page and its status in the bar', function (): void {
 
     $this->actingAs($editor, 'made-cms')
         ->get('made-cms/pages/'.$draft->id.'/edit')
-        ->assertSeeInOrder(['TTV Merwestad', 'Nieuw', '<span class="status">Concept</span>', 'Voorvertoning', 'Publiceren'], false)
+        ->assertSeeInOrder(['TTV Merwestad', 'Nieuw', '<span class="status" data-slot="bar-page">Concept</span>', 'Voorvertoning', 'Publiceren'], false)
         ->assertSee('href="/made-cms/start"', false);
 
     $this->actingAs($editor, 'made-cms')
         ->get('made-cms/pages/'.$live->id.'/edit')
-        ->assertSee('<span class="status live">Live</span>', false);
+        ->assertSee('<span class="status live" data-slot="bar-page">Live</span>', false);
+});
+
+it('counts the changes of the draft in the bar and offers to publish or discard them', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')
+        ->withStrips([storedStrip('cards', ['kop' => 'Teams'], id: 'a')])
+        ->withDraft([storedStrip('cards', ['kop' => 'Onze teams'], id: 'a')])
+        ->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $html = (string) $response->getContent();
+
+    $response->assertSeeInOrder(['Concept · 1 wijziging', 'Concept weggooien', 'Je wijziging gaat weg. De live versie blijft zoals hij is.', 'Ja, gooi het concept weg', 'Voorvertoning', 'Publiceren'], false)
+        ->assertSee('href="/over-ons?made-cms=preview" target="_blank" rel="noopener"', false)
+        ->assertSee(LauncherAssetController::url('bar.js'), false);
+
+    expect($html)->toMatch('/<details class="bevestig bewerkbalk-weggooien" data-slot="bar-discard">/')
+        ->and($html)->toMatch('/<button type="button" class="bewerkbalk-knop" data-slot="bar-publish">/');
+});
+
+it('hides discarding and disables publishing when everything is live', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->withStrips([storedStrip('cards', id: 'a')])->create();
+
+    $html = (string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')
+        ->assertSee('Geen wijzigingen')
+        ->getContent();
+
+    expect($html)->toMatch('/<details class="bevestig bewerkbalk-weggooien" data-slot="bar-discard" hidden>/')
+        ->and($html)->toMatch('/<button type="button" class="bewerkbalk-knop" data-slot="bar-publish" disabled>/');
+});
+
+it('offers no preview for a page without an address', function (): void {
+    $page = Page::factory()->create();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')
+        ->assertDontSee('made-cms=preview', false)
+        ->assertDontSee('Voorvertoning');
+});
+
+it('hands the bar the addresses of the draft, its state and its texts', function (): void {
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')
+        ->getContent());
+
+    expect($config['urls']['draft'])->toBe('/made-cms/pages/'.$page->id.'/draft')
+        ->and($config['urls']['publish'])->toBe('/made-cms/pages/'.$page->id.'/publish')
+        ->and($config['draft'])->toBe([
+            'live' => false,
+            'changes' => 1,
+            'publishable' => true,
+            'discardable' => true,
+            'label' => 'Concept · 1 wijziging',
+            'discard_text' => 'Je wijziging gaat weg.',
+        ])
+        ->and($config['texts']['bar'])->toMatchArray([
+            'live' => 'Live',
+            'draft' => 'Concept',
+            'published' => 'Gepubliceerd',
+            'publish_invalid' => 'Niet gepubliceerd: :strip — :message',
+        ]);
 });
 
 it('hands the strips of the working copy and the texts to the script', function (): void {
@@ -148,5 +211,5 @@ it('speaks English when the launcher locale is English', function (): void {
         ->get('made-cms/pages/'.$page->id.'/edit')
         ->assertSee('<title>Edit About · TTV Merwestad</title>', false)
         ->assertSee('Click a strip on the site to edit its content.')
-        ->assertSee('<span class="status">Draft</span>', false);
+        ->assertSee('<span class="status" data-slot="bar-page">Draft</span>', false);
 });

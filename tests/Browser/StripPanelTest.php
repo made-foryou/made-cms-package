@@ -25,42 +25,6 @@ beforeEach(function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms');
 });
 
-/**
- * The edit shell of the page with the strip chosen and its fields in the panel.
- */
-function openStrip(Page $page, string $strip, string $ready): mixed
-{
-    $shell = visit('/made-cms/pages/'.$page->id.'/edit');
-
-    expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('made-cms-outlines')?.shadowRoot?.querySelectorAll('.omlijning').length === 2")))->toBeTrue();
-
-    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="'.$strip.'"]'));
-
-    expect($shell->script(waitUntil($ready)))->toBeTrue();
-
-    return $shell;
-}
-
-/**
- * A JavaScript condition: the panel says the draft is saved.
- */
-function savedAsDraft(): string
-{
-    return "document.querySelector('[data-slot=\"status\"]').textContent === 'Opgeslagen als concept'";
-}
-
-/**
- * The draft values of one strip of the page, as they are stored now.
- *
- * @return array<string, mixed>
- */
-function draftOf(Page $page, string $strip): array
-{
-    $draft = collect(Page::query()->findOrFail($page->id)->draft_strips ?? [])->firstWhere('id', $strip);
-
-    return is_array($draft) ? $draft : [];
-}
-
 it('builds the fields of the chosen strip and saves what the editor types as the draft', function (): void {
     $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Welkom bij de club'");
 

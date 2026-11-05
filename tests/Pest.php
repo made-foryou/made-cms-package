@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
@@ -160,6 +161,42 @@ function valueAfter(string $expression, int $milliseconds = 800): string
     return <<<JS
         () => new Promise((resolve) => setTimeout(() => resolve({$expression}), {$milliseconds}))
         JS;
+}
+
+/**
+ * The edit shell of a page with two strips, the strip chosen and its fields in the panel.
+ */
+function openStrip(Page $page, string $strip, string $ready): mixed
+{
+    $shell = visit('/made-cms/pages/'.$page->id.'/edit');
+
+    expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('made-cms-outlines')?.shadowRoot?.querySelectorAll('.omlijning').length === 2")))->toBeTrue();
+
+    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="'.$strip.'"]'));
+
+    expect($shell->script(waitUntil($ready)))->toBeTrue();
+
+    return $shell;
+}
+
+/**
+ * A JavaScript condition: the panel says the draft is saved.
+ */
+function savedAsDraft(): string
+{
+    return "document.querySelector('[data-slot=\"status\"]').textContent === 'Opgeslagen als concept'";
+}
+
+/**
+ * The draft values of one strip of the page, as they are stored now.
+ *
+ * @return array<string, mixed>
+ */
+function draftOf(Page $page, string $strip): array
+{
+    $draft = collect(Page::query()->findOrFail($page->id)->draft_strips ?? [])->firstWhere('id', $strip);
+
+    return is_array($draft) ? $draft : [];
 }
 
 /*

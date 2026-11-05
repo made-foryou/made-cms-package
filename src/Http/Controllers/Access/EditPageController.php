@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Http\Controllers\Access;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Actions\ListScreens;
+use Made\CmsPackage\Content\Actions\CompareDraft;
 use Made\CmsPackage\Content\Actions\ListEditableStrips;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Launcher\Visitor;
@@ -21,6 +22,12 @@ final class EditPageController
     {
         $editor = Visitor::requireEditor($request);
 
-        return EditPageResponse::make($editor, ListScreens::run($editor), $page, ListEditableStrips::run($page));
+        return EditPageResponse::make(
+            $editor,
+            ListScreens::run($editor),
+            $page,
+            ListEditableStrips::run($page),
+            CompareDraft::run($page),
+        );
     }
 }

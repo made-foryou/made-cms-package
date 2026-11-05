@@ -20,11 +20,22 @@
             <span class="bewerkbalk-site">{{ $site }}</span>
             <span class="bewerkbalk-slash" aria-hidden="true">/</span>
             <span class="bewerkbalk-pagina">{{ $page['title'] }}</span>
-            <span class="status{{ $page['live'] ? ' live' : '' }}">{{ $t('pages.status.'.$page['status']) }}</span>
+            <span class="status{{ $page['live'] ? ' live' : '' }}" data-slot="bar-page">{{ $t('pages.status.'.$page['status']) }}</span>
         </div>
+        {{-- bar.js keeps the state of the draft up to date and publishes or discards it. --}}
         <div class="bewerkbalk-rechts">
-            <button type="button" class="bewerkbalk-link" disabled>{{ $t('cms.edit.preview') }}</button>
-            <button type="button" class="bewerkbalk-knop" disabled>{{ $t('cms.edit.publish') }}</button>
+            <span class="bewerkbalk-stand" role="status" data-slot="bar-state">{{ $draft['label'] }}</span>
+            <details class="bevestig bewerkbalk-weggooien" data-slot="bar-discard"{{ $draft['discardable'] ? '' : ' hidden' }}>
+                <summary class="bewerkbalk-link">{{ $t('cms.edit.discard') }}</summary>
+                <div class="bewerkbalk-vlak">
+                    <p data-slot="bar-discard-text">{{ $draft['discard_text'] }}</p>
+                    <button type="button" class="knop gevaar" data-slot="bar-discard-confirm">{{ $t('cms.edit.discard_confirm') }}</button>
+                </div>
+            </details>
+            @if ($previewUrl !== null)
+                <a class="bewerkbalk-link" href="{{ $previewUrl }}" target="_blank" rel="noopener">{{ $t('cms.edit.preview') }}</a>
+            @endif
+            <button type="button" class="bewerkbalk-knop" data-slot="bar-publish"{{ $draft['publishable'] ? '' : ' disabled' }}>{{ $t('cms.edit.publish') }}</button>
             <span class="avatar" aria-hidden="true">{{ $editor['initial'] ?? '' }}</span>
         </div>
     </header>
@@ -205,5 +216,6 @@
 <script type="application/json" data-config>@json($config)</script>
 <script type="module" src="{{ $editScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $panelScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+<script type="module" src="{{ $barScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 </body>
 </html>

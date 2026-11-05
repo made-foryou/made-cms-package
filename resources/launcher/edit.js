@@ -178,9 +178,10 @@ class Outlines {
     }
 }
 
-function select(id) {
+/* Errors come along when the bar chooses a strip that stopped the publication; the panel shows them at the fields. */
+function select(id, errors = null) {
     selected = id;
-    shell.dispatchEvent(new CustomEvent('made-cms:select', { detail: { id } }));
+    shell.dispatchEvent(new CustomEvent('made-cms:select', { detail: { id, errors } }));
 
     for (const button of outlines?.buttons.values() ?? []) {
         button.classList.toggle('actief', button.dataset.strip === id);
@@ -234,7 +235,7 @@ function showHidden() {
     panel.hidden.hidden = hidden.length === 0;
 }
 
-/* After a save the frame shows the draft again, at the place the editor was looking at. */
+/* After a save or a publication the frame shows the working copy again, at the place the editor was looking at. */
 function reloadFrame() {
     const win = frame?.contentWindow;
 
@@ -265,6 +266,8 @@ function attach() {
 
 if (shell && panel.hidden) {
     shell.addEventListener('made-cms:saved', reloadFrame);
+    shell.addEventListener('made-cms:published', reloadFrame);
+    shell.addEventListener('made-cms:choose', (event) => select(event.detail.id, event.detail.errors ?? null));
     shell.addEventListener('made-cms:visibility', (event) => {
         const strip = strips.get(event.detail.id);
 

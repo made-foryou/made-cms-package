@@ -1624,6 +1624,68 @@ ul.lijst {
     opacity: .55;
 }
 
+/* The state of the draft ("Concept · 2 wijzigingen"), or what publishing or discarding just did. */
+
+.bewerkbalk-stand {
+    overflow: hidden;
+    color: #a9b6b1;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bewerkbalk-stand[data-state="done"] {
+    color: #45a876;
+}
+
+.bewerkbalk-stand[data-state="error"] {
+    color: #e0705e;
+}
+
+/* "Concept weggooien" opens a small surface below the bar with what goes and the button that does it. */
+
+.bewerkbalk-weggooien {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.bewerkbalk-weggooien summary {
+    display: block;
+}
+
+.bewerkbalk-weggooien[open] summary {
+    margin-bottom: 0;
+}
+
+.bewerkbalk-weggooien summary:focus-visible {
+    outline-color: var(--made-amber-licht);
+}
+
+.bewerkbalk-vlak {
+    position: absolute;
+    z-index: 10;
+    top: calc(100% + 12px);
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: min(320px, calc(100vw - 32px));
+    padding: 16px;
+    border: 1px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    box-shadow: 0 12px 32px rgb(14 43 38 / 18%);
+    white-space: normal;
+}
+
+.bewerkbalk-vlak p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
 .bewerkbalk .avatar {
     width: 32px;
     height: 32px;
@@ -2126,8 +2188,35 @@ ul.lijst {
     }
 
     .bewerkbalk-site,
-    .bewerkbalk-slash {
+    .bewerkbalk-slash,
+    .bewerkbalk-pagina,
+    .bewerkbalk .avatar {
         display: none;
+    }
+
+    /* The state, the buttons and the confirmation need more room than one row of a phone. */
+    .bewerkbalk {
+        flex-wrap: wrap;
+        gap: 8px 10px;
+        height: auto;
+        min-height: 56px;
+        padding: 10px 16px;
+    }
+
+    .bewerkbalk-rechts {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px 10px;
+        margin-left: auto;
+    }
+
+    .bewerkbalk-vlak {
+        position: fixed;
+        top: auto;
+        right: 16px;
+        left: 16px;
+        width: auto;
+        margin-top: 12px;
     }
 
     .bewerkromp {

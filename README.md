@@ -293,13 +293,15 @@ The CMS edits a page with the site in an iframe on the same origin, at the addre
 - `RenderStrips::run($page)` and `<x-made-cms::strips>` render the working copy: the draft, or the published strips when there is no draft. Hidden strips stay out;
 - the response is sent with `Cache-Control: no-store, private`, `X-Frame-Options: SAMEORIGIN` and `X-Robots-Tag: noindex, nofollow`, and gets no launcher, because the CMS has a bar of its own.
 
+`?made-cms=preview` serves the same outside the frame: "Voorvertoning" in the edit shell opens the page with its draft in a tab of its own, without anything of the CMS on it. A link on that page leads to what visitors see.
+
 For a visitor, a guest or any other value the parameter changes nothing: a draft still answers 404. Your responder needs no code for the edit mode, but keep in mind:
 
 - The macro has to sit in the `web` group: without the session the editor is unknown and the parameter is ignored.
 - In the edit mode `$page->status` can be a draft and `$page->published_at` can be `null`; a view that prints the date must cope with that.
 - A link to a page that is not published renders as `null` in the edit mode too, as it does for visitors.
 - The page has to be allowed in a frame of the same origin. The edit mode sets its headers inside the route, so headers from middleware in the `web` group, the global middleware or the web server come on top of them. If the site sends `X-Frame-Options`, use `SAMEORIGIN` instead of `DENY`. With a Content Security Policy, allow `frame-ancestors 'self'` instead of `'none'`. For the public site both are as safe as forbidding every frame, because only the site itself can frame it.
-- Do not let a full-page cache (a CDN rule, `spatie/laravel-responsecache`) store or serve responses with `?made-cms=edit`. Cache headers chained on the route itself (`Route::madeCms(...)->middleware('cache.headers:…')`) are replaced by the edit mode.
+- Do not let a full-page cache (a CDN rule, `spatie/laravel-responsecache`) store or serve responses with `?made-cms=edit` or `?made-cms=preview`. Cache headers chained on the route itself (`Route::madeCms(...)->middleware('cache.headers:…')`) are replaced by the edit mode.
 
 ### Edit shell
 
@@ -308,6 +310,14 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - A visible strip of the page whose view has no `data-cms-strip` on its root cannot be chosen; the shell warns in the browser console which strip and strip type it is.
 - Strips that the site renders in the browser after the page loaded (React or Vue without SSR) get their outline as soon as they appear.
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
+
+The bar shows whether the page is live and what its draft changes:
+
+- "Concept · 2 wijzigingen" counts the strips the draft adds, changes (fields or visibility), removes or moves compared to the published page (`CompareDraft`). One strip dragged to another place is one change; a field left out counts as its default. Without changes it says "Geen wijzigingen", or "Nog niet gepubliceerd" for a page that never went live.
+- "Publiceren" first saves what the side panel still holds, then puts the draft live (`PublishPage`) and reloads the frame. When a strip breaks its definition, for instance after a new required field, nothing is published: the bar names the strip with its first message and the panel shows the errors at its fields.
+- "Concept weggooien" appears once the draft changes something. It asks to confirm, throws the draft away (`DiscardDraft`) and reloads the shell with the published strips.
+- "Voorvertoning" opens the page with `?made-cms=preview` in a new tab.
+- Every editor who opens the pages screen may publish and discard.
 
 The side panel shows the fields of the chosen strip, built from its strip type, with the values of the draft:
 
@@ -324,7 +334,8 @@ The side panel shows the fields of the chosen strip, built from its strip type, 
 - Every change is saved as the draft: a moment after the editor stops typing, when a field loses focus, when another strip is chosen and with "Opslaan als concept". The panel always sends every field of the strip to `UpdateStrip`, and the frame reloads at the same scroll position. Visitors keep seeing the published version until the page is published.
 - A value the strip type refuses is not saved. Its message appears under the field once the editor leaves it (or presses "Opslaan als concept"), and the panel says how many fields still need a fix. The shell warns before it is closed with changes that were not saved.
 - "Strook zichtbaar op de site" shows or hides the strip (`SetStripVisibility`). A hidden strip is not on the site in the edit mode either; the panel lists hidden strips so the editor can choose one and show it again.
-- The panel talks JSON with `GET`/`PUT /made-cms/pages/{page}/strips/{strip}` and `PUT …/visibility` (routes `made-cms-package.pages.strips.show`, `.update` and `.visibility`), under the same `Screen::Pages` access as the shell. The host adds nothing for it.
+- "Ongedaan maken" takes the last saved change of the chosen strip back, one step per click: its fields or its visibility. Something typed and not saved yet goes back to what is stored. The steps last as long as the shell is open.
+- The panel and the bar talk JSON with `GET`/`PUT /made-cms/pages/{page}/strips/{strip}`, `PUT …/visibility`, `GET`/`DELETE /made-cms/pages/{page}/draft` and `POST /made-cms/pages/{page}/publish` (routes `made-cms-package.pages.strips.show`, `.update`, `.visibility`, `made-cms-package.pages.draft.show`, `.destroy` and `made-cms-package.pages.publish`), under the same `Screen::Pages` access as the shell. The host adds nothing for them.
 
 
 ## Rendering strips

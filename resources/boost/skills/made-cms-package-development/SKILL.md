@@ -67,6 +67,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - a page holds its published strips (`strips`) and a draft (`draft_strips`, `null` without one); every strip has an `id`, a `type` key, `visible` and `values`
 - `AddStrip::run($page, 'hero', $position)`, `MoveStrip::run($page, $stripId, $position)`, `RemoveStrip::run($page, $stripId)`, `UpdateStrip::run($page, $stripId, $values)` (merges with the stored values: pass only the fields to change, `null` clears one; throws a `ValidationException` keyed by field) and `SetStripVisibility::run($page, $stripId, $visible)` change the draft; visitors keep the published strips
 - `PublishPage::run($page)` makes the draft the published version and refuses a draft with an invalid strip (errors keyed `strips.<id>.<field>`); `DiscardDraft::run($page)` goes back to the published version; query pages with `Page::query()->published()`
+- `CompareDraft::run($page)` (`DraftChanges`) says what the draft changes: the strip ids it adds, changes (fields or visibility), removes or moves, `count()`, and whether the page can be published or discarded; a missing field counts as its default, key order and item ids do not count
 - a strip whose type is no longer in the catalogue keeps its data; only `UpdateStrip` refuses it
 - to change one item of a list, pass the whole list: items with the `id` of a stored item keep the fields you leave out, items without a known `id` are new, items you leave out are removed
 - editors manage pages at `/made-cms/pages` (`route('made-cms-package.screens.pages')`): the tree in menu order, a new page at `pages.create`, one page at `pages.show`, deleting and restoring; the host adds nothing
@@ -83,6 +84,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - it takes the prefix and middleware of a surrounding group, returns the route without a name (chain `->name()` or `->middleware()`), can be used more than once and works with `route:cache`
 - every page has one address: a `GET` or `HEAD` for another form (`/Over-Ons`, `/over-ons/`, `//over-ons`) gets a `301` to the lowercase address without a trailing slash, under the group prefix and with the query string; link to `$page->route->path`, never to a form of your own
 - the edit mode: the CMS loads a page in an iframe on the same origin with `?made-cms=edit`; for a logged-in editor the responder gets the page whatever its status and `RenderStrips`/`<x-made-cms::strips>` render the draft, sent with `no-store`, `X-Frame-Options: SAMEORIGIN` and `noindex` and without the launcher; the responder needs no code for it, but must cope with a draft page (`published_at` can be `null`)
+- the preview: `?made-cms=preview` serves the same for an editor outside the frame ("Voorvertoning" opens it in a new tab); visitors and guests get what they always get
 - the address of a page is `$page->route->path` (`/` for home, `/over-ons/team` nested), stored in `cms_routes`; look up what a visitor sees with `FindPublishedPage::run(PagePath::fromString($path))`
 
 ### 9. Render the strips
@@ -94,6 +96,8 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - put `data-cms-strip` with the strip id on the root element of every strip (required); `data-cms-field="<field>"` and `data-cms-items="<field>"` are optional and static
 - the edit shell (`/made-cms/pages/{page}/edit`, "Bewerken" in the edit bar) outlines every `data-cms-strip` in the frame, also strips rendered in the browser after load; a visible strip without it is reported in the browser console, and links and forms of the site do nothing in the frame
 - choosing a strip opens its fields in the side panel; editors' changes are saved as the draft (always every field, through `UpdateStrip`) and the frame reloads, so a strip view needs nothing extra to show them; the panel's JSON routes (`made-cms-package.pages.strips.*`) need no code in the app
+- "Ongedaan maken" in the panel takes the last saved change of a strip back, one step per click, for as long as the shell is open
+- the bar of the shell shows "Concept · n wijzigingen" (`CompareDraft`), publishes with "Publiceren" (`PublishPage`; a strip that breaks its definition is named and chosen instead), throws the draft away with "Concept weggooien" (`DiscardDraft`) and opens "Voorvertoning"; every editor who opens `Screen::Pages` may publish; its JSON routes (`made-cms-package.pages.draft.show`, `.draft.destroy`, `made-cms-package.pages.publish`) need no code in the app
 - a page link is the path in `cms_routes` without the prefix of a route group; a site under `/nl` adds that itself
 
 ## Rules, References, and Templates
@@ -127,6 +131,6 @@ Read before executing:
 - do not hand `$page->strips` to a view or a prop; it is the stored form with page ids and hidden strips, render through `RenderStrips`
 - do not print a `Text` or `LongText` field unescaped; only `RichText` is cleaned HTML
 - do not send `X-Frame-Options: DENY` or `Content-Security-Policy: frame-ancestors 'none'` from the site's middleware or web server; the edit mode needs a frame of the same origin (`SAMEORIGIN`, `frame-ancestors 'self'`)
-- do not let a full-page cache store responses with `?made-cms=edit`
+- do not let a full-page cache store responses with `?made-cms=edit` or `?made-cms=preview`
 - do not leave out `data-cms-strip` on the root element of a strip view; the edit shell finds the strip by it
 - do not document package internals here; keep the skill focused on adoption in Laravel apps

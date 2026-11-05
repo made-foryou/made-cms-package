@@ -5,6 +5,10 @@ declare(strict_types=1);
 use Made\CmsPackage\Content\Actions\CompareDraft;
 use Made\CmsPackage\Content\Models\Page;
 
+beforeEach(function (): void {
+    useStripTypes();
+});
+
 /**
  * A published page with the strips a, b and c and the given draft.
  *
@@ -138,6 +142,25 @@ it('counts items in another order as a change', function (): void {
     ])->withDraft([
         storedStrip('cards', ['kaarten' => [['id' => 'twee', 'titel' => 'Dames 1'], ['id' => 'een', 'titel' => 'Heren 1']]], id: 'a'),
     ])->create();
+
+    expect(CompareDraft::run($page)->changed)->toBe(['a']);
+});
+
+it('counts a missing field as its default, as the strip renders it', function (): void {
+    $defaults = useStripTypes()->find('hero')->defaults();
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('hero', ['kop' => 'Welkom'], id: 'a'), storedStrip('hero', [], id: 'b')])
+        ->withDraft([storedStrip('hero', $defaults, id: 'a'), storedStrip('hero', [...$defaults, 'kop' => 'Anders'], id: 'b')])
+        ->create();
+
+    expect(CompareDraft::run($page)->changed)->toBe(['b']);
+});
+
+it('compares the values of a strip whose type left the catalogue as they are', function (): void {
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('oud', ['x' => 1], id: 'a')])
+        ->withDraft([storedStrip('oud', ['x' => 1, 'y' => null], id: 'a')])
+        ->create();
 
     expect(CompareDraft::run($page)->changed)->toBe(['a']);
 });

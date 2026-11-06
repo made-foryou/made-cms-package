@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Data;
 
 /**
- * The strips an editor can choose in the edit shell, in the order of the working copy.
+ * The strips of the working copy in the edit shell, in their stored order: the place of a strip in this list is
+ * the position the strip Actions take.
  *
  * @phpstan-import-type EditableStripArray from EditableStrip
  */

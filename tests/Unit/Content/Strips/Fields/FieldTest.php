@@ -59,3 +59,24 @@ it('tells the panel how long a text may be', function (Field $field, int $length
 it('labels the parts of a button', function (): void {
     expect(Button::make('actie')->describe()['parts'])->toBe(['text' => 'Tekst', 'link' => 'Gaat naar']);
 });
+
+it('sums up its value as a short text for the lists of the CMS', function (Field $field, mixed $value, ?string $summary): void {
+    expect($field->summary($value))->toBe($summary);
+})->with([
+    'text' => [Text::make('kop'), '  Welkom bij de club ', 'Welkom bij de club'],
+    'empty text' => [Text::make('kop'), '   ', null],
+    'no text' => [Text::make('kop'), null, null],
+    'long text, first line' => [LongText::make('intro'), "\nSamen spelen\nop dinsdag", 'Samen spelen'],
+    'rich text without markup' => [RichText::make('tekst'), '<p>Meer dan <strong>alleen</strong> tafeltennis</p><p>Echt.</p>', 'Meer dan alleen tafeltennis Echt.'],
+    'button by its text' => [Button::make('actie'), ['text' => 'Lid worden', 'link' => ['url' => '/lid']], 'Lid worden'],
+    'button without text' => [Button::make('actie'), ['text' => '', 'link' => ['url' => '/lid']], null],
+    'link' => [Link::make('gaat_naar'), ['url' => '/lid'], null],
+    'choice' => [Choice::make('stijl', ['groot' => 'Groot']), 'groot', null],
+    'items by their titles' => [
+        Items::make('teams', [Choice::make('klasse', ['a' => 'A']), Text::make('naam'), Text::make('captain')]),
+        [['klasse' => 'a', 'naam' => 'Merwestad 1', 'captain' => 'Piet'], ['naam' => '', 'captain' => 'Klaas'], ['naam' => null]],
+        'Merwestad 1, Klaas',
+    ],
+    'items without text' => [Items::make('teams', [Text::make('naam')]), [['naam' => ''], []], null],
+    'no items' => [Items::make('teams', [Text::make('naam')]), null, null],
+]);

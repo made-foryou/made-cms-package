@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Content\Strips;
 
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Items;
 
 /**
  * A kind of strip editors can place on a page, defined by the site in app/Cms/Strips.
@@ -15,6 +16,8 @@ use Made\CmsPackage\Content\Strips\Fields\Field;
  */
 abstract class StripType
 {
+    private const int SUMMARY_LENGTH = 120;
+
     /**
      * The fixed identifier: lowercase letters, digits and dashes, e.g. "hero".
      */
@@ -186,6 +189,30 @@ abstract class StripType
         }
 
         return $values;
+    }
+
+    /**
+     * The strip in a few words for the lists of the CMS: the first field with text in the order of the definition,
+     * else the items of the first list that has text in it; null when the strip holds no text yet.
+     *
+     * @param  array<string, mixed>  $values  stored values; a missing field counts as its default
+     */
+    final public function summary(array $values): ?string
+    {
+        $fields = $this->fields();
+        $lists = array_filter($fields, static fn (Field $field): bool => $field instanceof Items);
+        $others = array_filter($fields, static fn (Field $field): bool => ! $field instanceof Items);
+
+        foreach ([...$others, ...$lists] as $field) {
+            $key = $field->getKey();
+            $summary = $field->summary(array_key_exists($key, $values) ? $values[$key] : $field->getDefault());
+
+            if ($summary !== null) {
+                return Str::limit($summary, self::SUMMARY_LENGTH);
+            }
+        }
+
+        return null;
     }
 
     /**

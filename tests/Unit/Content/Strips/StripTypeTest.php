@@ -221,3 +221,16 @@ it('validates with English messages too', function (): void {
 
     expect($errors->first('kop'))->toBe('Fill in Kop.');
 });
+
+it('sums up a strip by its first text, then by the items of a list', function (array $values, ?string $summary): void {
+    expect((new Hero)->summary($values))->toBe($summary);
+})->with([
+    'the first text in the order of the fields' => [['label' => '', 'kop' => 'TTV Merwestad', 'intro' => 'Sinds 1962'], 'TTV Merwestad'],
+    'a missing field from its default' => [['label' => null], 'Welkom'],
+    'a list only without any text' => [['kop' => '', 'knoppen' => [['tekst' => 'Lid worden'], ['tekst' => 'Contact']]], 'Lid worden, Contact'],
+    'nothing to show' => [['kop' => '', 'knoppen' => []], null],
+]);
+
+it('keeps a summary short', function (): void {
+    expect(mb_strlen((string) (new Hero)->summary(['kop' => str_repeat('a', 200)])))->toBeLessThanOrEqual(123);
+});

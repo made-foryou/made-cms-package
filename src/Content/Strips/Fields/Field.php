@@ -153,6 +153,15 @@ abstract class Field
     }
 
     /**
+     * The value as a short text for the lists of the CMS (the opbouw of a page, what is on a page), or null when the
+     * field holds no text to show there. Only fields with text say something; a link or a choice stays silent.
+     */
+    public function summary(mixed $value): ?string
+    {
+        return null;
+    }
+
+    /**
      * What a type adds to its description.
      *
      * @return array<string, mixed>
@@ -160,6 +169,20 @@ abstract class Field
     protected function details(): array
     {
         return [];
+    }
+
+    /**
+     * A text on one line without the spaces around it, or null when nothing is left.
+     */
+    protected static function line(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $line = trim((string) preg_replace('/\s+/u', ' ', $value));
+
+        return $line === '' ? null : $line;
     }
 
     /**

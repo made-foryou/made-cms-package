@@ -12,12 +12,18 @@ use Made\CmsPackage\Support\Locale;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * The strips of a page for the opbouw of the edit shell, as JSON, after a strip was added, moved, removed or put back.
+ * The strips of a page for the opbouw of the edit shell, as JSON: as they are, or after a strip was added, moved,
+ * removed or put back.
  * Every answer holds the whole list in its stored order, so the place of a strip in it is the position the endpoints
  * take, and the counts as a text, so the script never builds a plural itself. The answer is never stored by a cache.
  */
 final class PageStripsResponse
 {
+    public static function listed(EditableStrips $strips): JsonResponse
+    {
+        return self::json($strips);
+    }
+
     public static function added(EditableStrips $strips, Strip $strip): JsonResponse
     {
         return self::json($strips, ['strip' => ['id' => $strip->id]], Response::HTTP_CREATED);

@@ -157,7 +157,7 @@ it('reloads the frame at the same scroll position after a change to a field with
 
     expect($shell->script(waitUntil(frameReloaded()." && {$outlines}?.length === 32 && ".siteInFrame()."?.querySelector('[data-cms-strip=\"cards\"]')?.dataset.kolommen === '2' && Math.abs(document.querySelector('.bewerkframe').contentWindow.scrollY - {$y}) < 2 && [...{$outlines}].find((outline) => outline.classList.contains('actief'))?.dataset.strip === 'cards'")))->toBeTrue();
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Kaarten')
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Kaarten')
         ->assertNoJavaScriptErrors();
 });
 
@@ -190,7 +190,7 @@ it('opens the field the editor clicks on the site in the panel', function (): vo
 
     expect($shell->script(waitUntil("document.activeElement === document.querySelector('[data-path=\"kop\"] input')")))->toBeTrue();
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Hero');
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Hero');
 
     // A field in an item opens that item.
     $shell->script(clickOnSite('[data-cms-items="knoppen"] > :nth-child(2)'));
@@ -210,6 +210,6 @@ it('opens the field the editor clicks on the site in the panel', function (): vo
 
     expect($shell->script(waitUntil("document.activeElement === document.querySelector('[data-path=\"kaarten.1.titel\"] input')")))->toBeTrue();
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Kaarten')
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Kaarten')
         ->assertNoJavaScriptErrors();
 });

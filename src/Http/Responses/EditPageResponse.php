@@ -42,12 +42,14 @@ final class EditPageResponse
                 'live' => $page->status === PageStatus::Published,
             ],
             'draft' => $draft,
+            'counts' => PageStripsResponse::counts($strips),
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
             'frameUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
             'previewUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
             'editScript' => LauncherAssetController::url('edit.js'),
             'panelScript' => LauncherAssetController::url('panel.js'),
             'barScript' => LauncherAssetController::url('bar.js'),
+            'structureScript' => LauncherAssetController::url('structure.js'),
             'config' => [
                 // The side panel and the bar talk JSON with the server, so the shell and the site in its frame stay loaded.
                 'csrf_token' => csrf_token(),
@@ -67,12 +69,14 @@ final class EditPageResponse
                     'description' => $type->description(),
                     'fields' => trans_choice('made-cms-package::cms.edit.fields', count($type->fields()), [], $locale),
                 ], $types->all()),
+                'page' => ['title' => $page->title],
                 'texts' => [
                     'position' => $t('position'),
                     'unknown' => $t('unknown'),
                     'missing' => $t('missing'),
                     'hidden' => $t('hidden'),
                     'panel' => self::panelTexts($locale),
+                    'structure' => self::texts('cms.edit.structure_texts', $locale),
                     'bar' => [
                         'live' => (string) __('made-cms-package::pages.status.'.PageStatus::Published->value, [], $locale),
                         'draft' => (string) __('made-cms-package::pages.status.'.PageStatus::Draft->value, [], $locale),

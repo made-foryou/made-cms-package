@@ -35,6 +35,7 @@ use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
+use Made\CmsPackage\Http\Controllers\Content\ShowStripsController;
 use Made\CmsPackage\Http\Controllers\Content\StorePageController;
 use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
@@ -133,6 +134,7 @@ Route::prefix($prefix)
 
                 // The opbouw of the edit shell: adding, moving, removing a strip and putting a removed one back. Every
                 // answer holds the new list of strips, so the shell keeps its places in step with the draft.
+                Route::get('pages/{page}/strips', ShowStripsController::class)->whereNumber('page')->name('pages.strips.index');
                 Route::post('pages/{page}/strips', AddStripController::class)->whereNumber('page')->name('pages.strips.store');
                 Route::put('pages/{page}/strips/{strip}/position', MoveStripController::class)
                     ->whereNumber('page')

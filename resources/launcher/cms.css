@@ -2155,24 +2155,368 @@ ul.lijst {
     background: var(--made-alarm);
 }
 
-.verborgen-stroken {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+/* The opbouw of the page (design 11.6–11.13): the strips in order with an insert point between every two, the
+   catalogue of strip types, the notices of removed strips and the head of the chosen strip. */
+
+.bewerkpaneel-sub {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--made-inhoud-zwak);
 }
 
-.verborgen-stroken ul {
+.opbouw-deel,
+.opbouw-lijst,
+.meldingen {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.meldingen:empty {
+    display: none;
+}
+
+.melding {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+
+.melding .bol {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--made-accent);
+}
+
+.melding-tekst {
+    flex-grow: 1;
+}
+
+.opbouw-leeg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 20px;
+    border: 1.5px dashed var(--made-rand-sterk);
+    border-radius: var(--made-radius-m);
+    text-align: center;
+}
+
+.opbouw-leeg .knop {
+    margin-top: 6px;
+}
+
+.opbouw-leeg-titel {
+    font: 700 17px/1.3 var(--font-kop);
+}
+
+.opbouw {
+    position: relative;
+    display: flex;
+    flex-direction: column;
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
+.strookrij {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    transition: border-color 120ms ease, transform 160ms var(--ease-uit);
+}
+
+.strookrij.tilt {
+    position: relative;
+    z-index: 1;
+    border-color: var(--made-accent);
+    box-shadow: 0 0 0 2px var(--made-oppervlak), 0 0 0 3.5px var(--made-accent);
+    transform: translateX(6px) rotate(-1deg);
+}
+
+.strookrij.sleept {
+    position: absolute;
+    left: 0;
+    z-index: 2;
+    transition: none;
+}
+
+.strookrij.onbekend {
+    border-style: dashed;
+    background: transparent;
+}
+
+.strookrij.onbekend .lijstrij-titel {
+    color: var(--made-inhoud-zwak);
+}
+
+.strookrij .greep {
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+}
+
+.strookrij .greep:hover,
+.strookrij .greep:focus-visible {
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+}
+
+.strookrij-icoon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    color: var(--made-inhoud-subtiel);
+}
+
+.strookrij-naam {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.strookrij-uitleg {
+    padding: 6px 12px 2px 50px;
+    font-size: 12.5px;
+}
+
+.pil {
+    flex-shrink: 0;
+    padding: 3px 8px;
+    border: 1.5px solid var(--made-inhoud-subtiel);
+    border-radius: var(--made-radius-pil);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-zwak);
+    white-space: nowrap;
+}
+
+.pil.let-op {
+    border-color: var(--made-amber);
+    color: var(--made-link);
+}
+
+.invoeg {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 10px;
+}
+
+.invoeg::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    left: 12px;
+    height: 1.5px;
+    background: var(--made-accent);
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.invoegknop {
+    position: relative;
+    z-index: 1;
+    padding: 5px 10px;
+    border: 0;
+    border-radius: var(--made-radius-pil);
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 700 12px/1 var(--font-kop);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(.9);
+    transition: opacity 120ms ease, transform 120ms var(--ease-uit);
+}
+
+.invoeg:hover::before,
+.invoeg:focus-within::before {
+    opacity: 1;
+}
+
+.invoeg:hover .invoegknop,
+.invoegknop:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.plaats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px dashed var(--made-accent);
+    border-radius: var(--made-radius-s);
+    background: rgb(190 138 28 / .08);
+    font: 700 12.5px/1.2 var(--font-kop);
+    color: var(--made-link);
+}
+
+.opbouw-toevoegen {
+    align-self: stretch;
+}
+
+.opbouw-status {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--made-inhoud);
+}
+
+.opbouw-status:empty {
+    display: none;
+}
+
+.opbouw-plek {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.opbouw-plek strong {
+    font-weight: 600;
+    color: var(--made-inhoud);
+}
+
+.opbouw-annuleren {
+    align-self: flex-start;
+}
+
+.soorten {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.soortkaart {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 120ms ease;
+}
+
+.soortkaart:hover,
+.soortkaart:focus-visible {
+    border-color: var(--made-accent);
+}
+
+.soortkaart-kop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.soortkaart-naam {
+    font: 700 15px/1.3 var(--font-kop);
+}
+
+.strook-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.pijlknoppen {
+    display: flex;
+    gap: 6px;
+}
+
+.pijlknop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: transparent;
+    color: var(--made-inhoud);
+    cursor: pointer;
+}
+
+.pijlknop:hover {
+    border-color: var(--made-accent);
+}
+
+.pijlknop[aria-disabled="true"] {
+    opacity: .4;
+    cursor: default;
+}
+
+.pijlknop[aria-disabled="true"]:hover {
+    border-color: var(--made-rand-sterk);
+}
+
+.strook-weg {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding-top: 16px;
+    border-top: 1px solid var(--made-rand);
+}
+
+.strook-weg[hidden] {
+    display: none;
+}
+
+button.tekstlink.alarm {
+    color: var(--made-alarm);
+    text-decoration-color: var(--made-alarm);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .lijstrij.sleept {
         box-shadow: none;
+    }
+
+    .strookrij,
+    .invoeg::before,
+    .invoegknop,
+    .soortkaart {
+        transition: none;
+    }
+
+    .strookrij.tilt {
+        transform: none;
     }
 }
 

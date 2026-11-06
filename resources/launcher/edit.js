@@ -6,6 +6,10 @@
  * the site and of the outlines never touch each other. The site itself only changes where it shows a field with
  * data-cms-field: while the editor types, the new value is patched into that element (made-cms:input from panel.js).
  * A change it cannot show that way reloads the frame after the next save.
+ *
+ * The strips of the page come from the server in their stored order (config.strips, then made-cms:strips from
+ * structure.js after every change of the opbouw), so "Strook n van m" is the place of a strip in that list, also for a
+ * hidden strip that is not on the site. Choosing no strip (made-cms:choose with id null) goes back to the opbouw.
  */
 
 const HOST = 'made-cms-outlines';
@@ -21,17 +25,22 @@ const shell = document.querySelector('[data-edit-shell]');
 const frame = shell?.querySelector('iframe.bewerkframe');
 const overlay = document.querySelector('template[data-overlay]');
 const config = JSON.parse(document.querySelector('script[data-config]')?.textContent ?? '{}');
-const strips = new Map((config.strips ?? []).map((strip) => [strip.id, strip]));
 const texts = config.texts ?? {};
 
-const panel = {
-    choose: shell?.querySelector('[data-slot="choose"]'),
-    strip: shell?.querySelector('[data-slot="strip"]'),
-    name: shell?.querySelector('[data-slot="name"]'),
-    position: shell?.querySelector('[data-slot="position"]'),
-    hidden: shell?.querySelector('[data-slot="hidden-strips"]'),
-    hiddenList: shell?.querySelector('[data-slot="hidden-list"]'),
-};
+// Every strip of the working copy in its stored order, also hidden ones and those of a type the site no longer has.
+let order = [];
+const strips = new Map();
+
+function useStrips(list) {
+    order = (list ?? []).map((strip) => strip.id);
+    strips.clear();
+
+    for (const strip of list ?? []) {
+        strips.set(strip.id, strip);
+    }
+}
+
+useStrips(config.strips);
 
 // The chosen strip outlives the document in the frame, so it stays chosen when the frame reloads.
 let selected = null;
@@ -129,11 +138,12 @@ class Outlines {
             }
 
             const id = element.getAttribute(ATTRIBUTE);
+            const position = positionOf(id);
 
             button.dataset.strip = id;
             button.querySelector('.naam').textContent = labelOf(id);
             button.querySelector('.telling').textContent = strips.get(id)?.fields ?? '';
-            button.setAttribute('aria-label', format(texts.position, { n: index + 1, m: elements.length }) + ': ' + labelOf(id));
+            button.setAttribute('aria-label', (position ? format(texts.position, position) + ': ' : '') + labelOf(id));
             button.setAttribute('aria-pressed', String(id === selected));
             button.classList.toggle('actief', id === selected);
 
@@ -143,7 +153,6 @@ class Outlines {
 
         this.elements = elements;
         this.place();
-        showPanel();
         this.warnLater();
     }
 
@@ -169,10 +178,8 @@ class Outlines {
         }
     }
 
-    positionOf(id) {
-        const index = this.elements.findIndex((element) => element.getAttribute(ATTRIBUTE) === id);
-
-        return index < 0 ? null : { n: index + 1, m: this.elements.length };
+    has(id) {
+        return this.elements.some((element) => element.getAttribute(ATTRIBUTE) === id);
     }
 
     /*
@@ -206,13 +213,20 @@ class Outlines {
         this.win.clearTimeout(this.warnTimer);
         this.warnTimer = this.win.setTimeout(() => {
             for (const strip of strips.values()) {
-                if (strip.visible && ! this.warned.has(strip.id) && this.positionOf(strip.id) === null) {
+                if (strip.visible && strip.known !== false && ! this.warned.has(strip.id) && ! this.has(strip.id)) {
                     this.warned.add(strip.id);
                     console.warn(format(texts.missing, { id: strip.id, type: strip.type }));
                 }
             }
         }, WARN_AFTER);
     }
+}
+
+/* The place of a strip in the opbouw: the same number the panel and the opbouw use. */
+function positionOf(id) {
+    const index = order.indexOf(id);
+
+    return index < 0 ? null : { n: index + 1, m: order.length };
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -418,65 +432,32 @@ function saved(id, seq) {
     }
 }
 
-/* Errors come along when the bar chooses a strip that stopped the publication; the panel shows them at the fields. */
-function select(id, errors = null, field = null) {
+/*
+ * Errors come along when the bar chooses a strip that stopped the publication; the panel shows them at the fields.
+ * A strip the opbouw just added comes with where it was added (added), so the panel can say so. No strip (null) goes
+ * back to the opbouw.
+ */
+function select(id, errors = null, field = null, added = null) {
     selected = id;
-    shell.dispatchEvent(new CustomEvent('made-cms:select', { detail: { id, errors, field: field?.path ?? null, count: field?.count ?? null } }));
+    shell.dispatchEvent(new CustomEvent('made-cms:select', { detail: { id, errors, field: field?.path ?? null, count: field?.count ?? null, added } }));
 
     for (const button of outlines?.buttons.values() ?? []) {
         button.classList.toggle('actief', button.dataset.strip === id);
         button.setAttribute('aria-pressed', String(button.dataset.strip === id));
     }
 
-    showPanel();
+    if (id === null) {
+        delete shell.dataset.selected;
+    } else {
+        shell.dataset.selected = id;
+    }
 }
 
 /*
- * The panel names the chosen strip and where it is on the page. While the frame reloads the strip is briefly
- * not there; the panel then keeps what it showed, and the outline is chosen again once the strip is back.
- * A hidden strip is not on the site in the edit mode, so the panel says it is hidden instead.
+ * After a save or a publication the frame shows the working copy again, at the place the editor was looking at. After
+ * a strip was added or moved that strip may lie elsewhere: once the site shows it, it scrolls into view when it is not.
  */
-function showPanel() {
-    if (selected === null) {
-        return;
-    }
-
-    const position = outlines?.positionOf(selected);
-    const hidden = strips.get(selected)?.visible === false;
-
-    if (! position && ! hidden) {
-        return;
-    }
-
-    panel.choose.hidden = true;
-    panel.strip.hidden = false;
-    panel.name.textContent = labelOf(selected);
-    panel.position.textContent = position ? format(texts.position, position) : texts.hidden;
-    shell.dataset.selected = selected;
-    showHidden();
-}
-
-/* Hidden strips are not in the frame, so the panel lists them: choosing one lets the editor show it again. */
-function showHidden() {
-    const hidden = [...strips.values()].filter((strip) => strip.visible === false && strip.id !== selected);
-
-    panel.hiddenList.replaceChildren(...hidden.map((strip) => {
-        const item = document.createElement('li');
-        const button = document.createElement('button');
-
-        button.type = 'button';
-        button.className = 'actie klein';
-        button.textContent = strip.label;
-        button.addEventListener('click', () => select(strip.id));
-        item.append(button);
-
-        return item;
-    }));
-    panel.hidden.hidden = hidden.length === 0;
-}
-
-/* After a save or a publication the frame shows the working copy again, at the place the editor was looking at. */
-function reloadFrame() {
+function reloadFrame(reveal = null) {
     const win = frame?.contentWindow;
 
     if (! win) {
@@ -486,8 +467,35 @@ function reloadFrame() {
     const x = win.scrollX;
     const y = win.scrollY;
 
-    frame.addEventListener('load', () => frame.contentWindow?.scrollTo(x, y), { once: true });
+    frame.addEventListener('load', () => {
+        frame.contentWindow?.scrollTo(x, y);
+
+        if (reveal !== null) {
+            show(reveal);
+        }
+    }, { once: true });
     win.location.reload();
+}
+
+/* A site rendered in the browser puts its strips in the page after it loaded, so this looks a few times. */
+function show(id, tries = 20) {
+    const doc = frame?.contentDocument;
+    const element = doc ? stripElement(doc, id) : null;
+
+    if (! element) {
+        if (tries > 0) {
+            window.setTimeout(() => show(id, tries - 1), 100);
+        }
+
+        return;
+    }
+
+    const box = element.getBoundingClientRect();
+    const height = doc.defaultView.innerHeight;
+
+    if (box.bottom < 0 || box.top > height) {
+        element.scrollIntoView({ block: 'start' });
+    }
 }
 
 function attach() {
@@ -500,23 +508,30 @@ function attach() {
 
     outlines = new Outlines(doc);
 
-    // The first scan ran inside the constructor, while outlines still pointed at the document before the reload.
-    showPanel();
-
     // What the editor typed while the frame reloaded is not stored yet, so the new document does not show it.
     for (const input of live.values()) {
         follow(input);
     }
 }
 
-if (shell && panel.hidden) {
+if (shell) {
     shell.addEventListener('made-cms:input', (event) => {
         live.set(event.detail.id + '\n' + event.detail.path, event.detail);
         follow(event.detail);
     });
     shell.addEventListener('made-cms:saved', (event) => saved(event.detail.id, event.detail.seq ?? Infinity));
     shell.addEventListener('made-cms:published', reloadFrame);
-    shell.addEventListener('made-cms:choose', (event) => select(event.detail.id, event.detail.errors ?? null));
+    shell.addEventListener('made-cms:choose', (event) => select(event.detail.id ?? null, event.detail.errors ?? null, null, event.detail.added ?? null));
+
+    // The opbouw changed: new labels and places, and a frame that shows the strips in their new order.
+    shell.addEventListener('made-cms:strips', (event) => {
+        useStrips(event.detail.strips);
+        outlines?.scan();
+
+        if (event.detail.reload) {
+            reloadFrame(event.detail.reveal ?? null);
+        }
+    });
     shell.addEventListener('made-cms:visibility', (event) => {
         const strip = strips.get(event.detail.id);
 
@@ -526,10 +541,7 @@ if (shell && panel.hidden) {
 
         // A strip that appears or goes away changes the whole page: the save reloads it.
         markStale(event.detail.id, 0);
-        showPanel();
-        showHidden();
     });
-    showHidden();
 }
 
 if (frame && overlay) {

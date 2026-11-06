@@ -6,7 +6,8 @@
  * come from GET …/draft, so this file never counts strips or builds a plural. It talks JSON, so the shell and the site
  * in its frame stay loaded. It waits for the side panel before it publishes (made-cms:flush) or discards
  * (made-cms:discarding), reloads the frame after publishing (made-cms:published) and chooses a strip that stopped the
- * publication (made-cms:choose). After discarding the whole shell reloads: strips may have changed or gone.
+ * publication (made-cms:choose). After discarding the whole shell reloads: strips may have changed or gone. A strip
+ * added, moved, removed or put back (made-cms:strips from structure.js) changes the draft as well.
  */
 
 const shell = document.querySelector('[data-edit-shell]');
@@ -230,6 +231,13 @@ if (shell && ui.publish && ui.state) {
     ui.publish.addEventListener('click', publish);
     ui.discardConfirm?.addEventListener('click', discard);
     shell.addEventListener('made-cms:saved', refresh);
+    shell.addEventListener('made-cms:strips', (event) => {
+        for (const strip of event.detail.strips ?? []) {
+            labels.set(strip.id, strip.label);
+        }
+
+        refresh();
+    });
 
     // The confirmation closes with Escape and when the editor clicks elsewhere, like a menu.
     document.addEventListener('keydown', (event) => {

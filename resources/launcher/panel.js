@@ -8,7 +8,8 @@
  * chosen (made-cms:select). Every change goes to edit.js as the strip renders it (made-cms:input), so the site in the
  * frame follows while the editor types; after a save (made-cms:saved) edit.js reloads the frame only for a change it
  * could not show. The bar (bar.js) waits for the panel before it publishes (made-cms:flush) or throws the draft away
- * (made-cms:discarding).
+ * (made-cms:discarding), and the opbouw (structure.js) before it removes a strip (made-cms:removing). Choosing no strip
+ * closes the fields; a strip that left the page (made-cms:strips) is forgotten, so putting it back loads it again.
  *
  * "Ongedaan maken" lives in the panel only: every strip keeps what the server stored before each save, for as long as
  * the shell is open, and a step back saves that again through the same endpoints.
@@ -41,6 +42,9 @@ const ui = {
     undo: slot('undo'),
     status: slot('status'),
     announce: slot('announce'),
+    addedNote: slot('added-note'),
+    addedText: slot('added-text'),
+    removeStrip: slot('structure-remove'),
 };
 
 // Every strip the editor opened keeps its state, so going back to it loses nothing that was not saved yet.
@@ -162,6 +166,7 @@ async function open(id) {
             failed: null,
             saved: false,
             saving: null,
+            added: null,
             again: false,
             timer: null,
             item: null,
@@ -436,8 +441,11 @@ function render() {
         ui.itemView.hidden = true;
         ui.stripView.hidden = false;
         ui.saveRow.hidden = false;
+        ui.removeStrip.hidden = false;
         ui.fields.replaceChildren(...state.fields.map((field) => control(state, field, state.values, field.key)));
     }
+
+    showAdded(state);
 
     showErrors(state);
 }
@@ -1129,6 +1137,7 @@ function renderItem(state) {
 
     ui.stripView.hidden = true;
     ui.saveRow.hidden = true;
+    ui.removeStrip.hidden = true;
     ui.itemView.hidden = false;
     ui.crumbStrip.textContent = state.label;
     ui.crumbList.textContent = field.label;
@@ -1336,15 +1345,111 @@ async function discarding(done) {
     return true;
 }
 
+/* ---------------------------------------------------------------------------------------------------------------
+ * The opbouw: a strip just added, a strip about to be removed, strips that left the page.
+ * ------------------------------------------------------------------------------------------------------------ */
+
+function emptyValue(value) {
+    return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+}
+
+/*
+ * A strip the opbouw just added says where it went and which required fields are still empty: that is no error yet,
+ * but publishing waits for them. The note stays until the editor chooses another strip.
+ */
+function showAdded(state) {
+    if (! state.added) {
+        ui.addedNote.hidden = true;
+
+        return;
+    }
+
+    const required = state.fields.filter((field) => field.required && emptyValue(state.values[field.key]));
+    const names = new Intl.ListFormat(document.documentElement.lang || 'nl', { type: 'conjunction' })
+        .format(required.map((field) => field.label));
+    const parts = [state.added.after ? format(texts.new_after, { strip: state.added.after }) : texts.new_top];
+
+    if (required.length === 1) {
+        parts.push(format(texts.new_required_one, { fields: names }));
+    } else if (required.length > 1) {
+        parts.push(format(texts.new_required_many, { count: required.length, fields: names }));
+    }
+
+    ui.addedText.textContent = parts.join(' ');
+    ui.addedNote.hidden = false;
+}
+
+/* Before a strip is removed, what the editor typed in it is saved, so putting it back brings that back too. */
+async function settle(id) {
+    const state = states.get(id);
+
+    if (! state) {
+        return true;
+    }
+
+    window.clearTimeout(state.timer);
+
+    if (state.dirty) {
+        await save(state);
+    }
+
+    await state.saving;
+
+    return true;
+}
+
+/* The strips of the page changed: a strip that is gone is forgotten, and when it was open the fields close. */
+function forgetGone(list) {
+    const ids = new Set(list.map((strip) => strip.id));
+
+    for (const id of states.keys()) {
+        if (! ids.has(id)) {
+            states.delete(id);
+        }
+    }
+
+    if (current && ! ids.has(current.id)) {
+        close();
+    }
+}
+
+/* No strip chosen: the panel shows the opbouw instead of fields. */
+function close() {
+    if (current) {
+        current.added = null;
+        save(current);
+    }
+
+    current = null;
+    opening++;
+    ui.form.hidden = true;
+}
+
 /*
  * edit.js chooses a strip, and the field the editor clicked on the site when there is one. The bar chooses a strip
- * that stopped the publication and hands its errors along; the fields show them.
+ * that stopped the publication and hands its errors along; the fields show them. The opbouw chooses a strip it just
+ * added, with where it went (added), or no strip at all.
  */
-async function select(id, errors, field, count) {
+async function select(id, errors, field, count, added = null) {
+    if (id === null) {
+        close();
+
+        return;
+    }
+
+    if (current && current.id !== id) {
+        current.added = null;
+    }
+
     await open(id);
 
     if (current?.id !== id) {
         return;
+    }
+
+    if (added) {
+        current.added = added;
+        showAdded(current);
     }
 
     if (errors) {
@@ -1415,7 +1520,9 @@ function focusField(state, path, count) {
  * ------------------------------------------------------------------------------------------------------------ */
 
 if (shell && ui.form) {
-    shell.addEventListener('made-cms:select', (event) => select(event.detail.id, event.detail.errors ?? null, event.detail.field ?? null, event.detail.count ?? null));
+    shell.addEventListener('made-cms:select', (event) => select(event.detail.id, event.detail.errors ?? null, event.detail.field ?? null, event.detail.count ?? null, event.detail.added ?? null));
+    shell.addEventListener('made-cms:removing', (event) => event.detail.wait(settle(event.detail.id)));
+    shell.addEventListener('made-cms:strips', (event) => forgetGone(event.detail.strips ?? []));
     shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush()));
     shell.addEventListener('made-cms:discarding', (event) => event.detail.wait(discarding(event.detail.done)));
 

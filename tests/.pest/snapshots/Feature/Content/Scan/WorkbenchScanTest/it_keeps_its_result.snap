@@ -1,0 +1,217 @@
+{
+    "version": 1,
+    "types": [
+        {
+            "key": "strook-1",
+            "label": "Strook 1",
+            "hint": null,
+            "fingerprint": "12df5bd72b0b08acb5bc944908317708",
+            "count": 1,
+            "certain": false,
+            "doubts": [
+                "generic_name"
+            ],
+            "fields": [
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "inhoud",
+                    "type": "rich_text",
+                    "selector": "div",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "p:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "a",
+                    "min": 1,
+                    "max": 2,
+                    "fields": [
+                        {
+                            "key": "knop",
+                            "type": "button",
+                            "selector": "",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "strook-2",
+            "label": "Strook 2",
+            "hint": null,
+            "fingerprint": "88eb3119bad14f633b9ccc20c169c503",
+            "count": 2,
+            "certain": false,
+            "doubts": [
+                "generic_name"
+            ],
+            "fields": [
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "ul",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "li",
+                    "min": 1,
+                    "max": 3,
+                    "fields": [
+                        {
+                            "key": "kop",
+                            "type": "text",
+                            "selector": "h3",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "tekst",
+                            "type": "long_text",
+                            "selector": "p",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "same_in_every_item"
+                            ]
+                        },
+                        {
+                            "key": "link",
+                            "type": "link",
+                            "selector": "a",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "pages": [
+        {
+            "url": "/",
+            "title": "Home",
+            "strips": [
+                {
+                    "type": "strook-1",
+                    "selector": "body > main > section",
+                    "values": {
+                        "tekst": "Workbench",
+                        "kop": "Welkom",
+                        "inhoud": "<p>Twee <strong>zinnen</strong>.</p><p>En nog een.</p>",
+                        "items": [
+                            {
+                                "knop": {
+                                    "text": "Over ons",
+                                    "link": {
+                                        "url": "/over-ons"
+                                    }
+                                }
+                            },
+                            {
+                                "knop": {
+                                    "text": "Lid worden",
+                                    "link": {
+                                        "url": "/lid-worden"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "strook-2",
+                    "selector": "body > main > section:nth-of-type(2)",
+                    "values": {
+                        "kop": "Kaarten",
+                        "items": [
+                            {
+                                "kop": "Spelen",
+                                "tekst": "Regel een\nRegel twee",
+                                "link": {
+                                    "url": "/spelen"
+                                }
+                            },
+                            {
+                                "kop": "Trainen",
+                                "tekst": "Regel een\nRegel twee",
+                                "link": {
+                                    "url": "/trainen"
+                                }
+                            },
+                            {
+                                "kop": "Teams",
+                                "tekst": "Regel een\nRegel twee",
+                                "link": {
+                                    "url": "/teams"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "url": "/over-ons",
+            "title": "Over ons",
+            "strips": [
+                {
+                    "type": "strook-2",
+                    "selector": "body > main > section",
+                    "values": {
+                        "kop": "Meer",
+                        "items": [
+                            {
+                                "kop": "Bestuur",
+                                "tekst": "Regel een\nRegel twee",
+                                "link": {
+                                    "url": "/bestuur"
+                                }
+                            },
+                            {
+                                "kop": "Leden",
+                                "tekst": "Regel een\nRegel twee",
+                                "link": {
+                                    "url": "/leden"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

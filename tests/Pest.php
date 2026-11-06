@@ -8,6 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Made\CmsPackage\Content\Actions\RecognisePage;
+use Made\CmsPackage\Content\Data\RecognisedPage;
+use Made\CmsPackage\Content\Data\ScannedPage;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
@@ -248,4 +251,26 @@ function requestAsTyped(string $uri): TestResponse
     $kernel->terminate($request, $response);
 
     return TestResponse::fromBaseResponse($response, $request);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Scan helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * A rendered page around the given body, as the browser hands it to the scan.
+ */
+function scanDocument(string $body, string $title = 'Testpagina'): string
+{
+    return '<!doctype html><html><head><meta charset="utf-8"><title>'.$title.'</title></head><body>'.$body.'</body></html>';
+}
+
+/**
+ * What the scan reads on a page with the given body.
+ */
+function recognise(string $body, string $url = '/'): RecognisedPage
+{
+    return RecognisePage::run(new ScannedPage($url, scanDocument($body)));
 }

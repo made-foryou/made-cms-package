@@ -43,3 +43,8 @@ it('differs when the items of a list are built differently', function (): void {
     expect(fingerprintOf('<section><div class="grid"><div><h3>A</h3><p>a</p></div><div><h3>B</h3><p>b</p></div></div></section>'))
         ->not->toBe(fingerprintOf('<section><div class="grid"><div><h3>A</h3><a href="/a">a</a></div><div><h3>B</h3><a href="/b">b</a></div></div></section>'));
 });
+
+it('does not count the markup inside running text', function (): void {
+    expect(fingerprintOf('<section><h2>Over <em>ons</em></h2><p>Lees <a href="/meer">meer</a>.</p></section>'))
+        ->toBe(fingerprintOf('<section><h2>Over ons</h2><p>Lees meer.</p></section>'));
+});

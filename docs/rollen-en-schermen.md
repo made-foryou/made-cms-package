@@ -1,0 +1,108 @@
+# Rollen en schermen
+
+Dit bestand laat zien welke rol welk scherm van het CMS opent, waarom, en wat al besloten is maar nog niet gebouwd. Het geldt voor wat de rollen in het CMS mogen; het gaat niet over de gebruikers van de site.
+
+- **De code is leidend.** Welke rol welk scherm opent, staat alleen in `Role::screens()` (`src/Access/Enums/Role.php`). Dit bestand legt dat uit en houdt de besluiten bij.
+- **Een test houdt het gelijk.** `tests/Unit/Docs/RolesDocumentTest.php` faalt als de tabel hieronder niet past bij `Role::screens()`.
+- **Design:** "Made CMS — Inloggen", rij 7 en 8 (startpagina per rol): https://claude.ai/artifact/3Qe9mFpPe9TvWNurRaU62Q
+
+## Rollen
+
+| Rol (code) | Naam in het CMS | Wat de rol doet | Startpagina in het design |
+|---|---|---|---|
+| `Admin` | Admin | Toegang tot alles in het CMS, ook tot onderdelen die later worden toegevoegd. | 7.5 Meerdere rollen |
+| `Webmaster` | Beheerder | Houdt de site draaiende: gebruikers en rollen, formulieren, back-ups, logboek en domein. | 7.3 Beheerder / webmaster |
+| `ContentManager` | Contentbeheerder | Schrijft en publiceert pagina's en nieuws, en beheert de media en berichten. | 7.1 Contentbeheerder |
+| `SeoSpecialist` | SEO-specialist | Zorgt dat de site gevonden wordt: meta's, alt-teksten, links, redirects, sitemap en zoekwoorden. | 7.2 SEO-specialist |
+| `Owner` | Eigenaar | Houdt overzicht: pagina's, nieuws en de berichten van bezoekers. | 7.4 Eigenaar |
+
+De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer rollen tegelijk hebben (`cms_editors.roles`).
+
+## Wie opent welk scherm
+
+- ✓ betekent dat de rol het scherm opent (het staat in `Role::screens()`).
+- ○ betekent: besloten, maar nog niet gebouwd. Het issue staat in de laatste kolom.
+- Leeg betekent dat de rol het scherm niet opent.
+
+<!-- matrix:start -->
+| Scherm | Admin | Beheerder | Contentbeheerder | SEO-specialist | Eigenaar | Groep | Stand |
+|---|:-:|:-:|:-:|:-:|:-:|---|---|
+| Pagina's (`pages`) | ✓ | ✓ | ✓ | ✓ | ✓ | Je site | gebouwd (#19); verder in #60 |
+| Nieuws (`news`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
+| Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | #49 (#55) |
+| Berichten (`messages`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
+| Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#88) |
+| Alt-teksten (`alt-texts`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#95) |
+| Links (`links`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #75 (#82); Beheerder ○ in #82 |
+| Redirects (`redirects`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #87 (#93); Beheerder ○ in #93 |
+| Sitemap (`sitemap`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#90, robots-regels #97) |
+| Zoekwoorden (`keywords`) | ✓ |  |  | ✓ |  | Vindbaarheid | nog geen epic ("Google en statistieken") |
+| Gebruikers en rollen (`editors`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
+| Formulieren (`forms`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
+| Back-ups (`backups`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
+| Logboek (`log`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
+| Domein en certificaat (`domain`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
+<!-- matrix:end -->
+
+Alleen Pagina's is gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
+
+## Altijd open
+
+- **De startpagina** (`made-cms/start`): voor elke ingelogde redacteur (`EnsureEditor`). Een blok of knop naar een scherm dat de redacteur niet opent, valt weg.
+- **De launcher en het inloggen:** voor iedereen; het zichtbaar zijn van de launcher is geen autorisatie.
+
+## Toegang die bij een ander scherm hoort
+
+Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze gebeuren.
+
+| Handeling | Valt onder | Waarom | Bron |
+|---|---|---|---|
+| Media kiezen en uploaden vanuit de bewerkschil | `Screen::Pages` | Hoort bij een pagina bewerken, dus ook Eigenaar en SEO-specialist kunnen een foto kiezen. Bibliotheek en beheer vallen onder `Screen::Media`. | #49, besluit 8 (voorstel) |
+| Een link kiezen in het zijpaneel | `Screen::Pages` | Hoort bij een pagina bewerken. | #75 |
+| De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
+| Meta en "Staat in de sitemap" van één pagina | `Screen::Pages` | De paginadetail; de Vindbaarheid-schermen tonen dezelfde gegevens voor alle pagina's tegelijk. | #65, #87 (besluit 7) |
+| Een redirect bij het weghalen van een pagina | `Screen::Pages` | Hoort bij verwijderen. | #94 |
+| Automatisch doorsturen bij verhuizen | geen | Een Content-Action doet dit; Content kijkt nooit naar rollen. | #94 |
+| Robots-regels | `Screen::Sitemap` | Staan in het scherm Sitemap. | #97 |
+| De scan | Admin, alleen bij `APP_ENV=local` | Schrijft code en inhoud in de site. | #28 |
+| Rollen toekennen | `Screen::Editors` | Alleen een admin geeft of neemt `Admin`; de laatste admin houdt die rol; iedereen houdt minstens één rol. | `AssignRoles` |
+| Een link naar een ander scherm ("Bekijk in Links", "Vul in bij Media") | het andere scherm | De link verschijnt alleen als de redacteur dat scherm opent. | CLAUDE.md |
+
+## Regels
+
+- **Admin opent elk scherm**, ook schermen die later worden toegevoegd.
+- **Rollen koppelen aan schermen gebeurt alleen in `Role::screens()`.** Een nieuw scherm is een `Screen`-case, wordt daar toegekend en krijgt zijn groep in `Screen::group()`.
+- **Toegang geldt per scherm.** Binnen een scherm zijn er geen aparte rechten. Wie het scherm opent, mag alles wat het scherm doet (#82).
+- **De middleware van de route (`EnsureScreenAccess`) is de autorisatie.** Een menu-item verbergen is alleen UI.
+- **Content kijkt nooit naar rollen.** De toegang wordt in Http bewaakt.
+
+## Waar het design afwijkt
+
+- **7.3 Beheerder / webmaster:**
+  - Het menu toont geen Vindbaarheid. De chips, "Snel naar" en de aandachtspunten noemen wel Redirects en gebroken links ("Herstellen").
+  - Besloten: de Beheerder krijgt Links en Redirects. Het menu volgt `Role::screens()`, dus de groep Vindbaarheid verschijnt met die twee schermen.
+- **7.1 Contentbeheerder** ("Menu aanpassen", "Menu's") en **7.4 Eigenaar** ("Openingstijden aanpassen", "Vraag MADE om hulp"): daar is nog geen scherm voor. Dit hoort bij menu's en globale inhoud, en daar is nog geen epic voor.
+
+## Besluiten
+
+| Datum | Besluit | Bron |
+|---|---|---|
+| 2026-10-27 | Vijf vaste rollen, met hun schermen in `Role::screens()`; Admin opent alles. | 9a881df |
+| 2026-11-03 | Media kiezen en uploaden vanuit de bewerkschil valt onder Pagina's; de bibliotheek valt onder Media (voorstel). | #49 |
+| 2026-11-06 | De Beheerder krijgt Redirects. | #87 (besluit 7), #93 |
+| 2026-11-06 | De Beheerder krijgt Links. | #82, #75 |
+| 2026-11-06 | Robots-regels vallen onder Sitemap. Meta en sitemap per pagina, en de redirect bij weghalen, vallen onder Pagina's. | #87, #94, #97 |
+
+## Bijwerken
+
+**Bij een nieuw besluit:**
+
+- zet een ○ in de tabel, met het issue in de kolom Stand;
+- voeg een regel toe aan Besluiten.
+
+**Bij het bouwen**, in één wijziging:
+
+- pas `Role::screens()` en `tests/Unit/Access/Enums/RoleTest.php` aan;
+- maak van de ○ een ✓;
+- werk de omschrijving van de rol bij in `lang/nl/roles.php` en `lang/en/roles.php`;
+- voeg een regel toe aan `CHANGELOG.md`.

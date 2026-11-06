@@ -4,6 +4,10 @@
 
 ### Added
 
+- JSON endpoints for the opbouw of the edit shell, for every editor who opens `Screen::Pages`: `POST /made-cms/pages/{page}/strips` (`pages.strips.store`, `{type, position}`) adds a strip through `AddStrip` (201); `PUT …/strips/{strip}/position` (`pages.strips.position`, `{position}`) moves it through `MoveStrip`; `DELETE …/strips/{strip}` (`pages.strips.destroy`) removes it through `RemoveStrip` and answers the removed strip as it was stored; `POST …/strips/{strip}/restore` (`pages.strips.restore`, `{type, visible, values, position}`) puts it back through `RestoreStrip` (201). Every answer holds the list of strips in their stored order with their counts ("3 stroken, 1 verborgen"). A type that is not in the catalogue, a place outside the page or a strip that is already there answers 422 (`type`, `position`, `strip`), refused values 422 per field path, a strip that is not on the page 404, a guest 401. The answers are never stored by a cache.
+- The configuration of the edit shell holds the catalogue (`types`: key, label, description and number of fields, sorted by label), the counts of the strips (`counts`) and the address to add a strip (`urls.strips`); every strip in it has `known` and `summary`.
+- Dutch and English texts for the counts of the strips (`cms.edit.counts`) and the refusals of the opbouw (`cms.edit.errors.type`, `position`, `strip_exists`).
+
 - `RestoreStrip::run($page, $strip, $position)` puts a removed strip back in the draft with its own id, visibility and values, checked against its strip type, so the draft compares as if it had never been removed. A strip whose type left the catalogue comes back only with the values the published page holds. It dispatches `StripAdded` and throws `StripAlreadyOnPage`, `InvalidStripPosition`, `UnknownStripType` or a `ValidationException`.
 - `StripType::summary($values)` and `Field::summary($value)`: a strip in a few words for the lists of the CMS, the first field with text (text, the first line of a long text, rich text without markup, the text of a button), else the titles of the items of a list; null when it holds no text yet.
 

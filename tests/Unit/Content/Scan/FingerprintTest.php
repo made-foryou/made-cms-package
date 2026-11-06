@@ -26,3 +26,20 @@ it('differs when the structure differs', function (): void {
         ->not->toBe(fingerprintOf('<section><h2>Kop</h2><div><p>Tekst</p></div></section>'))
         ->not->toBe(fingerprintOf('<section><h3>Kop</h3><p>Tekst</p></section>'));
 });
+
+it('does not count the items of a list, nor the items of a list inside them', function (): void {
+    $card = static fn (string $title, int $players): string => '<div class="kaart"><h3>'.$title.'</h3><div class="spelers">'.str_repeat('<span>Naam</span>', $players).'</div></div>';
+
+    expect(fingerprintOf('<section><h2>Teams</h2><div class="grid">'.$card('Een', 2).$card('Twee', 4).'</div></section>'))
+        ->toBe(fingerprintOf('<section><h2>Teams</h2><div class="grid">'.$card('Een', 3).$card('Twee', 1).$card('Drie', 5).'</div></section>'));
+});
+
+it('does not count empty decoration that repeats', function (): void {
+    expect(fingerprintOf('<section><h2>Kop</h2><div class="schaal">'.str_repeat('<div class="tik"></div>', 13).'</div></section>'))
+        ->toBe(fingerprintOf('<section><h2>Kop</h2><div class="schaal">'.str_repeat('<div class="tik"></div>', 7).'</div></section>'));
+});
+
+it('differs when the items of a list are built differently', function (): void {
+    expect(fingerprintOf('<section><div class="grid"><div><h3>A</h3><p>a</p></div><div><h3>B</h3><p>b</p></div></div></section>'))
+        ->not->toBe(fingerprintOf('<section><div class="grid"><div><h3>A</h3><a href="/a">a</a></div><div><h3>B</h3><a href="/b">b</a></div></div></section>'));
+});

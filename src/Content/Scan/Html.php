@@ -227,13 +227,17 @@ final class Html
         }
 
         $text = '';
+        $afterElement = false;
 
         foreach ($element->childNodes as $node) {
             if ($node instanceof Text) {
                 $text .= $node->data;
+                $afterElement = false;
             } elseif ($node instanceof Element) {
                 $inner = self::collect($node, $break);
-                $text .= self::isInline($node) ? $inner : ' '.$inner.' ';
+                // Elements right after each other are separate words, as a site in flex or grid shows them.
+                $text .= self::isInline($node) && ! $afterElement ? $inner : ' '.$inner.' ';
+                $afterElement = $inner !== '';
             }
         }
 

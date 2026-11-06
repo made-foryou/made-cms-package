@@ -2,34 +2,7 @@
 
 declare(strict_types=1);
 
-use Made\CmsPackage\Content\Data\RecognisedField;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
-
-/**
- * The fields the scan reads in the only strip of a page, by selector: the role, the value and the doubts if any.
- *
- * @return array<string, list<mixed>>
- */
-function fieldsOf(string $strip): array
-{
-    $fields = [];
-
-    foreach (recognise('<main>'.$strip.'</main>')->strips[0]->fields ?? [] as $field) {
-        $fields[$field->selector] = fieldRow($field);
-    }
-
-    return $fields;
-}
-
-/**
- * @return list<mixed>
- */
-function fieldRow(RecognisedField $field): array
-{
-    $row = [$field->role->value, $field->value];
-
-    return $field->doubts === [] ? $row : [...$row, ScanDoubt::values($field->doubts)];
-}
 
 it('reads a heading as one line of text', function (): void {
     expect(fieldsOf('<section><h2 class="kop">Over <span class="accent">ons</span></h2></section>'))
@@ -94,21 +67,23 @@ it('passes buttons of the interface by', function (): void {
 it('reads images, also hidden and in the background, and doubts the decorative ones', function (): void {
     $strip = '<section>'
         .'<img src="/zaal.jpg" alt="De zaal">'
+        .'<h2>De zaal</h2>'
         .'<img src="/sfeer.jpg" alt="">'
         .'<div aria-hidden="true" class="laag"><img src="/foto.jpg" alt=""><span>Versiering</span></div>'
         .'<picture><source srcset="/kaart.webp"><img src="/kaart.jpg" alt="Kaart"></picture>'
         .'<div style="background-image: url(\'/achter.jpg\')"><h2>Op de foto</h2></div>'
-        .'<div style="background: linear-gradient(red, blue)"><h2>Verloop</h2></div>'
+        .'<div style="background: linear-gradient(red, blue)"><p>Verloop</p></div>'
         .'</section>';
 
     expect(fieldsOf($strip))->toBe([
         'img' => ['image', ['url' => '/zaal.jpg', 'alt' => 'De zaal']],
+        'h2' => ['heading', 'De zaal'],
         'img:nth-of-type(2)' => ['image', ['url' => '/sfeer.jpg', 'alt' => ''], ['decorative_image']],
         'div > img' => ['image', ['url' => '/foto.jpg', 'alt' => ''], ['decorative_image']],
         'picture' => ['image', ['url' => '/kaart.jpg', 'alt' => 'Kaart']],
         'div:nth-of-type(2)' => ['image', ['url' => '/achter.jpg', 'alt' => ''], ['background_image']],
         'div:nth-of-type(2) > h2' => ['heading', 'Op de foto'],
-        'div:nth-of-type(3) > h2' => ['heading', 'Verloop'],
+        'div:nth-of-type(3) > p' => ['paragraph', 'Verloop'],
     ]);
 });
 

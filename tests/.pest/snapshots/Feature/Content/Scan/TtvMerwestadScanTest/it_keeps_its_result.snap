@@ -1,0 +1,792 @@
+{
+    "version": 1,
+    "types": [
+        {
+            "key": "strook-1",
+            "label": "Strook 1",
+            "hint": null,
+            "fingerprint": "019d370fd624642521538efcc3060365",
+            "count": 1,
+            "certain": false,
+            "doubts": [
+                "generic_name"
+            ],
+            "fields": [
+                {
+                    "key": "afbeelding",
+                    "type": "image",
+                    "selector": "img",
+                    "required": true,
+                    "certain": false,
+                    "doubts": [
+                        "decorative_image"
+                    ]
+                },
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div:nth-of-type(7) > div > div",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div:nth-of-type(7) > div > h1",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div:nth-of-type(7) > div > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "knop",
+                    "type": "button",
+                    "selector": "div:nth-of-type(7) > div > div:nth-of-type(2) > a",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "knop_2",
+                    "type": "button",
+                    "selector": "div:nth-of-type(7) > div > div:nth-of-type(2) > a:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                }
+            ]
+        },
+        {
+            "key": "strook-2",
+            "label": "Strook 2",
+            "hint": null,
+            "fingerprint": "0db13bfc40ad18c0e0baf63a7ec2b808",
+            "count": 1,
+            "certain": false,
+            "doubts": [
+                "generic_name"
+            ],
+            "fields": [
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "div > div > div",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "div",
+                    "min": 1,
+                    "max": 4,
+                    "fields": [
+                        {
+                            "key": "label",
+                            "type": "text",
+                            "selector": "div > div > span",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "label_2",
+                            "type": "text",
+                            "selector": "div > div:nth-of-type(2)",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "over-ons",
+            "label": "Over ons",
+            "hint": "#over-ons",
+            "fingerprint": "5107109365ab1b34c5de8ef91d152299",
+            "count": 1,
+            "certain": true,
+            "doubts": [],
+            "fields": [
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div > div > div > span",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div > div > div > h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div > div > div > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "div > div:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "div",
+                    "min": 1,
+                    "max": 3,
+                    "fields": [
+                        {
+                            "key": "icoon",
+                            "type": "choice",
+                            "selector": "div > div > svg",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "icon_choice"
+                            ],
+                            "options": [
+                                "users",
+                                "heart",
+                                "trophy"
+                            ]
+                        },
+                        {
+                            "key": "kop",
+                            "type": "text",
+                            "selector": "div > h3",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "tekst",
+                            "type": "long_text",
+                            "selector": "div > p",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "trainingstijden",
+            "label": "Trainingstijden",
+            "hint": "#trainingstijden",
+            "fingerprint": "7bfb9ec4dd2d3c69d2e66e208e1f2eff",
+            "count": 1,
+            "certain": true,
+            "doubts": [],
+            "fields": [
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div > div > div > span",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div > div > div > h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div > div > div > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "div > div:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "div",
+                    "min": 1,
+                    "max": 2,
+                    "fields": [
+                        {
+                            "key": "kop",
+                            "type": "text",
+                            "selector": "div > div:nth-of-type(2) > div > h3",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "label",
+                            "type": "text",
+                            "selector": "div > div:nth-of-type(2) > div > span",
+                            "required": false,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "label_2",
+                            "type": "text",
+                            "selector": "div > div:nth-of-type(2) > div:nth-of-type(2) > span",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "same_in_every_item"
+                            ]
+                        },
+                        {
+                            "key": "lijst",
+                            "type": "long_text",
+                            "selector": "div > div:nth-of-type(2) > div:nth-of-type(4)",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "nested_list",
+                                "same_in_every_item"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "key": "tekst_2",
+                    "type": "long_text",
+                    "selector": "div > div:nth-of-type(3) > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                }
+            ]
+        },
+        {
+            "key": "teams",
+            "label": "Teams",
+            "hint": "#teams",
+            "fingerprint": "a4c355f96dfdb357e0069de7f780d903",
+            "count": 1,
+            "certain": true,
+            "doubts": [],
+            "fields": [
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div > div > div > span",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div > div > div > h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div > div > div > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "div > div:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "div",
+                    "min": 1,
+                    "max": 3,
+                    "fields": [
+                        {
+                            "key": "link",
+                            "type": "link",
+                            "selector": "a",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "kop",
+                            "type": "text",
+                            "selector": "a > div > div > h3",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "tekst",
+                            "type": "long_text",
+                            "selector": "a > div > div > p",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "same_in_every_item"
+                            ]
+                        },
+                        {
+                            "key": "lijst",
+                            "type": "long_text",
+                            "selector": "a > div:nth-of-type(2)",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "nested_list"
+                            ]
+                        },
+                        {
+                            "key": "lijst_2",
+                            "type": "long_text",
+                            "selector": "a > div:nth-of-type(4) > div",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "nested_list"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "locatie",
+            "label": "Locatie",
+            "hint": "#locatie",
+            "fingerprint": "29935cce7d48d0398699d0cc5fcac23a",
+            "count": 1,
+            "certain": true,
+            "doubts": [],
+            "fields": [
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div > div > div > span",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div > div > div > h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div > div > div > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "afbeelding",
+                    "type": "image",
+                    "selector": "div > div:nth-of-type(2) > div > div > img",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "knop",
+                    "type": "button",
+                    "selector": "div > div:nth-of-type(2) > div > div > a",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "items",
+                    "type": "items",
+                    "selector": "div > div:nth-of-type(2) > div:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": [],
+                    "item": "div",
+                    "min": 1,
+                    "max": 3,
+                    "fields": [
+                        {
+                            "key": "icoon",
+                            "type": "choice",
+                            "selector": "div > div > svg",
+                            "required": true,
+                            "certain": false,
+                            "doubts": [
+                                "icon_choice"
+                            ],
+                            "options": [
+                                "building2",
+                                "car",
+                                "map-pin"
+                            ]
+                        },
+                        {
+                            "key": "kop",
+                            "type": "text",
+                            "selector": "div > h3",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        },
+                        {
+                            "key": "tekst",
+                            "type": "long_text",
+                            "selector": "div > p",
+                            "required": true,
+                            "certain": true,
+                            "doubts": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "key": "lid-worden",
+            "label": "Lid worden",
+            "hint": "#lid-worden",
+            "fingerprint": "cc4fb01b2110f9bdcde435c492b55dba",
+            "count": 1,
+            "certain": true,
+            "doubts": [],
+            "fields": [
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div:nth-of-type(4) > div > span",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div:nth-of-type(4) > div:nth-of-type(2) > h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div:nth-of-type(4) > div:nth-of-type(3) > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "knop",
+                    "type": "button",
+                    "selector": "div:nth-of-type(4) > div:nth-of-type(4) > div > a",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "knop_2",
+                    "type": "button",
+                    "selector": "div:nth-of-type(4) > div:nth-of-type(4) > div > a:nth-of-type(2)",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                }
+            ]
+        },
+        {
+            "key": "contact",
+            "label": "Contact",
+            "hint": "#contact",
+            "fingerprint": "ca9e2b2196011f9786be2aa5520bbf05",
+            "count": 1,
+            "certain": false,
+            "doubts": [
+                "contains_form"
+            ],
+            "fields": [
+                {
+                    "key": "label",
+                    "type": "text",
+                    "selector": "div > div > div > div > div > span",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "kop",
+                    "type": "text",
+                    "selector": "div > div > div > div > div > h2",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "tekst",
+                    "type": "long_text",
+                    "selector": "div > div > div > div > div > p",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "label_2",
+                    "type": "text",
+                    "selector": "div > div > div > div > div:nth-of-type(2) > div",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                },
+                {
+                    "key": "knop",
+                    "type": "button",
+                    "selector": "div > div > div > div > div:nth-of-type(2) > a",
+                    "required": true,
+                    "certain": true,
+                    "doubts": []
+                }
+            ]
+        }
+    ],
+    "pages": [
+        {
+            "url": "/",
+            "title": "Welkom - TTV Merwestad",
+            "strips": [
+                {
+                    "type": "strook-1",
+                    "selector": "body > div > div > section",
+                    "values": {
+                        "afbeelding": {
+                            "url": "/photos/PHOTO-2024-12-22-10-48-11.jpg",
+                            "alt": ""
+                        },
+                        "label": "Tafeltennisvereniging in Dordrecht",
+                        "kop": "TTV Merwestad",
+                        "tekst": "Sinds 1962 dé plek voor tafeltennissers van alle niveaus. Van recreant tot competitiespeler — iedereen is welkom aan onze tafels.",
+                        "knop": {
+                            "text": "Lid worden",
+                            "link": {
+                                "url": "#lid-worden"
+                            }
+                        },
+                        "knop_2": {
+                            "text": "Meer ontdekken",
+                            "link": {
+                                "url": "#over-ons"
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "strook-2",
+                    "selector": "body > div > div > section:nth-of-type(2)",
+                    "values": {
+                        "items": [
+                            {
+                                "label": "60+",
+                                "label_2": "Jaar actief"
+                            },
+                            {
+                                "label": "35+",
+                                "label_2": "Leden"
+                            },
+                            {
+                                "label": "3",
+                                "label_2": "Competitieteams"
+                            },
+                            {
+                                "label": "2×",
+                                "label_2": "Per week training"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "over-ons",
+                    "selector": "#over-ons",
+                    "values": {
+                        "label": "Over ons",
+                        "kop": "Meer dan alleen tafeltennis",
+                        "tekst": "Bij TTV Merwestad draait het om sport, plezier en verbinding. Of je nu jong of oud bent, beginner of gevorderd — je bent welkom.",
+                        "items": [
+                            {
+                                "icoon": "users",
+                                "kop": "Alle niveaus",
+                                "tekst": "Of je nu voor het eerst een batje vasthoudt of al jaren competitie speelt — bij ons vind je altijd een passende tafel."
+                            },
+                            {
+                                "icoon": "heart",
+                                "kop": "Gezelligheid",
+                                "tekst": "Meer dan alleen sport. Na de training schuiven we aan de bar aan voor een drankje en een goed gesprek."
+                            },
+                            {
+                                "icoon": "trophy",
+                                "kop": "Competitie",
+                                "tekst": "Met 3 teams strijden we in de regionale duocompetitie."
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "trainingstijden",
+                    "selector": "#trainingstijden",
+                    "values": {
+                        "label": "Trainingstijden",
+                        "kop": "Wanneer kun je spelen?",
+                        "tekst": "We trainen meerdere keren per week in de sporthal. Kies de avond die bij jou past en kom gerust een keer vrijblijvend meespelen.",
+                        "items": [
+                            {
+                                "kop": "Dinsdag",
+                                "label": "Vanavond!",
+                                "label_2": "19:30 – 22:00",
+                                "lijst": "Vrij spelen\ncompetitie"
+                            },
+                            {
+                                "kop": "Donderdag",
+                                "label_2": "19:30 – 22:00",
+                                "lijst": "Vrij spelen\ncompetitie"
+                            }
+                        ],
+                        "tekst_2": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht"
+                    }
+                },
+                {
+                    "type": "teams",
+                    "selector": "#teams",
+                    "values": {
+                        "label": "Competitie",
+                        "kop": "Onze teams",
+                        "tekst": "Met drie teams zijn we actief in de regionale duocompetitie van de NTTB. Bekijk de uitslagen en standen via de links bij elk team.",
+                        "items": [
+                            {
+                                "link": {
+                                    "url": "https://ttapp.nl/poule/5022335"
+                                },
+                                "kop": "Merwestad 1",
+                                "tekst": "West - Senioren DUO",
+                                "lijst": "4e klasse\nPoule G",
+                                "lijst_2": "Gert-Jan\nStefan"
+                            },
+                            {
+                                "link": {
+                                    "url": "https://ttapp.nl/poule/5022362"
+                                },
+                                "kop": "Merwestad 2",
+                                "tekst": "West - Senioren DUO",
+                                "lijst": "6e klasse\nPoule F",
+                                "lijst_2": "Jaap\nGerrit\nDesmond\nArjan"
+                            },
+                            {
+                                "link": {
+                                    "url": "https://ttapp.nl/poule/5022369"
+                                },
+                                "kop": "Merwestad 3",
+                                "tekst": "West - Senioren DUO",
+                                "lijst": "7e klasse\nPoule A",
+                                "lijst_2": "Rob\nRuud\nHenk\nAbdol Majid"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "locatie",
+                    "selector": "#locatie",
+                    "values": {
+                        "label": "Locatie",
+                        "kop": "Zo vind je ons",
+                        "tekst": "We spelen in het gebouw van Mountain Network op het Leerpark in Dordrecht. Hieronder zie je precies waar je kunt parkeren en hoe je bij de ingang komt.",
+                        "afbeelding": {
+                            "url": "/map.png",
+                            "alt": "Satellietbeeld van de locatie van TTV Merwestad bij Mountain Network op het Leerpark in Dordrecht"
+                        },
+                        "knop": {
+                            "text": "Open in Google Maps",
+                            "link": {
+                                "url": "https://maps.google.com/?q=Maria+Montessorilaan+3+Dordrecht"
+                            }
+                        },
+                        "items": [
+                            {
+                                "icoon": "building2",
+                                "kop": "Mountain Network",
+                                "tekst": "Ons gebouw heet Mountain Network en bevindt zich op het Leerpark in Dordrecht. We zitten in Zaal 1 op de begane grond."
+                            },
+                            {
+                                "icoon": "car",
+                                "kop": "Parkeren",
+                                "tekst": "Je kunt gratis parkeren aan de achterkant van het gebouw. Let op: de ingang van het gebouw bevindt zich aan de voorkant, aan de kant van het Leerpark."
+                            },
+                            {
+                                "icoon": "map-pin",
+                                "kop": "Ingang",
+                                "tekst": "Loop vanaf de parkeerplaats om het gebouw heen naar de voorzijde (kant Leerpark). Daar vind je de hoofdingang van Mountain Network."
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "lid-worden",
+                    "selector": "#lid-worden",
+                    "values": {
+                        "label": "Lid worden",
+                        "kop": "Klaar om mee te spelen?",
+                        "tekst": "Word lid van TTV Merwestad en ontdek de leukste tafeltennisvereniging van de regio. Je mag als nieuwkomer 3 keer langs komen om te kijken of het iets voor je is — kom gerust langs om kennis te maken.",
+                        "knop": {
+                            "text": "Neem contact op",
+                            "link": {
+                                "url": "mailto:info@ttvmerwestad.nl"
+                            }
+                        },
+                        "knop_2": {
+                            "text": "Bekijk trainingstijden",
+                            "link": {
+                                "url": "#trainingstijden"
+                            }
+                        }
+                    }
+                },
+                {
+                    "type": "contact",
+                    "selector": "#contact",
+                    "values": {
+                        "label": "Contact",
+                        "kop": "Stuur ons een bericht",
+                        "tekst": "Heb je een vraag, wil je je aanmelden of gewoon even kennismaken? Vul het formulier in en we nemen zo snel mogelijk contact met je op.",
+                        "label_2": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht",
+                        "knop": {
+                            "text": "info@ttvmerwestad.nl",
+                            "link": {
+                                "url": "mailto:info@ttvmerwestad.nl"
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

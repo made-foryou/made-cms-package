@@ -11,10 +11,22 @@ use Illuminate\Testing\TestResponse;
 use Made\CmsPackage\Content\Actions\RecognisePage;
 use Made\CmsPackage\Content\Data\RecognisedField;
 use Made\CmsPackage\Content\Data\RecognisedPage;
+use Made\CmsPackage\Content\Data\ScanField;
 use Made\CmsPackage\Content\Data\ScannedPage;
+use Made\CmsPackage\Content\Data\ScanResult;
+use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\RichText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
@@ -301,4 +313,87 @@ function fieldRow(RecognisedField $field): array
     $row = [$field->role->value, $field->value];
 
     return $field->doubts === [] ? $row : [...$row, ScanDoubt::values($field->doubts)];
+}
+
+/**
+ * The fields of a type as "key: type", with the fields of a list behind it.
+ *
+ * @return list<string|array<string, list<string>>>
+ */
+function outline(ScanType $type): array
+{
+    return array_map(static fn (ScanField $field): string|array => $field->type === 'items'
+        ? [$field->key.': items' => array_map(static fn (ScanField $item): string => $item->key.': '.$item->type, $field->fields)]
+        : $field->key.': '.$field->type, $type->fields);
+}
+
+/**
+ * The strip types a scan proposes as a catalogue, built with the field API of the package: the catalogue checks
+ * every definition when it is built. Images wait for the image field (#27).
+ */
+function scanStripTypes(ScanResult $scan): StripTypes
+{
+    return new StripTypes(array_map(
+        static fn (ScanType $type): InlineStripType => new InlineStripType($type->key, scanFields($type->fields)),
+        $scan->types,
+    ));
+}
+
+/**
+ * @param  list<ScanField>  $fields
+ * @return list<Field>
+ */
+function scanFields(array $fields): array
+{
+    $defined = [];
+
+    foreach ($fields as $field) {
+        $definition = match ($field->type) {
+            'text' => Text::make($field->key),
+            'long_text' => LongText::make($field->key),
+            'rich_text' => RichText::make($field->key),
+            'button' => Button::make($field->key),
+            'link' => Link::make($field->key),
+            'choice' => Choice::make($field->key, $field->options),
+            'items' => Items::make($field->key, scanFields($field->fields))->min((int) $field->min)->max((int) $field->max),
+            default => null,
+        };
+
+        if ($definition instanceof Field) {
+            $defined[] = $definition->required($field->required);
+        }
+    }
+
+    return $defined;
+}
+
+/**
+ * The result of a scan as readable JSON, for a snapshot.
+ */
+function scanJson(ScanResult $scan): string
+{
+    return json_encode($scan->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n";
+}
+
+/*
+|--------------------------------------------------------------------------
+| TTV Merwestad fixture
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * A file of the TTV Merwestad home, coupled by hand in #17: the acceptance test of the scan.
+ */
+function ttvFixture(string $file): string
+{
+    return __DIR__.'/Fixtures/Scan/ttv-merwestad/'.$file;
+}
+
+/**
+ * @return array{path: string, title: string, strips: list<array{type: string, visible: bool, values: array<string, mixed>}>}
+ */
+function ttvContent(): array
+{
+    /** @var array{path: string, title: string, strips: list<array{type: string, visible: bool, values: array<string, mixed>}>} */
+    return json_decode((string) file_get_contents(ttvFixture('content.json')), true, flags: JSON_THROW_ON_ERROR);
 }

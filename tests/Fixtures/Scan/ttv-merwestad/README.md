@@ -15,4 +15,6 @@ The navigation and the footer are no strips. The hero photo and the map are stat
 
 Both pages were captured on 2026-11-03 with headless Chrome through the DevTools protocol: load the page, scroll through it so every reveal and counter has run, wait for the animations, then take `document.documentElement.outerHTML`. A plain `--dump-dom` leaves the reveals hidden and the counters at 0. Scripts, styles, stylesheet links and the launcher were removed afterwards, because they differ between a dev server and a build or come from the package itself.
 
+`tests/Feature/Content/Scan/TtvMerwestadScanTest.php` scans `home.html` (4.2) and holds the result against the stubs and `content.json` on the main lines, with the whole `ScanResult` as a snapshot.
+
 `tests/Feature/Content/Strips/TtvMerwestadFixtureTest.php` keeps the fixture valid: the stubs are valid strip types, the content passes their validation unchanged, the live page has no `data-cms-*` attribute and the coupled page marks every strip of the content in order.

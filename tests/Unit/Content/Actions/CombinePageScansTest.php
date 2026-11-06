@@ -22,18 +22,6 @@ function combine(string ...$bodies): ScanResult
     return CombinePageScans::run($pages);
 }
 
-/**
- * The fields of a type as "key: type", with the fields of a list behind it.
- *
- * @return list<string|array<string, list<string>>>
- */
-function outline(ScanType $type): array
-{
-    return array_map(static fn (ScanField $field): string|array => $field->type === 'items'
-        ? [$field->key.': items' => array_map(static fn (ScanField $item): string => $item->key.': '.$item->type, $field->fields)]
-        : $field->key.': '.$field->type, $type->fields);
-}
-
 it('proposes a strip type per structure, named after its id or generic', function (): void {
     $scan = combine('<main><section id="over-ons"><h2>Over ons</h2><p>Wij zijn een club.</p></section><section class="relative py-8"><h2>Doe mee</h2><a href="/lid">Lid worden</a></section></main>');
 

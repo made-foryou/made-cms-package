@@ -86,13 +86,16 @@ it('hides a strip on the site and lets the editor show it again', function (): v
     expect($shell->script(waitUntil("! document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"]') && document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"cards\"]')")))->toBeTrue()
         ->and(draftOf($this->page, 'hero')['visible'] ?? null)->toBeFalse();
 
-    $shell->assertSeeIn('[data-slot="position"]', 'Verborgen');
+    $shell->assertSeeIn('[data-slot="head-position"]', 'Strook 1 van 2 · Verborgen');
 
     $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="cards"]'));
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Kaarten')
-        ->click('[data-slot="hidden-list"] button')
-        ->assertSeeIn('[data-slot="name"]', 'Hero')
+    // A hidden strip is not on the site: the opbouw lists it with its label, and "Bewerken" chooses it.
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Kaarten')
+        ->click('[data-slot="structure-back"]')
+        ->assertSeeIn('[data-strip="hero"] [data-slot="row-hidden"]', 'Verborgen')
+        ->click('[data-strip="hero"] [data-slot="row-edit"]')
+        ->assertSeeIn('[data-slot="head-name"]', 'Hero')
         ->check('#paneel-zichtbaar');
 
     expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"]') !== null")))->toBeTrue()
@@ -199,7 +202,7 @@ it('undoes hiding a strip', function (): void {
     expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"]') !== null && document.querySelector('#paneel-zichtbaar').checked")))->toBeTrue()
         ->and(draftOf($this->page, 'hero')['visible'] ?? null)->toBeTrue();
 
-    $shell->assertSeeIn('[data-slot="position"]', 'Strook 1 van 2')
+    $shell->assertSeeIn('[data-slot="head-position"]', 'Strook 1 van 2')
         ->assertNoJavaScriptErrors();
 });
 

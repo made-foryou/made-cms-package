@@ -184,17 +184,24 @@ it('hands the strips of the working copy and the texts to the script', function 
 });
 
 it('hands the opbouw the catalogue of strip types, sorted by name, and the address to add a strip', function (): void {
-    $page = Page::factory()->at('/over-ons')->create();
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons']);
 
-    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->get('made-cms/pages/'.$page->id.'/edit')
-        ->getContent());
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $config = editShellConfig((string) $response->getContent());
+
+    $response->assertSeeInOrder(['Opbouw', 'Over ons', 'Nog geen stroken', 'Deze pagina is nog leeg', 'Eerste strook toevoegen', '+ Strook toevoegen'])
+        ->assertSee(LauncherAssetController::url('structure.js'), false);
 
     expect($config['types'])->toBe([
         ['key' => 'hero', 'label' => 'Hero', 'description' => null, 'fields' => '6 velden'],
         ['key' => 'cards', 'label' => 'Kaarten', 'description' => 'Een rij kaarten met een titel.', 'fields' => '1 veld'],
     ])->and($config['urls']['strips'])->toBe('/made-cms/pages/'.$page->id.'/strips')
-        ->and($config['counts'])->toBe('Nog geen stroken');
+        ->and($config['counts'])->toBe('Nog geen stroken')
+        ->and($config['page'])->toBe(['title' => 'Over ons'])
+        ->and($config['texts']['structure'])->toMatchArray([
+            'grip' => ':strip, plek :n van :m. Verplaatsen met pijltje omhoog of omlaag.',
+            'removed' => ':strip is verwijderd.',
+        ]);
 });
 
 it('hands the side panel the address of a strip, the csrf token and its texts', function (): void {
@@ -225,6 +232,7 @@ it('speaks English when the launcher locale is English', function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms')
         ->get('made-cms/pages/'.$page->id.'/edit')
         ->assertSee('<title>Edit About · TTV Merwestad</title>', false)
-        ->assertSee('Click a strip on the site to edit its content.')
+        ->assertSee('Layout')
+        ->assertSee('Add the first strip')
         ->assertSee('<span class="status" data-slot="bar-page">Draft</span>', false);
 });

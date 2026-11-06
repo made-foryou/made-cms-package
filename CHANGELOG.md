@@ -4,7 +4,11 @@
 
 ### Added
 
-- JSON endpoints for the opbouw of the edit shell, for every editor who opens `Screen::Pages`: `POST /made-cms/pages/{page}/strips` (`pages.strips.store`, `{type, position}`) adds a strip through `AddStrip` (201); `PUT …/strips/{strip}/position` (`pages.strips.position`, `{position}`) moves it through `MoveStrip`; `DELETE …/strips/{strip}` (`pages.strips.destroy`) removes it through `RemoveStrip` and answers the removed strip as it was stored; `POST …/strips/{strip}/restore` (`pages.strips.restore`, `{type, visible, values, position}`) puts it back through `RestoreStrip` (201). Every answer holds the list of strips in their stored order with their counts ("3 stroken, 1 verborgen"). A type that is not in the catalogue, a place outside the page or a strip that is already there answers 422 (`type`, `position`, `strip`), refused values 422 per field path, a strip that is not on the page 404, a guest 401. The answers are never stored by a cache.
+- The opbouw of a page in the side panel of the edit shell (design 11.6–11.13): without a chosen strip the panel lists every strip of the page in order, with its name, "Verborgen", a few words of its content and its number of fields. "+ Strook toevoegen" and an insert point between every two strips open the catalogue of the site (the strip types with their description and number of fields; a search field from 10 types), where one click places a new strip: the frame reloads with the strip chosen and its fields open, and a note says which required fields are still empty. A strip moves by dragging its grip, with ↑ and ↓ on the grip (Enter drops, Escape puts it back) or with the arrows next to its name once it is chosen. "Strook verwijderen" removes the chosen strip without asking; a notice at the top of the opbouw puts it back with "Ongedaan maken", with its content and in its place, for as long as the shell is open. A strip of a type the site no longer has is listed as "Niet op de site" and can only be removed. An empty page invites to add its first strip.
+- The asset route also serves the script of the opbouw (`structure.js`).
+- Dutch and English texts for the opbouw and the catalogue (`cms.edit.structure*`, `catalogue*`, `empty_*`, `remove_strip*`, `edit_strip`, `remove_unknown`, `not_on_site`, `cms.edit.structure_texts`) and the note on a new strip (`cms.edit.panel_texts.new_*`).
+
+- JSON endpoints for the opbouw of the edit shell, for every editor who opens `Screen::Pages`: `GET /made-cms/pages/{page}/strips` (`pages.strips.index`) answers the strips of the working copy; `POST` to the same address (`pages.strips.store`, `{type, position}`) adds a strip through `AddStrip` (201); `PUT …/strips/{strip}/position` (`pages.strips.position`, `{position}`) moves it through `MoveStrip`; `DELETE …/strips/{strip}` (`pages.strips.destroy`) removes it through `RemoveStrip` and answers the removed strip as it was stored; `POST …/strips/{strip}/restore` (`pages.strips.restore`, `{type, visible, values, position}`) puts it back through `RestoreStrip` (201). Every answer holds the list of strips in their stored order with their counts ("3 stroken, 1 verborgen"). A type that is not in the catalogue, a place outside the page or a strip that is already there answers 422 (`type`, `position`, `strip`), refused values 422 per field path, a strip that is not on the page 404, a guest 401. The answers are never stored by a cache.
 - The configuration of the edit shell holds the catalogue (`types`: key, label, description and number of fields, sorted by label), the counts of the strips (`counts`) and the address to add a strip (`urls.strips`); every strip in it has `known` and `summary`.
 - Dutch and English texts for the counts of the strips (`cms.edit.counts`) and the refusals of the opbouw (`cms.edit.errors.type`, `position`, `strip_exists`).
 
@@ -110,6 +114,7 @@
 
 ### Changed
 
+- The side panel of the edit shell starts with the opbouw instead of "Klik een strook op de site om de inhoud te bewerken.", and hidden strips are chosen from the opbouw instead of a list of their own. "Strook n van m", in the panel and on the outlines in the frame, is the place of the strip in the opbouw: hidden strips and strips of a type the site no longer has count too.
 - `RemoveStrip::run()` returns the removed `Strip` as it was stored (it returned nothing).
 - `ListEditableStrips` lists every strip of the working copy, so the place of a strip in the list is the position the strip Actions take: a strip whose type left the catalogue is no longer left out but marked with `known: false`. `EditableStrip` has `known` and `summary` (`StripType::summary()`).
 - `UpdateStrip` and `PublishPage` refuse strip values with the messages of the package in the language of the CMS (`StripType::messages()`, "Vul Kop in.") instead of the host's validation messages. A host that relied on its own `validation.*` lines for strips publishes the translations (`made-cms-package-lang`) and changes `strips.validation.*` there.
@@ -137,6 +142,7 @@
 
 ### Removed
 
+- The texts `cms.edit.choose` and `cms.edit.hidden_strips`; a host that published the translations of the package can remove them.
 - Scaffold placeholders: the `CmsPackage` class and facade, the placeholder command, migration, view, translation and config key.
 
 

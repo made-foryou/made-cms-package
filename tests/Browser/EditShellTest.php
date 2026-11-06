@@ -40,12 +40,15 @@ it('outlines every strip on the site and chooses the strip that is clicked, also
         ['cards', 'Kaarten3 velden', true],
     ]);
 
-    $shell->assertSeeIn('[data-slot="choose"]', __('made-cms-package::cms.edit.choose'));
+    // Without a chosen strip the panel shows the opbouw of the page.
+    $shell->assertSeeIn('[data-slot="head-eyebrow"]', 'Opbouw')
+        ->assertSeeIn('[data-slot="structure-list"]', 'Hero')
+        ->assertSeeIn('[data-slot="structure-list"]', 'Kaarten');
 
     $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="cards"]'));
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Kaarten')
-        ->assertSeeIn('[data-slot="position"]', 'Strook 2 van 2');
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Kaarten')
+        ->assertSeeIn('[data-slot="head-position"]', 'Strook 2 van 2');
 
     expect($shell->script('() => '.outlines().".filter((outline) => outline.classList.contains('actief')).map((outline) => outline.dataset.strip)"))->toBe(['cards']);
 
@@ -53,8 +56,8 @@ it('outlines every strip on the site and chooses the strip that is clicked, also
 
     expect($shell->script(waitUntil("! document.querySelector('.bewerkframe').contentWindow.voorHerladen && ".outlines().'.length === 2 && '.outlines().".find((outline) => outline.classList.contains('actief'))?.dataset.strip === 'cards'")))->toBeTrue();
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Kaarten')
-        ->assertSeeIn('[data-slot="position"]', 'Strook 2 van 2')
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Kaarten')
+        ->assertSeeIn('[data-slot="head-position"]', 'Strook 2 van 2')
         ->assertNoJavaScriptErrors();
 });
 
@@ -81,7 +84,8 @@ it('warns the developer about a strip whose view has no data-cms-strip on its ro
 
     $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="hero"]'));
 
-    $shell->assertSeeIn('[data-slot="position"]', 'Strook 1 van 1')
+    // The number is the place in the opbouw, also when the site does not show every strip.
+    $shell->assertSeeIn('[data-slot="head-position"]', 'Strook 1 van 2')
         ->assertNoJavaScriptErrors();
 });
 

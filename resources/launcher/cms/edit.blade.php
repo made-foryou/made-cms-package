@@ -1,6 +1,7 @@
 {{--
     The edit shell: the bar with the page and its status, the site in a frame of the same origin, and the side panel.
-    edit.js draws an outline over every [data-cms-strip] in the frame from the template below and fills the panel.
+    edit.js draws an outline over every [data-cms-strip] in the frame from the template below; the side panel shows the
+    opbouw of the page (structure.js) or the fields of the chosen strip (panel.js).
 --}}
 @php
     $title = $t('cms.edit.title', ['page' => $page['title']]);
@@ -46,17 +47,67 @@
             <div class="bewerkframe bewerkframe-leeg"><p class="intro">{{ $t('cms.edit.no_address') }}</p></div>
         @endif
         <aside class="bewerkpaneel" aria-label="{{ $t('cms.edit.panel') }}">
-            <p class="bewerkpaneel-leeg" data-slot="choose">{{ $t('cms.edit.choose') }}</p>
-            <div class="bewerkpaneel-kop" data-slot="strip" hidden>
+            {{-- structure.js fills the head for the opbouw, the catalogue and the chosen strip. --}}
+            <div class="bewerkpaneel-kop" data-slot="head">
                 <div class="bewerkpaneel-titel">
-                    <span class="eyebrow">{{ $t('cms.edit.strip') }}</span>
-                    <h2 data-slot="name"></h2>
+                    <span class="eyebrow" data-slot="head-eyebrow">{{ $t('cms.edit.structure') }}</span>
+                    <h2 data-slot="head-name">{{ $page['title'] }}</h2>
+                    <span class="bewerkpaneel-sub" data-slot="head-sub">{{ $counts }} · {{ $t('cms.edit.structure_texts.sub_structure') }}</span>
                 </div>
-                <span class="bewerkpaneel-positie" data-slot="position"></span>
+                <span class="bewerkpaneel-positie" data-slot="head-position">{{ $t('cms.edit.structure_texts.page') }}</span>
+            </div>
+            {{-- The opbouw (design 11.6–11.13): every strip of the page in order; structure.js adds, moves and removes them. --}}
+            <div class="opbouw-deel" data-slot="structure">
+                <div class="meldingen" data-slot="structure-notices"></div>
+                <div class="opbouw-leeg" data-slot="structure-empty" hidden>
+                    <span class="opbouw-leeg-titel">{{ $t('cms.edit.empty_title') }}</span>
+                    <span class="veld-hint">{{ $t('cms.edit.empty_text') }}</span>
+                    <button type="button" class="knop" data-slot="structure-first">{{ $t('cms.edit.empty_add') }}</button>
+                </div>
+                <div class="opbouw-lijst" data-slot="structure-filled">
+                    <ol class="opbouw" aria-label="{{ $t('cms.edit.structure_list') }}" data-slot="structure-list"></ol>
+                    <button type="button" class="actie opbouw-toevoegen" data-slot="structure-add">{{ $t('cms.edit.structure_add') }}</button>
+                    <p class="opbouw-status" role="status" data-slot="structure-status"></p>
+                    <p class="veld-hint" id="opbouw-greephint">{{ $t('cms.edit.structure_drag_hint') }}</p>
+                </div>
+            </div>
+            {{-- The catalogue: the strip types of the site; one click places a new strip at the chosen place. --}}
+            <div class="opbouw-deel" data-slot="catalogue" hidden>
+                <nav class="kruimel" aria-label="{{ $t('cms.edit.breadcrumb') }}">
+                    <button type="button" class="actie klein" data-slot="catalogue-back"><span aria-hidden="true">←</span> {{ $t('cms.edit.structure') }}</button>
+                    <span class="kruimel-slash" aria-hidden="true">/</span>
+                    <span class="kruimel-hier" aria-current="location">{{ $t('cms.edit.catalogue') }}</span>
+                </nav>
+                <div class="opbouw-plek">
+                    <span class="veld-hint"><strong>{{ $t('cms.edit.catalogue_comes_after') }}</strong> <span data-slot="catalogue-place"></span></span>
+                    <button type="button" class="tekstlink klein" data-slot="catalogue-other">{{ $t('cms.edit.catalogue_other_place') }}</button>
+                </div>
+                <div class="veld" data-slot="catalogue-search-field" hidden>
+                    <label for="opbouw-zoek">{{ $t('cms.edit.catalogue_search') }}</label>
+                    <input type="search" id="opbouw-zoek" data-slot="catalogue-search" placeholder="{{ $t('cms.edit.catalogue_search_placeholder') }}" autocomplete="off">
+                </div>
+                <div class="soorten" role="group" aria-label="{{ $t('cms.edit.catalogue_types') }}" data-slot="catalogue-types"></div>
+                <p class="veld-hint" data-slot="catalogue-none" hidden>{{ $t('cms.edit.catalogue_none') }}</p>
+                <p class="veld-hint">{{ $t('cms.edit.catalogue_hint') }}</p>
+                <button type="button" class="tekstlink klein opbouw-annuleren" data-slot="catalogue-cancel">{{ $t('cms.edit.catalogue_cancel') }}</button>
+                <p class="opbouw-status" role="status" data-slot="catalogue-status"></p>
             </div>
             {{-- panel.js builds the fields of the chosen strip from the templates below and saves them as the draft. --}}
             <form class="paneel" data-slot="form" aria-label="{{ $t('cms.edit.fields_label') }}" novalidate hidden>
                 <div class="paneel-deel" data-slot="strip-view">
+                    <div class="strook-nav">
+                        <nav class="kruimel" aria-label="{{ $t('cms.edit.breadcrumb') }}">
+                            <button type="button" class="actie klein" data-slot="structure-back"><span aria-hidden="true">←</span> {{ $t('cms.edit.structure') }}</button>
+                            <span class="kruimel-slash" aria-hidden="true">/</span>
+                            <span class="kruimel-hier" aria-current="location" data-slot="structure-crumb"></span>
+                        </nav>
+                        <span class="pijlknoppen">
+                            <button type="button" class="pijlknop" data-slot="structure-up"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></button>
+                            <button type="button" class="pijlknop" data-slot="structure-down"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg></button>
+                        </span>
+                    </div>
+                    <p class="opbouw-status" role="status" data-slot="structure-move-status"></p>
+                    <div class="melding" data-slot="added-note" hidden><span class="bol" aria-hidden="true"></span><span data-slot="added-text"></span></div>
                     <div class="paneel-velden" data-slot="fields"></div>
                     <div class="schakelrij">
                         <label class="schakel-label" for="paneel-zichtbaar">{{ $t('cms.edit.visible') }}</label>
@@ -87,11 +138,11 @@
                     <p class="paneel-status" role="status" data-slot="status"></p>
                     <p class="veld-hint">{{ $t('cms.edit.note') }}</p>
                 </div>
+                <div class="strook-weg" data-slot="structure-remove">
+                    <span class="veld-hint">{{ $t('cms.edit.remove_strip_text') }}</span>
+                    <button type="button" class="tekstlink klein alarm" data-slot="structure-remove-strip">{{ $t('cms.edit.remove_strip') }}</button>
+                </div>
             </form>
-            <div class="verborgen-stroken" data-slot="hidden-strips" hidden>
-                <span class="eyebrow">{{ $t('cms.edit.hidden_strips') }}</span>
-                <ul data-slot="hidden-list"></ul>
-            </div>
             <p class="sr-only" aria-live="polite" data-slot="announce"></p>
             <p id="paneel-sleephint" hidden>{{ $t('cms.edit.drag_hint') }}</p>
         </aside>
@@ -214,9 +265,51 @@
         <button type="button" class="actie klein" data-slot="edit">{{ $t('cms.edit.edit_item') }}</button>
     </li>
 </template>
+{{-- The parts of the opbouw. structure.js clones them and fills in the strips of the page. --}}
+<template data-part="insert">
+    <li class="invoeg"><button type="button" class="invoegknop" data-slot="row-insert">{{ $t('cms.edit.structure_insert') }}</button></li>
+</template>
+<template data-part="strip-row">
+    <li class="strookrij">
+        <button type="button" class="greep" data-slot="row-grip" aria-describedby="opbouw-greephint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg>
+        </button>
+        <span class="lijstrij-tekst">
+            <span class="strookrij-naam"><span class="lijstrij-titel" data-slot="row-name"></span><span class="pil" data-slot="row-hidden" hidden>{{ $t('cms.edit.hidden') }}</span></span>
+            <span class="lijstrij-sub" data-slot="row-sub"></span>
+        </span>
+        <button type="button" class="actie klein" data-slot="row-edit">{{ $t('cms.edit.edit_strip') }}</button>
+    </li>
+</template>
+<template data-part="unknown-row">
+    <li class="strookrij onbekend">
+        <span class="strookrij-icoon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg></span>
+        <span class="lijstrij-tekst">
+            <span class="strookrij-naam"><span class="lijstrij-titel" data-slot="row-name"></span><span class="pil let-op">{{ $t('cms.edit.not_on_site') }}</span></span>
+            <span class="lijstrij-sub" data-slot="row-sub"></span>
+        </span>
+        <button type="button" class="actie klein" data-slot="row-remove">{{ $t('cms.edit.remove_unknown') }}</button>
+    </li>
+</template>
+<template data-part="unknown-note">
+    <li class="strookrij-uitleg veld-hint" data-slot="row-note"></li>
+</template>
+<template data-part="placeholder">
+    <li class="plaats" aria-hidden="true"></li>
+</template>
+<template data-part="notice">
+    <div class="melding"><span class="bol" aria-hidden="true"></span><span class="melding-tekst" data-slot="notice-text"></span><button type="button" class="tekstlink klein" data-slot="notice-undo">{{ $t('cms.edit.undo') }}</button></div>
+</template>
+<template data-part="type">
+    <button type="button" class="soortkaart">
+        <span class="soortkaart-kop"><span class="soortkaart-naam" data-slot="type-name"></span><span class="veld-hint" data-slot="type-fields"></span></span>
+        <span class="veld-hint" data-slot="type-description"></span>
+    </button>
+</template>
 <script type="application/json" data-config>@json($config)</script>
 <script type="module" src="{{ $editScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $panelScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $barScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+<script type="module" src="{{ $structureScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 </body>
 </html>

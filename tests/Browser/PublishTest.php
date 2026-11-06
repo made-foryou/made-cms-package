@@ -112,7 +112,7 @@ it('names the strip that stops the publication and shows its error at the field'
     expect($shell->script(waitUntil(barSays('bar-state', 'Niet gepubliceerd: Hero — Vul Kop in.'))))->toBeTrue()
         ->and($shell->script(waitUntil("document.querySelector('[data-path=\"kop\"] [data-slot=\"error\"]')?.textContent === 'Vul Kop in.'")))->toBeTrue();
 
-    $shell->assertSeeIn('[data-slot="name"]', 'Hero');
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Hero');
 
     expect(Page::query()->findOrFail($page->id)->strips)->toBe($this->live);
 

@@ -12,11 +12,6 @@ use Made\CmsPackage\Content\Strips\StripTypes;
 | type API, so it still describes a valid result when the scan is built.
 */
 
-function ttvFixture(string $file): string
-{
-    return __DIR__.'/../../../Fixtures/Scan/ttv-merwestad/'.$file;
-}
-
 /**
  * The strip types the developer wrote for TTV, loaded from the stubs.
  *
@@ -52,15 +47,6 @@ function ttvStripTypes(): StripTypes
     }
 
     return new StripTypes($types);
-}
-
-/**
- * @return array{path: string, title: string, strips: list<array{type: string, visible: bool, values: array<string, mixed>}>}
- */
-function ttvContent(): array
-{
-    /** @var array{path: string, title: string, strips: list<array{type: string, visible: bool, values: array<string, mixed>}>} */
-    return json_decode((string) file_get_contents(ttvFixture('content.json')), true, flags: JSON_THROW_ON_ERROR);
 }
 
 /**

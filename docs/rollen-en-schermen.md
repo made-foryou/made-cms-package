@@ -37,7 +37,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Redirects (`redirects`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #87 (#93); Beheerder ○ in #93 |
 | Sitemap (`sitemap`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#90, robots-regels #97) |
 | Zoekwoorden (`keywords`) | ✓ |  |  | ✓ |  | Vindbaarheid | nog geen epic ("Google en statistieken") |
-| Gebruikers en rollen (`editors`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
+| Gebruikers en rollen (`editors`) | ✓ | ✓ |  |  |  | Beheer | #101 (#104) |
 | Formulieren (`forms`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
 | Back-ups (`backups`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
 | Logboek (`log`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
@@ -50,6 +50,7 @@ Alleen Pagina's is gebouwd. Elk ander scherm heeft al een route (`made-cms/<sche
 
 - **De startpagina** (`made-cms/start`): voor elke ingelogde redacteur (`EnsureEditor`). Een blok of knop naar een scherm dat de redacteur niet opent, valt weg.
 - **De launcher en het inloggen:** voor iedereen; het zichtbaar zijn van de launcher is geen autorisatie.
+- **Het accountmenu en je account** (`made-cms/account`, nog niet gebouwd): voor elke ingelogde redacteur (`EnsureEditor`), zonder `Screen`-case. Je eigen naam, thema, wachtwoord, tweestapsverificatie en e-mailadres; je rollen zie je er alleen. Gevoelige handelingen vragen eerst om bevestiging. Zie #105, #106.
 
 ## Toegang die bij een ander scherm hoort
 
@@ -66,6 +67,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | Robots-regels | `Screen::Sitemap` | Staan in het scherm Sitemap. | #97 |
 | De scan | Admin, alleen bij `APP_ENV=local` | Schrijft code en inhoud in de site. | #28 |
 | Rollen toekennen | `Screen::Editors` | Alleen een admin geeft of neemt `Admin`; de laatste admin houdt die rol; iedereen houdt minstens één rol. | `AssignRoles` |
+| Uitnodigen, toegang intrekken en terugzetten, en het adres van een openstaande uitnodiging aanpassen | `Screen::Editors` | Dezelfde regels als bij rollen: alleen een admin nodigt uit met `Admin`, past een admin-uitnodiging aan of trekt een admin in; de laatste admin blijft; je trekt jezelf niet in. | #101 (besluiten 1, 2 en 8), #102, #103 |
 | Een link naar een ander scherm ("Bekijk in Links", "Vul in bij Media") | het andere scherm | De link verschijnt alleen als de redacteur dat scherm opent. | CLAUDE.md |
 
 ## Regels
@@ -92,6 +94,8 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | 2026-11-06 | De Beheerder krijgt Redirects. | #87 (besluit 7), #93 |
 | 2026-11-06 | De Beheerder krijgt Links. | #82, #75 |
 | 2026-11-06 | Robots-regels vallen onder Sitemap. Meta en sitemap per pagina, en de redirect bij weghalen, vallen onder Pagina's. | #87, #94, #97 |
+| 2026-11-06 | Uitnodigen, intrekken en terugzetten vallen onder Gebruikers en rollen, met de admin-regels van rollen toekennen. Een account wordt nooit verwijderd, alleen ingetrokken. | #101 (besluiten 1, 2 en 8) |
+| 2026-11-06 | Het accountmenu en je account zijn altijd open voor elke ingelogde redacteur, zonder `Screen`-case. | #101 (besluit 4), #105 |
 
 ## Bijwerken
 

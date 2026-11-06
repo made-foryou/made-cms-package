@@ -8,6 +8,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\RecognisedPage;
 use Made\CmsPackage\Content\Data\RecognisedStrip;
 use Made\CmsPackage\Content\Data\ScannedPage;
+use Made\CmsPackage\Content\Scan\FieldReader;
 use Made\CmsPackage\Content\Scan\Fingerprint;
 use Made\CmsPackage\Content\Scan\Html;
 use Made\CmsPackage\Content\Scan\Names;
@@ -27,14 +28,22 @@ final class RecognisePage
     public function handle(ScannedPage $page): RecognisedPage
     {
         $found = (new StripFinder)->find(Html::parse($page->html));
+        $reader = new FieldReader;
         $strips = [];
 
         foreach ($found['strips'] as $element) {
+            $read = $reader->read($element);
+
+            if ($read['fields'] === []) {
+                continue;
+            }
+
             $strips[] = new RecognisedStrip(
                 fingerprint: Fingerprint::of($element),
                 hint: Names::hint($element),
                 selector: Selector::absolute($element),
-                fields: [],
+                fields: $read['fields'],
+                doubts: $read['doubts'],
             );
         }
 

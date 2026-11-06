@@ -174,12 +174,27 @@ it('hands the strips of the working copy and the texts to the script', function 
         ->getContent());
 
     expect($config['strips'])->toBe([
-        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'fields' => '6 velden'],
-        ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => false, 'fields' => '1 veld'],
-    ])->and($config['texts'])->toMatchArray([
-        'position' => 'Strook :n van :m',
-        'unknown' => 'Strook',
-    ])->and($config['texts']['missing'])->toContain('data-cms-strip=":id"');
+        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => '6 velden', 'summary' => 'Welkom'],
+        ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => false, 'known' => true, 'fields' => '1 veld', 'summary' => null],
+    ])->and($config['counts'])->toBe('2 stroken, 1 verborgen')
+        ->and($config['texts'])->toMatchArray([
+            'position' => 'Strook :n van :m',
+            'unknown' => 'Strook',
+        ])->and($config['texts']['missing'])->toContain('data-cms-strip=":id"');
+});
+
+it('hands the opbouw the catalogue of strip types, sorted by name, and the address to add a strip', function (): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')
+        ->getContent());
+
+    expect($config['types'])->toBe([
+        ['key' => 'hero', 'label' => 'Hero', 'description' => null, 'fields' => '6 velden'],
+        ['key' => 'cards', 'label' => 'Kaarten', 'description' => 'Een rij kaarten met een titel.', 'fields' => '1 veld'],
+    ])->and($config['urls']['strips'])->toBe('/made-cms/pages/'.$page->id.'/strips')
+        ->and($config['counts'])->toBe('Nog geen stroken');
 });
 
 it('hands the side panel the address of a strip, the csrf token and its texts', function (): void {

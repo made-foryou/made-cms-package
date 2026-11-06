@@ -8,10 +8,11 @@ use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Data\DraftChanges;
-use Made\CmsPackage\Content\Data\EditableStrip;
 use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripType;
+use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\Shell;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Middleware\ResolvePage;
@@ -24,8 +25,9 @@ final class EditPageResponse
 {
     /**
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
+     * @param  StripTypes  $types  the catalogue an editor adds strips from
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, StripTypes $types): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
@@ -50,18 +52,21 @@ final class EditPageResponse
                 // The side panel and the bar talk JSON with the server, so the shell and the site in its frame stay loaded.
                 'csrf_token' => csrf_token(),
                 'urls' => [
+                    'strips' => $base.route('made-cms-package.pages.strips.store', ['page' => $page], false),
                     'strip' => $base.route('made-cms-package.pages.strips.show', ['page' => $page, 'strip' => ':strip'], false),
                     'draft' => $base.route('made-cms-package.pages.draft.show', ['page' => $page], false),
                     'publish' => $base.route('made-cms-package.pages.publish', ['page' => $page], false),
                 ],
                 'draft' => $draft,
-                'strips' => array_map(static fn (EditableStrip $strip): array => [
-                    'id' => $strip->id,
-                    'type' => $strip->type,
-                    'label' => $strip->label,
-                    'visible' => $strip->visible,
-                    'fields' => trans_choice('made-cms-package::cms.edit.fields', $strip->fields, [], $locale),
-                ], $strips->strips),
+                // Every strip of the working copy in its stored order: its place is the position the endpoints take.
+                'strips' => PageStripsResponse::strips($strips),
+                'counts' => PageStripsResponse::counts($strips),
+                'types' => array_map(static fn (StripType $type): array => [
+                    'key' => $type->key(),
+                    'label' => $type->label(),
+                    'description' => $type->description(),
+                    'fields' => trans_choice('made-cms-package::cms.edit.fields', count($type->fields()), [], $locale),
+                ], $types->all()),
                 'texts' => [
                     'position' => $t('position'),
                     'unknown' => $t('unknown'),

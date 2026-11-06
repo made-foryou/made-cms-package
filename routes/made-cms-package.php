@@ -22,12 +22,16 @@ use Made\CmsPackage\Http\Controllers\Access\TwoFactorConfirmController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
+use Made\CmsPackage\Http\Controllers\Content\AddStripController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
+use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
 use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
+use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
+use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
@@ -126,6 +130,22 @@ Route::prefix($prefix)
                     ->whereNumber('page')
                     ->where('strip', '[A-Za-z0-9-]+')
                     ->name('pages.strips.visibility');
+
+                // The opbouw of the edit shell: adding, moving, removing a strip and putting a removed one back. Every
+                // answer holds the new list of strips, so the shell keeps its places in step with the draft.
+                Route::post('pages/{page}/strips', AddStripController::class)->whereNumber('page')->name('pages.strips.store');
+                Route::put('pages/{page}/strips/{strip}/position', MoveStripController::class)
+                    ->whereNumber('page')
+                    ->where('strip', '[A-Za-z0-9-]+')
+                    ->name('pages.strips.position');
+                Route::delete('pages/{page}/strips/{strip}', RemoveStripController::class)
+                    ->whereNumber('page')
+                    ->where('strip', '[A-Za-z0-9-]+')
+                    ->name('pages.strips.destroy');
+                Route::post('pages/{page}/strips/{strip}/restore', RestoreStripController::class)
+                    ->whereNumber('page')
+                    ->where('strip', '[A-Za-z0-9-]+')
+                    ->name('pages.strips.restore');
 
                 // The bar of the edit shell talks JSON too: the state of the draft, publishing it and throwing it away.
                 Route::get('pages/{page}/draft', ShowDraftController::class)->whereNumber('page')->name('pages.draft.show');

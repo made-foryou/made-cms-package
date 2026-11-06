@@ -98,10 +98,18 @@ return [
         'fields' => '{0} Geen velden|{1} :count veld|[2,*] :count velden',
         'unknown' => 'Strook',
         'missing' => 'Made CMS: strook :id (:type) staat op de pagina, maar de site toont geen element met data-cms-strip=":id". Zet dat attribuut op de root van de view van dit striptype, anders kan een redacteur de strook niet kiezen.',
+        'counts' => [
+            'strips' => '{0} Nog geen stroken|{1} 1 strook|[2,*] :count stroken',
+            'hidden' => ':count verborgen',
+            'unknown' => ':count niet op de site',
+        ],
         'errors' => [
             'values' => 'Het paneel stuurde de inhoud van de strook niet mee. Herlaad de pagina en probeer het opnieuw.',
             'visible' => 'Het paneel stuurde niet mee of de strook zichtbaar moet zijn. Herlaad de pagina en probeer het opnieuw.',
             'nothing_to_publish' => 'Er is niets te publiceren: deze pagina is al live zoals hij is.',
+            'type' => 'Deze soort strook kent de site niet (meer). Herlaad de pagina en kies opnieuw.',
+            'position' => 'Die plek bestaat niet (meer) op de pagina. Herlaad de pagina en probeer het opnieuw.',
+            'strip_exists' => 'Deze strook staat al op de pagina.',
         ],
     ],
 ];

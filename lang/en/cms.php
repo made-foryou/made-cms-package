@@ -98,10 +98,18 @@ return [
         'fields' => '{0} No fields|{1} :count field|[2,*] :count fields',
         'unknown' => 'Strip',
         'missing' => 'Made CMS: strip :id (:type) is on the page, but the site shows no element with data-cms-strip=":id". Put that attribute on the root of the view of this strip type, or editors cannot choose the strip.',
+        'counts' => [
+            'strips' => '{0} No strips yet|{1} 1 strip|[2,*] :count strips',
+            'hidden' => ':count hidden',
+            'unknown' => ':count not on the site',
+        ],
         'errors' => [
             'values' => 'The panel did not send the content of the strip. Reload the page and try again.',
             'visible' => 'The panel did not say whether the strip should be visible. Reload the page and try again.',
             'nothing_to_publish' => 'There is nothing to publish: this page is already live as it is.',
+            'type' => 'The site does not know this kind of strip (any more). Reload the page and choose again.',
+            'position' => 'That place is not on the page (any more). Reload the page and try again.',
+            'strip_exists' => 'This strip is already on the page.',
         ],
     ],
 ];

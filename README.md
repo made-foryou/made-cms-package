@@ -321,7 +321,16 @@ The bar shows whether the page is live and what its draft changes:
 - "Voorvertoning" opens the page with `?made-cms=preview` in a new tab.
 - Every editor who opens the pages screen may publish and discard.
 
-The side panel shows the fields of the chosen strip, built from its strip type, with the values of the draft:
+Without a chosen strip the side panel shows the opbouw of the page: every strip in its order, with the name of its strip type, a few words of its content (the first field with text, else the titles of the items of a list, `StripType::summary()`) and its number of fields. Editors build the page freely from the strip types of the site:
+
+- "+ Strook toevoegen" at the end, or "+ Strook hiertussen" between two strips, opens the catalogue: every strip type with its `label()`, its `description()` and its number of fields, sorted by label, with a search field once the site has 10 types or more. One click places a new strip of that type with its defaults (`AddStrip`); the frame reloads with the new strip chosen and its fields open, and a note names the required fields that are still empty. Publishing waits for those.
+- A strip moves by dragging its grip, by focusing the grip and pressing ↑ or ↓ (Enter drops it, Escape puts it back) or with the arrows next to its name once it is chosen (`MoveStrip`). The frame reloads with the strips in their new order.
+- "Strook verwijderen" under the fields of a chosen strip takes it off the page without asking (`RemoveStrip`). A notice at the top of the opbouw puts it back with "Ongedaan maken": the same strip with its content, in its place (`RestoreStrip`), so the bar counts nothing for it. What the editor typed in it is saved before it goes. The notices stay until the strip is put back, the draft is published or thrown away.
+- A hidden strip stays in the opbouw with "Verborgen"; "Bewerken" chooses it, also when it is not on the site.
+- A strip of a type that is no longer in the catalogue stays in the opbouw as "Niet op de site": its content is kept, it cannot be chosen or moved and it can only be removed.
+- "Strook 2 van 6", in the panel and on the outlines in the frame, is the place of a strip in the opbouw: hidden strips and strips of a type the site no longer has count too.
+
+Choosing a strip shows its fields, built from its strip type, with the values of the draft:
 
 | Field | Control |
 |---|---|
@@ -335,9 +344,23 @@ The side panel shows the fields of the chosen strip, built from its strip type, 
 
 - Every change is saved as the draft: a moment after the editor stops typing, when a field loses focus, when another strip is chosen and with "Opslaan als concept". The panel always sends every field of the strip to `UpdateStrip`. A field with [`data-cms-field`](#the-data-cms-attributes) already shows on the site while the editor types; for any other change the frame reloads at the same scroll position. Visitors keep seeing the published version until the page is published.
 - A value the strip type refuses is not saved. Its message appears under the field once the editor leaves it (or presses "Opslaan als concept"), and the panel says how many fields still need a fix. The shell warns before it is closed with changes that were not saved.
-- "Strook zichtbaar op de site" shows or hides the strip (`SetStripVisibility`). A hidden strip is not on the site in the edit mode either; the panel lists hidden strips so the editor can choose one and show it again.
+- "Strook zichtbaar op de site" shows or hides the strip (`SetStripVisibility`). A hidden strip is not on the site in the edit mode either; the opbouw lists it so the editor can choose it and show it again.
 - "Ongedaan maken" takes the last saved change of the chosen strip back, one step per click: its fields or its visibility. Something typed and not saved yet goes back to what is stored. The steps last as long as the shell is open.
-- The panel and the bar talk JSON with `GET`/`PUT /made-cms/pages/{page}/strips/{strip}`, `PUT …/visibility`, `GET`/`DELETE /made-cms/pages/{page}/draft` and `POST /made-cms/pages/{page}/publish` (routes `made-cms-package.pages.strips.show`, `.update`, `.visibility`, `made-cms-package.pages.draft.show`, `.destroy` and `made-cms-package.pages.publish`), under the same `Screen::Pages` access as the shell. The host adds nothing for them.
+- The panel, the opbouw and the bar talk JSON, under the same `Screen::Pages` access as the shell. The host adds nothing for them.
+
+| Endpoint | Route `made-cms-package.…` | Does |
+|---|---|---|
+| `GET /made-cms/pages/{page}/strips` | `pages.strips.index` | The strips of the working copy in their stored order, with their counts. |
+| `POST /made-cms/pages/{page}/strips` | `pages.strips.store` | Adds a strip: `{type, position}`. |
+| `GET`/`PUT …/strips/{strip}` | `pages.strips.show`, `.update` | The fields and values of a strip; saves every field: `{values}`. |
+| `PUT …/strips/{strip}/visibility` | `pages.strips.visibility` | Shows or hides a strip: `{visible}`. |
+| `PUT …/strips/{strip}/position` | `pages.strips.position` | Moves a strip: `{position}`, its place counted from 0. |
+| `DELETE …/strips/{strip}` | `pages.strips.destroy` | Removes a strip and answers it as it was stored. |
+| `POST …/strips/{strip}/restore` | `pages.strips.restore` | Puts a removed strip back: `{type, visible, values, position}`. |
+| `GET`/`DELETE /made-cms/pages/{page}/draft` | `pages.draft.show`, `.destroy` | The state of the draft; throws it away. |
+| `POST /made-cms/pages/{page}/publish` | `pages.publish` | Puts the draft live. |
+
+  A position is the place of a strip among all strips of the draft, also hidden ones and strips of a type that left the catalogue. Every answer of the strip endpoints that changes the order holds the whole list again.
 
 
 ## Rendering strips

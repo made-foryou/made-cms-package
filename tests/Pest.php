@@ -172,7 +172,8 @@ function openStrip(Page $page, string $strip, string $ready): mixed
 
     expect($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('made-cms-outlines')?.shadowRoot?.querySelectorAll('.omlijning').length === 2")))->toBeTrue();
 
-    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="'.$strip.'"]'));
+    // The tab with the name only chooses the strip; a click elsewhere on it opens the field under the pointer.
+    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="'.$strip.'"] .tab'));
 
     expect($shell->script(waitUntil($ready)))->toBeTrue();
 

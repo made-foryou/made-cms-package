@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Scan;
 
 use Dom\Element;
+use Illuminate\Support\Str;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Support\Locale;
 
 /**
  * The names the scan gives: generic, with the id or a class of a strip as a hint for its type.
+ *
+ * A type is named after the id or class of its strips, else after its place ("strook-3"); a field after its
+ * role ("kop", "tekst", "knop"), numbered when the same name comes back. The words are those of the launcher's
+ * language, so the generated keys read like the site's own. Better names are for the AI step of the scan.
  */
 final class Names
 {
@@ -46,6 +53,81 @@ final class Names
         }
 
         return null;
+    }
+
+    /**
+     * The keys of the types, in order: from their hints, generic without one, numbered when taken.
+     *
+     * @param  list<string|null>  $hints
+     * @return list<string>
+     */
+    public static function typeKeys(array $hints): array
+    {
+        $generic = self::word('made-cms-package::scan.strip', 'strip', '-');
+        $keys = [];
+
+        foreach ($hints as $index => $hint) {
+            $base = $hint === null ? '' : Str::slug(substr($hint, 1));
+
+            if (preg_match('/^[a-z][a-z0-9-]*$/', $base) !== 1) {
+                $base = $generic.'-'.($index + 1);
+            }
+
+            $key = $base;
+            $number = 2;
+
+            while (in_array($key, $keys, true)) {
+                $key = $base.'-'.$number++;
+            }
+
+            $keys[] = $key;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Gives every field (and every field of a list) a key after its role, unique among its siblings.
+     *
+     * @param  list<Proposal>  $fields
+     */
+    public static function fieldKeys(array $fields): void
+    {
+        $taken = StripTypes::RESERVED_FIELDS;
+
+        foreach ($fields as $field) {
+            $role = $field->name ?? $field->role;
+            $base = self::word('made-cms-package::scan.keys.'.$role->value, $role->value, '_');
+            $key = $base;
+            $number = 2;
+
+            while (in_array($key, $taken, true)) {
+                $key = $base.'_'.$number++;
+            }
+
+            $field->key = $key;
+            $taken[] = $key;
+
+            self::fieldKeys($field->fields);
+        }
+    }
+
+    /**
+     * The label of a key, as Field::getLabel() makes one.
+     */
+    public static function label(string $key): string
+    {
+        return Str::ucfirst(str_replace(['-', '_'], ' ', $key));
+    }
+
+    /**
+     * A translated word as a key: lowercase letters, digits and the separator; the fallback when nothing is left.
+     */
+    private static function word(string $translation, string $fallback, string $separator): string
+    {
+        $word = Str::slug((string) __($translation, [], Locale::launcher()), $separator);
+
+        return preg_match('/^[a-z][a-z0-9'.preg_quote($separator, '/').']*$/', $word) === 1 ? $word : $fallback;
     }
 
     private static function readsAsName(string $class): bool

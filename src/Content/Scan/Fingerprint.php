@@ -28,6 +28,11 @@ final class Fingerprint
             return 'form';
         }
 
+        // Markup inside running text, such as a link or bold, is content rather than structure.
+        if ($element->localName === 'p' || Html::isHeading($element)) {
+            return $element->localName.'()';
+        }
+
         $runs = [];
 
         foreach (ItemGroups::runs($element) as $run) {

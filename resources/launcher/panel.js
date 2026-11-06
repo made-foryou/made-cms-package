@@ -4,9 +4,11 @@
  * The markup and every fixed text come from the server (the templates in cms/edit.blade.php and lang/); the
  * fields come from the definition of the strip type (GET …/strips/{id}). This file builds the controls, keeps the
  * values and sends every field of the strip to the server (PUT …/strips/{id}), which checks them against the strip
- * type. It talks JSON, so the shell and the site in its frame stay loaded. edit.js tells which strip is chosen
- * (made-cms:select) and reloads the frame after a save (made-cms:saved). The bar (bar.js) waits for the panel before
- * it publishes (made-cms:flush) or throws the draft away (made-cms:discarding).
+ * type. It talks JSON, so the shell and the site in its frame stay loaded. edit.js tells which strip and field are
+ * chosen (made-cms:select). Every change goes to edit.js as the strip renders it (made-cms:input), so the site in the
+ * frame follows while the editor types; after a save (made-cms:saved) edit.js reloads the frame only for a change it
+ * could not show. The bar (bar.js) waits for the panel before it publishes (made-cms:flush) or throws the draft away
+ * (made-cms:discarding).
  *
  * "Ongedaan maken" lives in the panel only: every strip keeps what the server stored before each save, for as long as
  * the shell is open, and a step back saves that again through the same endpoints.
@@ -163,12 +165,76 @@ async function open(id) {
             again: false,
             timer: null,
             item: null,
+            // Every change the frame is told about counts up; a save tells edit.js up to which change it stored.
+            seq: 0,
+            savedSeq: 0,
         };
         states.set(id, state);
     }
 
     current = state;
     render();
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+ * Watching along: every change goes to edit.js as the strip renders it (Field::render()), so the site in the frame
+ * can show it while the editor types. edit.js decides whether it can; a change it cannot show reloads the frame after
+ * the next save.
+ * ------------------------------------------------------------------------------------------------------------ */
+
+/* A link renders as its address; a page only while it is published, as on the site. */
+function linkUrl(value) {
+    if (value?.page !== undefined && value?.page !== null) {
+        const page = pageOf(value.page);
+
+        return page?.status === 'published' ? page.path : null;
+    }
+
+    return typeof value?.url === 'string' && value.url !== '' ? value.url : null;
+}
+
+function rendered(field, value) {
+    switch (field.type) {
+        case 'link':
+            return linkUrl(value);
+        case 'button': {
+            const url = linkUrl(value?.link);
+
+            return typeof value?.text === 'string' && value.text !== '' && url !== null ? { text: value.text, url } : null;
+        }
+        case 'items':
+            return null;
+        default:
+            return value ?? null;
+    }
+}
+
+/*
+ * One field of the strip changed: "kop", or "knoppen.1.knop" in an item, with the number of items so edit.js knows
+ * the site shows the same list. A list itself ("knoppen") changes when an item is added, removed or moved.
+ */
+function liveInput(state, path, field, value) {
+    const [key, , sub] = path.split('.');
+
+    shell.dispatchEvent(new CustomEvent('made-cms:input', {
+        detail: {
+            id: state.id,
+            path,
+            type: field.type,
+            value: rendered(field, value),
+            count: sub === undefined ? null : (state.values[key]?.length ?? 0),
+            seq: ++state.seq,
+        },
+    }));
+}
+
+/* The values changed at once ("Ongedaan maken"): every field that differs goes to the frame, a list as a whole. */
+function followChanges(state, before, after) {
+    for (const field of state.fields) {
+        if (! same(before?.[field.key] ?? null, after?.[field.key] ?? null)) {
+            liveInput(state, field.key, field, after?.[field.key] ?? null);
+        }
+    }
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -224,6 +290,7 @@ async function save(state) {
     const undoing = state.undoing;
     const lists = listsOf(state);
     const values = clone(state.values);
+    const upTo = state.seq;
 
     state.undoing = false;
 
@@ -244,7 +311,8 @@ async function save(state) {
                 state.errors = {};
                 state.failed = null;
                 state.saved = true;
-                shell.dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: state.id } }));
+                state.savedSeq = Math.max(state.savedSeq, upTo);
+                shell.dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: state.id, seq: upTo } }));
             } else if (status === 422) {
                 state.errors = data?.errors ?? {};
                 state.failed = 'invalid';
@@ -391,9 +459,10 @@ function describedBy(element, input) {
 
 /*
  * One control for one field. The value lives in owner[key]: the values of the strip or an item of a list, so the
- * same controls work at the top of the strip and inside an item.
+ * same controls work at the top of the strip and inside an item. A change goes to the frame as this field, unless
+ * the control is part of a field (a part of a button), which then tells the frame itself.
  */
-function control(state, field, owner, path) {
+function control(state, field, owner, path, follow = null) {
     const element = template('data-field="' + field.type + '"');
     const label = slot('label', element);
     const hint = slot('hint', element);
@@ -423,6 +492,7 @@ function control(state, field, owner, path) {
 
     const set = (value) => {
         owner[key] = value;
+        (follow ?? (() => liveInput(state, path, field, value)))();
         changed(state);
     };
 
@@ -491,9 +561,12 @@ function button(state, element, field, owner, path) {
         set link(value) { write('link', value); },
     };
 
+    // The frame shows a button as a whole: its text and the address it goes to.
+    const follow = () => liveInput(state, path, field, owner[key]);
+
     parts.append(
-        control(state, { key: 'text', type: 'text', label: field.parts.text, hint: null, required: field.required, max_length: 255 }, holder, path + '.text'),
-        control(state, { key: 'link', type: 'link', label: field.parts.link, hint: null, required: field.required }, holder, path + '.link'),
+        control(state, { key: 'text', type: 'text', label: field.parts.text, hint: null, required: field.required, max_length: 255 }, holder, path + '.text', follow),
+        control(state, { key: 'link', type: 'link', label: field.parts.link, hint: null, required: field.required }, holder, path + '.link', follow),
     );
 }
 
@@ -938,6 +1011,7 @@ function items(state, element, field, owner, path) {
     add.addEventListener('click', () => {
         list.push(newItem(field));
         state.touched.add(path);
+        liveInput(state, path, field, null);
         changed(state);
         announce(format(texts.added, { item: field.item_label }));
         openItem(state, key, list.length - 1);
@@ -971,6 +1045,7 @@ function row(state, field, list, index, draw) {
         list.splice(to, 0, item);
         forgetErrorsOf(state, field.key);
         state.touched.add(field.key);
+        liveInput(state, field.key, field, null);
         changed(state);
         draw(to);
         announce(format(texts.moved, { item: title, n: to + 1, m: list.length }));
@@ -1088,6 +1163,7 @@ function removeItem(state) {
     forgetErrorsOf(state, key);
     state.touched.add(key);
     state.item = null;
+    liveInput(state, key, field, null);
     changed(state);
     render();
     announce(format(texts.removed, { item: title }));
@@ -1138,8 +1214,9 @@ async function setVisibility(state, visible, undoing = false) {
         ui.visible.checked = state.visible;
     }
 
+    // Showing or hiding stores no values: the save covers the changes up to the last save of the fields.
     shell.dispatchEvent(new CustomEvent('made-cms:visibility', { detail: { id: state.id, visible: state.visible } }));
-    shell.dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: state.id } }));
+    shell.dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: state.id, seq: state.savedSeq } }));
     showStatus(state);
 
     return true;
@@ -1153,7 +1230,10 @@ async function undo(state) {
 
     // What the editor typed since the last save never reached the server: the fields go back to what it holds.
     if (state.dirty || state.failed !== null) {
+        const before = state.values;
+
         state.values = clone(state.stored.values);
+        followChanges(state, before, state.values);
         state.dirty = false;
         state.failed = null;
         state.errors = {};
@@ -1176,7 +1256,10 @@ async function undo(state) {
     }
 
     if (! same(step.values, state.stored.values)) {
+        const before = state.values;
+
         state.values = clone(step.values);
+        followChanges(state, before, state.values);
         state.dirty = true;
         state.undoing = true;
         render();
@@ -1253,16 +1336,78 @@ async function discarding(done) {
     return true;
 }
 
-/* The bar chooses a strip that stopped the publication and hands its errors along; the fields show them. */
-async function select(id, errors) {
+/*
+ * edit.js chooses a strip, and the field the editor clicked on the site when there is one. The bar chooses a strip
+ * that stopped the publication and hands its errors along; the fields show them.
+ */
+async function select(id, errors, field, count) {
     await open(id);
 
-    if (errors && current?.id === id) {
+    if (current?.id !== id) {
+        return;
+    }
+
+    if (errors) {
         current.errors = errors;
         current.showAll = true;
         current.item = null;
         render();
+    } else if (field) {
+        focusField(current, field, count);
     }
+}
+
+/* The first control of a field, so a rich text gets its text before the buttons of its toolbar. */
+function focusIn(element) {
+    if (! element) {
+        return;
+    }
+
+    element.scrollIntoView({ block: 'nearest' });
+    (element.querySelector('input, textarea, select, [contenteditable]') ?? element.querySelector('button'))?.focus();
+}
+
+/*
+ * The editor clicked a field on the site: "kop", a field in an item ("knoppen.1.knop", with the number of items the
+ * site shows) or a list ("knoppen"). A field in an item opens that item; when the site shows another number of items
+ * than the panel holds, its place in the list says nothing and the list gets the focus.
+ */
+function focusField(state, path, count) {
+    const [key, index, sub] = path.split('.');
+    const field = state.fields.find((candidate) => candidate.key === key);
+
+    if (! field) {
+        return;
+    }
+
+    const list = state.values[key];
+    const position = Number(index);
+    const inItem = sub !== undefined
+        && field.type === 'items'
+        && Number.isInteger(position)
+        && list?.[position] !== undefined
+        && (count === null || count === list.length)
+        && field.fields.some((candidate) => candidate.key === sub);
+
+    if (inItem) {
+        if (state.item?.key !== key || state.item?.index !== position) {
+            if (state.item) {
+                closeItem(state);
+            }
+
+            openItem(state, key, position);
+        }
+
+        focusIn(ui.itemFields.querySelector('[data-path="' + key + '.' + position + '.' + sub + '"]'));
+
+        return;
+    }
+
+    if (state.item) {
+        closeItem(state);
+    }
+
+    focusIn(ui.fields.querySelector('[data-path="' + key + '"]'));
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -1270,7 +1415,7 @@ async function select(id, errors) {
  * ------------------------------------------------------------------------------------------------------------ */
 
 if (shell && ui.form) {
-    shell.addEventListener('made-cms:select', (event) => select(event.detail.id, event.detail.errors ?? null));
+    shell.addEventListener('made-cms:select', (event) => select(event.detail.id, event.detail.errors ?? null, event.detail.field ?? null, event.detail.count ?? null));
     shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush()));
     shell.addEventListener('made-cms:discarding', (event) => event.detail.wait(discarding(event.detail.done)));
 

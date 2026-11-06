@@ -4,6 +4,9 @@
 
 ### Added
 
+- `RestoreStrip::run($page, $strip, $position)` puts a removed strip back in the draft with its own id, visibility and values, checked against its strip type, so the draft compares as if it had never been removed. A strip whose type left the catalogue comes back only with the values the published page holds. It dispatches `StripAdded` and throws `StripAlreadyOnPage`, `InvalidStripPosition`, `UnknownStripType` or a `ValidationException`.
+- `StripType::summary($values)` and `Field::summary($value)`: a strip in a few words for the lists of the CMS, the first field with text (text, the first line of a long text, rich text without markup, the text of a button), else the titles of the items of a list; null when it holds no text yet.
+
 - Watching along in the edit shell (#23): while the editor types, a field the view marks with `data-cms-field` (also inside `data-cms-items`) changes on the site in the frame without reloading it. That covers text, long text (with a `<br>` per line break when the view prints them with `nl2br`), rich text, the address of a link and the text and address of a button. A change the site cannot show that way reloads the frame after the draft is saved, at the same scroll position with the same strip chosen: a field without the attribute, a choice, an emptied field, an item added, removed or moved, a strip shown or hidden. React and Vue keep the patched text until the page renders again.
 - Clicking a field on the site in the frame opens it in the side panel with the focus in it, inside its item when it lies in a list; clicking a list opens the list. The tab with the name of the strip still only chooses the strip.
 
@@ -103,6 +106,8 @@
 
 ### Changed
 
+- `RemoveStrip::run()` returns the removed `Strip` as it was stored (it returned nothing).
+- `ListEditableStrips` lists every strip of the working copy, so the place of a strip in the list is the position the strip Actions take: a strip whose type left the catalogue is no longer left out but marked with `known: false`. `EditableStrip` has `known` and `summary` (`StripType::summary()`).
 - `UpdateStrip` and `PublishPage` refuse strip values with the messages of the package in the language of the CMS (`StripType::messages()`, "Vul Kop in.") instead of the host's validation messages. A host that relied on its own `validation.*` lines for strips publishes the translations (`made-cms-package-lang`) and changes `strips.validation.*` there.
 
 - `UpdateStrip::run($page, $stripId, $values)` merges the values with the stored values of the strip instead of replacing them: a field left out keeps its value instead of falling back to its default. To clear a field, pass it as `null` (or `[]` for a list); a host that relied on leaving fields out to reset them passes them explicitly. A list replaces the stored list, but an item with the `id` of a stored item keeps the fields it leaves out. The merged values are validated as a whole, so a field that was not passed can still be refused; `StripUpdated` is unchanged.

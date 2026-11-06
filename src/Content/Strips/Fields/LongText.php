@@ -26,6 +26,20 @@ final class LongText extends Field
         return ['max_length' => self::MAX_LENGTH];
     }
 
+    /**
+     * The first line with text in it.
+     */
+    public function summary(mixed $value): ?string
+    {
+        foreach (is_string($value) ? preg_split('/\R/u', $value) ?: [] : [] as $line) {
+            if (($summary = self::line($line)) !== null) {
+                return $summary;
+            }
+        }
+
+        return null;
+    }
+
     public function rules(string $path): array
     {
         return [$path => [$this->presence(), 'string', 'max:'.self::MAX_LENGTH]];

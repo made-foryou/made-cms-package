@@ -26,6 +26,11 @@ final class Text extends Field
         return ['max_length' => self::MAX_LENGTH];
     }
 
+    public function summary(mixed $value): ?string
+    {
+        return self::line($value);
+    }
+
     public function rules(string $path): array
     {
         return [$path => [$this->presence(), 'string', 'max:'.self::MAX_LENGTH]];

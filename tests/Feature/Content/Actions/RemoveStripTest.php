@@ -20,6 +20,14 @@ it('removes a strip from the draft', function (): void {
         ->and($stored->strips)->toBe($published);
 });
 
+it('returns the strip as it was stored, so it can be put back', function (): void {
+    $page = Page::factory()->withDraft([storedStrip(id: 'a'), storedStrip('cards', ['kaarten' => []], visible: false, id: 'b')])->create();
+
+    $removed = RemoveStrip::run($page, 'b');
+
+    expect($removed->toArray())->toBe(['id' => 'b', 'type' => 'cards', 'visible' => false, 'values' => ['kaarten' => []]]);
+});
+
 it('keeps an empty draft after removing the last strip', function (): void {
     $page = Page::factory()->withDraft([storedStrip(id: 'a')])->create();
 

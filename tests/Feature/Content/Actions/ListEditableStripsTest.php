@@ -9,16 +9,24 @@ beforeEach(function (): void {
     useStripTypes();
 });
 
-it('lists the strips of the working copy in order with the name and the number of fields of their type', function (): void {
+it('lists the strips of the working copy in order with the name, the number of fields and a summary', function (): void {
     $page = Page::factory()->published()->withStrips([
-        storedStrip('hero', ['kop' => 'Welkom'], id: 'a'),
-        storedStrip('cards', id: 'b'),
+        storedStrip('hero', ['kop' => 'TTV Merwestad'], id: 'a'),
+        storedStrip('cards', ['kaarten' => [['titel' => 'Trainen'], ['titel' => 'Spelen']]], id: 'b'),
+        storedStrip('cards', id: 'c'),
     ])->create();
 
     expect(ListEditableStrips::run($page)->toArray())->toBe([
-        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'fields' => 6],
-        ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => true, 'fields' => 1],
+        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => 6, 'summary' => 'TTV Merwestad'],
+        ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => true, 'known' => true, 'fields' => 1, 'summary' => 'Trainen, Spelen'],
+        ['id' => 'c', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => true, 'known' => true, 'fields' => 1, 'summary' => null],
     ]);
+});
+
+it('sums up a missing field of a strip as its default', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    expect(ListEditableStrips::run($page)->strips[0]->summary)->toBe('Welkom');
 });
 
 it('lists the draft instead of the published strips', function (): void {
@@ -42,13 +50,17 @@ it('keeps hidden strips, marked as hidden', function (): void {
     expect(ListEditableStrips::run($page)->strips[0]->visible)->toBeFalse();
 });
 
-it('leaves out strips of a type that is no longer in the catalogue', function (): void {
+it('keeps strips of a type that is no longer in the catalogue in their place, marked as unknown', function (): void {
     $page = Page::factory()->withDraft([
-        storedStrip('oud', ['x' => 1], id: 'a'),
-        storedStrip('cards', id: 'b'),
+        storedStrip('cards', id: 'a'),
+        storedStrip('oud', ['x' => 'Sponsoren'], id: 'b', visible: false),
+        storedStrip('cards', id: 'c'),
     ])->create();
 
-    expect(array_column(ListEditableStrips::run($page)->toArray(), 'id'))->toBe(['b']);
+    $strips = ListEditableStrips::run($page)->toArray();
+
+    expect(array_column($strips, 'id'))->toBe(['a', 'b', 'c'])
+        ->and($strips[1])->toBe(['id' => 'b', 'type' => 'oud', 'label' => 'oud', 'visible' => false, 'known' => false, 'fields' => 0, 'summary' => null]);
 });
 
 it('lists nothing for a page without strips', function (): void {

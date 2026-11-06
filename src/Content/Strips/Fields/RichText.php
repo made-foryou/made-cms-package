@@ -46,6 +46,20 @@ final class RichText extends Field
         return ['max_length' => self::MAX_LENGTH];
     }
 
+    /**
+     * The text without its markup; blocks and line breaks become spaces.
+     */
+    public function summary(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $text = strip_tags((string) preg_replace('/<(?:\/?(?:p|li|ul|ol)|br)\b[^>]*>/i', ' ', $value));
+
+        return self::line(html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
     public function rules(string $path): array
     {
         return [$path => [$this->presence(), 'string', 'max:'.self::MAX_LENGTH]];

@@ -29,6 +29,11 @@ final class Button extends Field
         ];
     }
 
+    public function summary(mixed $value): ?string
+    {
+        return is_array($value) ? self::line($value['text'] ?? null) : null;
+    }
+
     public function rules(string $path): array
     {
         return [

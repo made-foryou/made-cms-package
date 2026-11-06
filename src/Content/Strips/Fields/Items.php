@@ -103,6 +103,32 @@ final class Items extends Field
         ];
     }
 
+    /**
+     * The titles of the items, in order: per item the first of its fields with text.
+     */
+    public function summary(mixed $value): ?string
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $titles = [];
+
+        foreach ($value as $item) {
+            foreach (is_array($item) ? $this->fields : [] as $field) {
+                $title = $field->summary($item[$field->getKey()] ?? null);
+
+                if ($title !== null) {
+                    $titles[] = $title;
+
+                    break;
+                }
+            }
+        }
+
+        return $titles === [] ? null : implode(', ', $titles);
+    }
+
     public function rules(string $path): array
     {
         $list = [$this->presence(), 'array', 'list'];

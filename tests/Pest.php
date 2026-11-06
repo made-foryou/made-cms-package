@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Made\CmsPackage\Content\Actions\RecognisePage;
+use Made\CmsPackage\Content\Data\RecognisedField;
 use Made\CmsPackage\Content\Data\RecognisedPage;
 use Made\CmsPackage\Content\Data\ScannedPage;
+use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
@@ -273,4 +275,30 @@ function scanDocument(string $body, string $title = 'Testpagina'): string
 function recognise(string $body, string $url = '/'): RecognisedPage
 {
     return RecognisePage::run(new ScannedPage($url, scanDocument($body)));
+}
+
+/**
+ * The fields the scan reads in the only strip of a page, by selector: the role, the value and the doubts if any.
+ *
+ * @return array<string, list<mixed>>
+ */
+function fieldsOf(string $strip): array
+{
+    $fields = [];
+
+    foreach (recognise('<main>'.$strip.'</main>')->strips[0]->fields ?? [] as $field) {
+        $fields[$field->selector] = fieldRow($field);
+    }
+
+    return $fields;
+}
+
+/**
+ * @return list<mixed>
+ */
+function fieldRow(RecognisedField $field): array
+{
+    $row = [$field->role->value, $field->value];
+
+    return $field->doubts === [] ? $row : [...$row, ScanDoubt::values($field->doubts)];
 }

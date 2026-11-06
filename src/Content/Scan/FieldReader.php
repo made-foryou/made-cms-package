@@ -117,12 +117,65 @@ final class FieldReader
     private function container(Element $element, Element $root, string $selector, bool $inItem): array
     {
         $fields = Html::ownText($element) === '' ? [] : [new RecognisedField(ScanRole::Text, $selector, Html::ownText($element))];
+        $starts = [];
+        $members = [];
+
+        foreach (ItemGroups::runs($element) as $run) {
+            $starts[spl_object_id($run['members'][0])] = $run;
+
+            foreach ($run['members'] as $member) {
+                $members[spl_object_id($member)] = true;
+            }
+        }
 
         foreach (Html::children($element) as $child) {
-            array_push($fields, ...$this->element($child, $root, $inItem));
+            $run = $starts[spl_object_id($child)] ?? null;
+
+            if ($run !== null) {
+                $fields[] = $inItem ? $this->nestedList($run['members'], $selector) : $this->items($run, $selector);
+            } elseif (! isset($members[spl_object_id($child)])) {
+                array_push($fields, ...$this->element($child, $root, $inItem));
+            }
         }
 
         return $fields;
+    }
+
+    /**
+     * A list: the fields of every item, each with selectors from the root of its item.
+     *
+     * @param  array{members: list<Element>, exact: bool}  $run
+     */
+    private function items(array $run, string $selector): RecognisedField
+    {
+        return new RecognisedField(
+            role: ScanRole::Items,
+            selector: $selector,
+            value: null,
+            doubts: $run['exact'] ? [] : [ScanDoubt::ItemsDiffer],
+            item: $run['members'][0]->localName,
+            items: array_map(fn (Element $member): array => $this->element($member, $member, true), $run['members']),
+        );
+    }
+
+    /**
+     * A repeat inside an item cannot be a list of its own: it becomes a long text with a line per element.
+     *
+     * @param  list<Element>  $members
+     */
+    private function nestedList(array $members, string $selector): RecognisedField
+    {
+        $lines = [];
+
+        foreach ($members as $member) {
+            $line = Html::ownText($member) !== '' ? Html::ownText($member) : Html::text($member);
+
+            if ($line !== '') {
+                $lines[] = $line;
+            }
+        }
+
+        return new RecognisedField(ScanRole::List, $selector, implode("\n", $lines), [ScanDoubt::NestedList]);
     }
 
     /**

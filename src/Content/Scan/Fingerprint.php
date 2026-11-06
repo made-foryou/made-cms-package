@@ -9,7 +9,8 @@ use Dom\Element;
 /**
  * The structure of a strip as a hash: the tree of its tags without texts, attributes, icons and decoration.
  *
- * Strips with the same fingerprint are instances of one strip type, on one page or on several.
+ * Strips with the same fingerprint are instances of one strip type, on one page or on several. Repeats count once:
+ * the items of a list, a list inside an item and empty decoration in a row, so the number of items never matters.
  */
 final class Fingerprint
 {
@@ -27,24 +28,44 @@ final class Fingerprint
             return 'form';
         }
 
+        $runs = [];
+
+        foreach (ItemGroups::runs($element) as $run) {
+            $shapes = array_values(array_unique(array_map(self::shape(...), $run['members'])));
+            sort($shapes);
+            $shape = count($shapes) === 1 ? $shapes[0] : $run['members'][0]->localName.'['.implode('|', $shapes).']';
+
+            foreach ($run['members'] as $member) {
+                $runs[spl_object_id($member)] = $shape;
+            }
+        }
+
         $children = [];
 
         foreach (Html::children($element) as $child) {
-            if (Html::isIcon($child)) {
-                continue;
+            $shape = $runs[spl_object_id($child)] ?? self::child($child);
+
+            if ($shape !== null && end($children) !== $shape) {
+                $children[] = $shape;
             }
-
-            if (Html::isDecoration($child)) {
-                if (Html::image($child) !== null) {
-                    $children[] = 'img';
-                }
-
-                continue;
-            }
-
-            $children[] = self::shape($child);
         }
 
         return $element->localName.'('.implode(',', $children).')';
+    }
+
+    /**
+     * The shape of a child; nothing for an icon or decoration, a hidden image only counts as an image.
+     */
+    private static function child(Element $child): ?string
+    {
+        if (Html::isIcon($child)) {
+            return null;
+        }
+
+        if (Html::isDecoration($child)) {
+            return Html::image($child) !== null ? 'img' : null;
+        }
+
+        return self::shape($child);
     }
 }

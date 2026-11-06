@@ -33,6 +33,7 @@ Place every domain class in the right context and layer, written test-first, so 
 | Strip type (host extension point) | `src/Content/Strips/StripType.php` | Abstract, extended by the site in `app/Cms/Strips`. Host-facing hooks (`key()`, `fields()`, `label()`, `description()`, `view()`, `with()`) stay overridable; derived behaviour (`rules()`, `attributes()`, `defaults()`, `normalize()`, `render()`) is `final`. |
 | Field | `src/Content/Strips/Fields/` | `final`, extends `Field`, own `static make(...)`, immutable: every setter clones. Rules keyed by path, `normalize()` for the stored form, `render()` for the form a view gets. No writes, events or facades. |
 | Strip type catalogue | `src/Content/Strips/StripTypes.php` | `final`, bound as singleton in the service provider, validates every definition on construction. |
+| Scan machinery | `src/Content/Scan/` | `final` classes that read rendered HTML (`Dom\HTMLDocument`) for `RecognisePage` and `CombinePageScans`. Only reads: no Actions, Events, Models, Builders or facades. The result is `Content\Data\ScanResult` (`docs/scanresultaat.md`). |
 | Exception | `src/<Context>/Exceptions/` | `final`, named after the situation, static constructor such as `for(...)`. |
 | Factory | `database/factories/<Context>/` | `final`, namespace `Made\CmsPackage\Database\Factories\<Context>`. |
 | Migration | `database/migrations/` | `YYYY_MM_DD_HHMMSS_create_cms_<table>_table.php`, anonymous class. |

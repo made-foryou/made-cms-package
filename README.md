@@ -310,6 +310,8 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - A visible strip of the page whose view has no `data-cms-strip` on its root cannot be chosen; the shell warns in the browser console which strip and strip type it is.
 - Strips that the site renders in the browser after the page loaded (React or Vue without SSR) get their outline as soon as they appear.
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
+- A field marked with [`data-cms-field`](#the-data-cms-attributes) changes on the site while the editor types; anything else shows once the draft is saved and the frame reloads at the same scroll position, with the same strip chosen.
+- Clicking a field on the site opens it in the side panel with the focus in it, inside its item when it lies in a list. The tab with the name of the strip only chooses the strip.
 
 The bar shows whether the page is live and what its draft changes:
 
@@ -331,7 +333,7 @@ The side panel shows the fields of the chosen strip, built from its strip type, 
 | `Choice` | A select with the options in their order; "Geen keuze" when the field is not required. |
 | `Items` | A row per item with its title (the first field that has a value), a grip and "Bewerken". The grip drags the item, or moves it with the arrow keys. "Bewerken" opens the item with a breadcrumb ("← Hero / Knoppen / Lid worden"); adding stops at `max()`, removing at `min()`. |
 
-- Every change is saved as the draft: a moment after the editor stops typing, when a field loses focus, when another strip is chosen and with "Opslaan als concept". The panel always sends every field of the strip to `UpdateStrip`, and the frame reloads at the same scroll position. Visitors keep seeing the published version until the page is published.
+- Every change is saved as the draft: a moment after the editor stops typing, when a field loses focus, when another strip is chosen and with "Opslaan als concept". The panel always sends every field of the strip to `UpdateStrip`. A field with [`data-cms-field`](#the-data-cms-attributes) already shows on the site while the editor types; for any other change the frame reloads at the same scroll position. Visitors keep seeing the published version until the page is published.
 - A value the strip type refuses is not saved. Its message appears under the field once the editor leaves it (or presses "Opslaan als concept"), and the panel says how many fields still need a fix. The shell warns before it is closed with changes that were not saved.
 - "Strook zichtbaar op de site" shows or hides the strip (`SetStripVisibility`). A hidden strip is not on the site in the edit mode either; the panel lists hidden strips so the editor can choose one and show it again.
 - "Ongedaan maken" takes the last saved change of the chosen strip back, one step per click: its fields or its visibility. Something typed and not saved yet goes back to what is stored. The steps last as long as the shell is open.
@@ -406,7 +408,56 @@ function Hero({ strip }) {
 ### The data-cms attributes
 
 - `data-cms-strip` with the id of the strip on the root element of every strip is required. It is the only dynamic value: the [edit shell](#edit-shell) finds the strip by it.
-- `data-cms-field="kop"` on the element that shows a field, and `data-cms-items="knoppen"` on the element around a list, are optional and static. With them an editor sees a change while typing; without them after the page renders again.
+- `data-cms-field="kop"` on the element that shows a field, and `data-cms-items="knoppen"` on the element around a list, are optional and static. With them the editor sees a change on the site while typing, and clicking the field on the site opens it in the side panel. Without them the frame reloads after the draft is saved, at the same scroll position.
+
+The edit shell patches the element with `data-cms-field` in the page as it is, so the element has to hold the field the way the site prints it:
+
+| Field | The element with `data-cms-field` |
+|---|---|
+| `Text` | Holds only the text: no icon or other element next to it. |
+| `LongText` | Holds only the text. Print line breaks as `<br>` (`nl2br`) or keep them in the text (`white-space: pre-line`); the shell follows the form it finds. |
+| `RichText` | Prints the HTML unescaped: `{!! !!}`, `dangerouslySetInnerHTML`, `v-html`. |
+| `Link` | Has the address in its `href`. |
+| `Button` | Holds only the text and has the address in its `href`. |
+| `Choice`, `Items` | Not patched: the frame reloads. |
+
+- In `data-cms-items="knoppen"` every direct child is one item, in the order of the list. A `data-cms-field` inside it names a field of that item (`titel`, not `kaarten.0.titel`) and may sit on the child itself. A view that leaves an item out shows fewer children than there are items; the shell then patches nothing in that list and reloads instead.
+- An emptied field, a link to a page that is not published, an item that is added, removed or moved, and a strip that is shown or hidden reload the frame: they decide whether an element shows at all, or a default fills them in.
+- The shell changes only the text node, `href` or HTML inside the element, never the element itself, so React and Vue keep the patch until the page renders again.
+
+```blade
+<ul data-cms-items="kaarten">
+    @foreach ($strip->kaarten as $kaart)
+        <li>
+            <h3 data-cms-field="titel">{{ $kaart['titel'] }}</h3>
+            <p data-cms-field="tekst">{!! nl2br(e($kaart['tekst'])) !!}</p>
+            <a href="{{ $kaart['link'] }}" data-cms-field="link">Lees meer</a>
+        </li>
+    @endforeach
+</ul>
+```
+
+```tsx
+<ul data-cms-items="kaarten">
+  {strip.kaarten.map((kaart) => (
+    <li key={kaart.id}>
+      <h3 data-cms-field="titel">{kaart.titel}</h3>
+      <p data-cms-field="tekst" className="whitespace-pre-line">{kaart.tekst}</p>
+      <a href={kaart.link} data-cms-field="link">Lees meer</a>
+    </li>
+  ))}
+</ul>
+```
+
+```vue
+<ul data-cms-items="kaarten">
+  <li v-for="kaart in strip.kaarten" :key="kaart.id">
+    <h3 data-cms-field="titel">{{ kaart.titel }}</h3>
+    <p data-cms-field="tekst" style="white-space: pre-line">{{ kaart.tekst }}</p>
+    <a :href="kaart.link" data-cms-field="link">Lees meer</a>
+  </li>
+</ul>
+```
 
 ## Launcher
 

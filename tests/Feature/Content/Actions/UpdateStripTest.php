@@ -91,6 +91,36 @@ it('starts from the published strip when the page has no draft', function (): vo
         ->and(Page::query()->findOrFail($page->id)->strips)->toBe($published);
 });
 
+it('drops the draft once a field is changed back', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
+
+    UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV']);
+
+    expect($page->draft_strips)->not->toBeNull();
+
+    UpdateStrip::run($page, 'a', ['kop' => 'TTV Merwestad']);
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
+});
+
+it('answers the strip as the published page holds it once the draft falls away', function (): void {
+    $published = [storedStrip('hero', storedHeroValues(), id: 'a')];
+    $page = Page::factory()->published()->withStrips($published)->create();
+
+    /** @var list<array<string, mixed>> $buttons */
+    $buttons = storedHeroValues()['knoppen'];
+
+    UpdateStrip::run($page, 'a', ['knoppen' => [$buttons[0]]]);
+    // "Ongedaan maken" brings the second button back; the draft no longer knows its id, so it gets a new one.
+    $strip = UpdateStrip::run($page, 'a', ['knoppen' => $buttons]);
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->draft_strips)->toBeNull()
+        ->and($stored->strips)->toBe($published)
+        ->and($strip->toArray())->toBe($published[0]);
+});
+
 it('clears a field that it gets as null', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
 

@@ -22,7 +22,7 @@ it('puts a removed strip back with its id, values and visibility', function (): 
         ->assertJsonPath('counts', '2 stroken, 1 verborgen');
 
     expect(array_column($response->json('strips'), 'id'))->toBe(['a', 'b'])
-        ->and($page->refresh()->draft_strips)->toBe($page->strips);
+        ->and($page->refresh()->draft_strips)->toBeNull();
 
     $this->getJson('made-cms/pages/'.$page->id.'/draft')->assertJsonPath('draft.changes', 0);
 });

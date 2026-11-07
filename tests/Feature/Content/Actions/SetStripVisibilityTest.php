@@ -22,8 +22,32 @@ it('hides and shows a strip in the draft', function (): void {
 
     $shown = SetStripVisibility::run($stored, 'a', true);
 
+    $stored = Page::query()->findOrFail($page->id);
+
     expect($shown->visible)->toBeTrue()
-        ->and(Page::query()->findOrFail($page->id)->draft_strips[0]['visible'] ?? null)->toBeTrue();
+        ->and(($stored->draft_strips ?? $stored->strips)[0]['visible'] ?? null)->toBeTrue();
+});
+
+it('drops the draft once a hidden strip is shown again', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip(id: 'a')])->create();
+
+    SetStripVisibility::run($page, 'a', false);
+
+    expect($page->draft_strips)->not->toBeNull();
+
+    SetStripVisibility::run($page, 'a', true);
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
+});
+
+it('keeps a draft that still changes something else', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])->create();
+
+    SetStripVisibility::run($page, 'a', false);
+    SetStripVisibility::run($page, 'b', false);
+    SetStripVisibility::run($page, 'a', true);
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->not->toBeNull();
 });
 
 it('dispatches an event for the strip', function (): void {

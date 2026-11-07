@@ -29,6 +29,7 @@ final class UpdateStrip
      * null is cleared. A list replaces the stored list, but an item with the id of a stored item keeps
      * the fields it leaves out; an item without a known id is new and gets an id. The merged values are
      * checked as a whole, so a field left out can still be refused. Values the type does not know are dropped.
+     * It returns the strip as it is stored afterwards.
      *
      * @param  array<string, mixed>  $values  the fields to change, keyed by field
      *
@@ -38,7 +39,7 @@ final class UpdateStrip
      */
     public function handle(Page $page, string $stripId, array $values): Strip
     {
-        return ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($stripId, $values): Strip {
+        $strip = ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($stripId, $values): Strip {
             $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
             $type = $this->types->find($strip->type);
 
@@ -50,5 +51,9 @@ final class UpdateStrip
 
             return $strip;
         });
+
+        // A change that takes the draft back to the published page drops the draft (ChangeDraft): the strip is then
+        // stored as the published page holds it, with the ids of its items, which the side panel takes over.
+        return $page->draft_strips === null ? PageStrips::fromArray($page->strips)->find($stripId) ?? $strip : $strip;
     }
 }

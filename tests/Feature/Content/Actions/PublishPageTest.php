@@ -104,6 +104,15 @@ it('refuses a draft with a strip that breaks its definition, also when it is hid
     Event::assertNotDispatched(PagePublished::class);
 })->with(['visible' => true, 'hidden' => false]);
 
+it('checks a field the strip does not hold yet as its default, as the site renders it', function (): void {
+    $draft = [storedStrip('hero', ['knoppen' => publishableHero()['knoppen']], id: 'a')];
+    $page = Page::factory()->withDraft($draft)->create();
+
+    PublishPage::run($page);
+
+    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+});
+
 it('publishes a strip of a type that no longer exists without checking it', function (): void {
     $draft = [storedStrip('oud', ['x' => 1], id: 'old'), storedStrip('cards', id: 'a')];
     $page = Page::factory()->withDraft($draft)->create();

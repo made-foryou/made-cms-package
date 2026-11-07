@@ -159,6 +159,7 @@
 
 - Cleaning rich text no longer cuts it off at 65,535 bytes; the validation still allows at most 65,535 characters.
 - Rich text nested deeper than 100 levels no longer crashes PHP when it is stored or rendered: markup beyond that depth keeps only its text.
+- `PublishPage` checks a field that a strip does not hold yet (a field its type got later) as its default, as the site renders it, instead of refusing it as empty. `UpdateStrip`, `RestoreStrip` and `PublishPage` check strip values in one place (`CheckStripValues`).
 
 ### Security
 

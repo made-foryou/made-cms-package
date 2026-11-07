@@ -4,50 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Validator;
 use Made\CmsPackage\Content\Strips\StripType;
-use Made\CmsPackage\Content\Strips\StripTypes;
 
 /*
 | The TTV Merwestad home, coupled by hand (#17), is the acceptance test of
 | the scan (4.2, 4.4). These tests keep the fixture in step with the strip
 | type API, so it still describes a valid result when the scan is built.
 */
-
-/**
- * The strip types the developer wrote for TTV, loaded from the stubs.
- *
- * The stubs keep the namespace of the site (App\Cms\Strips), but they load under a namespace of
- * their own: declaring App\Cms\Strips classes would leak into every test that runs after this one
- * in the same process, such as the discovery tests that expect that namespace to be empty.
- */
-function ttvStripTypes(): StripTypes
-{
-    $namespace = 'Made\\CmsPackage\\Tests\\Fixtures\\Scan\\TtvMerwestad';
-    $types = [];
-
-    foreach (glob(ttvFixture('strips/*.php.stub')) ?: [] as $stub) {
-        $class = $namespace.'\\'.basename($stub, '.php.stub');
-
-        if (! class_exists($class, false)) {
-            $source = (string) file_get_contents($stub);
-            expect($source)->toContain('namespace App\\Cms\\Strips;');
-
-            $file = (string) tempnam(sys_get_temp_dir(), 'made-cms-ttv-');
-            file_put_contents($file, str_replace('namespace App\\Cms\\Strips;', "namespace {$namespace};", $source));
-
-            try {
-                require $file;
-            } finally {
-                unlink($file);
-            }
-        }
-
-        if (is_subclass_of($class, StripType::class)) {
-            $types[] = new $class;
-        }
-    }
-
-    return new StripTypes($types);
-}
 
 /**
  * The values of every data-cms attribute with the given name, in document order.

@@ -3,11 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Validator;
-use Made\CmsPackage\Content\Actions\CombinePageScans;
-use Made\CmsPackage\Content\Actions\RecognisePage;
 use Made\CmsPackage\Content\Data\ScanField;
-use Made\CmsPackage\Content\Data\ScannedPage;
-use Made\CmsPackage\Content\Data\ScanResult;
 use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Scan\Html;
 
@@ -19,13 +15,6 @@ use Made\CmsPackage\Content\Scan\Html;
 | without the AI step, and so may what only the design shows (a day as a choice,
 | the style of a button, a heading in two colours).
 */
-
-function ttvScan(): ScanResult
-{
-    $html = (string) file_get_contents(ttvFixture('home.html'));
-
-    return CombinePageScans::run([RecognisePage::run(new ScannedPage('/', $html))]);
-}
 
 /**
  * @return array<string, ScanType>

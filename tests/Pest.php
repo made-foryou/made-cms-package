@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Made\CmsPackage\Content\Actions\CombinePageScans;
 use Made\CmsPackage\Content\Actions\RecognisePage;
 use Made\CmsPackage\Content\Data\RecognisedField;
 use Made\CmsPackage\Content\Data\RecognisedPage;
@@ -17,16 +18,9 @@ use Made\CmsPackage\Content\Data\ScanResult;
 use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Page;
-use Made\CmsPackage\Content\Strips\Fields\Button;
-use Made\CmsPackage\Content\Strips\Fields\Choice;
-use Made\CmsPackage\Content\Strips\Fields\Field;
-use Made\CmsPackage\Content\Strips\Fields\Items;
-use Made\CmsPackage\Content\Strips\Fields\Link;
-use Made\CmsPackage\Content\Strips\Fields\LongText;
-use Made\CmsPackage\Content\Strips\Fields\RichText;
-use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Scan\ScannedStripType;
+use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
-use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
@@ -328,43 +322,11 @@ function outline(ScanType $type): array
 }
 
 /**
- * The strip types a scan proposes as a catalogue, built with the field API of the package: the catalogue checks
- * every definition when it is built. Images wait for the image field (#27).
+ * The strip types a scan proposes as a catalogue: the catalogue checks every definition when it is built.
  */
 function scanStripTypes(ScanResult $scan): StripTypes
 {
-    return new StripTypes(array_map(
-        static fn (ScanType $type): InlineStripType => new InlineStripType($type->key, scanFields($type->fields)),
-        $scan->types,
-    ));
-}
-
-/**
- * @param  list<ScanField>  $fields
- * @return list<Field>
- */
-function scanFields(array $fields): array
-{
-    $defined = [];
-
-    foreach ($fields as $field) {
-        $definition = match ($field->type) {
-            'text' => Text::make($field->key),
-            'long_text' => LongText::make($field->key),
-            'rich_text' => RichText::make($field->key),
-            'button' => Button::make($field->key),
-            'link' => Link::make($field->key),
-            'choice' => Choice::make($field->key, $field->options),
-            'items' => Items::make($field->key, scanFields($field->fields))->min((int) $field->min)->max((int) $field->max),
-            default => null,
-        };
-
-        if ($definition instanceof Field) {
-            $defined[] = $definition->required($field->required);
-        }
-    }
-
-    return $defined;
+    return new StripTypes(array_map(ScannedStripType::from(...), $scan->types));
 }
 
 /**
@@ -396,4 +358,51 @@ function ttvContent(): array
 {
     /** @var array{path: string, title: string, strips: list<array{type: string, visible: bool, values: array<string, mixed>}>} */
     return json_decode((string) file_get_contents(ttvFixture('content.json')), true, flags: JSON_THROW_ON_ERROR);
+}
+
+/**
+ * The scan of the live home (home.html), before the coupling.
+ */
+function ttvScan(): ScanResult
+{
+    $html = (string) file_get_contents(ttvFixture('home.html'));
+
+    return CombinePageScans::run([RecognisePage::run(new ScannedPage('/', $html))]);
+}
+
+/**
+ * The strip types the developer wrote for TTV, loaded from the stubs.
+ *
+ * The stubs keep the namespace of the site (App\Cms\Strips), but they load under a namespace of
+ * their own: declaring App\Cms\Strips classes would leak into every test that runs after this one
+ * in the same process, such as the discovery tests that expect that namespace to be empty.
+ */
+function ttvStripTypes(): StripTypes
+{
+    $namespace = 'Made\\CmsPackage\\Tests\\Fixtures\\Scan\\TtvMerwestad';
+    $types = [];
+
+    foreach (glob(ttvFixture('strips/*.php.stub')) ?: [] as $stub) {
+        $class = $namespace.'\\'.basename($stub, '.php.stub');
+
+        if (! class_exists($class, false)) {
+            $source = (string) file_get_contents($stub);
+            expect($source)->toContain('namespace App\\Cms\\Strips;');
+
+            $file = (string) tempnam(sys_get_temp_dir(), 'made-cms-ttv-');
+            file_put_contents($file, str_replace('namespace App\\Cms\\Strips;', "namespace {$namespace};", $source));
+
+            try {
+                require $file;
+            } finally {
+                unlink($file);
+            }
+        }
+
+        if (is_subclass_of($class, StripType::class)) {
+            $types[] = new $class;
+        }
+    }
+
+    return new StripTypes($types);
 }

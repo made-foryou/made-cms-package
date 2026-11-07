@@ -18,8 +18,8 @@ enum StripTypeSkip: string
     /** The folder has a class with this name, whatever its capitals, or the scan gives two types the same name. */
     case ClassExists = 'class_exists';
 
-    public function label(): string
+    public function label(?string $locale = null): string
     {
-        return (string) __('made-cms-package::scan.generate.skipped.'.$this->value);
+        return (string) __('made-cms-package::scan.generate.skipped.'.$this->value, [], $locale);
     }
 }

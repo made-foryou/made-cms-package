@@ -91,7 +91,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 ### 9. Render the strips
 
 - `RenderStrips::run($page)` gives the strips a visitor sees: published (the draft in the edit mode), in order, without hidden strips or strips of a type that left the catalogue; `->toArray()` is `[{id, type, ...fields}]`
-- rendered values: a `Link` is a url (a page as its current path, `null` when it is gone or not published), a `Button` is `{text, url}` or `null`, `Items` is always a list with the `id` and every field in every item (use the `id` as the key of a list), a missing field gets its default, `RichText` is cleaned HTML
+- rendered values: a `Link` is a url (a page as its current path, `null` when it is gone or not published), a `Button` is `{text, url}` or `null`, `Items` is always a list with the `id` and every field in every item (use the `id` as the key of a list), a missing field gets its default, `RichText` is cleaned HTML (also a value a seeder or an import stored, or a default) or `null`
 - Blade: `<x-made-cms::strips :page="$page" />` renders every strip with `resources/views/strips/<key>.blade.php` (or the `view()` of its type) and passes `$strip`: `{{ $strip->kop }}`, `{!! $strip->intro !!}`; a missing view throws `MissingStripView`
 - React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own; print rich text with `dangerouslySetInnerHTML` or `v-html`
 - put `data-cms-strip` with the strip id on the root element of every strip (required); `data-cms-field="<field>"` and `data-cms-items="<field>"` are optional and static

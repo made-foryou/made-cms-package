@@ -9,6 +9,7 @@ use Made\CmsPackage\Content\Data\GeneratedStripType;
 use Made\CmsPackage\Content\Data\GeneratedStripTypes;
 use Made\CmsPackage\Content\Data\SkippedStripType;
 use Made\CmsPackage\Content\Enums\StripTypeSkip;
+use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Responses\GeneratedStripTypesResponse;
 
 beforeEach(function (): void {
@@ -85,6 +86,28 @@ it('says which strip types it skipped and why', function (): void {
                 'detail' => "Strip type [{$this->namespace}\\OverOns] has an invalid key [Over ons]; use lowercase letters, digits and dashes.",
             ],
         ]);
+});
+
+it('never overwrites what an earlier scan wrote, once the site has its strip types', function (): void {
+    postScan(ttvScan()->toArray())->assertOk();
+
+    $files = glob($this->folder.'/*.php') ?: [];
+    $written = array_map(static fn (string $file): string => (string) file_get_contents($file), $files);
+
+    // The next request builds the catalogue from the folder, with the classes the developer may have changed since.
+    foreach ($files as $file) {
+        require_once $file;
+    }
+
+    app()->instance(StripTypes::class, StripTypes::discover($this->folder, $this->namespace));
+
+    postScan(ttvScan()->toArray())
+        ->assertOk()
+        ->assertJsonPath('written', [])
+        ->assertJsonPath('summary', 'Geen striptypes geschreven, 8 overgeslagen')
+        ->assertJsonPath('skipped.0.reason', 'key_exists');
+
+    expect(array_map(static fn (string $file): string => (string) file_get_contents($file), glob($this->folder.'/*.php') ?: []))->toBe($written);
 });
 
 it('refuses the scan outside the local environment, also to an admin, and writes nothing', function (): void {

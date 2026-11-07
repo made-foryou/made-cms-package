@@ -115,7 +115,7 @@ it('shows why a value is refused once the editor leaves the field', function ():
     $shell->assertSeeIn('[data-slot="status"]', 'Niet opgeslagen: 1 veld klopt nog niet.')
         ->assertAttribute('[data-path="kop"] input', 'aria-invalid', 'true');
 
-    expect(draftOf($this->page, 'hero'))->toBe([]);
+    expect(Page::query()->findOrFail($this->page->id)->draft_strips)->toBeNull();
 
     $shell->assertNoJavaScriptErrors();
 });
@@ -247,7 +247,7 @@ it('throws away what was typed but not saved yet', function (): void {
     $shell->script("() => { const input = document.querySelector('[data-path=\"kop\"] input'); input.value = 'Half getypt'; input.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('[data-slot=\"undo\"]').click(); }");
 
     expect($shell->script(valueAfter("[document.querySelector('[data-path=\"kop\"] input').value, document.querySelector('[data-slot=\"status\"]').textContent]", 900)))->toBe(['Welkom bij de club', ''])
-        ->and(draftOf($this->page, 'hero'))->toBe([]);
+        ->and(Page::query()->findOrFail($this->page->id)->draft_strips)->toBeNull();
 
     $shell->assertNoJavaScriptErrors();
 });

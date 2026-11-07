@@ -41,6 +41,21 @@ it('says there is nothing to publish on a live page without a draft', function (
         ->assertJsonPath('draft.label', 'Geen wijzigingen');
 });
 
+it('says there are no changes once a change is taken back', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a')])->create();
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a/visibility', ['visible' => false])->assertOk();
+    $this->getJson('made-cms/pages/'.$page->id.'/draft')->assertJsonPath('draft.changes', 1);
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a/visibility', ['visible' => true])->assertOk();
+
+    $this->getJson('made-cms/pages/'.$page->id.'/draft')
+        ->assertOk()
+        ->assertJsonPath('draft.changes', 0)
+        ->assertJsonPath('draft.discardable', false)
+        ->assertJsonPath('draft.label', 'Geen wijzigingen');
+});
+
 it('says a page that was never published is not live yet', function (): void {
     $page = Page::factory()->create();
 

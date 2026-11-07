@@ -64,7 +64,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 ### 7. Use the actions
 
-- a page holds its published strips (`strips`) and a draft (`draft_strips`, `null` without one); every strip has an `id`, a `type` key, `visible` and `values`
+- a page holds its published strips (`strips`) and a draft (`draft_strips`, `null` without one, and again once a change is taken back); every strip has an `id`, a `type` key, `visible` and `values`
 - `AddStrip::run($page, 'hero', $position)`, `MoveStrip::run($page, $stripId, $position)`, `RemoveStrip::run($page, $stripId)` (returns the removed `Strip`), `RestoreStrip::run($page, $strip, $position)` (puts a removed strip back with its own id, checked against its type), `UpdateStrip::run($page, $stripId, $values)` (merges with the stored values: pass only the fields to change, `null` clears one; throws a `ValidationException` keyed by field) and `SetStripVisibility::run($page, $stripId, $visible)` change the draft; visitors keep the published strips; every change reads the page again with its row locked, so changes at the same time never overwrite each other, and `$page` holds the stored state afterwards
 - `PublishPage::run($page)` makes the draft the published version and refuses a draft with an invalid strip (errors keyed `strips.<id>.<field>`); `DiscardDraft::run($page)` goes back to the published version; query pages with `Page::query()->published()`
 - `CompareDraft::run($page)` (`DraftChanges`) says what the draft changes: the strip ids it adds, changes (fields or visibility), removes or moves, `count()`, and whether the page can be published or discarded; a missing field counts as its default, key order and item ids do not count

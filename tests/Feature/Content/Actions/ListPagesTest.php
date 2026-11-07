@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Actions\ListPages;
+use Made\CmsPackage\Content\Actions\SetStripVisibility;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
@@ -38,6 +39,18 @@ it('carries what the screen shows of every page', function (): void {
         ->and($child->inMenu)->toBeFalse()
         ->and($child->hasDraft)->toBeFalse()
         ->and($child->isEmpty)->toBeTrue();
+});
+
+it('lists no draft once its change is taken back', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip(id: 'a')])->create();
+
+    SetStripVisibility::run($page, 'a', false);
+
+    expect(ListPages::run()->flatten()[0]->hasDraft ?? null)->toBeTrue();
+
+    SetStripVisibility::run($page, 'a', true);
+
+    expect(ListPages::run()->flatten()[0]->hasDraft ?? null)->toBeFalse();
 });
 
 it('includes a page without an address', function (): void {

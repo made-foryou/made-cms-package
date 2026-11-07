@@ -46,13 +46,15 @@ function openStructure(Page $page, int $outlines): mixed
 }
 
 /**
- * The ids of the strips of the draft, in order.
+ * The ids of the strips of the working copy (the draft, else the published strips), in order.
  *
  * @return list<string>
  */
 function draftIds(Page $page): array
 {
-    return array_column(Page::query()->findOrFail($page->id)->draft_strips ?? [], 'id');
+    $stored = Page::query()->findOrFail($page->id);
+
+    return array_column($stored->draft_strips ?? $stored->strips, 'id');
 }
 
 it('shows the opbouw of the page with every strip in order', function (): void {
@@ -248,8 +250,10 @@ it('keeps a strip of a type the site no longer has, which can only be removed', 
 
     $shell->click('[data-slot="notice-undo"]');
 
+    // Back as the published page holds it: nothing is left to publish, so the draft fell away.
     expect($shell->script(waitUntil(slotSays('structure-status', 'oud staat terug op plek 2.'))))->toBeTrue()
-        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$this->live[0], $old]);
+        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull()
+        ->and(Page::query()->findOrFail($page->id)->strips)->toBe([$this->live[0], $old]);
 
     $shell->assertNoJavaScriptErrors();
 });

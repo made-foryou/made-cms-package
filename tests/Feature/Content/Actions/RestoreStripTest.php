@@ -61,6 +61,18 @@ it('leaves nothing to publish after removing a published strip and putting it ba
     expect(CompareDraft::run($page->refresh())->count())->toBe(0);
 });
 
+it('drops the draft once a removed strip is put back', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a'), storedStrip('cards', id: 'b')])->create();
+
+    $removed = RemoveStrip::run($page, 'b');
+
+    expect($page->draft_strips)->not->toBeNull();
+
+    RestoreStrip::run($page, $removed, 1);
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
+});
+
 it('checks the values against the strip type and drops what the type does not know', function (): void {
     $page = Page::factory()->withDraft([])->create();
 
@@ -98,13 +110,13 @@ it('refuses a position outside the page', function (int $position): void {
 
 it('puts back the published copy of a strip whose type left the catalogue, whatever values come along', function (): void {
     $old = storedStrip('oud', ['x' => 'Sponsoren'], id: 'old');
-    $page = Page::factory()->published()->withStrips([$old, storedStrip(id: 'a')])->create();
+    $page = Page::factory()->published()->withStrips([$old, storedStrip(id: 'a')])->withDraft([$old, storedStrip(id: 'a'), storedStrip(id: 'new')])->create();
 
     RemoveStrip::run($page, 'old');
     $strip = RestoreStrip::run($page, new Strip('old', 'oud', true, ['x' => 'iets anders']), 0);
 
     expect($strip->toArray())->toBe($old)
-        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$old, storedStrip(id: 'a')]);
+        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$old, storedStrip(id: 'a'), storedStrip(id: 'new')]);
 });
 
 it('refuses a strip of an unknown type that the published page does not hold', function (): void {

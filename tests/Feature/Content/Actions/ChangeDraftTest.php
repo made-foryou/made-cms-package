@@ -213,6 +213,39 @@ it('keeps a change to another strip that was stored after the page was loaded', 
     ],
 ]);
 
+it('drops a draft that no longer changes anything', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])
+        ->withDraft([storedStrip(id: 'b'), storedStrip(id: 'a')])
+        ->create();
+
+    ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
+        $page->draft_strips = $strips->move('a', 0)->toArray();
+    });
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull()
+        ->and($page->draft_strips)->toBeNull();
+});
+
+it('keeps a draft that still changes something', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])->create();
+
+    ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
+        $page->draft_strips = $strips->move('a', 1)->toArray();
+    });
+
+    expect(draftStripIds(storedDraft($page)))->toBe(['b', 'a']);
+});
+
+it('drops the draft of a page that was never published once it holds what the page holds', function (): void {
+    $page = Page::factory()->withDraft([storedStrip(id: 'a')])->create();
+
+    ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
+        $page->draft_strips = $strips->remove('a')->toArray();
+    });
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
+});
+
 it('publishes the draft as it is stored, not as the loaded page holds it', function (): void {
     $page = Page::factory()->published()->withStrips([storedStrip(id: 'a')])->create();
     $loaded = Page::query()->findOrFail($page->id);

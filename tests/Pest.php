@@ -204,13 +204,15 @@ function savedAsDraft(): string
 }
 
 /**
- * The draft values of one strip of the page, as they are stored now.
+ * One strip of the working copy of the page (the draft, else the published strips; a draft that a change took back
+ * to the published page falls away), as it is stored now.
  *
  * @return array<string, mixed>
  */
 function draftOf(Page $page, string $strip): array
 {
-    $draft = collect(Page::query()->findOrFail($page->id)->draft_strips ?? [])->firstWhere('id', $strip);
+    $stored = Page::query()->findOrFail($page->id);
+    $draft = collect($stored->draft_strips ?? $stored->strips)->firstWhere('id', $strip);
 
     return is_array($draft) ? $draft : [];
 }

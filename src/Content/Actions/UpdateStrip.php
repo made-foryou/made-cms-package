@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
@@ -43,12 +42,7 @@ final class UpdateStrip
         $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
         $type = $this->types->find($strip->type);
 
-        $merged = $type->merge([...$type->defaults(), ...$strip->values], $values);
-
-        /** @var array<string, mixed> $validated */
-        $validated = Validator::make($merged, $type->rules(), $type->messages(), $type->attributes())->validate();
-
-        $strip = $strip->withValues([...$type->defaults(), ...$type->normalize($validated)]);
+        $strip = $strip->withValues(CheckStripValues::run($type, $type->merge([...$type->defaults(), ...$strip->values], $values)));
 
         $page->draft_strips = $strips->replace($strip)->toArray();
         $page->save();

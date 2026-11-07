@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
@@ -64,12 +63,7 @@ final class RestoreStrip
      */
     private function checked(Strip $strip): Strip
     {
-        $type = $this->types->find($strip->type);
-
-        /** @var array<string, mixed> $validated */
-        $validated = Validator::make([...$type->defaults(), ...$strip->values], $type->rules(), $type->messages(), $type->attributes())->validate();
-
-        return $strip->withValues([...$type->defaults(), ...$type->normalize($validated)]);
+        return $strip->withValues(CheckStripValues::run($this->types->find($strip->type), $strip->values));
     }
 
     /**

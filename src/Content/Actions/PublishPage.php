@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
@@ -65,10 +64,12 @@ final class PublishPage
                 continue;
             }
 
-            $type = $this->types->find($strip->type);
-
-            foreach (Validator::make($strip->values, $type->rules(), $type->messages(), $type->attributes())->errors()->toArray() as $path => $messages) {
-                $errors["strips.{$strip->id}.{$path}"] = $messages;
+            try {
+                CheckStripValues::run($this->types->find($strip->type), $strip->values);
+            } catch (ValidationException $exception) {
+                foreach ($exception->errors() as $path => $messages) {
+                    $errors["strips.{$strip->id}.{$path}"] = $messages;
+                }
             }
         }
 

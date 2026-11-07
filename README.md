@@ -239,7 +239,7 @@ final class Hero extends StripType
 |---|---|---|---|
 | `Text::make('kop')` | string | string | One line, at most 255 characters. Print it escaped. |
 | `LongText::make('intro')` | string | string | Plain text over several lines. Print it escaped, e.g. `{!! nl2br(e($strip->intro)) !!}`. |
-| `RichText::make('tekst')` | HTML | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. Cleaned when it is stored, so print it unescaped. |
+| `RichText::make('tekst')` | HTML | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. Cleaned when it is stored and again when it is rendered, so print it unescaped. |
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |

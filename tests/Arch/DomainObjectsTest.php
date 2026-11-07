@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 
 $data = contextNamespaces('Data');
@@ -33,6 +34,12 @@ if ($events !== []) {
             'Illuminate\Support\Facades',
         ]);
 }
+
+// A listener of the content never sees a change that a rollback still takes back: an event dispatched in a
+// transaction (ChangeDraft, a transaction of the host around an Action) goes out after the commit.
+arch('content events wait for the commit')
+    ->expect('Made\CmsPackage\Content\Events')
+    ->toImplement(ShouldDispatchAfterCommit::class);
 
 if ($enums !== []) {
     arch('enums are string backed')

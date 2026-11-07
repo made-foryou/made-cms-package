@@ -124,6 +124,7 @@
 ### Changed
 
 - The package requires the PHP extension `dom` (`ext-dom`), which `symfony/html-sanitizer` already needed.
+- The events of the content (`PageCreated`, `PageUpdated`, `PageMoved`, `PageDeleted`, `PageRestored`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished`) implement `ShouldDispatchAfterCommit`: a listener runs once the transaction they are dispatched in commits, also a transaction of the host around an Action, and not at all when it rolls back.
 - The side panel of the edit shell starts with the opbouw instead of "Klik een strook op de site om de inhoud te bewerken.", and hidden strips are chosen from the opbouw instead of a list of their own. "Strook n van m", in the panel and on the outlines in the frame, is the place of the strip in the opbouw: hidden strips and strips of a type the site no longer has count too.
 - `RemoveStrip::run()` returns the removed `Strip` as it was stored (it returned nothing).
 - `ListEditableStrips` lists every strip of the working copy, so the place of a strip in the list is the position the strip Actions take: a strip whose type left the catalogue is no longer left out but marked with `known: false`. `EditableStrip` has `known` and `summary` (`StripType::summary()`).

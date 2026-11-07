@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Made\CmsPackage\Content\Models\Page;
 
-final class DraftDiscarded
+final class DraftDiscarded implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
 

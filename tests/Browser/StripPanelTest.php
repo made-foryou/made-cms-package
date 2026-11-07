@@ -134,6 +134,26 @@ it('makes text bold with the toolbar of a rich text field', function (): void {
         ->assertNoJavaScriptErrors();
 });
 
+it('links text in a rich text field only to an address the browser reads as one of its own', function (string $address, ?string $href): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"intro\"] [contenteditable]') !== null");
+
+    $shell->type('[data-path="intro"] [contenteditable]', 'Lees meer');
+    $shell->script("() => { const editor = document.querySelector('[data-path=\"intro\"] [contenteditable]'); editor.focus(); const range = document.createRange(); range.selectNodeContents(editor); const selection = getSelection(); selection.removeAllRanges(); selection.addRange(range); }");
+    $shell->click('[data-path="intro"] [data-command="link"]');
+    $shell->script('() => { document.querySelector(\'[data-path="intro"] [data-slot="link-input"]\').value = '.json_encode($address, JSON_THROW_ON_ERROR).'; }');
+    $shell->click('[data-path="intro"] [data-command="link-apply"]');
+
+    expect($shell->script("() => document.querySelector('[data-path=\"intro\"] [contenteditable] a')?.getAttribute('href') ?? null"))->toBe($href);
+
+    $shell->assertNoJavaScriptErrors();
+})->with([
+    'an address on the site' => ['/lid-worden', '/lid-worden'],
+    'a script behind a tab' => ["java\tscript:alert(1)", null],
+    'a script behind a line break' => ["java\nscript:alert(1)", null],
+    'another site without a scheme' => ['//example.org/lid-worden', null],
+    'another site behind a backslash' => ['/\\example.org/lid-worden', null],
+]);
+
 it('adds an item that links to a page of the site', function (): void {
     $about = Page::factory()->published()->atPosition(1)->at('/over-ons')->create(['title' => 'Over ons']);
 

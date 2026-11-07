@@ -65,7 +65,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | Een redirect bij het weghalen van een pagina | `Screen::Pages` | Hoort bij verwijderen. | #94 |
 | Automatisch doorsturen bij verhuizen | geen | Een Content-Action doet dit; Content kijkt nooit naar rollen. | #94 |
 | Robots-regels | `Screen::Sitemap` | Staan in het scherm Sitemap. | #97 |
-| De scan | Admin, alleen bij `APP_ENV=local` | Schrijft code en inhoud in de site. | #28 |
+| De scan | Admin, alleen bij `APP_ENV=local` (`EnsureScanAccess`, `CheckScanAccess`) | Schrijft code en inhoud in de site. | #28, #31 |
 | Rollen toekennen | `Screen::Editors` | Alleen een admin geeft of neemt `Admin`; de laatste admin houdt die rol; iedereen houdt minstens één rol. | `AssignRoles` |
 | Uitnodigen, toegang intrekken en terugzetten, en het adres van een openstaande uitnodiging aanpassen | `Screen::Editors` | Dezelfde regels als bij rollen: alleen een admin nodigt uit met `Admin`, past een admin-uitnodiging aan of trekt een admin in; de laatste admin blijft; je trekt jezelf niet in. | #101 (besluiten 1, 2 en 8), #102, #103 |
 | Een link naar een ander scherm ("Bekijk in Links", "Vul in bij Media") | het andere scherm | De link verschijnt alleen als de redacteur dat scherm opent. | CLAUDE.md |

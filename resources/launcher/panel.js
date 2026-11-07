@@ -722,12 +722,20 @@ function escapeHtml(text) {
     return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
-/* An address a link in rich text may have: no scheme, or http(s), mailto or tel. */
+/*
+ * An address a link in rich text may have: http(s), mailto or tel, or an address on the site. It is read as the
+ * browser reads it: without the spaces and control characters around it and the tabs and line breaks in it, and with
+ * two slashes (or backslashes) at the start as another site.
+ */
 function safeHref(href) {
-    const value = (href ?? '').trim();
+    const value = (href ?? '').replace(/^[\u0000- ]+|[\u0000- ]+$/g, '').replace(/[\t\n\r]/g, '');
     const scheme = value.match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
 
-    return value !== '' && (scheme === undefined || ['http', 'https', 'mailto', 'tel'].includes(scheme)) ? value : null;
+    if (value === '' || /^[\\/]{2}/.test(value)) {
+        return null;
+    }
+
+    return scheme === undefined || ['http', 'https', 'mailto', 'tel'].includes(scheme) ? value : null;
 }
 
 function inline(node) {

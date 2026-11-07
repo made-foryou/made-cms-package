@@ -187,6 +187,9 @@ async function open(id) {
  * the next save.
  * ------------------------------------------------------------------------------------------------------------ */
 
+/* The addresses the validation of a link accepts (Link::URL_PATTERN), so the frame never gets one the site would not render. */
+const ADDRESS = /^(?:https?:\/\/\S+|mailto:\S+|tel:\S+|\/(?![/\\])\S*|#\S*)$/i;
+
 /* A link renders as its address; a page only while it is published, as on the site. */
 function linkUrl(value) {
     if (value?.page !== undefined && value?.page !== null) {
@@ -195,7 +198,7 @@ function linkUrl(value) {
         return page?.status === 'published' ? page.path : null;
     }
 
-    return typeof value?.url === 'string' && value.url !== '' ? value.url : null;
+    return typeof value?.url === 'string' && value.url.length <= 2048 && ADDRESS.test(value.url) ? value.url : null;
 }
 
 function rendered(field, value) {

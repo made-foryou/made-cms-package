@@ -59,6 +59,21 @@ it('renders no link as null', function (mixed $value): void {
     'an empty address' => [['url' => '']],
 ]);
 
+it('renders an address the validation would refuse as null, also when it never passed the validation', function (string $url): void {
+    expect(Link::make('gaat_naar')->render(['url' => $url]))->toBeNull()
+        ->and(Button::make('knop')->render(['text' => 'Klik', 'link' => ['url' => $url]]))->toBeNull();
+})->with([
+    'a script' => ['javascript:alert(1)'],
+    'a script in capitals' => ['JavaScript:alert(1)'],
+    'a script behind a tab' => ["java\tscript:alert(1)"],
+    'a script behind spaces' => ['  javascript:alert(1)'],
+    'data' => ['data:text/html,<script>alert(1)</script>'],
+    'another site without a scheme' => ['//example.com'],
+    'another site behind a backslash' => ['/\\example.com'],
+    'no scheme' => ['example.com'],
+    'too long' => ['https://example.com/'.str_repeat('a', 2048)],
+]);
+
 it('renders a button as its text and url', function (): void {
     expect(Button::make('knop')->render(['text' => 'Lid worden', 'link' => ['url' => '/lid-worden']]))
         ->toBe(['text' => 'Lid worden', 'url' => '/lid-worden']);

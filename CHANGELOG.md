@@ -166,6 +166,7 @@
 - `DescribeStrip` hands the side panel the values as the package stores them, so rich text that reached the database another way reaches the panel cleaned (an item without an id gets one there). The panel only shows rich text on the site in the frame as the markup it builds itself, also when "Ongedaan maken" puts a value back.
 - The link button of a rich text field reads an address as the browser does: `javascript:` with a tab or line break in it is refused, and so is an address starting with `//` (another site that looks like an address on the site).
 - A link in rich text to an address starting with `//` loses its address when it is stored and when it is rendered, so it can no longer lead to another site while it looks like an address on the site.
+- A `Link`, and the link of a `Button`, renders only an address the validation accepts: one that reached the database another way (a seeder, an import), such as `javascript:alert(1)` or `//example.com`, renders as `null`, so a button disappears. The validation also refuses an address starting with `/\`, which the browser reads as another site. The side panel no longer shows such an address on the site in the frame while the editor types.
 
 
 ## [v0.1.0](https://github.com/made-foryou/made-cms-package/compare/...v0.1.0) - 202x-xx-xx

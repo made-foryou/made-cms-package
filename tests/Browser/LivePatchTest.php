@@ -133,6 +133,21 @@ it('patches a long text in the form the site prints it and reloads once when tha
     $shell->assertNoJavaScriptErrors();
 });
 
+it('never patches an address the site would not render into a link in the frame', function (string $address): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelectorAll('[data-path=\"knoppen\"] li').length === 2");
+    $button = siteInFrame()."?.querySelector('[data-cms-items=\"knoppen\"]')?.children[0]";
+
+    $shell->click('[data-path="knoppen"] li:nth-child(1) [data-slot="edit"]')
+        ->type('[data-path="knoppen.0.knop.link"] input', $address);
+
+    expect($shell->script(valueAfter("{$button}?.getAttribute('href')", 500)))->toBe('/lid-worden');
+
+    $shell->assertNoJavaScriptErrors();
+})->with([
+    'a script' => ['javascript:alert(1)'],
+    'another site without a scheme' => ['//example.org'],
+]);
+
 it('reloads the frame at the same scroll position after a change to a field without data-cms-field', function (): void {
     $page = Page::factory()->published()->atPosition(1)->at('/lang')->withStrips([
         storedStrip('hero', ['kop' => 'Bovenaan'], id: 'boven'),

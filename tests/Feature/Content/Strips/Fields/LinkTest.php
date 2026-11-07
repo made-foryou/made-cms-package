@@ -48,6 +48,7 @@ it('refuses addresses that are no link', function (string $url): void {
 })->with([
     'javascript:alert(1)',
     '//example.com',
+    '/\\example.com',
     'example.com',
     'https://example.com/met spatie',
     'https://example.com/'.str_repeat('a', 2048),

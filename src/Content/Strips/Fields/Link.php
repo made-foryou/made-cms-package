@@ -17,7 +17,8 @@ final class Link extends Field
 {
     public const int MAX_URL_LENGTH = 2048;
 
-    private const string URL_PATTERN = '~^(?:https?://\S+|mailto:\S+|tel:\S+|/(?!/)\S*|#\S*)$~i';
+    // A path never starts with two slashes, also not with "/\": the browser reads both as another site.
+    private const string URL_PATTERN = '~^(?:https?://\S+|mailto:\S+|tel:\S+|/(?![/\\\\])\S*|#\S*)$~i';
 
     public static function make(string $key): self
     {
@@ -71,7 +72,7 @@ final class Link extends Field
                 return;
             }
 
-            if (! is_string($url) || mb_strlen($url) > self::MAX_URL_LENGTH || preg_match(self::URL_PATTERN, $url) !== 1) {
+            if (! self::isAddress($url)) {
                 $fail(self::message('link_url'));
             }
         };
@@ -99,7 +100,8 @@ final class Link extends Field
 
     /**
      * The url of a stored link: a page as the current path of its address, an address as it is.
-     * A page a visitor cannot open (gone, not published, without an address) has no url.
+     * A page a visitor cannot open (gone, not published, without an address) has no url, and neither has an address
+     * the validation would refuse, such as a script that reached the database another way (a seeder, an import).
      */
     public static function resolve(mixed $value): ?string
     {
@@ -115,7 +117,17 @@ final class Link extends Field
 
         $url = $value['url'] ?? null;
 
-        return is_string($url) && $url !== '' ? $url : null;
+        return self::isAddress($url) ? $url : null;
+    }
+
+    /**
+     * Whether the value is an address an editor may give: https, http, mailto, tel, a path on the site or an anchor.
+     *
+     * @phpstan-assert-if-true string $value
+     */
+    private static function isAddress(mixed $value): bool
+    {
+        return is_string($value) && mb_strlen($value) <= self::MAX_URL_LENGTH && preg_match(self::URL_PATTERN, $value) === 1;
     }
 
     private static function pageExists(mixed $page): bool

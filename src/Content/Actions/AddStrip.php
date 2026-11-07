@@ -33,19 +33,19 @@ final class AddStrip
     public function handle(Page $page, string $type, int $position): Strip
     {
         $definition = $this->types->find($type);
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
 
-        if ($position < 0 || $position > $strips->count()) {
-            throw InvalidStripPosition::for($page, $position, $strips->count());
-        }
+        return ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($definition, $position): Strip {
+            if ($position < 0 || $position > $strips->count()) {
+                throw InvalidStripPosition::for($page, $position, $strips->count());
+            }
 
-        $strip = new Strip((string) Str::uuid(), $definition->key(), true, $definition->normalize($definition->defaults()));
+            $strip = new Strip((string) Str::uuid(), $definition->key(), true, $definition->normalize($definition->defaults()));
 
-        $page->draft_strips = $strips->insert($strip, $position)->toArray();
-        $page->save();
+            $page->draft_strips = $strips->insert($strip, $position)->toArray();
 
-        StripAdded::dispatch($page, $strip, $position);
+            StripAdded::dispatch($page, $strip, $position);
 
-        return $strip;
+            return $strip;
+        });
     }
 }

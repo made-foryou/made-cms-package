@@ -160,6 +160,7 @@
 
 - Cleaning rich text no longer cuts it off at 65,535 bytes; the validation still allows at most 65,535 characters.
 - Rich text nested deeper than 100 levels no longer crashes PHP when it is stored or rendered: markup beyond that depth keeps only its text.
+- Changes to the draft made at the same time no longer get lost: two strips saved at once in the side panel, the opbouw moving or removing a strip while the panel saves another, two editors on one page. Every strip Action, `PublishPage` and `DiscardDraft` reads the page again in a transaction with its row locked (`ChangeDraft`), so the next change waits and starts from what the previous one stored; publishing and discarding see the draft as it was last stored. A page deleted in between throws `ModelNotFoundException` (404).
 - `PublishPage` checks a field that a strip does not hold yet (a field its type got later) as its default, as the site renders it, instead of refusing it as empty. `UpdateStrip`, `RestoreStrip` and `PublishPage` check strip values in one place (`CheckStripValues`).
 
 ### Security

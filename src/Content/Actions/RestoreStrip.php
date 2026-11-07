@@ -38,24 +38,23 @@ final class RestoreStrip
      */
     public function handle(Page $page, Strip $strip, int $position): Strip
     {
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
+        return ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($strip, $position): Strip {
+            if ($strips->find($strip->id) !== null) {
+                throw StripAlreadyOnPage::id($page, $strip->id);
+            }
 
-        if ($strips->find($strip->id) !== null) {
-            throw StripAlreadyOnPage::id($page, $strip->id);
-        }
+            if ($position < 0 || $position > $strips->count()) {
+                throw InvalidStripPosition::for($page, $position, $strips->count());
+            }
 
-        if ($position < 0 || $position > $strips->count()) {
-            throw InvalidStripPosition::for($page, $position, $strips->count());
-        }
+            $strip = $this->types->has($strip->type) ? $this->checked($strip) : $this->published($page, $strip);
 
-        $strip = $this->types->has($strip->type) ? $this->checked($strip) : $this->published($page, $strip);
+            $page->draft_strips = $strips->insert($strip, $position)->toArray();
 
-        $page->draft_strips = $strips->insert($strip, $position)->toArray();
-        $page->save();
+            StripAdded::dispatch($page, $strip, $position);
 
-        StripAdded::dispatch($page, $strip, $position);
-
-        return $strip;
+            return $strip;
+        });
     }
 
     /**

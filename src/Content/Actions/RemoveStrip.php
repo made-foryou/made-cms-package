@@ -23,14 +23,14 @@ final class RemoveStrip
      */
     public function handle(Page $page, string $stripId): Strip
     {
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
-        $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
+        return ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($stripId): Strip {
+            $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
 
-        $page->draft_strips = $strips->remove($stripId)->toArray();
-        $page->save();
+            $page->draft_strips = $strips->remove($stripId)->toArray();
 
-        StripRemoved::dispatch($page, $strip);
+            StripRemoved::dispatch($page, $strip);
 
-        return $strip;
+            return $strip;
+        });
     }
 }

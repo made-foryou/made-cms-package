@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Made\CmsPackage\Content\Actions\CombinePageScans;
 use Made\CmsPackage\Content\Actions\RecognisePage;
+use Made\CmsPackage\Content\Data\GeneratedStripTypes;
 use Made\CmsPackage\Content\Data\RecognisedField;
 use Made\CmsPackage\Content\Data\RecognisedPage;
 use Made\CmsPackage\Content\Data\ScanField;
@@ -229,6 +231,39 @@ function useStripTypes(): StripTypes
     app()->instance(StripTypes::class, $catalogue);
 
     return $catalogue;
+}
+
+/**
+ * Points the strip types of the site at a folder and a namespace of their own, empty, for the classes the scan
+ * writes. The folder is removed after the test.
+ *
+ * @return array{folder: string, namespace: string}
+ */
+function useStripFolder(): array
+{
+    $folder = sys_get_temp_dir().'/made-cms-strips-'.Str::random(8);
+    $namespace = 'Made\\CmsPackage\\Tests\\Generated\\Run'.Str::random(8);
+
+    config(['made-cms-package.strips.path' => $folder, 'made-cms-package.strips.namespace' => $namespace]);
+    app()->instance(StripTypes::class, StripTypes::discover($folder, $namespace));
+
+    test()->beforeApplicationDestroyed(static function () use ($folder): void {
+        (new Filesystem)->deleteDirectory($folder);
+    });
+
+    return ['folder' => $folder, 'namespace' => $namespace];
+}
+
+/**
+ * The catalogue of the classes the scan wrote, loaded as the site would load them.
+ */
+function writtenStripTypes(GeneratedStripTypes $result): StripTypes
+{
+    foreach ($result->written as $type) {
+        require_once $type->path;
+    }
+
+    return StripTypes::discover(config()->string('made-cms-package.strips.path'), config()->string('made-cms-package.strips.namespace'));
 }
 
 /**

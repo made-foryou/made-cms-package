@@ -99,7 +99,7 @@ final class FieldReader
         }
 
         if ($this->isProse($element)) {
-            $html = in_array($name, ['ul', 'ol'], true) ? $element->outerHTML : $element->innerHTML;
+            $html = in_array($name, ['ul', 'ol'], true) ? Html::outer($element) : $element->innerHTML;
 
             return [new RecognisedField(ScanRole::RichText, $selector, self::richText($html))];
         }
@@ -210,7 +210,7 @@ final class FieldReader
     private function paragraph(Element $paragraph, string $selector): array
     {
         if ($paragraph->querySelector('a[href]') !== null) {
-            return [new RecognisedField(ScanRole::RichText, $selector, self::richText($paragraph->outerHTML))];
+            return [new RecognisedField(ScanRole::RichText, $selector, self::richText(Html::outer($paragraph)))];
         }
 
         $lines = Html::lines($paragraph);

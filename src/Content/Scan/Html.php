@@ -109,13 +109,24 @@ final class Html
     {
         $children = [];
 
-        foreach ($element->children as $child) {
+        // Dom\Element::$children only exists from PHP 8.5.
+        for ($child = $element->firstElementChild; $child !== null; $child = $child->nextElementSibling) {
             if (! self::isIgnored($child)) {
                 $children[] = $child;
             }
         }
 
         return $children;
+    }
+
+    /**
+     * The element with its own tag, as markup (Dom\Element::$outerHTML only exists from PHP 8.5).
+     */
+    public static function outer(Element $element): string
+    {
+        $document = $element->ownerDocument;
+
+        return $document instanceof HTMLDocument ? $document->saveHtml($element) : $element->innerHTML;
     }
 
     /**

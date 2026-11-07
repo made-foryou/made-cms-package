@@ -104,6 +104,11 @@ it('renders every item with its id and every field, a missing one from its defau
     ]);
 });
 
+it('renders the rich text of an item cleaned', function (): void {
+    expect(Items::make('kaarten', [RichText::make('tekst')])->render([['tekst' => '<p>Een</p><script>alert(1)</script>']]))
+        ->toBe([['id' => null, 'tekst' => '<p>Een</p>']]);
+});
+
 it('renders no list as an empty list', function (mixed $value): void {
     expect(Items::make('kaarten', [Text::make('titel')])->render($value))->toBe([]);
 })->with([

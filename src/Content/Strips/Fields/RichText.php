@@ -11,9 +11,9 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 /**
  * Text with a fixed set of markup: paragraphs, bold, italic, links and lists.
  *
- * It is stored as cleaned HTML, so every stack renders it as it is. Common text markup
- * outside the set (headings, divs, spans, tables …) loses its tags but keeps its text;
- * everything else, such as scripts, styles and embeds, disappears with its content.
+ * It is stored as cleaned HTML and cleaned again when it renders, so every stack prints it as it is. Common text
+ * markup outside the set (headings, divs, spans, tables …) loses its tags but keeps its text; everything else,
+ * such as scripts, styles and embeds, disappears with its content.
  */
 final class RichText extends Field
 {
@@ -74,6 +74,16 @@ final class RichText extends Field
         return self::sanitizer()->sanitize($value);
     }
 
+    /**
+     * The stored HTML cleaned once more, because not every value passed normalize(): a seeder or an import writes the
+     * strips directly, a field may have been another type before, and a default is never stored. A value that is not
+     * a string renders as nothing. Cleaning stays the last step of rendering, also when links get their address here.
+     */
+    public function render(mixed $value): ?string
+    {
+        return is_string($value) ? self::sanitizer()->sanitize($value) : null;
+    }
+
     private static function sanitizer(): HtmlSanitizer
     {
         if (self::$sanitizer instanceof HtmlSanitizer) {
@@ -91,7 +101,9 @@ final class RichText extends Field
             ->allowElement('a', ['href'])
             ->allowLinkSchemes(['http', 'https', 'mailto', 'tel'])
             ->allowRelativeLinks()
-            ->withMaxInputLength(self::MAX_LENGTH);
+            // The validation limits the length. Cleaning makes a text longer (' becomes &#039;), so a limit here
+            // would cut the end off a stored text when it renders.
+            ->withMaxInputLength(-1);
 
         foreach (self::KEEP_TEXT_OF as $element) {
             $config = $config->blockElement($element);

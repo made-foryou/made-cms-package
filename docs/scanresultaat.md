@@ -186,5 +186,10 @@ Een veld of type met twijfel heeft `certain: false`. 4.3 toont die eerst. De uit
 
 - De scan ziet alleen de markup, geen berekende stijlen: een achtergrond uit een stylesheet of een element dat via CSS verborgen is, ziet hij niet.
 - Een keuze ontstaat alleen uit iconen, niet uit klassen op knoppen of balken (de stijl van een knop) en niet uit tekst (een weekdag).
-- Een kop in twee kleuren (`TTV <span>Merwestad</span>`) is één tekst.
+- Een kop in twee kleuren (`TTV <span>Merwestad</span>`) of een getal met een teken erachter (`60+`) is één tekst.
 - Elementen op een rij met een eigen tag of een eigen icoon zijn losse velden, ook als ze er als een lijst uitzien.
+- Een waarde die alleen in een attribuut staat, leest de scan niet, zoals de `id` die het anker van een strook is.
+- Een `p` is altijd lange tekst, ook als er maar één regel in past.
+- Wat binnen een item herhaalt (de klasse en de poule van een team), is één lange tekst met een regel per element.
+- De scan leest alleen wat de pagina toont: een leeg veld of een tekst die pas na het versturen van een formulier verschijnt, ontbreekt. Andersom lijkt tekst die de site zelf berekent ("Vanavond!") inhoud.
+- Een `mailto:`-link met tekst is een knop, ook als de site er een e-mailadres mee toont.

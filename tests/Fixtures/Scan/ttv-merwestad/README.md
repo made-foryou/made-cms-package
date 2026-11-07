@@ -17,4 +17,6 @@ Both pages were captured on 2026-11-03 with headless Chrome through the DevTools
 
 `tests/Feature/Content/Scan/TtvMerwestadScanTest.php` scans `home.html` (4.2) and holds the result against the stubs and `content.json` on the main lines, with the whole `ScanResult` as a snapshot.
 
+`tests/Feature/Content/Scan/TtvMerwestadDefinitionsTest.php` writes the classes of that scan (4.4) and holds them against the stubs: the same eight strip types in the order of the page, most fields with the same field type under another name, and every difference explained by a limit in `docs/scanresultaat.md`.
+
 `tests/Feature/Content/Strips/TtvMerwestadFixtureTest.php` keeps the fixture valid: the stubs are valid strip types, the content passes their validation unchanged, the live page has no `data-cms-*` attribute and the coupled page marks every strip of the content in order.

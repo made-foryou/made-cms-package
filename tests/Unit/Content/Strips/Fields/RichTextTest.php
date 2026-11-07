@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Strips\Fields\RichText;
+use Made\CmsPackage\Content\Strips\RichTextParser;
 use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 
 it('validates the html as a long string', function (): void {
@@ -77,6 +78,33 @@ it('renders a value that is not a string as nothing', function (mixed $stored): 
 })->with([
     'nothing' => [null],
     'a list' => [['<img src="x" onerror="alert(1)">']],
+]);
+
+it('keeps the text of markup nested deeper than the sanitizer follows, when it stores and when it renders', function (): void {
+    $field = RichText::make('tekst');
+    $html = str_repeat('<b>', 21000).'x';
+
+    expect($field->normalize($html))->toBe('x')
+        ->and($field->render($html))->toBe('x');
+});
+
+it('keeps nested markup up to the depth it follows', function (): void {
+    $field = RichText::make('tekst');
+    $nested = static fn (int $levels): string => '<p>'.str_repeat('<em>', $levels).'x'.str_repeat('</em>', $levels).'</p>';
+
+    expect($field->render($nested(RichTextParser::MAX_DEPTH - 1)))->toBe($nested(RichTextParser::MAX_DEPTH - 1))
+        ->and($field->render($nested(RichTextParser::MAX_DEPTH + 5)))->toBe($nested(RichTextParser::MAX_DEPTH - 1));
+});
+
+it('removes the address of a link to another site that looks like an address on the site', function (string $href): void {
+    $field = RichText::make('tekst');
+    $html = '<p><a href="'.$href.'">klik</a> <a href="/lid-worden">lid worden</a></p>';
+
+    expect($field->normalize($html))->toBe('<p><a>klik</a> <a href="/lid-worden">lid worden</a></p>')
+        ->and($field->render($html))->toBe('<p><a>klik</a> <a href="/lid-worden">lid worden</a></p>');
+})->with([
+    'two slashes' => ['//example.org/lid-worden'],
+    'two encoded slashes' => ['&#47;&#47;example.org/lid-worden'],
 ]);
 
 it('keeps a long text whole when cleaning made it longer than the limit of the input', function (): void {

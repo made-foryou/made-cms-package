@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Strips\Fields;
 
+use Made\CmsPackage\Content\Strips\RichTextParser;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerAction;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
@@ -109,6 +110,6 @@ final class RichText extends Field
             $config = $config->blockElement($element);
         }
 
-        return self::$sanitizer = new HtmlSanitizer($config);
+        return self::$sanitizer = new HtmlSanitizer($config, new RichTextParser);
     }
 }

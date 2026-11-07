@@ -59,7 +59,8 @@ it('writes the strip types of a scan for an admin and says what it wrote', funct
         ->assertJsonPath('written.0', [
             'key' => 'strook-1',
             'class' => $this->namespace.'\\Strook1',
-            'path' => $this->folder.'/Strook1.php',
+            // Outside the root of the site the path stays whole, with forward slashes on every system.
+            'path' => str_replace('\\', '/', $this->folder).'/Strook1.php',
             'left_out' => ['afbeelding'],
         ]);
 

@@ -1,0 +1,69 @@
+// ---- Strook1.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\RichText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Strook1 extends StripType
+{
+    public function key(): string
+    {
+        return 'strook-1';
+    }
+
+    public function label(): string
+    {
+        return 'Strook 1';
+    }
+
+    public function fields(): array
+    {
+        return [
+            LongText::make('tekst')->required(),
+            Text::make('kop')->required(),
+            RichText::make('inhoud')->required(),
+            Items::make('items', [Button::make('knop')->required()])->max(2)->required(),
+        ];
+    }
+}
+// ---- Strook2.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Strook2 extends StripType
+{
+    public function key(): string
+    {
+        return 'strook-2';
+    }
+
+    public function label(): string
+    {
+        return 'Strook 2';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('kop')->required(),
+            Items::make('items', [
+                Text::make('kop')->required(),
+                LongText::make('tekst')->required(),
+                Link::make('link')->required(),
+            ])->max(3)->required(),
+        ];
+    }
+}

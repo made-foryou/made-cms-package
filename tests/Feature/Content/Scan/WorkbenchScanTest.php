@@ -144,3 +144,7 @@ it('proposes valid strip types that accept what it read', function (): void {
 it('keeps its result', function (): void {
     expect(scanJson(workbenchScan()))->toMatchSnapshot();
 });
+
+it('proposes a class for each of its strip types', function (): void {
+    expect(sourcesText(scanSources(workbenchScan())))->toMatchSnapshot();
+});

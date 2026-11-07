@@ -126,6 +126,24 @@ it('leaves hidden strips and unknown types out of the draft in the edit mode', f
     expect(array_column(RenderStrips::run($page)->toArray(), 'id'))->toBe(['c']);
 });
 
+it('renders no script that reached the database without the package', function (): void {
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('hero', ['tekst' => '<p>Welkom</p><script>alert(1)</script><img src="x" onerror="alert(1)">'], id: 'a'),
+    ])->create();
+
+    expect(RenderStrips::run($page)->strips[0]->tekst)->toBe('<p>Welkom</p>');
+});
+
+it('renders no script that reached the draft without the package in the edit mode', function (): void {
+    app()->instance(EditMode::class, EditMode::on());
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('hero', ['tekst' => '<p>Live</p>'], id: 'a')])
+        ->withDraft([storedStrip('hero', ['tekst' => '<p>Concept</p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>'], id: 'a')])
+        ->create();
+
+    expect(RenderStrips::run($page)->strips[0]->tekst)->toBe('<p>Concept</p><a>klik</a>');
+});
+
 it('keeps the id and type of a strip when the extra data of the site uses those names', function (): void {
     app()->instance(StripTypes::class, new StripTypes([new Teaser]));
     $page = Page::factory()->published()->withStrips([

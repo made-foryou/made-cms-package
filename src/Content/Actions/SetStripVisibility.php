@@ -22,14 +22,14 @@ final class SetStripVisibility
      */
     public function handle(Page $page, string $stripId, bool $visible): Strip
     {
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
-        $strip = ($strips->find($stripId) ?? throw StripNotFound::id($page, $stripId))->withVisibility($visible);
+        return ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($stripId, $visible): Strip {
+            $strip = ($strips->find($stripId) ?? throw StripNotFound::id($page, $stripId))->withVisibility($visible);
 
-        $page->draft_strips = $strips->replace($strip)->toArray();
-        $page->save();
+            $page->draft_strips = $strips->replace($strip)->toArray();
 
-        StripVisibilityChanged::dispatch($page, $strip);
+            StripVisibilityChanged::dispatch($page, $strip);
 
-        return $strip;
+            return $strip;
+        });
     }
 }

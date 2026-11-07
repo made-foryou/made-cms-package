@@ -22,7 +22,7 @@ final class PublishPage
     ) {}
 
     /**
-     * Makes the draft the published version of the page.
+     * Makes the draft, as it is stored now, the published version of the page.
      *
      * Every strip of the draft must pass its strip type, hidden strips too, so they never
      * break once they are shown. Strips of a type that is no longer in the catalogue cannot
@@ -33,21 +33,20 @@ final class PublishPage
      */
     public function handle(Page $page): Page
     {
-        if ($page->status === PageStatus::Published && $page->draft_strips === null) {
-            throw PageAlreadyPublished::for($page);
-        }
+        ChangeDraft::run($page, function (PageStrips $strips, Page $page): void {
+            if ($page->status === PageStatus::Published && $page->draft_strips === null) {
+                throw PageAlreadyPublished::for($page);
+            }
 
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
+            $this->check($strips);
 
-        $this->check($strips);
+            $page->strips = $strips->toArray();
+            $page->draft_strips = null;
+            $page->status = PageStatus::Published;
+            $page->published_at = now()->toImmutable();
 
-        $page->strips = $strips->toArray();
-        $page->draft_strips = null;
-        $page->status = PageStatus::Published;
-        $page->published_at = now()->toImmutable();
-        $page->save();
-
-        PagePublished::dispatch($page);
+            PagePublished::dispatch($page);
+        });
 
         return $page;
     }

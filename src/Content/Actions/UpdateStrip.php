@@ -38,17 +38,17 @@ final class UpdateStrip
      */
     public function handle(Page $page, string $stripId, array $values): Strip
     {
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
-        $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
-        $type = $this->types->find($strip->type);
+        return ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($stripId, $values): Strip {
+            $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
+            $type = $this->types->find($strip->type);
 
-        $strip = $strip->withValues(CheckStripValues::run($type, $type->merge([...$type->defaults(), ...$strip->values], $values)));
+            $strip = $strip->withValues(CheckStripValues::run($type, $type->merge([...$type->defaults(), ...$strip->values], $values)));
 
-        $page->draft_strips = $strips->replace($strip)->toArray();
-        $page->save();
+            $page->draft_strips = $strips->replace($strip)->toArray();
 
-        StripUpdated::dispatch($page, $strip);
+            StripUpdated::dispatch($page, $strip);
 
-        return $strip;
+            return $strip;
+        });
     }
 }

@@ -25,21 +25,21 @@ final class MoveStrip
      */
     public function handle(Page $page, string $stripId, int $position): void
     {
-        $strips = PageStrips::fromArray($page->draft_strips ?? $page->strips);
-        $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
-        $from = (int) $strips->positionOf($stripId);
+        ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($stripId, $position): void {
+            $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
+            $from = (int) $strips->positionOf($stripId);
 
-        if ($position < 0 || $position >= $strips->count()) {
-            throw InvalidStripPosition::for($page, $position, $strips->count() - 1);
-        }
+            if ($position < 0 || $position >= $strips->count()) {
+                throw InvalidStripPosition::for($page, $position, $strips->count() - 1);
+            }
 
-        if ($position === $from) {
-            return;
-        }
+            if ($position === $from) {
+                return;
+            }
 
-        $page->draft_strips = $strips->move($stripId, $position)->toArray();
-        $page->save();
+            $page->draft_strips = $strips->move($stripId, $position)->toArray();
 
-        StripMoved::dispatch($page, $strip, $from, $position);
+            StripMoved::dispatch($page, $strip, $from, $position);
+        });
     }
 }

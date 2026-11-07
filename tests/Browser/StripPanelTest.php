@@ -190,6 +190,21 @@ it('undoes the saved changes of a strip one step at a time', function (): void {
     $shell->assertNoJavaScriptErrors();
 });
 
+it('never puts markup the package did not clean into the site in the frame when it undoes a change', function (): void {
+    $this->page->update(['draft_strips' => [
+        storedStrip('hero', ['kop' => 'Welkom bij de club', 'intro' => '<p>Welkom</p><img src="x" onerror="parent.document.body.dataset.geschreven = \'ja\'">'], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen'], id: 'cards'),
+    ]]);
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"intro\"] [contenteditable]')?.textContent === 'Welkom'");
+    $intro = "document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"] [data-cms-field=\"intro\"]')?.innerHTML";
+
+    $shell->script("() => { const editor = document.querySelector('[data-path=\"intro\"] [contenteditable]'); editor.innerHTML = '<p>Welkom terug</p>'; editor.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('[data-slot=\"undo\"]').click(); }");
+
+    expect($shell->script(valueAfter("[{$intro}, document.body.dataset.geschreven ?? null]", 900)))->toBe(['<p>Welkom</p>', null]);
+
+    $shell->assertNoJavaScriptErrors();
+});
+
 it('undoes hiding a strip', function (): void {
     $shell = openStrip($this->page, 'hero', "document.querySelector('#paneel-zichtbaar')?.checked === true");
 

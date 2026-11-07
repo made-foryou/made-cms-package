@@ -57,6 +57,14 @@ it('gives every field a value, a missing one its default, in the order of the ty
     ]);
 });
 
+it('describes rich text cleaned, also when it reached the database without the package', function (): void {
+    $page = Page::factory()->withDraft([
+        storedStrip('hero', ['tekst' => '<p>Welkom</p><img src="x" onerror="alert(1)"><a href="javascript:alert(1)">klik</a>'], id: 'a'),
+    ])->create();
+
+    expect(DescribeStrip::run($page, 'a')->values['tekst'])->toBe('<p>Welkom</p><a>klik</a>');
+});
+
 it('leaves out stored values of fields the type no longer has', function (): void {
     $page = Page::factory()->withDraft([storedStrip('cards', ['kaarten' => [], 'oud' => 'weg'], id: 'a')])->create();
 

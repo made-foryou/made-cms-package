@@ -50,4 +50,9 @@ final class InvalidStripType extends RuntimeException
     {
         return new self("Strip type [{$type}] field [{$field}] is a list inside a list.");
     }
+
+    public static function fieldType(string $type, string $field, string $fieldType): self
+    {
+        return new self("Strip type [{$type}] field [{$field}] has an unknown type [{$fieldType}].");
+    }
 }

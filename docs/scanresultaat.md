@@ -11,7 +11,7 @@ De scan leest een bestaande site en stelt voor welke striptypes die heeft, met w
 | 4.7 AI (#34) | Stuurt het compacte resultaat naar Claude voor betere namen en voorstellen. |
 
 - **De code is leidend.** De vorm staat in `src/Content/Data/Scan*.php`. Een test (`tests/Unit/Docs/ScanResultDocumentTest.php`) leest het voorbeeld en de twijfels hieronder en faalt als ze niet meer kloppen.
-- **Alleen lezen.** De scan schrijft niets en gebruikt geen dienst buiten de site: dezelfde HTML geeft hetzelfde resultaat.
+- **Alleen lezen.** De herkenning schrijft niets en gebruikt geen dienst buiten de site: dezelfde HTML geeft hetzelfde resultaat. Alleen 4.4 schrijft in de site, en alleen bij `APP_ENV=local` (zie [Van type naar klasse](#van-type-naar-klasse-44)).
 
 ## Van pagina naar resultaat
 
@@ -140,7 +140,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
 | `items` | twee of meer broers op een rij met dezelfde tag en (bijna) dezelfde opbouw | een lijst met per item de waarden per key |
 | `image` | `img`, `picture`, een `background-image: url()` in `style` | `{"url": "/foto.jpg", "alt": "…"}` |
 
-- Het veldtype `image` bestaat nog niet (#27). Tot dan slaat 4.4 het over; de waarde staat wel in het resultaat.
+- Het veldtype `image` bestaat nog niet (#27). Tot dan laat 4.4 het weg, met een regel commentaar in de klasse; de waarde staat wel in het resultaat.
 - Adressen staan er zoals de site ze schrijft. 4.6 maakt van een intern adres een verwijzing naar een pagina.
 
 ## Selectors
@@ -181,6 +181,23 @@ Een veld of type met twijfel heeft `certain: false`. 4.3 toont die eerst. De uit
   - een link met dezelfde tekst in elk item is een `link` (de tekst hoort bij het ontwerp), met hetzelfde adres valt hij weg, net als een afbeelding die overal gelijk is;
   - een tekst die in elk item gelijk is, valt weg als het een kort label is (hooguit twee woorden, geen cijfers, zoals "Spelers"), anders krijgt hij `same_in_every_item`;
   - een veld dat op een pagina een link in de tekst heeft, wordt overal `rich_text`.
+
+## Van type naar klasse (4.4)
+
+`GenerateStripTypes::run($scan)` schrijft per type van een (beoordeeld) resultaat één klasse in de map van de catalogus (`strips.path`, onder `strips.namespace`). Daarna is de klasse van de developer. Het endpoint `POST made-cms/scan/strip-types` doet dit voor een admin, alleen bij `APP_ENV=local`.
+
+| In het resultaat | In de klasse |
+|---|---|
+| `key` | `key()` en de klassenaam (`over-ons` wordt `OverOns`, met `Strip` erachter als PHP of een import die naam al gebruikt) |
+| `label` | `label()`, alleen als de klassenaam het niet al zo leest (`Over ons`, `Strook 1`) |
+| `type` | `Text`, `LongText`, `RichText`, `Button`, `Link`, `Choice` of `Items`; `image` valt weg met een regel commentaar |
+| `required` | `->required()` |
+| `options` | een keuze met per waarde een label om te vertalen (`'map-pin' => 'Map pin'`) |
+| `min`, `max` | `->max()`; `->min()` alleen boven 1, want `required` vraagt al om één item |
+| `selector`, `doubts`, `hint`, `fingerprint` | niets: die zijn voor de review en de views |
+
+- **Nooit overschrijven.** Een type wordt overgeslagen en gemeld als de catalogus de definitie zou weigeren (`invalid`), als de catalogus of het resultaat de key al heeft (`key_exists`), of als de map de klasse al heeft, ook met andere hoofdletters (`class_exists`). Een bestand wordt alleen aangemaakt als het er nog niet is.
+- **Acceptatie.** Voor de home van TTV Merwestad schrijft de scan dezelfde acht types in dezelfde volgorde als de koppeling met de hand. Elk verschil komt door een van de grenzen hieronder (`tests/Feature/Content/Scan/TtvMerwestadDefinitionsTest.php`).
 
 ## Grenzen
 

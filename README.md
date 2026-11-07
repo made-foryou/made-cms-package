@@ -118,7 +118,9 @@ UpdateStrip::run($page, $strip->id, ['knoppen' => [
 ]]);
 ```
 
-Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished`.
+Changes to the draft made at the same time never overwrite each other: every strip action, `PublishPage` and `DiscardDraft` reads the page again in a transaction with its row locked, so the next change waits and starts from what the previous one stored. The `$page` you pass holds the stored state afterwards. On MySQL and PostgreSQL that is all; SQLite ignores the row lock, so there a change that collides with another write fails with "database is locked" instead of waiting. From Laravel 12.26 `'transaction_mode' => 'IMMEDIATE'` on the SQLite connection makes it wait.
+
+Every write dispatches an event that your application can listen to: `EditorCreated`, `EditorRolesChanged`, `LoginCodeIssued`, `EditorLoggedIn`, `EditorLoggedOut`, `TwoFactorEnabled`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished`. The events of the content wait for the commit of the transaction they are dispatched in, also one of your own around an action, and never reach a listener when it rolls back.
 
 ## Roles and screens
 

@@ -35,5 +35,9 @@ return [
         ],
         'written' => '{0} No strip types written|{1} 1 strip type written|[2,*] :count strip types written',
         'skipped_count' => '{1} 1 skipped|[2,*] :count skipped',
+        'errors' => [
+            'version' => 'This scan result comes from another version of the scan.',
+            'types' => 'The scan result has no strip types with fields in the right form.',
+        ],
     ],
 ];

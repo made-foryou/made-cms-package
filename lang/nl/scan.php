@@ -35,5 +35,9 @@ return [
         ],
         'written' => '{0} Geen striptypes geschreven|{1} 1 striptype geschreven|[2,*] :count striptypes geschreven',
         'skipped_count' => '{1} 1 overgeslagen|[2,*] :count overgeslagen',
+        'errors' => [
+            'version' => 'Dit scanresultaat komt uit een andere versie van de scan.',
+            'types' => 'Het scanresultaat heeft geen striptypes met velden in de goede vorm.',
+        ],
     ],
 ];

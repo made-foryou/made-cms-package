@@ -25,6 +25,7 @@ use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
 use Made\CmsPackage\Http\Controllers\Content\AddStripController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
+use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
@@ -41,6 +42,7 @@ use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateStripController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
+use Made\CmsPackage\Http\Middleware\EnsureScanAccess;
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 use Made\CmsPackage\Http\Middleware\SetLauncherLocale;
 
@@ -153,6 +155,11 @@ Route::prefix($prefix)
                 Route::get('pages/{page}/draft', ShowDraftController::class)->whereNumber('page')->name('pages.draft.show');
                 Route::delete('pages/{page}/draft', DiscardDraftController::class)->whereNumber('page')->name('pages.draft.destroy');
                 Route::post('pages/{page}/publish', PublishPageController::class)->whereNumber('page')->name('pages.publish');
+            });
+
+            // The scan of the site writes code into it: only for an admin at APP_ENV=local, whatever its panel shows.
+            Route::middleware(EnsureScanAccess::class)->group(function (): void {
+                Route::post('scan/strip-types', GenerateStripTypesController::class)->name('scan.strip-types.store');
             });
         });
     });

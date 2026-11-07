@@ -28,5 +28,12 @@ return [
     ],
     'generate' => [
         'left_out' => ':field: waits for the image field type.',
+        'skipped' => [
+            'invalid' => 'The definition is not valid.',
+            'key_exists' => 'A strip type with this key exists already.',
+            'class_exists' => 'A class with this name exists already.',
+        ],
+        'written' => '{0} No strip types written|{1} 1 strip type written|[2,*] :count strip types written',
+        'skipped_count' => '{1} 1 skipped|[2,*] :count skipped',
     ],
 ];

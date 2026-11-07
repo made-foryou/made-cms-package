@@ -28,5 +28,12 @@ return [
     ],
     'generate' => [
         'left_out' => ':field: wacht op het veldtype Afbeelding.',
+        'skipped' => [
+            'invalid' => 'De definitie klopt niet.',
+            'key_exists' => 'Er is al een striptype met deze key.',
+            'class_exists' => 'Er is al een klasse met deze naam.',
+        ],
+        'written' => '{0} Geen striptypes geschreven|{1} 1 striptype geschreven|[2,*] :count striptypes geschreven',
+        'skipped_count' => '{1} 1 overgeslagen|[2,*] :count overgeslagen',
     ],
 ];

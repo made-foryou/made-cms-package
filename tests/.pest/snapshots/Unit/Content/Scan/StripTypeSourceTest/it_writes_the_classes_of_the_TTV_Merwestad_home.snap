@@ -1,0 +1,265 @@
+// ---- Contact.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Contact extends StripType
+{
+    public function key(): string
+    {
+        return 'contact';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Text::make('label_2')->required(),
+            Button::make('knop')->required(),
+        ];
+    }
+}
+// ---- LidWorden.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class LidWorden extends StripType
+{
+    public function key(): string
+    {
+        return 'lid-worden';
+    }
+
+    public function label(): string
+    {
+        return 'Lid worden';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Button::make('knop')->required(),
+            Button::make('knop_2')->required(),
+        ];
+    }
+}
+// ---- Locatie.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Locatie extends StripType
+{
+    public function key(): string
+    {
+        return 'locatie';
+    }
+
+    public function fields(): array
+    {
+        // afbeelding: wacht op het veldtype Afbeelding.
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Button::make('knop')->required(),
+            Items::make('items', [
+                Choice::make('icoon', ['building2' => 'Building2', 'car' => 'Car', 'map-pin' => 'Map pin'])->required(),
+                Text::make('kop')->required(),
+                LongText::make('tekst')->required(),
+            ])->max(3)->required(),
+        ];
+    }
+}
+// ---- OverOns.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class OverOns extends StripType
+{
+    public function key(): string
+    {
+        return 'over-ons';
+    }
+
+    public function label(): string
+    {
+        return 'Over ons';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Items::make('items', [
+                Choice::make('icoon', ['users' => 'Users', 'heart' => 'Heart', 'trophy' => 'Trophy'])->required(),
+                Text::make('kop')->required(),
+                LongText::make('tekst')->required(),
+            ])->max(3)->required(),
+        ];
+    }
+}
+// ---- Strook1.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Strook1 extends StripType
+{
+    public function key(): string
+    {
+        return 'strook-1';
+    }
+
+    public function label(): string
+    {
+        return 'Strook 1';
+    }
+
+    public function fields(): array
+    {
+        // afbeelding: wacht op het veldtype Afbeelding.
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Button::make('knop')->required(),
+            Button::make('knop_2')->required(),
+        ];
+    }
+}
+// ---- Strook2.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Strook2 extends StripType
+{
+    public function key(): string
+    {
+        return 'strook-2';
+    }
+
+    public function label(): string
+    {
+        return 'Strook 2';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Items::make('items', [
+                Text::make('label')->required(),
+                Text::make('label_2')->required(),
+            ])->max(4)->required(),
+        ];
+    }
+}
+// ---- Teams.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Link;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Teams extends StripType
+{
+    public function key(): string
+    {
+        return 'teams';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Items::make('items', [
+                Link::make('link')->required(),
+                Text::make('kop')->required(),
+                LongText::make('tekst')->required(),
+                LongText::make('lijst')->required(),
+                LongText::make('lijst_2')->required(),
+            ])->max(3)->required(),
+        ];
+    }
+}
+// ---- Trainingstijden.php
+<?php
+
+namespace App\Cms\Strips;
+
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\Text;
+use Made\CmsPackage\Content\Strips\StripType;
+
+final class Trainingstijden extends StripType
+{
+    public function key(): string
+    {
+        return 'trainingstijden';
+    }
+
+    public function fields(): array
+    {
+        return [
+            Text::make('label')->required(),
+            Text::make('kop')->required(),
+            LongText::make('tekst')->required(),
+            Items::make('items', [
+                Text::make('kop')->required(),
+                Text::make('label'),
+                Text::make('label_2')->required(),
+                LongText::make('lijst')->required(),
+            ])->max(2)->required(),
+            LongText::make('tekst_2')->required(),
+        ];
+    }
+}

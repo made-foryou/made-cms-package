@@ -26,4 +26,7 @@ return [
         'nested_list' => 'A list inside an item: one value per line.',
         'same_in_every_item' => 'The same in every item: perhaps fixed text of the design.',
     ],
+    'generate' => [
+        'left_out' => ':field: waits for the image field type.',
+    ],
 ];

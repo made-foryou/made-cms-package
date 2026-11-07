@@ -19,12 +19,14 @@ use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Scan\ScannedStripType;
+use Made\CmsPackage\Content\Scan\StripTypeSource;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Process\Process;
 
 /*
 |--------------------------------------------------------------------------
@@ -327,6 +329,70 @@ function outline(ScanType $type): array
 function scanStripTypes(ScanResult $scan): StripTypes
 {
     return new StripTypes(array_map(ScannedStripType::from(...), $scan->types));
+}
+
+/**
+ * The class files the scan proposes for its strip types, by name, as one text for a snapshot.
+ *
+ * @return array<string, string> file name => source
+ */
+function scanSources(ScanResult $scan, string $namespace = 'App\\Cms\\Strips'): array
+{
+    $sources = [];
+
+    foreach ($scan->types as $type) {
+        $class = StripTypeSource::className($type->key);
+        $sources[$class.'.php'] = StripTypeSource::of(ScannedStripType::from($type), $namespace, $class);
+    }
+
+    ksort($sources);
+
+    return $sources;
+}
+
+/**
+ * Class files as one text, each behind a line with its name: one snapshot per test, also on Pest 4.
+ *
+ * @param  array<string, string>  $sources
+ */
+function sourcesText(array $sources): string
+{
+    $text = '';
+
+    foreach ($sources as $file => $source) {
+        $text .= "// ---- {$file}\n{$source}";
+    }
+
+    return $text;
+}
+
+/**
+ * Whether Pint (Laravel preset) leaves the class files as they are; they are checked in a folder of their own, so the
+ * Pint configuration of the package does not count.
+ *
+ * @param  array<string, string>  $sources
+ */
+function pintAccepts(array $sources): bool
+{
+    $folder = sys_get_temp_dir().'/made-cms-pint-'.Str::random(8);
+    mkdir($folder);
+
+    try {
+        foreach ($sources as $file => $source) {
+            file_put_contents($folder.'/'.$file, $source);
+        }
+
+        $process = new Process([PHP_BINARY, __DIR__.'/../vendor/laravel/pint/builds/pint', '--test', '--preset=laravel', '.'], $folder);
+        $process->run();
+
+        return $process->getExitCode() === 0;
+    } finally {
+        foreach (glob($folder.'/*') ?: [] as $file) {
+            unlink($file);
+        }
+
+        rmdir($folder);
+    }
 }
 
 /**

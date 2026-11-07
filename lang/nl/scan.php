@@ -26,4 +26,7 @@ return [
         'nested_list' => 'Een lijst in een item: één waarde per regel.',
         'same_in_every_item' => 'Staat in elk item hetzelfde: misschien vaste tekst van het ontwerp.',
     ],
+    'generate' => [
+        'left_out' => ':field: wacht op het veldtype Afbeelding.',
+    ],
 ];

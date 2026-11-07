@@ -209,6 +209,12 @@ function rendered(field, value) {
         }
         case 'items':
             return null;
+        case 'rich_text': {
+            // edit.js puts rich text into the site as HTML, so it only ever gets the markup the panel builds itself.
+            const html = typeof value === 'string' ? richHtml(new DOMParser().parseFromString(value, 'text/html').body) : '';
+
+            return html === '' ? null : html;
+        }
         default:
             return value ?? null;
     }

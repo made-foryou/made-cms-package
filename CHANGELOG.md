@@ -155,6 +155,14 @@
 - The texts `cms.edit.choose` and `cms.edit.hidden_strips`; a host that published the translations of the package can remove them.
 - Scaffold placeholders: the `CmsPackage` class and facade, the placeholder command, migration, view, translation and config key.
 
+### Fixed
+
+- Cleaning rich text no longer cuts it off at 65,535 bytes; the validation still allows at most 65,535 characters.
+
+### Security
+
+- Rich text is also cleaned when it is rendered, not only when it is stored. HTML that reached `strips` or `draft_strips` another way (a seeder, an import, a field that used to be another type) and the `default()` of a `RichText` field no longer reach visitors or the edit mode with scripts, event attributes or `javascript:` links. A stored rich text that is not a string renders as `null`.
+
 
 ## [v0.1.0](https://github.com/made-foryou/made-cms-package/compare/...v0.1.0) - 202x-xx-xx
 

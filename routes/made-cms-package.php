@@ -67,7 +67,7 @@ Route::prefix($prefix)
                 ->middleware(ThrottleRequests::using('made-cms-package.login'))
                 ->name('login.code.verify');
             Route::post('login/password', PasswordLoginController::class)
-                ->middleware(ThrottleRequests::using('made-cms-package.login'))
+                ->middleware(ThrottleRequests::using('made-cms-package.password'))
                 ->name('login.password');
             Route::post('login/two-factor', TwoFactorLoginController::class)
                 ->middleware(ThrottleRequests::using('made-cms-package.two-factor'))

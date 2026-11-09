@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
+use Made\CmsPackage\Access\Actions\RecogniseDevice;
+use Made\CmsPackage\Access\Data\LoginStart;
 use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
@@ -23,6 +25,7 @@ use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Routing\RouterMixin;
@@ -172,20 +175,51 @@ class CmsPackageServiceProvider extends ServiceProvider
         $email = fn (Request $request): string => hash('sha256', (string) LoginSession::of($request)->email());
         $network = $this->network(...);
 
+        // Per typed address, whatever the network, so rotating ip addresses gets no further. A browser that logged in
+        // with the address before counts on its own, so whoever exhausts the limit never locks the editor out there.
+        $address = fn (Request $request, Limit $limit, string $name): array => ($key = $this->address($request)) === null
+            ? []
+            : [$limit->by($name.'|'.$key)->response($throttled)];
+
         RateLimiter::for('made-cms-package.login-code', fn (Request $request): array => [
             Limit::perMinutes(10, 3)->by('login-code|'.$email($request).'|'.$network($request))->response($throttled),
             Limit::perHour(20)->by('login-code-ip|'.$network($request))->response($throttled),
+            ...$address($request, Limit::perHour(10), 'login-code-address'),
         ]);
 
+        // Checking a code or a link: every code allows login_code.max_attempts tries, and asking for codes is limited.
         RateLimiter::for('made-cms-package.login', fn (Request $request): array => [
             Limit::perMinute(10)->by('login|'.$email($request).'|'.$network($request))->response($throttled),
             Limit::perMinute(30)->by('login-ip|'.$network($request))->response($throttled),
+        ]);
+
+        RateLimiter::for('made-cms-package.password', fn (Request $request): array => [
+            Limit::perMinute(10)->by('password|'.$email($request).'|'.$network($request))->response($throttled),
+            Limit::perMinute(30)->by('password-ip|'.$network($request))->response($throttled),
+            ...$address($request, Limit::perHour(50), 'password-address'),
         ]);
 
         // Per editor: the one who is logged in, or the one halfway through a password login.
         RateLimiter::for('made-cms-package.two-factor', fn (Request $request): Limit => Limit::perMinute(5)
             ->by('two-factor|'.($request->user(config()->string('made-cms-package.auth.guard'))?->getAuthIdentifier() ?? LoginSession::of($request)->pendingTwoFactor()['editor'] ?? 'guest').'|'.$network($request))
             ->response($throttled));
+    }
+
+    /**
+     * The typed address (hashed) of the login in this browser, marked when the browser logged in with it before;
+     * null when no address was typed yet.
+     */
+    private function address(Request $request): ?string
+    {
+        $email = LoginSession::of($request)->email();
+
+        if ($email === null) {
+            return null;
+        }
+
+        $known = RecogniseDevice::run(new LoginStart($email, EditorDevice::read($request)));
+
+        return hash('sha256', $email).($known ? '|device' : '');
     }
 
     /**

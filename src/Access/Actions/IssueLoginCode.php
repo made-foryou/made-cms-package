@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Access\Actions;
 
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Access\Data\IssuedLoginCode;
@@ -30,7 +29,7 @@ final class IssueLoginCode
 
         $loginCode = LoginCode::query()->create([
             'email' => $email,
-            'code_hash' => Hash::make($code),
+            'code_hash' => $this->codeHash($code),
             'session_hash' => hash('sha256', $request->binding),
             'link_hash' => hash('sha256', $linkToken),
             'return_to' => $request->returnTo,
@@ -42,5 +41,14 @@ final class IssueLoginCode
         LoginCodeIssued::dispatch($issued);
 
         return $issued;
+    }
+
+    /**
+     * A keyed hash: quick and the same time for every code, while a code is only worth anything for a few minutes
+     * and a few attempts. Without the app key a stored hash cannot be traced back to its code.
+     */
+    public function codeHash(string $code): string
+    {
+        return hash_hmac('sha256', $code, config()->string('app.key'));
     }
 }

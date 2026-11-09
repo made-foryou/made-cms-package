@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Hash;
 use Made\CmsPackage\Access\Actions\IssueLoginCode;
 use Made\CmsPackage\Access\Data\IssuedLoginCode;
 use Made\CmsPackage\Access\Data\LoginCodeRequest;
@@ -30,11 +29,19 @@ it('only stores hashes of the plain code, the link token and the browser binding
     $stored = LoginCode::query()->findOrFail($issued->loginCode->id);
 
     expect($stored->code_hash)->not->toBe($issued->code)
-        ->and(Hash::check($issued->code, $stored->code_hash))->toBeTrue()
+        ->and($stored->code_hash)->toBe(hash_hmac('sha256', $issued->code, config()->string('app.key')))
         ->and($issued->linkToken)->toHaveLength(64)
         ->and($stored->link_hash)->toBe(hash('sha256', $issued->linkToken))
         ->and($stored->session_hash)->toBe(hash('sha256', 'browser-binding'))
         ->and($stored->attempts)->toBe(0);
+});
+
+it('hashes the code with the app key instead of the slow password hasher', function (): void {
+    $hasher = countHashing();
+
+    IssueLoginCode::run(loginCodeRequest());
+
+    expect($hasher->makes)->toBe(0);
 });
 
 it('issues a numeric code with the configured length', function (int $length): void {

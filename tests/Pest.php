@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -24,6 +26,7 @@ use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Scan\StripTypeSource;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
@@ -111,6 +114,24 @@ function contextClasses(string $layer): array
     }
 
     return $classes;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Login helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Counts the hashing from here on: every hash goes through the bcrypt driver, also after its settings change.
+ */
+function countHashing(): CountingHasher
+{
+    $hasher = new CountingHasher(fn (): Hasher => Hash::driver('bcrypt'));
+    Hash::extend('counting', fn (): CountingHasher => $hasher);
+    config(['hashing.driver' => 'counting']);
+
+    return $hasher;
 }
 
 /*

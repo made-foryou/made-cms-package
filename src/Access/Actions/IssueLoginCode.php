@@ -24,8 +24,9 @@ final class IssueLoginCode
         $code = str_pad((string) random_int(0, (10 ** $length) - 1), $length, '0', STR_PAD_LEFT);
         $linkToken = Str::random(64);
 
-        // Only the newest code of an address works, so an older mail can never be used after a new request.
-        LoginCode::query()->forEmail($email)->active()->update(['consumed_at' => now()]);
+        // Only the newest code of an address in this browser works, so an older mail can never be used after a new
+        // request. The codes of other browsers stay: someone typing the address elsewhere cannot lock the editor out.
+        LoginCode::query()->forEmail($email)->active()->boundTo($request->binding)->update(['consumed_at' => now()]);
 
         $loginCode = LoginCode::query()->create([
             'email' => $email,

@@ -50,6 +50,25 @@ it('logs the editor in and continues to the done step', function (): void {
         ->and(session('made-cms-package.login'))->toBeNull();
 });
 
+it('keeps the code of this browser working when another browser asks for a code', function (): void {
+    $code = requestCodeFor();
+    $browserA = session()->all();
+
+    // Someone types the same address in another browser and asks for a code there.
+    session()->flush();
+    $this->postJson('made-cms/login/email', ['email' => 'menno@made-foryou.nl'])->assertOk();
+    $this->postJson('made-cms/login/code')->assertOk();
+
+    session()->flush();
+    session()->put($browserA);
+
+    $this->postJson('made-cms/login/code/verify', ['code' => $code])
+        ->assertOk()
+        ->assertJsonPath('step', 'done');
+
+    expect(auth('made-cms')->check())->toBeTrue();
+});
+
 it('remembers the device so the next login greets the editor', function (): void {
     $code = requestCodeFor();
 

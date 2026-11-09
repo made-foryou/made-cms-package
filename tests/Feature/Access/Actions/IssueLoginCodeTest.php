@@ -62,7 +62,7 @@ it('expires the code after the configured number of minutes', function (): void 
     expect($issued->loginCode->expires_at->equalTo(now()->addMinutes(15)))->toBeTrue();
 });
 
-it('keeps only the newest code of an address active', function (): void {
+it('keeps only the newest code of a browser active', function (): void {
     $first = IssueLoginCode::run(loginCodeRequest());
     $other = IssueLoginCode::run(loginCodeRequest(email: 'iemand@example.com'));
     $second = IssueLoginCode::run(loginCodeRequest());
@@ -70,6 +70,14 @@ it('keeps only the newest code of an address active', function (): void {
     expect(LoginCode::query()->forEmail('menno@made-foryou.nl')->active()->sole()->is($second->loginCode))->toBeTrue()
         ->and($first->loginCode->fresh()?->consumed_at)->not->toBeNull()
         ->and($other->loginCode->fresh()?->consumed_at)->toBeNull();
+});
+
+it('keeps the code that another browser asked for active', function (): void {
+    $browserA = IssueLoginCode::run(loginCodeRequest(binding: 'browser-a'));
+    $browserB = IssueLoginCode::run(loginCodeRequest(binding: 'browser-b'));
+
+    expect($browserA->loginCode->fresh()?->consumed_at)->toBeNull()
+        ->and($browserB->loginCode->fresh()?->consumed_at)->toBeNull();
 });
 
 it('stores the page to return to after the mail link', function (): void {

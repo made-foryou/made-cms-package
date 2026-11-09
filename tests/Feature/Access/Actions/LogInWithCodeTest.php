@@ -104,6 +104,15 @@ it('rejects a code when the account was removed in the meantime', function (): v
         ->and(auth('made-cms')->check())->toBeFalse();
 });
 
+it('checks the code without the slow password hasher', function (string $code): void {
+    LoginCode::factory()->create(['email' => 'menno@made-foryou.nl']);
+    $hasher = countHashing();
+
+    rescue(fn () => LogInWithCode::run(codeLogin(code: $code)), report: false);
+
+    expect($hasher->checks)->toBe(0);
+})->with([LoginCodeFactory::CODE, '654321']);
+
 it('takes the same minimum time for every attempt', function (): void {
     expect(fn () => LogInWithCode::run(codeLogin(email: 'iemand@example.com')))->toThrow(LoginCodeRejected::class);
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Database\Factories\Access;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Made\CmsPackage\Access\Actions\IssueLoginCode;
 use Made\CmsPackage\Access\Models\LoginCode;
 
 /**
@@ -35,7 +35,7 @@ final class LoginCodeFactory extends Factory
     {
         return [
             'email' => fake()->unique()->safeEmail(),
-            'code_hash' => Hash::make(self::CODE),
+            'code_hash' => IssueLoginCode::make()->codeHash(self::CODE),
             'attempts' => 0,
             'session_hash' => hash('sha256', self::BINDING),
             'link_hash' => hash('sha256', self::LINK.'-'.Str::random(8)),

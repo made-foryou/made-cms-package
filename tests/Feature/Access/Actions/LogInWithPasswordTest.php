@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Auth\SessionGuard;
-use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Sleep;
 use Made\CmsPackage\Access\Actions\LogInWithPassword;
@@ -13,7 +12,6 @@ use Made\CmsPackage\Access\Enums\LoginStatus;
 use Made\CmsPackage\Access\Exceptions\CredentialsRejected;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Database\Factories\Access\EditorFactory;
-use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
 
 beforeEach(function (): void {
     Sleep::fake();
@@ -69,18 +67,6 @@ it('rejects a wrong password, an unknown address and an account without a passwo
     'unknown address' => ['iemand@example.com', EditorFactory::PASSWORD],
     'no password' => ['code@made-foryou.nl', ''],
 ]);
-
-/**
- * Counts the hashing from here on: every hash goes through the bcrypt driver, also after its settings change.
- */
-function countHashing(): CountingHasher
-{
-    $hasher = new CountingHasher(fn (): Hasher => Hash::driver('bcrypt'));
-    Hash::extend('counting', fn (): CountingHasher => $hasher);
-    config(['hashing.driver' => 'counting']);
-
-    return $hasher;
-}
 
 function rejectUnknownAddress(): void
 {

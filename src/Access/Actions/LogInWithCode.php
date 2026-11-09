@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Access\Actions;
 
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Timebox;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Access\Data\CodeLogin;
@@ -50,7 +49,7 @@ final class LogInWithCode
             throw LoginCodeRejected::for($login->email);
         }
 
-        if (! Hash::check($login->code, $loginCode->code_hash)) {
+        if (! hash_equals($loginCode->code_hash, IssueLoginCode::make()->codeHash($login->code))) {
             if ($loginCode->attempts + 1 >= $maxAttempts) {
                 $loginCode->update(['consumed_at' => now()]);
             }

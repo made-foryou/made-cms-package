@@ -42,7 +42,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - create one with `php artisan made-cms:editor <email> --name="..." --role=admin` (empty password = code login only; leave `--role` out to pick roles from a list), or `CreateEditor::run(new NewEditor(email: ..., name: ..., password: null, roles: [Role::Admin]))` in a seeder
 - editors log in through the panel the tile opens, or on the login page at `/made-cms` (the `routes.prefix`; link to it from invitation mails with `route('made-cms-package.login')`), both through the package's own `made-cms` session guard; it never logs anyone in to the app; check a CMS login with `auth('made-cms')->check()`
 - set `APP_URL` and `MAIL_FROM_ADDRESS`: the login mail is sent right after the response through the app's mailer, never queued, and its link is built from `APP_URL`
-- use a shared, persistent cache store in production: the login rate limiters live there
+- use a shared, persistent cache store in production: the login rate limiters and the stand-in password hash live there
 - name a page in the edit bar with `<meta name="made-cms:page" content="...">`; a fixed header can offset itself with the `--made-cms-bar-height` css variable
 
 ### 5. Roles and screens

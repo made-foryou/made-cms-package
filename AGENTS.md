@@ -83,8 +83,10 @@ This repository is a Laravel package. Keep the package focused, idiomatic, and e
 - CMS pages (start page, screens) render in the shell `resources/launcher/cms/` (`Http\Cms\Shell`, one Response class per page) with `cms.css` and `cms.js`, served by the same whitelisted controller. They are plain documents without a shadow root, follow `prefers-color-scheme`, and are sent `no-store`, `DENY` and `noindex`.
 - The launcher's visibility is UI only and never authorisation.
 - Login endpoints answer `{step, data, csrf_token}` (`StepResponse`); the server decides the next step and the JSON carries data only. All copy lives in `lang/` and the launcher's step templates, never in JS or JSON.
-- Never reveal whether an address has an account: same answer, same message and (with `Timebox`) same time for unknown addresses; rate limits key on what was typed, never on the account.
-- Secrets (login codes, link tokens, TOTP secrets) are stored hashed or encrypted and only travel in memory; events and notifications that carry them are handled synchronously and never queued.
+- Never reveal whether an address has an account: same answer, same message and (with `Timebox`) same time for unknown addresses. Every path of a password login checks exactly one hash (a stand-in from the cache when there is no real one), and login codes are HMACs, so no path does more hashing than another.
+- Rate limits key on what was typed and the network, never on whether an account exists: the typed address with the network, the network alone, and the typed address alone (across ip addresses), where a browser whose device cookie knows the address counts on its own. The network is the IPv4 address or the IPv6 /64. Only after a right password may a limit key on the editor, also without the network (the second factor). One message for every limit.
+- A new login code replaces only the code of the same browser (`session_hash`); codes of other browsers keep working.
+- Secrets (login codes, link tokens, TOTP secrets) are stored hashed (login codes as an HMAC with the app key) or encrypted and only travel in memory; events and notifications that carry them are handled synchronously and never queued.
 
 ## Quick Commands
 

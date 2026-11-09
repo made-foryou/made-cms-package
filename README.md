@@ -529,8 +529,15 @@ How it is protected:
 
 - **A guard of its own.** The package registers the session guard `made-cms` (provider `made-cms`, model `Editor`) next to your guards. Logging in to the CMS never logs anyone in to your site, and logging out of the CMS keeps the rest of the session. Define `auth.guards.made-cms` yourself to override it, or rename it with `made-cms-package.auth.guard`.
 - **No account enumeration.** Every e-mail address gets the same answer in the same time. The panel only greets an editor by name on a device that logged in with that address before (the encrypted `made_cms_editor` cookie, which never holds the plain address).
-- **Codes and links are bound to the browser** that asked for them, work once, expire after `login_code.ttl_minutes` (10) and stop after `login_code.max_attempts` (5) wrong tries. Opening the mail link only shows a confirmation page, so mail scanners never use it up.
-- **Rate limits** per typed address and ip address (`made-cms-package.login-code`, `made-cms-package.login`, `made-cms-package.two-factor`). They need a cache store that is shared between your servers and survives a request.
+- **Codes and links are bound to the browser** that asked for them, work once, expire after `login_code.ttl_minutes` (10) and stop after `login_code.max_attempts` (5) wrong tries. A new code only replaces the code of the same browser, so nobody locks an editor out by asking for codes elsewhere. Opening the mail link only shows a confirmation page, so mail scanners never use it up. Codes are stored as an HMAC with your `APP_KEY`.
+- **Equal time for every address.** A password login checks exactly one hash on every path, also for an unknown address: a stand-in hash made with your hash settings is kept in the cache.
+- **Rate limits** on what was typed and where it comes from (an IPv4 address, or an IPv6 address per /64), never on whether an account exists:
+  - `made-cms-package.login-code` (asking for a code): 3 per 10 minutes per address and network, 20 an hour per network, 10 an hour per address;
+  - `made-cms-package.password`: 10 a minute per address and network, 30 a minute per network, 50 an hour per address;
+  - `made-cms-package.login` (checking a code or the mail link): 10 a minute per address and network, 30 a minute per network;
+  - `made-cms-package.two-factor`: 5 a minute per editor and network, 10 an hour per editor.
+
+  A browser that logged in with the address before counts on its own for the limits per address, so someone who exhausts them cannot lock an editor out on their own device. An editor who runs into the limit of the password or the second factor can still log in with a code by mail. The limits and the stand-in hash need a cache store that is shared between your servers and survives a request.
 - **Remember me** keeps an editor logged in for `auth.remember_days` (30) days.
 - **Mail** goes out right after the response through your mail configuration, never through the queue, so the plain code is never stored. Set `MAIL_FROM_ADDRESS` and `APP_URL`: the link in the mail is built from `APP_URL`, never from the request. The sender name is "Made CMS" (`mail.from_name`); set `MADE_CMS_HELP_URL` to link to help with logging in. Publish the views (`made-cms-package-views`) to change the mail.
 

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Access\Actions\IssueLoginCode;
 use Made\CmsPackage\Access\Actions\LogInWithLink;
 use Made\CmsPackage\Access\Data\LinkLogin;
+use Made\CmsPackage\Access\Data\LoginCodeRequest;
 use Made\CmsPackage\Access\Enums\LoginMethod;
 use Made\CmsPackage\Access\Enums\LoginStatus;
 use Made\CmsPackage\Access\Exceptions\LoginLinkRejected;
@@ -66,4 +68,14 @@ it('works only once', function (): void {
 
     expect(fn () => LogInWithLink::run(new LinkLogin(token: 'the-link-token', binding: LoginCodeFactory::BINDING)))
         ->toThrow(LoginLinkRejected::class);
+});
+
+it('still logs in with the link after another browser asked for a code', function (): void {
+    $browserA = IssueLoginCode::run(new LoginCodeRequest(email: 'menno@made-foryou.nl', binding: 'browser-a', returnTo: null));
+    IssueLoginCode::run(new LoginCodeRequest(email: 'menno@made-foryou.nl', binding: 'browser-b', returnTo: null));
+
+    $login = LogInWithLink::run(new LinkLogin(token: $browserA->linkToken, binding: 'browser-a'));
+
+    expect($login->result->status)->toBe(LoginStatus::LoggedIn)
+        ->and(auth('made-cms')->user()?->is($this->editor))->toBeTrue();
 });

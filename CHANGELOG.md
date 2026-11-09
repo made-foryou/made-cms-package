@@ -150,6 +150,7 @@
 - `RenderStrips::run($page)` renders the draft, or the published strips without a draft, in the edit mode; outside it nothing changes.
 - `LauncherVisitor` gains `editing`; `ShowLauncher` hides the launcher in the edit mode.
 - `ShowLauncher::run()` returns a `LauncherView` (hidden, tile or edit bar) instead of a boolean; `LauncherVisitor` gains the logged-in `editor`.
+- After too many login attempts the launcher says a wait of more than 90 seconds in minutes ("Probeer het over 57 minuten opnieuw"), with the new text `launcher.errors.throttled_minutes`; `retry_after` stays in seconds.
 
 ### Removed
 

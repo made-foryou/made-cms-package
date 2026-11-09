@@ -126,6 +126,7 @@ return [
         'network' => "That didn't work. Check your connection and try again.",
         'expired' => 'Your session expired. Start again with your e-mail address.',
         'throttled' => 'Easy does it. Try again in :seconds seconds.',
+        'throttled_minutes' => 'Easy does it. Try again in :minutes minutes.',
         'code_incomplete' => 'Fill in all digits of the code.',
         'code_invalid' => "That code isn't right or has expired. Try again or ask for a new one.",
     ],

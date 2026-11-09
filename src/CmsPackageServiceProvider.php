@@ -27,6 +27,7 @@ use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Routing\RouterMixin;
 use Made\CmsPackage\Http\Session\LoginSession;
+use Symfony\Component\HttpFoundation\IpUtils;
 
 class CmsPackageServiceProvider extends ServiceProvider
 {
@@ -162,27 +163,43 @@ class CmsPackageServiceProvider extends ServiceProvider
     }
 
     /**
-     * Every limit is keyed on what was typed (hashed) and the ip address, never on whether an account exists,
+     * Every limit is keyed on what was typed (hashed) and the network, never on whether an account exists,
      * so a limit answers the same for known and unknown addresses. Needs a persistent cache store.
      */
     private function registerRateLimiters(): void
     {
         $throttled = fn (Request $request, array $headers): mixed => ThrottledResponse::make($headers);
         $email = fn (Request $request): string => hash('sha256', (string) LoginSession::of($request)->email());
+        $network = $this->network(...);
 
         RateLimiter::for('made-cms-package.login-code', fn (Request $request): array => [
-            Limit::perMinutes(10, 3)->by('login-code|'.$email($request).'|'.$request->ip())->response($throttled),
-            Limit::perHour(20)->by('login-code-ip|'.$request->ip())->response($throttled),
+            Limit::perMinutes(10, 3)->by('login-code|'.$email($request).'|'.$network($request))->response($throttled),
+            Limit::perHour(20)->by('login-code-ip|'.$network($request))->response($throttled),
         ]);
 
         RateLimiter::for('made-cms-package.login', fn (Request $request): array => [
-            Limit::perMinute(10)->by('login|'.$email($request).'|'.$request->ip())->response($throttled),
-            Limit::perMinute(30)->by('login-ip|'.$request->ip())->response($throttled),
+            Limit::perMinute(10)->by('login|'.$email($request).'|'.$network($request))->response($throttled),
+            Limit::perMinute(30)->by('login-ip|'.$network($request))->response($throttled),
         ]);
 
         // Per editor: the one who is logged in, or the one halfway through a password login.
         RateLimiter::for('made-cms-package.two-factor', fn (Request $request): Limit => Limit::perMinute(5)
-            ->by('two-factor|'.($request->user(config()->string('made-cms-package.auth.guard'))?->getAuthIdentifier() ?? LoginSession::of($request)->pendingTwoFactor()['editor'] ?? 'guest').'|'.$request->ip())
+            ->by('two-factor|'.($request->user(config()->string('made-cms-package.auth.guard'))?->getAuthIdentifier() ?? LoginSession::of($request)->pendingTwoFactor()['editor'] ?? 'guest').'|'.$network($request))
             ->response($throttled));
+    }
+
+    /**
+     * The network a request comes from: an IPv4 address as it is (also written as IPv6), an IPv6 address as its /64,
+     * because one connection usually gets a whole /64 to pick addresses from.
+     */
+    private function network(Request $request): string
+    {
+        $ip = $request->ip();
+
+        if ($ip === null || filter_var($ip, FILTER_VALIDATE_IP) === false) {
+            return 'unknown';
+        }
+
+        return IpUtils::anonymize($ip, 0, 8);
     }
 }

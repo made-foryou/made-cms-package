@@ -8,6 +8,7 @@ use Illuminate\Testing\TestResponse;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Access\Models\LoginCode;
 use Made\CmsPackage\Access\Notifications\LoginCodeNotification;
+use Made\CmsPackage\Http\Cookies\EditorDevice;
 
 beforeEach(function (): void {
     Sleep::fake();
@@ -129,4 +130,38 @@ it('keeps IPv4 addresses apart, also when they are written as IPv6', function ()
     askCodeFrom('::ffff:203.0.113.5')->assertTooManyRequests();
     askCodeFrom('::ffff:198.51.100.20')->assertOk();
     askCodeFrom('203.0.113.6')->assertOk();
+});
+
+it('limits the codes per address across ip addresses, for an unknown address alike', function (string $email): void {
+    Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
+    startLogin($email);
+
+    foreach (range(1, 10) as $attempt) {
+        askCodeFrom("203.0.113.{$attempt}")->assertOk();
+    }
+
+    askCodeFrom('198.51.100.20')
+        ->assertTooManyRequests()
+        ->assertJsonStructure(['message', 'retry_after']);
+})->with([
+    'known address' => 'menno@made-foryou.nl',
+    'unknown address' => 'iemand@example.com',
+]);
+
+it('keeps sending codes to a browser that logged in with the address before', function (): void {
+    $editor = Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
+    $other = Editor::factory()->create(['email' => 'iemand@example.com']);
+    startLogin();
+
+    foreach (range(1, 10) as $attempt) {
+        askCodeFrom("203.0.113.{$attempt}")->assertOk();
+    }
+
+    $this->withCredentials()->withCookie(EditorDevice::NAME, deviceCookieOf($other));
+    askCodeFrom('198.51.100.20')->assertTooManyRequests();
+
+    $this->withCookie(EditorDevice::NAME, deviceCookieOf($editor));
+    askCodeFrom('198.51.100.21')->assertOk();
+
+    Notification::assertSentOnDemandTimes(LoginCodeNotification::class, 11);
 });

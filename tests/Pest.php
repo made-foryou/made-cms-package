@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Made\CmsPackage\Access\Actions\RememberDevice;
+use Made\CmsPackage\Access\Enums\LoginMethod;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\CombinePageScans;
 use Made\CmsPackage\Content\Actions\RecognisePage;
 use Made\CmsPackage\Content\Data\GeneratedStripTypes;
@@ -26,6 +29,7 @@ use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Scan\StripTypeSource;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
@@ -132,6 +136,14 @@ function countHashing(): CountingHasher
     config(['hashing.driver' => 'counting']);
 
     return $hasher;
+}
+
+/**
+ * The value of the cookie a browser keeps after this editor logged in on it.
+ */
+function deviceCookieOf(Editor $editor): string
+{
+    return EditorDevice::value(RememberDevice::run($editor, LoginMethod::Code));
 }
 
 /*

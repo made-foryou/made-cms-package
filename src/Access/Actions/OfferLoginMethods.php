@@ -20,8 +20,7 @@ final class OfferLoginMethods
     public function handle(LoginStart $start): LoginOptions
     {
         $device = $start->device;
-        $known = $device !== null
-            && hash_equals($device->emailHash, RememberDevice::make()->emailHash($start->email));
+        $known = $device !== null && RecogniseDevice::run($start);
 
         return new LoginOptions(
             firstName: $known ? $device->firstName : null,

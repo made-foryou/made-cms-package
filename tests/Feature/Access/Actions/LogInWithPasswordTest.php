@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Auth\SessionGuard;
+use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Sleep;
 use Made\CmsPackage\Access\Actions\LogInWithPassword;
@@ -12,6 +13,7 @@ use Made\CmsPackage\Access\Enums\LoginStatus;
 use Made\CmsPackage\Access\Exceptions\CredentialsRejected;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Database\Factories\Access\EditorFactory;
+use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
 
 beforeEach(function (): void {
     Sleep::fake();
@@ -67,6 +69,61 @@ it('rejects a wrong password, an unknown address and an account without a passwo
     'unknown address' => ['iemand@example.com', EditorFactory::PASSWORD],
     'no password' => ['code@made-foryou.nl', ''],
 ]);
+
+/**
+ * Counts the hashing from here on: every hash goes through the bcrypt driver, also after its settings change.
+ */
+function countHashing(): CountingHasher
+{
+    $hasher = new CountingHasher(fn (): Hasher => Hash::driver('bcrypt'));
+    Hash::extend('counting', fn (): CountingHasher => $hasher);
+    config(['hashing.driver' => 'counting']);
+
+    return $hasher;
+}
+
+function rejectUnknownAddress(): void
+{
+    try {
+        LogInWithPassword::run(passwordLogin(password: 'verkeerd', email: 'iemand@example.com'));
+    } catch (CredentialsRejected) {
+    }
+}
+
+it('checks exactly one hash on every path that rejects, and makes none', function (string $email, string $password): void {
+    Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
+    Editor::factory()->withoutPassword()->create(['email' => 'code@made-foryou.nl']);
+    $hasher = countHashing();
+
+    // The first rejection makes the stand-in hash once; every later login uses it.
+    rejectUnknownAddress();
+    $hasher->reset();
+
+    expect(fn () => LogInWithPassword::run(passwordLogin(password: $password, email: $email)))->toThrow(CredentialsRejected::class)
+        ->and($hasher->checks)->toBe(1)
+        ->and($hasher->makes)->toBe(0);
+})->with([
+    'wrong password' => ['menno@made-foryou.nl', 'verkeerd'],
+    'unknown address' => ['iemand@example.com', EditorFactory::PASSWORD],
+    'no password' => ['code@made-foryou.nl', EditorFactory::PASSWORD],
+]);
+
+it('makes the stand-in hash again when the hash settings change', function (): void {
+    $hasher = countHashing();
+
+    rejectUnknownAddress();
+    rejectUnknownAddress();
+
+    expect($hasher->makes)->toBe(1);
+
+    config(['hashing.bcrypt.rounds' => 5]);
+    Hash::forgetDrivers();
+    rejectUnknownAddress();
+    rejectUnknownAddress();
+
+    expect($hasher->makes)->toBe(2)
+        ->and($hasher->checks)->toBe(4);
+});
 
 it('rehashes an outdated password hash after a successful login', function (): void {
     $editor = Editor::factory()->create(['email' => 'menno@made-foryou.nl']);

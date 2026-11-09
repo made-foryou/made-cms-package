@@ -85,3 +85,19 @@ it('limits the number of attempts', function (): void {
 
     $this->postJson('made-cms/login/two-factor', ['code' => '000000'])->assertTooManyRequests();
 });
+
+it('limits the attempts per editor across ip addresses', function (): void {
+    passwordThenTwoFactor();
+
+    foreach (range(1, 10) as $attempt) {
+        $this->withServerVariables(['REMOTE_ADDR' => "203.0.113.{$attempt}"])
+            ->postJson('made-cms/login/two-factor', ['code' => '000000'])
+            ->assertUnprocessable();
+    }
+
+    $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
+        ->postJson('made-cms/login/two-factor', ['code' => (new Google2FA)->getCurrentOtp(EditorFactory::TWO_FACTOR_SECRET)])
+        ->assertTooManyRequests();
+
+    expect(auth('made-cms')->check())->toBeFalse();
+});

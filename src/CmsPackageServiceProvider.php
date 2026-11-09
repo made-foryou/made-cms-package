@@ -199,10 +199,31 @@ class CmsPackageServiceProvider extends ServiceProvider
             ...$address($request, Limit::perHour(50), 'password-address'),
         ]);
 
-        // Per editor: the one who is logged in, or the one halfway through a password login.
-        RateLimiter::for('made-cms-package.two-factor', fn (Request $request): Limit => Limit::perMinute(5)
-            ->by('two-factor|'.($request->user(config()->string('made-cms-package.auth.guard'))?->getAuthIdentifier() ?? LoginSession::of($request)->pendingTwoFactor()['editor'] ?? 'guest').'|'.$network($request))
-            ->response($throttled));
+        // Per editor: the one who is logged in, or the one halfway through a password login. Reaching this step takes
+        // the right password, so a limit per editor, whatever the network, tells nothing about an account. Every
+        // request counts, but a right code ends the step: in practice it counts the wrong codes.
+        RateLimiter::for('made-cms-package.two-factor', function (Request $request) use ($throttled, $network): array {
+            $editor = $this->twoFactorEditor($request);
+
+            return $editor === null
+                ? [Limit::perMinute(5)->by('two-factor|guest|'.$network($request))->response($throttled)]
+                : [
+                    Limit::perMinute(5)->by('two-factor|'.$editor.'|'.$network($request))->response($throttled),
+                    Limit::perHour(10)->by('two-factor-editor|'.$editor)->response($throttled),
+                ];
+        });
+    }
+
+    /**
+     * The editor who enters a second factor: the one who is logged in, or the one halfway through a password login.
+     */
+    private function twoFactorEditor(Request $request): ?string
+    {
+        $editor = $request->user(config()->string('made-cms-package.auth.guard'))?->getAuthIdentifier()
+            ?? LoginSession::of($request)->pendingTwoFactor()['editor']
+            ?? null;
+
+        return is_scalar($editor) ? (string) $editor : null;
     }
 
     /**

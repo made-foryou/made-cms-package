@@ -24,6 +24,7 @@ it('serves the launcher assets with their content type', function (string $asset
     ['bar.js', 'text/javascript; charset=utf-8'],
     ['structure.js', 'text/javascript; charset=utf-8'],
     ['headings.js', 'text/javascript; charset=utf-8'],
+    ['upload.js', 'text/javascript; charset=utf-8'],
     ['nunito-700.woff2', 'font/woff2'],
     ['instrument-sans.woff2', 'font/woff2'],
 ]);
@@ -62,6 +63,7 @@ it('versions each asset url with a hash of its contents', function (string $asse
     ['bar.js', 'bar.js'],
     ['structure.js', 'structure.js'],
     ['headings.js', 'headings.js'],
+    ['upload.js', 'upload.js'],
     ['nunito-700.woff2', 'fonts/nunito-700.woff2'],
     ['instrument-sans.woff2', 'fonts/instrument-sans.woff2'],
 ]);

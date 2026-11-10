@@ -27,6 +27,11 @@ function format(text, values = {}) {
     return String(text ?? '').replace(/:([a-z_]+)/g, (match, key) => (key in values ? String(values[key]) : match));
 }
 
+/** Hides an element by its attribute: an svg has no `hidden` property of its own. */
+function hide(element, hidden) {
+    element.toggleAttribute('hidden', hidden);
+}
+
 /** The first message of a 422. */
 function refusal(data) {
     const messages = Object.values(data?.errors ?? {})[0];
@@ -47,6 +52,7 @@ function start(field) {
     const slot = (name, root = field) => root.querySelector('[data-slot="upload-' + name + '"]');
     const template = field.querySelector('template[data-upload-row]');
     const ui = {
+        zone: slot('zone'),
         title: slot('title'),
         chooseLine: slot('choose-line'),
         choose: slot('choose'),
@@ -61,6 +67,7 @@ function start(field) {
         list: slot('list'),
         summary: slot('summary'),
         errorsNote: slot('errors-note'),
+        errorsOthers: slot('errors-others'),
         actions: slot('actions'),
         save: slot('save'),
         later: slot('later'),
@@ -157,14 +164,14 @@ function start(field) {
         part('mini').hidden = failed;
         part('mini').dataset.kind = image ? 'image' : 'file';
         part('cross').hidden = ! failed;
-        thumb.hidden = ! (done && result.image);
+        thumb.hidden = ! (done && result.image && ! row.broken);
 
         if (! thumb.hidden && thumb.getAttribute('src') !== result.url) {
             thumb.src = result.url;
         }
 
-        part('icon-image').hidden = ! image || ! thumb.hidden;
-        part('icon-file').hidden = image;
+        hide(part('icon-image'), ! image || ! thumb.hidden);
+        hide(part('icon-file'), image);
 
         part('name').textContent = done ? result.file : (failed ? file.name + ' · ' + size(file.size) : file.name);
         part('note').textContent = note(row);
@@ -196,6 +203,8 @@ function start(field) {
         ui.summary.hidden = ! busy;
         ui.summary.textContent = busy ? format(texts.summary, { done: done.length, total }) : '';
         ui.errorsNote.hidden = failed.length === 0;
+        // "The others went on" only holds when there are others.
+        ui.errorsOthers.hidden = total === 0;
 
         ui.done.hidden = ! finished;
         ui.doneText.textContent = finished
@@ -323,7 +332,7 @@ function start(field) {
     function add(file) {
         const element = template.content.firstElementChild.cloneNode(true);
         const part = (name) => slot('row-' + name, element);
-        const row = { file, element, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false };
+        const row = { file, element, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false };
         const id = 'made-cms-upload-' + (++serial);
         const name = part('name');
         const input = part('alt-input');
@@ -350,6 +359,11 @@ function start(field) {
             paint(row);
             ui.choose.focus();
             pump();
+        });
+        // A thumbnail that does not load makes way for the icon again.
+        part('thumb').addEventListener('error', () => {
+            row.broken = true;
+            paint(row);
         });
         input.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
@@ -504,9 +518,12 @@ function start(field) {
         }
 
         dragging = over;
+        // The field keeps its height while files hang above it: a field that shrinks under the pointer would let
+        // them go and take them again.
+        ui.zone.style.minHeight = over ? ui.zone.offsetHeight + 'px' : '';
         field.toggleAttribute('data-drag', over);
-        [ui.title, ui.chooseLine, ui.rules, ui.iconRest].forEach((element) => element.hidden = over);
-        [ui.dragTitle, ui.dragLine, ui.iconDrag].forEach((element) => element.hidden = ! over);
+        [ui.title, ui.chooseLine, ui.rules, ui.iconRest].forEach((element) => hide(element, over));
+        [ui.dragTitle, ui.dragLine, ui.iconDrag].forEach((element) => hide(element, ! over));
         refresh();
     }
 

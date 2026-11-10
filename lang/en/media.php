@@ -59,7 +59,8 @@ return [
         'later' => 'Do it later',
         'later_hint' => 'Later is fine: they then show with an amber dot in Media.',
         'close' => 'Done',
-        'errors_note' => 'The other files simply went on. Errors stay until you leave them out or try again.',
+        'errors_others' => 'The other files simply went on.',
+        'errors_note' => 'Errors stay until you leave them out or try again.',
         'texts' => [
             'drag_one' => '1 file · it goes into :folder',
             'drag_many' => ':count files · they go into :folder',

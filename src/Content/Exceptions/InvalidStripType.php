@@ -51,6 +51,16 @@ final class InvalidStripType extends RuntimeException
         return new self("Strip type [{$type}] field [{$field}] is a list inside a list.");
     }
 
+    public static function headingTag(string $type, string $field, string $tag): self
+    {
+        return new self("Strip type [{$type}] field [{$field}] has an unknown heading level [{$tag}]; use h1 to h6 or span.");
+    }
+
+    public static function defaultHeadingTag(string $type, string $field, string $tag): self
+    {
+        return new self("Strip type [{$type}] field [{$field}] has the default level [{$tag}] outside its levels.");
+    }
+
     public static function fieldType(string $type, string $field, string $fieldType): self
     {
         return new self("Strip type [{$type}] field [{$field}] has an unknown type [{$fieldType}].");

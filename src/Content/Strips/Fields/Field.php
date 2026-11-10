@@ -103,7 +103,7 @@ abstract class Field
             'label' => $this->getLabel(),
             'hint' => $this->hint,
             'required' => $this->required,
-            'default' => $this->default,
+            'default' => $this->getDefault(),
             ...$this->details(),
         ];
     }

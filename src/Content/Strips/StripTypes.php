@@ -11,6 +11,7 @@ use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -180,9 +181,31 @@ final class StripTypes
                 throw InvalidStripType::emptyChoice($type, $key);
             }
 
+            if ($field instanceof Heading) {
+                self::checkHeading($type, $field);
+            }
+
             if ($field instanceof Items) {
                 self::checkItems($type, $field, $inItems);
             }
+        }
+    }
+
+    /**
+     * @throws InvalidStripType
+     */
+    private static function checkHeading(string $type, Heading $heading): void
+    {
+        $key = $heading->getKey();
+
+        foreach ([...$heading->getTags(), $heading->getTag()] as $tag) {
+            if (! in_array($tag, Heading::TAGS, true)) {
+                throw InvalidStripType::headingTag($type, $key, $tag);
+            }
+        }
+
+        if (! in_array($heading->getTag(), $heading->getTags(), true)) {
+            throw InvalidStripType::defaultHeadingTag($type, $key, $heading->getTag());
         }
     }
 

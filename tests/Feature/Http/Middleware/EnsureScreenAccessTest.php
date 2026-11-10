@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
@@ -10,6 +11,10 @@ use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
 
 it('names the middleware with its screen', function (): void {
     expect(EnsureScreenAccess::using(Screen::Redirects))->toBe(EnsureScreenAccess::class.':redirects');
+});
+
+it('names the middleware with every screen that opens the route', function (): void {
+    expect(EnsureScreenAccess::using(Screen::Pages, Screen::Media))->toBe(EnsureScreenAccess::class.':pages,media');
 });
 
 it('opens the screen for an editor whose role grants it', function (Role $role): void {
@@ -39,4 +44,32 @@ it('ignores a login on another guard', function (): void {
     $this->actingAs(new User, 'web')
         ->get('made-cms/redirects')
         ->assertRedirect(route('made-cms-package.login'));
+});
+
+describe('a route that more than one screen opens', function (): void {
+    beforeEach(function (): void {
+        Route::middleware(['web', EnsureScreenAccess::using(Screen::Redirects, Screen::Media)])
+            ->get('either-screen', fn (): string => 'open');
+    });
+
+    it('opens for an editor who opens one of the screens', function (Role $role): void {
+        $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')
+            ->get('either-screen')
+            ->assertOk()
+            ->assertSee('open');
+    })->with([
+        'the first screen' => [Role::SeoSpecialist],
+        'the second screen' => [Role::ContentManager],
+        'both screens' => [Role::Admin],
+    ]);
+
+    it('forbids it to an editor who opens none of the screens', function (): void {
+        $this->actingAs(Editor::factory()->withRoles(Role::Owner)->create(), 'made-cms')
+            ->get('either-screen')
+            ->assertForbidden();
+    });
+
+    it('answers a guest asking for json with unauthorized', function (): void {
+        $this->getJson('either-screen')->assertUnauthorized();
+    });
 });

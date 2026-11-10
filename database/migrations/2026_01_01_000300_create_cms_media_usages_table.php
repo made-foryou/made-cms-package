@@ -20,9 +20,10 @@ return new class extends Migration
             $table->foreignId('page_id')->constrained('cms_pages')->cascadeOnDelete();
             // "draft" for draft_strips, "published" for strips.
             $table->string('version', 16);
-            $table->string('strip_id', 64);
+            // Room for an id an import brings: a row that does not fit would stop the page from being saved.
+            $table->string('strip_id');
             // The key of the strip type, so the place is named from the catalogue without reading the strips.
-            $table->string('strip_type', 100);
+            $table->string('strip_type');
             // The path of the field in the strip: "foto", or "kaarten.2.foto" in the third item of a list.
             $table->string('field');
             $table->unique(['page_id', 'version', 'strip_id', 'field'], 'cms_media_usages_place_unique');

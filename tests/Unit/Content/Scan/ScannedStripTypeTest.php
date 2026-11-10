@@ -8,6 +8,7 @@ use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\StripTypes;
 
@@ -80,6 +81,21 @@ it('proposes a list with its fields, the most items as max and a min only above 
         ->and([$open->getMin(), $open->getMax()])->toBe([null, null]);
 });
 
+it('proposes a heading at the level the scan found, and at the default level without one', function (): void {
+    $type = scannedType([
+        new ScanField('kop', 'heading', 'h1', tag: 'h1'),
+        new ScanField('kop_2', 'heading', 'h2', required: false),
+        new ScanField('kaarten', 'items', 'div', item: 'div', min: 1, max: 2, fields: [new ScanField('titel', 'heading', 'h4', tag: 'h4')]),
+    ]);
+
+    [$main, $sub, $cards] = $type->fields();
+
+    expect(proposedFields($type->fields()))->toBe(['kop: heading*', 'kop_2: heading', ['kaarten: items*' => ['titel: heading*']]])
+        ->and($main)->toBeInstanceOf(Heading::class)
+        ->and([$main->getTag(), $sub->getTag(), $cards->getFields()[0]->getTag()])->toBe(['h1', 'h2', 'h4'])
+        ->and($main->getTags())->toBe(Heading::TAGS);
+});
+
 it('gives the options of a choice a label to translate', function (): void {
     $type = scannedType([
         new ScanField('icoon', 'choice', 'svg', options: ['users', 'map-pin', 'building2', 'users']),
@@ -125,5 +141,6 @@ it('is checked by the rules of the catalogue', function (ScanType $scanned, stri
     'list in a list' => [new ScanType('hero', 'Hero', null, 'f', 1, [new ScanField('items', 'items', 'ul', item: 'li', fields: [
         new ScanField('sub', 'items', 'ol', item: 'li', fields: [new ScanField('regel', 'text', '')]),
     ])]), 'list inside a list'],
+    'heading level' => [new ScanType('hero', 'Hero', null, 'f', 1, [new ScanField('kop', 'heading', 'h2', tag: 'h7')]), 'unknown heading level [h7]'],
     'range' => [new ScanType('hero', 'Hero', null, 'f', 1, [new ScanField('items', 'items', 'ul', item: 'li', min: 3, max: 2, fields: [new ScanField('regel', 'text', '')])]), 'invalid min or max'],
 ]);

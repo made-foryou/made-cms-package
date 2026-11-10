@@ -27,13 +27,15 @@ function overOnsSource(): string
     return sourceOf('over-ons', 'Over ons', [
         new ScanField('afbeelding', 'image', 'img'),
         new ScanField('label', 'text', 'span'),
+        new ScanField('kop', 'heading', 'h2', tag: 'h2'),
+        new ScanField('kop_2', 'heading', 'h1', required: false, tag: 'h1'),
         new ScanField('tekst', 'long_text', 'p', required: false),
         new ScanField('inhoud', 'rich_text', 'div', required: false),
         new ScanField('knop', 'button', 'a'),
         new ScanField('link', 'link', 'a:nth-of-type(2)', required: false),
         new ScanField('items', 'items', 'div', item: 'article', min: 1, max: 3, fields: [
             new ScanField('icoon', 'choice', 'svg', options: ['users', 'heart', 'trophy']),
-            new ScanField('kop', 'text', 'h3'),
+            new ScanField('kop', 'heading', 'h3', tag: 'h3'),
             new ScanField('tekst', 'long_text', 'p', required: false),
             new ScanField('foto', 'image', 'img'),
         ]),
@@ -49,6 +51,7 @@ it('writes a proposal as a strip type class in the style of the site', function 
 
         use Made\CmsPackage\Content\Strips\Fields\Button;
         use Made\CmsPackage\Content\Strips\Fields\Choice;
+        use Made\CmsPackage\Content\Strips\Fields\Heading;
         use Made\CmsPackage\Content\Strips\Fields\Items;
         use Made\CmsPackage\Content\Strips\Fields\Link;
         use Made\CmsPackage\Content\Strips\Fields\LongText;
@@ -74,13 +77,15 @@ it('writes a proposal as a strip type class in the style of the site', function 
                 // items.foto: wacht op het veldtype Afbeelding.
                 return [
                     Text::make('label')->required(),
+                    Heading::make('kop')->required(),
+                    Heading::make('kop_2')->tag('h1'),
                     LongText::make('tekst'),
                     RichText::make('inhoud'),
                     Button::make('knop')->required(),
                     Link::make('link'),
                     Items::make('items', [
                         Choice::make('icoon', ['users' => 'Users', 'heart' => 'Heart', 'trophy' => 'Trophy'])->required(),
-                        Text::make('kop')->required(),
+                        Heading::make('kop')->tag('h3')->required(),
                         LongText::make('tekst'),
                     ])->max(3)->required(),
                     Items::make('knoppen', [Button::make('knop')->required()])->max(2)->required(),
@@ -89,6 +94,13 @@ it('writes a proposal as a strip type class in the style of the site', function 
         }
 
         PHP);
+});
+
+it('gives a heading its level only when it is not the default level', function (): void {
+    expect(sourceOf('kop', 'Kop', [new ScanField('kop', 'heading', 'h2', tag: 'h2'), new ScanField('ondertitel', 'heading', 'p', tag: 'span')]))
+        ->toContain("Heading::make('kop')->required(),")
+        ->toContain("Heading::make('ondertitel')->tag('span')->required(),")
+        ->and(sourceOf('kop', 'Kop', [new ScanField('kop', 'heading', 'h2')]))->toContain("Heading::make('kop')->required(),");
 });
 
 it('leaves the label out when the class name reads as it', function (): void {
@@ -150,6 +162,7 @@ it('names the class after the key, with Strip behind a name PHP or the imports a
     ['string', 'StringStrip'],
     ['text', 'TextStrip'],
     ['long-text', 'LongTextStrip'],
+    ['heading', 'HeadingStrip'],
     ['items', 'ItemsStrip'],
     ['field', 'FieldStrip'],
     ['strip-type', 'StripTypeStrip'],

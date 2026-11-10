@@ -192,6 +192,10 @@ final class StripTypes
 
             if ($field instanceof Items) {
                 self::checkItems($type, $field, $inItems);
+
+                if ($field->media($field->getDefault()) !== []) {
+                    throw InvalidStripType::defaultWithMedia($type, $key);
+                }
             }
         }
     }

@@ -49,6 +49,8 @@ php artisan vendor:publish --tag="made-cms-package-migrations"
 php artisan migrate
 ```
 
+A site that already had pages before it got the table `cms_media_usages` runs `php artisan made-cms:media-usage` once after migrating, so the media library knows where its files are used (see [Where a file is used](#where-a-file-is-used)).
+
 ### Publishing the Views
 
 ```bash
@@ -264,7 +266,7 @@ Every field takes `label()` (by default the key as a sentence: `gaat_naar` becom
 
 The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options, a heading level that is no tag or a default level outside `tags()`, an image with a default) throws an exception that names the strip type.
 
-Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the labels and `messages()` for Dutch and English messages of the package, which take the place of the host's `validation.*` lines), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render($values, $media)`, every field in order, a missing one from its default, images from the files `FindMedia` found, with `with()` on top), the files of the media library the strip uses (`media()`) how new values combine with stored ones (`merge()`, which `UpdateStrip` uses) and the description the side panel builds its controls from (`describe()`: the key, name and fields, each field with its `type()`, label, hint, default and what its type adds).
+Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the labels and `messages()` for Dutch and English messages of the package, which take the place of the host's `validation.*` lines), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render($values, $media)`, every field in order, a missing one from its default, images from the files `FindMedia` found, with `with()` on top), the files of the media library the strip uses (`media()`, and by the path of their place `places()`, named by `placeLabels()`), how new values combine with stored ones (`merge()`, which `UpdateStrip` uses) and the description the side panel builds its controls from (`describe()`: the key, name and fields, each field with its `type()`, label, hint, default and what its type adds).
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 
@@ -578,6 +580,34 @@ UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 ```
 
 A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search('merwestad')`, and the folders with `MediaFolder::query()->alphabetical()`. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
+
+### Where a file is used
+
+The table `cms_media_usages` holds a row for every place a file is used: a field of a strip in the published version of a page, and in its draft while there is one. A hidden strip counts, an image in an item of a list counts by its own place, and a deleted page keeps its rows while it can be restored. Every change of the strips through the Content Actions (saving, adding, moving, hiding, removing and restoring a strip, publishing, discarding the draft) brings the rows of the page up to date in the same transaction, so the host never writes them.
+
+```php
+use Made\CmsPackage\Content\Actions\ListMediaPlaces;
+use Made\CmsPackage\Content\Models\Media;
+
+Media::query()->inUse()->count();               // files on a page, in a draft or on a deleted page
+Media::query()->withoutAlt()->inUse()->count(); // images on a page without an alt text
+
+$places = ListMediaPlaces::run($media);         // load a list with Media::query()->withUsage()
+
+$places->pageCount();                           // "Gebruikt op 2 pagina's"
+$places->places[0]->pageTitle;                  // "Onze teams"
+$places->places[0]->where;                      // "Hero › Achtergrondfoto", or "Fotorij › Foto 3 › Afbeelding" in a list
+```
+
+`where` comes from the labels of the strip type and its fields (an item of a list by its `itemLabel()` and number); when the type left the catalogue or no longer has the field it is the keys, `hero › foto`. A place has the page, the strip, the path of the field (`fotos.2.afbeelding`), the versions it is in (`$place->in(UsageVersion::Published)`) and whether its page is deleted. A file that is used cannot be deleted: the foreign key of the table refuses it.
+
+Content written without the Actions (a seeder with the page factory, an import) has no rows yet. Build them from the strips of every page with:
+
+```bash
+php artisan made-cms:media-usage
+```
+
+Run it once after updating a site that already had content, and after such a write. A strip whose type left the catalogue cannot be read, so it keeps the rows it had.
 
 Config keys: `media.disk`, `media.max_upload_kb`, `media.allowed_mimes`, `media.image.driver`, `media.image.max_width`, `media.image.format` and `media.image.quality`.
 

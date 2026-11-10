@@ -376,6 +376,30 @@ function setHref(node, url) {
 }
 
 /*
+ * An image changes the address and the alt text of the <img> that shows it, and its width and height when the site
+ * prints them. An image with sources of its own (srcset, a <picture>), an element that shows it otherwise (a
+ * background) and a size the site prints but the file does not have are the site's to make, so they reload.
+ */
+function setImage(node, value) {
+    const sized = node.hasAttribute('width') || node.hasAttribute('height');
+
+    if (node.localName !== 'img' || node.hasAttribute('srcset') || node.parentElement?.localName === 'picture'
+        || typeof value.url !== 'string' || (sized && (value.width === null || value.height === null))) {
+        return false;
+    }
+
+    const attributes = { src: value.url, alt: value.alt ?? '', ...(sized ? { width: String(value.width), height: String(value.height) } : {}) };
+
+    for (const [name, text] of Object.entries(attributes)) {
+        if (node.getAttribute(name) !== text) {
+            node.setAttribute(name, text);
+        }
+    }
+
+    return true;
+}
+
+/*
  * An empty value is never patched: a view usually leaves an empty field out, and the server fills in a default.
  * A choice or a list decides more than one element shows, so it reloads the frame as well. A heading changes its text
  * while the element is its level; another level needs another element, which only the site makes, so it reloads.
@@ -402,6 +426,8 @@ function patch(node, type, value) {
             return node.hasAttribute('href') && holdsText(node) && setText(node, value.text) && setHref(node, value.url);
         case 'heading':
             return node.localName === value.tag && setText(node, value.text);
+        case 'image':
+            return setImage(node, value);
         default:
             return false;
     }

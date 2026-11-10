@@ -36,7 +36,7 @@ it('outlines every strip on the site and chooses the strip that is clicked, also
 
         return [outline.dataset.strip, outline.querySelector('.tab').textContent.trim(), Math.abs(box.top - strip.top) < 1 && Math.abs(box.left - strip.left) < 1 && Math.abs(box.width - strip.width) < 1 && Math.abs(box.height - strip.height) < 1];
     })"))->toBe([
-        ['hero', 'Hero4 velden', true],
+        ['hero', 'Hero5 velden', true],
         ['cards', 'Kaarten3 velden', true],
     ]);
 

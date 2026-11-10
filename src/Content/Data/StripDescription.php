@@ -15,6 +15,7 @@ final readonly class StripDescription
      * @param  string  $label  the name of the strip type editors see
      * @param  list<array<string, mixed>>  $fields  the description of every field, in the order of the panel
      * @param  array<string, mixed>  $values  the stored value of every field, a missing one from its default
+     * @param  MediaFiles  $media  the files of the media library its images hold; a file that is gone is not in it
      */
     public function __construct(
         public string $id,
@@ -23,6 +24,7 @@ final readonly class StripDescription
         public bool $visible,
         public array $fields,
         public array $values,
+        public MediaFiles $media = new MediaFiles,
     ) {}
 
     /**

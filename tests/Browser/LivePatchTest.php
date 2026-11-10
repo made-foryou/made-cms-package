@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -223,4 +225,45 @@ it('opens the field the editor clicks on the site in the panel', function (): vo
 
     $shell->assertSeeIn('[data-slot="head-name"]', 'Kaarten')
         ->assertNoJavaScriptErrors();
+});
+
+/**
+ * A script that sends the frame a change of the photo of the hero, as the side panel does once it chooses a file.
+ *
+ * @param  array<string, mixed>|null  $value
+ */
+function sendPhoto(?array $value, int $seq): string
+{
+    $detail = json_encode(['id' => 'hero', 'path' => 'foto', 'type' => 'image', 'value' => $value, 'count' => null, 'seq' => $seq], JSON_THROW_ON_ERROR);
+
+    return "() => document.querySelector('[data-edit-shell]').dispatchEvent(new CustomEvent('made-cms:input', { detail: {$detail} }))";
+}
+
+it('patches the address and the alt text of an image without reloading the frame, and reloads for no image', function (): void {
+    Storage::fake('public');
+    $photo = Media::factory()->withAlt('Het oude team')->create();
+    $page = Page::factory()->published()->atPosition(1)->at('/teams')->withStrips([
+        storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $photo->id], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen'], id: 'cards'),
+    ])->create(['title' => 'Teams']);
+    $image = siteInFrame()."?.querySelector('[data-cms-strip=\"hero\"] img[data-cms-field=\"foto\"]')";
+    $pixel = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+
+    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Onze teams'");
+
+    expect($shell->script(waitUntil("{$image}?.getAttribute('alt') === 'Het oude team'")))->toBeTrue();
+
+    $shell->script(markFrame());
+    $shell->script(sendPhoto(['url' => $pixel, 'alt' => 'Het nieuwe team', 'width' => 1, 'height' => 1, 'focal' => ['x' => 0.5, 'y' => 0.5]], 1));
+
+    expect($shell->script(waitUntil("{$image}?.getAttribute('src') === '{$pixel}' && {$image}?.getAttribute('alt') === 'Het nieuwe team'")))->toBeTrue()
+        ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse();
+
+    // No image takes the element away, which only the site does: the frame reloads once the change is saved.
+    $shell->script(sendPhoto(null, 2));
+    $shell->script("() => document.querySelector('[data-edit-shell]').dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: 'hero', seq: 2 } }))");
+
+    expect($shell->script(waitUntil(frameReloaded())))->toBeTrue();
+
+    $shell->assertNoJavaScriptErrors();
 });

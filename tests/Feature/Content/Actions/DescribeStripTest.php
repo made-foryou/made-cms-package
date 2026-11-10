@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Content\Actions\DescribeStrip;
 use Made\CmsPackage\Content\Exceptions\StripNotFound;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
@@ -95,4 +97,27 @@ it('describes a heading stored as text as a text with its level', function (): v
         'label' => null,
         'kaarten' => [['id' => 'k1', 'titel' => ['text' => 'Teams', 'tag' => 'h3']]],
     ]);
+});
+
+it('gives the files of the images of the strip, also in a list, for the side panel', function (): void {
+    Storage::fake('public');
+    $photo = Media::factory()->create();
+    $icon = Media::factory()->create();
+    $other = Media::factory()->create();
+    $page = Page::factory()->withDraft([
+        storedStrip('cards', ['kaarten' => [['id' => 'k1', 'titel' => 'Een', 'icoon' => $icon->id]]], id: 'a'),
+        storedStrip('hero', ['foto' => (string) $photo->id], id: 'b'),
+        storedStrip('hero', ['foto' => $other->id], id: 'c'),
+    ])->create();
+
+    expect(array_keys(DescribeStrip::run($page, 'a')->media->files))->toBe([$icon->id])
+        ->and(array_keys(DescribeStrip::run($page, 'b')->media->files))->toBe([$photo->id])
+        ->and(DescribeStrip::run($page, 'b')->values['foto'])->toBe($photo->id);
+});
+
+it('gives no files for a strip without images, without asking for the media disk', function (): void {
+    config(['made-cms-package.media.disk' => 'nope']);
+    $page = Page::factory()->withDraft([storedStrip('hero', ['kop' => 'Zonder foto'], id: 'a')])->create();
+
+    expect(DescribeStrip::run($page, 'a')->media->files)->toBe([]);
 });

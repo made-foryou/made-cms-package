@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Http\Requests\Content;
 
+use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
@@ -38,6 +39,14 @@ final class UpdateStripRequest extends LauncherRequest
     {
         /** @var array<string, mixed> */
         return $this->array('values');
+    }
+
+    /**
+     * Whether the editor chooses the level of a heading; for anyone else the Action keeps the stored level.
+     */
+    public function choosesLevels(): bool
+    {
+        return Visitor::choosesHeadingLevels($this);
     }
 
     protected function error(string $key): string

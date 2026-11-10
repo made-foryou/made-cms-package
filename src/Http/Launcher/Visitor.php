@@ -6,8 +6,11 @@ namespace Made\CmsPackage\Http\Launcher;
 
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Made\CmsPackage\Access\Actions\CheckScreenAccess;
 use Made\CmsPackage\Access\Actions\DescribeEditor;
 use Made\CmsPackage\Access\Data\LauncherVisitor;
+use Made\CmsPackage\Access\Data\ScreenVisit;
+use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
@@ -32,6 +35,15 @@ final class Visitor
         $editor = $request->user(config()->string('made-cms-package.auth.guard'));
 
         return $editor instanceof Editor ? $editor : null;
+    }
+
+    /**
+     * Whether the logged-in editor chooses the level of a heading in the edit shell: whoever opens Meta-overzicht
+     * (Screen::MetaTags). The others edit the text of a heading only; the strip Actions keep its level for them.
+     */
+    public static function choosesHeadingLevels(Request $request): bool
+    {
+        return CheckScreenAccess::run(new ScreenVisit(editor: self::editor($request), screen: Screen::MetaTags));
     }
 
     /**

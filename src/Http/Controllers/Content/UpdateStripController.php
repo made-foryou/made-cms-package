@@ -22,7 +22,7 @@ final class UpdateStripController
     public function __invoke(UpdateStripRequest $request, Page $page, string $strip): JsonResponse
     {
         try {
-            $stored = UpdateStrip::run($page, $strip, $request->values());
+            $stored = UpdateStrip::run($page, $strip, $request->values(), $request->choosesLevels());
         } catch (StripNotFound|UnknownStripType) {
             abort(Response::HTTP_NOT_FOUND);
         }

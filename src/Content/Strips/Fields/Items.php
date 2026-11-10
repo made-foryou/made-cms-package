@@ -309,16 +309,23 @@ final class Items extends Field
     }
 
     /**
-     * The files of every item, in order, by the position of the item in the list: "kaarten.2.foto".
+     * The files of every item, in order, by the id of the item: "kaarten.{id}.foto". An item without an id that fits
+     * in a path (stored without the Actions) goes by its position in the list.
      */
     public function places(mixed $value, string $path): array
     {
         $places = [];
 
         foreach (is_array($value) ? $value : [] as $position => $item) {
-            foreach (is_array($item) ? $this->fields : [] as $field) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $segment = self::segment($item, $position);
+
+            foreach ($this->fields as $field) {
                 $key = $field->getKey();
-                $places = [...$places, ...$field->places($item[$key] ?? null, "{$path}.{$position}.{$key}")];
+                $places = [...$places, ...$field->places($item[$key] ?? null, "{$path}.{$segment}.{$key}")];
             }
         }
 
@@ -326,26 +333,51 @@ final class Items extends Field
     }
 
     /**
-     * An item by its label and its number ("Foto 3" for position 2), then the labels of the field in it.
+     * An item by its label and its number in the list ("Foto 3" for the third item), then the labels of the field in
+     * it. Null when the list does not hold the item.
      */
-    public function placeLabels(array $rest): ?array
+    public function placeLabels(array $rest, mixed $value): ?array
     {
-        $position = $rest[0] ?? '';
+        $segment = $rest[0] ?? null;
         $key = $rest[1] ?? null;
 
-        if (! ctype_digit($position) || $key === null) {
+        if ($segment === null || $key === null) {
             return null;
         }
 
-        foreach ($this->fields as $field) {
-            if ($field->getKey() === $key) {
-                $labels = $field->placeLabels(array_slice($rest, 2));
+        $number = 0;
 
-                return $labels === null ? null : [$this->getItemLabel().' '.((int) $position + 1), ...$labels];
+        foreach (is_array($value) ? $value : [] as $position => $item) {
+            $number++;
+
+            if (! is_array($item) || self::segment($item, $position) !== $segment) {
+                continue;
             }
+
+            foreach ($this->fields as $field) {
+                if ($field->getKey() === $key) {
+                    $labels = $field->placeLabels(array_slice($rest, 2), $item[$key] ?? null);
+
+                    return $labels === null ? null : [$this->getItemLabel().' '.$number, ...$labels];
+                }
+            }
+
+            return null;
         }
 
         return null;
+    }
+
+    /**
+     * The step of an item in the path of a place: its id, or its position when it has no id that fits in a path.
+     *
+     * @param  array<mixed>  $item
+     */
+    private static function segment(array $item, int|string $position): string
+    {
+        $id = $item['id'] ?? null;
+
+        return is_string($id) && $id !== '' && ! str_contains($id, '.') ? $id : (string) $position;
     }
 
     /**

@@ -16,7 +16,7 @@ final readonly class MediaPlace
      * @param  string  $where  the name of the strip and the labels of the field: "Hero › Achtergrondfoto", or
      *                         "Fotorij › Foto 3 › Afbeelding" in a list; the keys when the catalogue cannot name it
      * @param  string  $strip  the id of the strip
-     * @param  string  $field  the path of the field in the strip: "foto", or "fotos.2.afbeelding"
+     * @param  string  $field  the path of the field in the strip: "foto", or "fotos.{id}.afbeelding" by the id of the item
      * @param  list<UsageVersion>  $versions  the versions of the page the place is in: the draft, the published version or both
      * @param  bool  $pageDeleted  the page is deleted and can still be restored
      */

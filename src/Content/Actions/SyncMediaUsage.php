@@ -7,10 +7,12 @@ namespace Made\CmsPackage\Content\Actions;
 use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
+use Made\CmsPackage\Content\Data\Strip;
 use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\StripTypes;
 
 /**
@@ -28,8 +30,9 @@ final class SyncMediaUsage
      * Brings the rows of a page in cms_media_usages in step with its strips: a row for every place a file of the
      * library is in the published strips, and in the draft while there is one. A hidden strip counts, a deleted page
      * too. The fields say which values are files (StripType::places()); the id of a file that is not in the library
-     * gets no row. A strip whose type left the catalogue cannot be read, so it keeps the rows it has while it is on
-     * the page, and its copy in the draft takes the rows of the published strip. Only what changed is written.
+     * gets no row. The catalogue no longer says which values of a strip whose type left it are files, so its rows in
+     * either version say it: every such place holds the file its values in this version hold there, so publishing
+     * the draft of such a strip moves the file of the draft to the published version. Only what changed is written.
      *
      * The caller holds the row of the page locked (ChangeDraft, RebuildMediaUsage), so two changes never write the
      * rows of a page at the same time.
@@ -78,11 +81,9 @@ final class SyncMediaUsage
         $places = [];
 
         foreach ($strips->strips as $strip) {
-            if ($this->types->has($strip->type)) {
-                $files = $this->types->find($strip->type)->places($strip->values);
-            } else {
-                $files = $this->unreadable($stored, $version, $strip->id, $strip->type);
-            }
+            $files = $this->types->has($strip->type)
+                ? $this->types->find($strip->type)->places($strip->values)
+                : self::unreadable($stored, $strip);
 
             foreach ($files as $field => $media) {
                 $places[self::key($version->value, $strip->id, $field)] = [
@@ -100,23 +101,52 @@ final class SyncMediaUsage
     }
 
     /**
-     * The places a strip whose type left the catalogue has in this version, else those of the other version: such a
-     * strip cannot change, so its copy in the draft holds what the published strip holds.
+     * The files of a strip whose type left the catalogue: at every place its rows in either version know, the file its
+     * values hold there, read as an image field stores the id of a file. Such a strip cannot change while its type is
+     * gone, but publishing hands the values of its draft to the published version.
      *
      * @param  Collection<int, MediaUsage>  $stored
      * @return array<string, int>
      */
-    private function unreadable(Collection $stored, UsageVersion $version, string $stripId, string $type): array
+    private static function unreadable(Collection $stored, Strip $strip): array
     {
-        $rows = $stored->filter(static fn (MediaUsage $usage): bool => $usage->strip_id === $stripId && $usage->strip_type === $type);
-        $own = $rows->filter(static fn (MediaUsage $usage): bool => $usage->version === $version);
         $files = [];
 
-        foreach ($own->isNotEmpty() ? $own : $rows as $usage) {
-            $files[$usage->field] = $usage->media_id;
+        foreach ($stored as $usage) {
+            if ($usage->strip_id !== $strip->id || $usage->strip_type !== $strip->type || array_key_exists($usage->field, $files)) {
+                continue;
+            }
+
+            $files[$usage->field] = Image::make('file')->normalize(self::valueAt($strip->values, $usage->field));
         }
 
-        return $files;
+        return array_filter($files, static fn (?int $media): bool => $media !== null);
+    }
+
+    /**
+     * The value at the path of a place: a field by its key, an item of a list by its id, or by its position when no
+     * item has that id (an item stored without one).
+     *
+     * @param  array<string, mixed>  $values
+     */
+    private static function valueAt(array $values, string $path): mixed
+    {
+        $value = $values;
+
+        foreach (explode('.', $path) as $segment) {
+            if (! is_array($value)) {
+                return null;
+            }
+
+            if (array_is_list($value)) {
+                $item = array_find($value, static fn (mixed $item): bool => is_array($item) && ($item['id'] ?? null) === $segment);
+                $value = $item ?? (ctype_digit($segment) ? $value[(int) $segment] ?? null : null);
+            } else {
+                $value = $value[$segment] ?? null;
+            }
+        }
+
+        return $value;
     }
 
     /**

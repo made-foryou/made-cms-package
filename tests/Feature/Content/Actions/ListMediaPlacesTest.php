@@ -32,7 +32,7 @@ it('names a place by the name of its strip and the labels of its field, an item 
     $media = Media::factory()->create();
     $page = Page::factory()->withStrips([
         storedStrip('hero', ['foto' => $media->id], id: 'h'),
-        storedStrip('cards', ['kaarten' => [['titel' => 'Een'], ['titel' => 'Twee'], ['icoon' => $media->id]]], id: 'c'),
+        storedStrip('cards', ['kaarten' => [['id' => 'k1', 'titel' => 'Een'], ['id' => 'k2', 'titel' => 'Twee'], ['id' => 'k3', 'icoon' => $media->id]]], id: 'c'),
     ])->create(['title' => 'Onze teams']);
     SyncMediaUsage::run($page);
 
@@ -49,7 +49,7 @@ it('names a place by the name of its strip and the labels of its field, an item 
             pageDeleted: false,
         ))
         ->and($places->places[1]->where)->toBe('Kaarten › Item 3 › Icoon')
-        ->and($places->places[1]->field)->toBe('kaarten.2.icoon');
+        ->and($places->places[1]->field)->toBe('kaarten.k3.icoon');
 });
 
 it('names a place by its keys when its type left the catalogue or no longer has the field', function (): void {
@@ -79,10 +79,10 @@ it('gives a place in both versions once, with the versions it is in', function (
         ->and($places[1]->in(UsageVersion::Published))->toBeFalse();
 });
 
-it('lists the pages by title and the places of a page in the order of its strips', function (): void {
+it('lists the pages by title and the places of a page in the order of its strips and their items', function (): void {
     $media = Media::factory()->create();
     $teams = Page::factory()->withStrips([
-        storedStrip('cards', ['kaarten' => [['icoon' => $media->id], ['icoon' => $media->id]]], id: 'c'),
+        storedStrip('cards', ['kaarten' => [['id' => 'z', 'icoon' => $media->id], ['id' => 'a', 'icoon' => $media->id]]], id: 'c'),
         storedStrip('hero', ['foto' => $media->id], id: 'h'),
     ])->create(['title' => 'Onze teams']);
     $news = Page::factory()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'n')])->create(['title' => 'clubkampioenschappen 2026']);
@@ -111,6 +111,43 @@ it('marks a place on a deleted page and counts the pages', function (): void {
         ->and($places->count())->toBe(3)
         ->and($places->pageCount())->toBe(2)
         ->and($places->isEmpty())->toBeFalse();
+});
+
+it('numbers an item that moved in the draft from the draft, and one only the published page holds from there', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('cards', ['kaarten' => [['id' => 'x', 'icoon' => $media->id], ['id' => 'y'], ['id' => 'w', 'icoon' => $media->id]]], id: 'c')])
+        ->withDraft([storedStrip('cards', ['kaarten' => [['id' => 'y'], ['id' => 'x', 'icoon' => $media->id]]], id: 'c')])
+        ->create(['title' => 'Onze teams']);
+    SyncMediaUsage::run($page);
+
+    $places = ListMediaPlaces::run($media)->places;
+
+    expect(array_map(static fn (MediaPlace $place): string => $place->where, $places))->toBe(['Kaarten › Item 2 › Icoon', 'Kaarten › Item 3 › Icoon'])
+        ->and($places[0]->versions)->toBe([UsageVersion::Draft, UsageVersion::Published])
+        ->and($places[1]->versions)->toBe([UsageVersion::Published]);
+});
+
+it('names a place of an item the values no longer hold by its keys', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->withStrips([storedStrip('cards', ['kaarten' => []], id: 'c')])->create(['title' => 'Onze teams']);
+    MediaUsage::factory()->for($media)->for($page)->create(['strip_id' => 'c', 'strip_type' => 'cards', 'field' => 'kaarten.weg.icoon']);
+
+    expect(placeLines($media))->toBe(['Onze teams: cards › kaarten.weg.icoon']);
+});
+
+it('lists the places on a deleted page also for a file loaded with its places in another way', function (): void {
+    $media = Media::factory()->create();
+    $gone = Page::factory()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'g')])->create(['title' => 'Oud nieuws']);
+    SyncMediaUsage::run($gone);
+    $gone->delete();
+
+    $loaded = Media::query()->with('usages.page')->findOrFail($media->id);
+    $places = ListMediaPlaces::run($loaded);
+
+    expect($places->isEmpty())->toBeFalse()
+        ->and($places->places[0]->pageDeleted)->toBeTrue()
+        ->and(Media::query()->inUse()->whereKey($media->id)->exists())->toBeTrue();
 });
 
 it('has no places for a file that is used nowhere', function (): void {

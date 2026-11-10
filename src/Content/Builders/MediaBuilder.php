@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Builders;
 
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
@@ -47,9 +46,7 @@ final class MediaBuilder extends Builder
      */
     public function withUsage(): self
     {
-        return $this->with(['usages.page' => static function (BelongsTo $page): void {
-            $page->withTrashed();
-        }]);
+        return $this->with('usages.page');
     }
 
     /**

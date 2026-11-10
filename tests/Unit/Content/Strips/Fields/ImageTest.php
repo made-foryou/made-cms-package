@@ -98,12 +98,26 @@ it('gives the file it holds by the path of its place', function (): void {
         ->and(Text::make('titel')->places('12', 'titel'))->toBe([]);
 });
 
-it('gives the files in the items of a list by the position of the item, also when an item holds the same file', function (): void {
+it('gives the files in the items of a list by the id of the item, also when an item holds the same file', function (): void {
     $items = Items::make('kaarten', [Text::make('titel'), Image::make('icoon')]);
 
-    expect($items->places([['icoon' => 4], ['titel' => 'Twee'], ['icoon' => '4'], 'geen item'], 'kaarten'))
-        ->toBe(['kaarten.0.icoon' => 4, 'kaarten.2.icoon' => 4])
+    expect($items->places([['id' => 'a', 'icoon' => 4], ['id' => 'b', 'titel' => 'Twee'], ['id' => 'c', 'icoon' => '4'], 'geen item'], 'kaarten'))
+        ->toBe(['kaarten.a.icoon' => 4, 'kaarten.c.icoon' => 4])
         ->and($items->places(null, 'kaarten'))->toBe([]);
+});
+
+it('gives the files of an item without a usable id by its position in the list', function (): void {
+    $items = Items::make('kaarten', [Image::make('icoon')]);
+
+    expect($items->places([['icoon' => 4], ['id' => '', 'icoon' => 5], ['id' => 'met.punt', 'icoon' => 6], ['id' => 'd', 'icoon' => 7]], 'kaarten'))
+        ->toBe(['kaarten.0.icoon' => 4, 'kaarten.1.icoon' => 5, 'kaarten.2.icoon' => 6, 'kaarten.d.icoon' => 7]);
+});
+
+it('keeps the place of a file in an item when the item moves', function (): void {
+    $items = Items::make('kaarten', [Image::make('icoon')]);
+
+    expect($items->places([['id' => 'b', 'icoon' => 5], ['id' => 'a', 'icoon' => 4]], 'kaarten'))
+        ->toBe(['kaarten.b.icoon' => 5, 'kaarten.a.icoon' => 4]);
 });
 
 it('gives every place of a strip that holds a file, in the order of its fields, without fields it no longer has', function (): void {
@@ -113,33 +127,46 @@ it('gives every place of a strip that holds a file, in the order of its fields, 
         Image::make('logo'),
     ]);
 
-    expect($type->places(['foto' => 3, 'kaarten' => [['icoon' => 5], ['icoon' => 3]], 'logo' => null, 'oud' => 7]))
-        ->toBe(['foto' => 3, 'kaarten.0.icoon' => 5, 'kaarten.1.icoon' => 3]);
+    expect($type->places(['foto' => 3, 'kaarten' => [['id' => 'a', 'icoon' => 5], ['id' => 'b', 'icoon' => 3]], 'logo' => null, 'oud' => 7]))
+        ->toBe(['foto' => 3, 'kaarten.a.icoon' => 5, 'kaarten.b.icoon' => 3]);
 });
 
-it('names a place by the labels of its field, an item of a list by its label and number', function (): void {
+it('names a place by the labels of its field, an item of a list by its label and its number in the values', function (): void {
     $type = new InlineStripType('fotorij', [
         Image::make('foto')->label('Achtergrondfoto'),
         Items::make('fotos', [Text::make('titel'), Image::make('afbeelding')])->itemLabel('Foto'),
         Items::make('kaarten', [Image::make('icoon')]),
     ]);
+    $values = [
+        'foto' => 1,
+        'fotos' => [['id' => 'x', 'titel' => 'Een'], ['id' => 'y'], ['id' => 'z', 'afbeelding' => 2]],
+        'kaarten' => [['icoon' => 3]],
+    ];
 
-    expect($type->placeLabels('foto'))->toBe(['Achtergrondfoto'])
-        ->and($type->placeLabels('fotos.2.afbeelding'))->toBe(['Foto 3', 'Afbeelding'])
-        ->and($type->placeLabels('kaarten.0.icoon'))->toBe(['Item 1', 'Icoon']);
+    expect($type->placeLabels('foto', $values))->toBe(['Achtergrondfoto'])
+        ->and($type->placeLabels('fotos.z.afbeelding', $values))->toBe(['Foto 3', 'Afbeelding'])
+        ->and($type->placeLabels('kaarten.0.icoon', $values))->toBe(['Item 1', 'Icoon']);
 });
 
-it('has no labels for a place that is no field of the type', function (string $path): void {
+it('numbers an item by its place in the values it gets, so a moved item gets its new number', function (): void {
+    $type = new InlineStripType('fotorij', [Items::make('fotos', [Image::make('afbeelding')])->itemLabel('Foto')]);
+
+    expect($type->placeLabels('fotos.z.afbeelding', ['fotos' => [['id' => 'z'], ['id' => 'y']]]))->toBe(['Foto 1', 'Afbeelding'])
+        ->and($type->placeLabels('fotos.z.afbeelding', ['fotos' => [['id' => 'y'], ['id' => 'z']]]))->toBe(['Foto 2', 'Afbeelding']);
+});
+
+it('has no labels for a place that is no field of the type or no item of the values', function (string $path): void {
     $type = new InlineStripType('fotorij', [
         Image::make('foto'),
         Items::make('fotos', [Image::make('afbeelding')]),
     ]);
 
-    expect($type->placeLabels($path))->toBeNull();
+    expect($type->placeLabels($path, ['foto' => 1, 'fotos' => [['id' => 'x', 'afbeelding' => 2]]]))->toBeNull();
 })->with([
     'a field it no longer has' => ['logo'],
-    'a field in a list it no longer has' => ['fotos.0.logo'],
-    'an item without a position' => ['fotos.eerste.afbeelding'],
+    'a field in a list it no longer has' => ['fotos.x.logo'],
+    'an item the list does not hold' => ['fotos.weg.afbeelding'],
+    'an item by a position it does not hold' => ['fotos.3.afbeelding'],
     'a list without an item' => ['fotos'],
     'a field below a field' => ['foto.0.afbeelding'],
     'nothing' => [''],

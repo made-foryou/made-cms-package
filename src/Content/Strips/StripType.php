@@ -281,8 +281,8 @@ abstract class StripType
 
     /**
      * The files of the media library the strip uses by the path of their place, in the order of its fields: "foto",
-     * or "kaarten.2.foto" for an image in the third item of a list. A file in two places is there twice. Values of
-     * fields the type no longer has are left out.
+     * or "kaarten.{id}.foto" for an image in an item of a list, by the id of the item. A file in two places is there
+     * twice. Values of fields the type no longer has are left out.
      *
      * @param  array<string, mixed>  $values  stored values
      * @return array<string, int>
@@ -301,19 +301,20 @@ abstract class StripType
 
     /**
      * The labels that name a place of the strip, without the name of the strip: ["Achtergrondfoto"], or
-     * ["Foto 3", "Afbeelding"] for a field in an item of a list. Null when the path is no place of a field the type
-     * has (any more).
+     * ["Foto 3", "Afbeelding"] for a field in the third item of a list in these values. Null when the path is no place
+     * of a field the type has (any more), or of an item the values hold.
      *
+     * @param  array<string, mixed>  $values  stored values of the strip, where an item of a list gets its number
      * @return list<string>|null
      */
-    final public function placeLabels(string $path): ?array
+    final public function placeLabels(string $path, array $values): ?array
     {
         $segments = explode('.', $path);
         $key = array_shift($segments);
 
         foreach ($this->fields() as $field) {
             if ($field->getKey() === $key) {
-                return $field->placeLabels($segments);
+                return $field->placeLabels($segments, $values[$key] ?? null);
             }
         }
 

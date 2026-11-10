@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Content\Strips;
 
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 
 /**
@@ -193,6 +194,35 @@ abstract class StripType
         }
 
         return $values;
+    }
+
+    /**
+     * The fields that are a heading, by the path the edit shell knows a field by: "kop", or "kaarten.*.titel" for a
+     * heading in every item of a list, with the label of that list. The overview of the headings uses it to find a
+     * heading at "Geen kop" (a span) on the site and to tell a heading whose level an editor chooses from one the
+     * view prints.
+     *
+     * @return list<array{path: string, list: string|null}>
+     */
+    final public function headings(): array
+    {
+        $headings = [];
+
+        foreach ($this->fields() as $field) {
+            if ($field instanceof Heading) {
+                $headings[] = ['path' => $field->getKey(), 'list' => null];
+            }
+
+            if ($field instanceof Items) {
+                foreach ($field->getFields() as $sub) {
+                    if ($sub instanceof Heading) {
+                        $headings[] = ['path' => $field->getKey().'.*.'.$sub->getKey(), 'list' => $field->getLabel()];
+                    }
+                }
+            }
+        }
+
+        return $headings;
     }
 
     /**

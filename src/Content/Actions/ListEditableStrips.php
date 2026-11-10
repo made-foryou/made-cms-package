@@ -32,7 +32,7 @@ final class ListEditableStrips
 
         foreach (PageStrips::fromArray($page->draft_strips ?? $page->strips)->strips as $strip) {
             if (! $this->types->has($strip->type)) {
-                $strips[] = new EditableStrip($strip->id, $strip->type, $strip->type, $strip->visible, false, 0, null);
+                $strips[] = new EditableStrip($strip->id, $strip->type, $strip->type, $strip->visible, false, 0, null, []);
 
                 continue;
             }
@@ -47,6 +47,7 @@ final class ListEditableStrips
                 true,
                 count($type->fields()),
                 $type->summary($strip->values),
+                $type->headings(),
             );
         }
 

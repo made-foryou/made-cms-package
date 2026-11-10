@@ -61,7 +61,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | Media kiezen en uploaden vanuit de bewerkschil | `Screen::Pages` | Hoort bij een pagina bewerken, dus ook Eigenaar en SEO-specialist kunnen een foto kiezen. Bibliotheek en beheer vallen onder `Screen::Media`. | #49, besluit 8 (voorstel) |
 | Een link kiezen in het zijpaneel | `Screen::Pages` | Hoort bij een pagina bewerken. | #75 |
 | De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
-| Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop") | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2), #126 |
+| Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop"), en de weergave "Koppen" naast de Opbouw | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De weergave Koppen toont daarvoor alle koppen van de pagina met de signalen; ze is alleen UI. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2 en 3), #126, #127 |
 | Meta en "Staat in de sitemap" van één pagina | `Screen::Pages` | De paginadetail; de Vindbaarheid-schermen tonen dezelfde gegevens voor alle pagina's tegelijk. | #65, #87 (besluit 7) |
 | Een redirect bij het weghalen van een pagina | `Screen::Pages` | Hoort bij verwijderen. | #94 |
 | Automatisch doorsturen bij verhuizen | geen | Een Content-Action doet dit; Content kijkt nooit naar rollen. | #94 |
@@ -98,6 +98,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | 2026-11-06 | Uitnodigen, intrekken en terugzetten vallen onder Gebruikers en rollen, met de admin-regels van rollen toekennen. Een account wordt nooit verwijderd, alleen ingetrokken. | #101 (besluiten 1, 2 en 8) |
 | 2026-11-06 | Het accountmenu en je account zijn altijd open voor elke ingelogde redacteur, zonder `Screen`-case. | #101 (besluit 4), #105 |
 | 2026-11-07 | Het niveau van een kop kiezen in de bewerkschil valt onder Meta-overzicht; de anderen zien het niveau als label. | #124 (besluit 2), #126 |
+| 2026-11-07 | De weergave Koppen naast de Opbouw valt ook onder Meta-overzicht; de anderen zien alleen de Opbouw. | #124 (besluit 3), #127 |
 
 ## Bijwerken
 

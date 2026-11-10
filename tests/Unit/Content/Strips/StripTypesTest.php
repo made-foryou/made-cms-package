@@ -7,6 +7,7 @@ use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -85,6 +86,11 @@ it('refuses a definition that breaks the rules', function (string $key, Closure 
     'a choice without options' => ['hero', fn (): array => [Choice::make('stijl', [])], 'field [stijl] has no options'],
     'items without fields' => ['hero', fn (): array => [Items::make('kaarten', [])], 'field [kaarten] has no fields'],
     'items inside items' => ['hero', fn (): array => [Items::make('rijen', [Items::make('kaarten', [Text::make('titel')])])], 'field [kaarten] is a list inside a list'],
+    'an unknown heading level' => ['hero', fn (): array => [Heading::make('kop')->tags(['h2', 'p'])], 'field [kop] has an unknown heading level [p]'],
+    'an unknown default level' => ['hero', fn (): array => [Heading::make('kop')->tag('h7')], 'field [kop] has an unknown heading level [h7]'],
+    'a default level outside its levels' => ['hero', fn (): array => [Heading::make('kop')->tag('h1')->tags(['h2', 'h3'])], 'field [kop] has the default level [h1] outside its levels'],
+    'a heading without levels' => ['hero', fn (): array => [Heading::make('kop')->tags([])], 'field [kop] has the default level [h2] outside its levels'],
+    'a default level outside its levels in an item' => ['hero', fn (): array => [Items::make('kaarten', [Heading::make('titel')->tag('h3')->tags(['h2'])])], 'field [titel] has the default level [h3] outside its levels'],
 ]);
 
 it('allows the names type and visible inside an item', function (): void {

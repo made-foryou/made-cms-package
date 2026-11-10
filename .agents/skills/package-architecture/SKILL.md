@@ -1,6 +1,6 @@
 ---
 name: package-architecture
-description: "Use this skill when adding or changing domain code in a bounded context: Actions, Models, custom Eloquent Builders, Data objects, Events, Enums, Exceptions, or when adding a new context such as Sites or Media."
+description: "Use this skill when adding or changing domain code in a bounded context: Actions, Models, custom Eloquent Builders, Data objects, Events, Enums, Exceptions, or when adding a new context such as Sites. Media is part of Content, not a context of its own."
 license: MIT
 metadata:
   author: made
@@ -14,7 +14,7 @@ Place every domain class in the right context and layer, written test-first, so 
 
 ## Workflow
 
-1. Pick the context (`Access` for login and access, `Content` for pages, blocks and publishing). Ask before creating a new context.
+1. Pick the context (`Access` for login and access, `Content` for pages, blocks, publishing and the media library). Ask before creating a new context.
 2. Write the failing test first in the mirrored path: `tests/Feature/<Context>/<Layer>/<Class>Test.php` for anything touching the database, `tests/Unit/<Context>/<Layer>/<Class>Test.php` otherwise.
 3. Add the smallest class that makes it pass, in `src/<Context>/<Layer>/`.
 4. Run `composer test:unit -- --filter=<Class>`, then `composer test:unit -- --testsuite=Arch`, then `composer analyse` and `composer test:types`.
@@ -35,6 +35,8 @@ Place every domain class in the right context and layer, written test-first, so 
 | Strip type catalogue | `src/Content/Strips/StripTypes.php` | `final`, bound as singleton in the service provider, validates every definition on construction. |
 | Scan machinery | `src/Content/Scan/` | `final` classes that read rendered HTML (`Dom\HTMLDocument`) for `RecognisePage` and `CombinePageScans`, and build the source of a proposed strip type (`ScannedStripType`, `StripTypeSource`). Reads and builds, never writes: no Actions, Events, Models, Builders, facades or file writes. The result is `Content\Data\ScanResult` (`docs/scanresultaat.md`). |
 | Writing into the site | `src/Content/Actions/GenerateStripTypes.php` | The only code that writes files (`tests/Arch/WritingTest.php`): only at `APP_ENV=local`, with `fopen` mode `x`, never overwriting. A new writer (views of 4.5) is an Action too and joins the arch test. |
+| Media library | `src/Content/Models/Media.php`, `MediaFolder.php`, `src/Content/Actions/UploadMedia.php` | Part of `Content`, not a context of its own. A strip stores the id of a file; the alt text belongs to the file. |
+| Writing to the media disk | `src/Content/Actions/UploadMedia.php` (through `CheckMediaDisk`) | Only Content Actions use `Storage` (`tests/Arch/WritingTest.php`), never `fopen`. Check the upload first (`CheckUploadedMedia`: type from the contents, size, svg), then write `media/{ulid}/…`, and take the folder off the disk again when the row fails. |
 | Exception | `src/<Context>/Exceptions/` | `final`, named after the situation, static constructor such as `for(...)`. |
 | Factory | `database/factories/<Context>/` | `final`, namespace `Made\CmsPackage\Database\Factories\<Context>`. |
 | Migration | `database/migrations/` | `YYYY_MM_DD_HHMMSS_create_cms_<table>_table.php`, anonymous class. |

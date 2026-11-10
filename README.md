@@ -12,6 +12,14 @@
 
 Content management system from Made
 
+## Requirements
+
+- PHP 8.4 or higher with the extensions `dom` and `fileinfo`.
+- Laravel 12 or 13.
+- For uploaded photos: GD with WebP support (the default) or Imagick, and `exif` so photos from a phone come out upright.
+- A `memory_limit` of at least 128 MB: GD needs about 65 MB to scale a photo of 4000 × 2667 px.
+- A public disk for the media library, by default `public` (run `php artisan storage:link`). See [Media](#media).
+
 ## Installation
 
 You can install the package via Composer:
@@ -508,6 +516,41 @@ The edit shell patches the element with `data-cms-field` in the page as it is, s
 </ul>
 ```
 
+## Media
+
+The media library holds every photo, document and video of the site in one place. A strip stores the id of a file, so a file changes everywhere it is used, and its alt text belongs to the file: written once, it holds on every page.
+
+Files go to the disk in `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`). A visitor must be able to open them, so use the `public` disk after `php artisan storage:link`, a local disk with a `url`, or a cloud disk such as S3. A local disk without a `url` is refused with a `MediaDiskNotUsable` exception the first time the library is used; the site and artisan keep working until then.
+
+An upload is checked before anything is stored. The type is read from the contents, never from the name; a file larger than `media.max_upload_kb` (default 25 MB) or of a type outside `media.allowed_mimes` (jpg, png, webp, gif, svg, pdf and mp4) is refused with a message for the editor. Each file gets a folder of its own, `media/{ulid}/`:
+
+- A photo (jpg, png, webp or a gif that does not move) is turned upright by its EXIF orientation, scaled down to at most `media.image.max_width` (1920 px, never up) and stored as `media.image.format` (webp) at `media.image.quality` (82), without the metadata of the camera. The upload is kept next to it under a name nobody can guess from the url of the photo, because it still holds the full size and that metadata; a later crop starts from it.
+- An svg is stored exactly as it came in, but only when it does nothing but draw. One with a script, an event attribute, html, an entity, a reference outside the drawing or a style that loads something is refused, because whoever opens its url would run it on the domain of your site.
+- An animated gif, a pdf and an mp4 are stored exactly as they came in.
+
+Photos are scaled in the request with [Intervention Image](https://image.intervention.io) and `media.image.driver` (env `MADE_CMS_IMAGE_DRIVER`: `gd`, the default, or `imagick`).
+
+The Actions, for your own imports or seeders:
+
+```php
+use Made\CmsPackage\Content\Actions\UpdateAltText;
+use Made\CmsPackage\Content\Actions\UploadMedia;
+use Made\CmsPackage\Content\Data\UploadedMedia;
+
+$media = UploadMedia::run(new UploadedMedia(
+    path: storage_path('import/teamfoto.jpg'),   // a readable file on the server
+    filename: 'Teamfoto Merwestad.jpg',          // becomes the name teamfoto-merwestad
+    folderId: null,
+    uploadedBy: null,                            // the id of the editor, when there is one
+));
+
+UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
+```
+
+A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search('merwestad')`, and the folders with `MediaFolder::query()->alphabetical()`.
+
+Config keys: `media.disk`, `media.max_upload_kb`, `media.allowed_mimes`, `media.image.driver`, `media.image.max_width`, `media.image.format` and `media.image.quality`.
+
 ## Launcher
 
 Once the package is installed, a MADE tile appears in the bottom-right corner of every full HTML page served through the `web` middleware group. Clicking it opens the Made CMS login panel over the site. There is nothing to publish or register: the middleware, markup, stylesheet, script and fonts (Nunito and Instrument Sans, both SIL Open Font License) are served straight from the package. They are deliberately not publishable, so they always update together.
@@ -589,9 +632,9 @@ src/
 │   ├── Data/       immutable data objects
 │   ├── Events/
 │   └── Models/     plain table representations
-├── Content/    pages, strips and publishing
+├── Content/    pages, strips, publishing and the media library
 │   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
-│   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render
+│   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render, and UploadMedia
 │   └── ...
 ├── Console/    technical layer: artisan commands
 ├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips> and <x-made-cms::heading> components, controllers grouped per context, the login session

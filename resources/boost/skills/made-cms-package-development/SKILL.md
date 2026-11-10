@@ -19,13 +19,14 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 ### 1. Inspect the Laravel app context
 
-- confirm the app is a Laravel 12 or 13 project on PHP 8.4+
+- confirm the app is a Laravel 12 or 13 project on PHP 8.4+ with `ext-dom` and `ext-fileinfo`; for uploaded photos GD with WebP support (or Imagick), `exif`, and a `memory_limit` of at least 128 MB
 - inspect the target code paths where the package should be applied
 
 ### 2. Install
 
 - `composer require made-foryou/made-cms-package`; the service provider is auto-discovered
 - publish and run the migrations: `php artisan vendor:publish --tag="made-cms-package-migrations"` and `php artisan migrate`
+- the media library stores files on `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`): run `php artisan storage:link`, or use a local disk with a `url` or a cloud disk; a local disk without `url` throws `MediaDiskNotUsable` the first time the library is used
 
 ### 3. Launcher (the MADE tile on the website)
 
@@ -76,7 +77,8 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - create and change pages with `CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about->id))`, `UpdatePage::run($page, new PageChanges(...))`, `MovePage::run($page, $parentId, $position)`, `DeletePage::run($page)` and `RestorePage::run($page)`; read the tree with `ListPages::run()` (`PageTree`, `->flatten()` in menu order, `->inMenu()` for a site menu); never write `parent_id`, `position` or `cms_routes.path` yourself
 - refusals are exceptions: `PagePathTaken`, `InvalidPageSlug`, `CircularPageMove`, `HomePageProtected` (the home page keeps `/`, stays at the top and is never deleted), `PageHasChildren` (move or delete the pages below first)
 - deleting is a soft delete that frees the address; `made-cms:prune` removes pages deleted more than `pages.keep_deleted_days` (30) days ago and the package schedules it daily, so run the scheduler (`schedule:run`) in production
-- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled`, `PageCreated`, `PageUpdated`, `PageMoved` (old and new address), `PageDeleted`, `PageRestored`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded` and `PagePublished` for side effects; the content events (`Page*`, `Strip*`, `DraftDiscarded`, `PagePublished`) arrive after the commit of the transaction they are dispatched in
+- add files to the media library with `UploadMedia::run(new UploadedMedia(path: $localFile, filename: 'Teamfoto.jpg', folderId: null, uploadedBy: null))`: the type is read from the contents, a photo becomes a WebP of at most 1920 px with the upload kept next to it, an svg that does more than draw is refused, and a refusal is a `ValidationException` keyed by `file`; set the alt text with `UpdateAltText::run($media, $alt)` (one per file, for every place); read with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search($term)`; never write to the media disk yourself
+- listen to `EditorLoggedIn`, `EditorLoggedOut`, `EditorRolesChanged`, `TwoFactorEnabled`, `PageCreated`, `PageUpdated`, `PageMoved` (old and new address), `PageDeleted`, `PageRestored`, `StripAdded`, `StripMoved`, `StripRemoved`, `StripUpdated`, `StripVisibilityChanged`, `DraftDiscarded`, `PagePublished`, `MediaUploaded` and `AltTextUpdated` for side effects; the content events (`Page*`, `Strip*`, `DraftDiscarded`, `PagePublished`, `MediaUploaded`, `AltTextUpdated`) arrive after the commit of the transaction they are dispatched in
 
 ### 8. Serve the pages
 

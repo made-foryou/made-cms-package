@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Models;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Made\CmsPackage\Content\Builders\MediaBuilder;
 use Made\CmsPackage\Content\Enums\MediaKind;
@@ -31,6 +33,7 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * @property float|null $focal_y the point a crop keeps in view, from 0 (top) to 1 (bottom)
  * @property int|null $uploaded_by the id of the editor who uploaded the file
  * @property-read MediaFolder|null $folder
+ * @property-read Collection<int, MediaUsage> $usages
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  *
@@ -82,6 +85,16 @@ class Media extends Model
     public function folder(): BelongsTo
     {
         return $this->belongsTo(MediaFolder::class, 'folder_id');
+    }
+
+    /**
+     * The places the file is used, in the draft and the published version of every page, deleted pages included.
+     *
+     * @return HasMany<MediaUsage, $this>
+     */
+    public function usages(): HasMany
+    {
+        return $this->hasMany(MediaUsage::class, 'media_id');
     }
 
     /**

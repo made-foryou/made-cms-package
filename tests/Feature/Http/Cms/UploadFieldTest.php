@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
+use Dom\HTMLDocument;
 use Made\CmsPackage\Content\Models\MediaFolder;
-use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Cms\UploadField;
+use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 
 /**
  * The field as a host includes it.
@@ -76,7 +77,7 @@ it('renders the field with its fixed texts, a file chooser a keyboard reaches an
     $upload = UploadField::make(MediaFolder::factory()->create(['name' => 'Teams & <b>meer</b>']));
 
     $html = uploadFieldHtml($upload);
-    $document = Dom\HTMLDocument::createFromString('<!doctype html><body>'.$html, LIBXML_NOERROR);
+    $document = HTMLDocument::createFromString('<!doctype html><body>'.$html, LIBXML_NOERROR);
     $field = $document->querySelector('[data-upload]');
 
     expect($field)->not->toBeNull()

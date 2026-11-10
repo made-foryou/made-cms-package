@@ -135,4 +135,38 @@ return [
         'namespace' => 'App\\Cms\\Strips',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Media
+    |--------------------------------------------------------------------------
+    |
+    | Uploaded files are stored on disk, which must give a url (the public
+    | disk after storage:link, or a cloud disk). Only the types in
+    | allowed_mimes up to max_upload_kb are accepted; the type is read from
+    | the contents, never from the name. A photo is scaled down to max_width
+    | and stored in format at quality with driver (gd or imagick); the
+    | original is kept next to it. An svg and an animated gif stay as they are.
+    |
+    */
+
+    'media' => [
+        'disk' => (string) env('MADE_CMS_MEDIA_DISK', 'public'),
+        'max_upload_kb' => 25600,
+        'allowed_mimes' => [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+            'image/svg+xml',
+            'application/pdf',
+            'video/mp4',
+        ],
+        'image' => [
+            'driver' => (string) env('MADE_CMS_IMAGE_DRIVER', 'gd'),
+            'max_width' => 1920,
+            'format' => 'webp',
+            'quality' => 82,
+        ],
+    ],
+
 ];

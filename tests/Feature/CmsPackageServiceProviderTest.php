@@ -37,7 +37,16 @@ it('merges the package config', function (): void {
         ->and(config('made-cms-package.launcher.locale'))->toBe('nl')
         ->and(config('made-cms-package.launcher.except'))->toBe(['nova*', 'telescope*', 'horizon*', 'pulse*'])
         ->and(config('made-cms-package.strips.path'))->toBe(app_path('Cms/Strips'))
-        ->and(config('made-cms-package.strips.namespace'))->toBe('App\\Cms\\Strips');
+        ->and(config('made-cms-package.strips.namespace'))->toBe('App\\Cms\\Strips')
+        ->and(config('made-cms-package.media.disk'))->toBe('public')
+        ->and(config('made-cms-package.media.max_upload_kb'))->toBe(25600)
+        ->and(config('made-cms-package.media.allowed_mimes'))->toBe([
+            'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'application/pdf', 'video/mp4',
+        ])
+        ->and(config('made-cms-package.media.image.driver'))->toBe('gd')
+        ->and(config('made-cms-package.media.image.max_width'))->toBe(1920)
+        ->and(config('made-cms-package.media.image.format'))->toBe('webp')
+        ->and(config('made-cms-package.media.image.quality'))->toBe(82);
 });
 
 it('builds the strip type catalogue once from the configured folder', function (): void {

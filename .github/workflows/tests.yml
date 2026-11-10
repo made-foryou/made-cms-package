@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PHP_EXTENSIONS: dom, curl, libxml, mbstring, zip, fileinfo, sqlite, pdo_sqlite, bcmath, intl, iconv, xmlwriter, sockets
+  PHP_EXTENSIONS: dom, curl, libxml, mbstring, zip, fileinfo, gd, sqlite, pdo_sqlite, bcmath, intl, iconv, xmlwriter, sockets
 
 jobs:
   # Static checks look at the package's own source: one run on the newest stack is enough.

@@ -110,7 +110,7 @@ it('shows why a value is refused once the editor leaves the field', function ():
     $shell->type('[data-path="kop"] input', '')
         ->click('[data-path="label"] input');
 
-    expect($shell->script(waitUntil("document.querySelector('[data-path=\"kop\"] [data-slot=\"error\"]')?.textContent === 'Vul Kop in.'")))->toBeTrue();
+    expect($shell->script(waitUntil("document.querySelector('[data-path=\"kop.text\"] > [data-slot=\"error\"]')?.textContent === 'Vul Kop in.'")))->toBeTrue();
 
     $shell->assertSeeIn('[data-slot="status"]', 'Niet opgeslagen: 1 veld klopt nog niet.')
         ->assertAttribute('[data-path="kop"] input', 'aria-invalid', 'true');

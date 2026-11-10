@@ -468,7 +468,7 @@ function describedBy(element, input) {
 
     for (const part of [hint, error]) {
         if (part) {
-            part.id = 'paneel-' + (++uid);
+            part.id ||= 'paneel-' + (++uid);
             ids.push(part.id);
         }
     }
@@ -594,7 +594,8 @@ function button(state, element, field, owner, path) {
 
 /*
  * A heading is a text with its level, {text, tag}. The panel edits its text; the heading keeps its level, or gets the
- * default level of the field when it had none.
+ * default level of the field when it had none. Whoever opens Meta-overzicht (config.heading_levels) chooses the level
+ * next to the name of the field; anyone else sees it as a label, and the server keeps it for them.
  */
 function heading(state, element, field, owner, path) {
     const parts = slot('parts', element);
@@ -609,9 +610,153 @@ function heading(state, element, field, owner, path) {
     // The frame shows a heading as a whole: its text in the element of its level.
     const follow = () => liveInput(state, path, field, owner[key]);
 
-    parts.append(
-        control(state, { key: 'text', type: 'text', label: field.parts.text, hint: null, required: field.required, max_length: field.max_length }, holder, path + '.text', follow),
-    );
+    // The name of the field stands above the text with the level next to it, so the text needs no visible label.
+    const text = control(state, { key: 'text', type: 'text', label: field.label, hint: null, required: field.required, max_length: field.max_length }, holder, path + '.text', follow);
+
+    slot('label', text).classList.add('sr-only');
+    parts.append(text);
+    level(state, element, field, owner, path, follow);
+
+    // The hints below the heading describe its text too.
+    const input = slot('input', text);
+    const hints = [...element.querySelectorAll(':scope > [data-slot="hint"], :scope > [data-slot="level-hint"]')].filter((hint) => ! hint.hidden);
+
+    input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), ...hints.map((hint) => {
+        hint.id ||= 'paneel-' + (++uid);
+
+        return hint.id;
+    })].filter(Boolean).join(' '));
+}
+
+/*
+ * The level of a heading: a button with a list of the levels the field offers, each with what it means (design
+ * 11.18–11.19), or a label for an editor who does not choose levels (11.20). Choosing saves at once; the frame reloads
+ * after the save when the site printed another element. In an item the level belongs to that item (11.20b).
+ */
+function level(state, element, field, owner, path, follow) {
+    const key = path.split('.').pop();
+    const choice = slot('choice', element);
+    const label = slot('label', element);
+    const button = slot('level', element);
+    const fixed = slot('level-fixed', element);
+    const list = slot('levels', element);
+    const hint = slot('level-hint', element);
+    const current = () => owner[key]?.tag ?? field.tag;
+    const name = (tag) => field.tags.find((option) => option.value === tag)?.label ?? tag;
+
+    choice.dataset.path = path + '.tag';
+    label.id ||= 'paneel-' + (++uid);
+
+    if (! config.heading_levels) {
+        button.remove();
+        list.remove();
+        fixed.textContent = name(current());
+        fixed.setAttribute('aria-label', format(texts.level_fixed, { level: name(current()) }));
+        hint.textContent = format(texts.level_fixed_hint, { level: name(current()) });
+
+        return;
+    }
+
+    fixed.remove();
+    choice.input = button;
+    hint.textContent = path.includes('.') ? hint.dataset.item : hint.dataset.choose;
+    list.id = 'paneel-' + (++uid);
+    list.setAttribute('aria-labelledby', label.id);
+    button.setAttribute('aria-controls', list.id);
+
+    let active = 0;
+
+    const options = field.tags.map((option) => {
+        const item = template('data-part="level"');
+
+        item.id = 'paneel-' + (++uid);
+        slot('level-label', item).textContent = option.label;
+        slot('level-description', item).textContent = option.description;
+        // The list keeps the focus, so choosing with the pointer does not close it before the click.
+        item.addEventListener('mousedown', (event) => event.preventDefault());
+        item.addEventListener('click', () => choose(option.value));
+
+        return item;
+    });
+
+    list.replaceChildren(...options);
+
+    const show = () => {
+        const tag = current();
+
+        slot('level-name', button).textContent = name(tag);
+        button.setAttribute('aria-label', format(texts.level_choose, { level: name(tag) }));
+        options.forEach((item, index) => item.setAttribute('aria-selected', String(field.tags[index].value === tag)));
+    };
+
+    const mark = (index) => {
+        active = index;
+        options.forEach((item, position) => item.classList.toggle('actief', position === index));
+        list.setAttribute('aria-activedescendant', options[index].id);
+        options[index].scrollIntoView({ block: 'nearest' });
+    };
+
+    const open = () => {
+        list.hidden = false;
+        button.setAttribute('aria-expanded', 'true');
+        mark(Math.max(0, field.tags.findIndex((option) => option.value === current())));
+        list.focus();
+    };
+
+    const close = (focus = true) => {
+        list.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        list.removeAttribute('aria-activedescendant');
+
+        if (focus) {
+            button.focus();
+        }
+    };
+
+    const choose = (tag) => {
+        if (tag !== current()) {
+            owner[key] = { text: owner[key]?.text ?? null, tag };
+            show();
+            follow();
+            changed(state);
+            leave(state, path + '.tag');
+        }
+
+        close();
+    };
+
+    // While the list is open the button does not take the focus, so pressing it closes the list instead of reopening it.
+    button.addEventListener('mousedown', (event) => {
+        if (! list.hidden) {
+            event.preventDefault();
+        }
+    });
+    button.addEventListener('click', () => (list.hidden ? open() : close()));
+    list.addEventListener('keydown', (event) => {
+        const last = options.length - 1;
+
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            mark(Math.min(last, Math.max(0, active + (event.key === 'ArrowDown' ? 1 : -1))));
+        } else if (event.key === 'Home' || event.key === 'End') {
+            mark(event.key === 'Home' ? 0 : last);
+        } else if (event.key === 'Enter' || event.key === ' ') {
+            choose(field.tags[active].value);
+        } else if (event.key === 'Escape') {
+            close();
+        } else {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+    });
+    choice.addEventListener('focusout', (event) => {
+        if (! list.hidden && ! choice.contains(event.relatedTarget)) {
+            close(false);
+        }
+    });
+
+    show();
 }
 
 /* ---------------------------------------------------------------------------------------------------------------

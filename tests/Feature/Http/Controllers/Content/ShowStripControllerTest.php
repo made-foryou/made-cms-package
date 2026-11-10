@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -36,6 +39,72 @@ it('hands the side panel the fields and the draft values of a strip', function (
         ->assertJsonPath('strip.fields.5.fields.2.options.0', ['value' => 'primary', 'label' => 'Primair']);
 
     expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
+});
+
+it('hands the side panel the files of the images of the strip, by their url and never their place on the disk', function (): void {
+    Storage::fake('public');
+    $folder = MediaFolder::factory()->create(['name' => 'Teams']);
+    $photo = Media::factory()->in($folder)->withAlt('Het eerste team')->create([
+        'name' => 'teamfoto',
+        'path' => 'media/01k9/teamfoto.webp',
+        'original_path' => 'media/01k9/original-geheim123.jpg',
+        'size' => 412_000,
+        'width' => 1600,
+        'height' => 1067,
+    ]);
+    $page = Page::factory()->withDraft([storedStrip('hero', ['foto' => $photo->id], id: 'a')])->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->getJson('made-cms/pages/'.$page->id.'/strips/a')
+        ->assertOk()
+        ->assertJsonPath('strip.values.foto', $photo->id)
+        ->assertJsonPath('strip.fields.6', [
+            'key' => 'foto',
+            'type' => 'image',
+            'label' => 'Foto',
+            'hint' => 'Minimaal 1600 px breed.',
+            'required' => false,
+            'default' => null,
+        ]);
+
+    $url = Storage::disk('public')->url('media/01k9/teamfoto.webp');
+
+    expect($response->json('strip.media'))->toBe([[
+        'id' => $photo->id,
+        'url' => $url,
+        'name' => 'teamfoto',
+        'meta' => '1600 × 1067 · 412 kB',
+        'folder' => 'Teams',
+        'alt' => 'Het eerste team',
+        'image' => ['url' => $url, 'alt' => 'Het eerste team', 'width' => 1600, 'height' => 1067, 'focal' => ['x' => 0.5, 'y' => 0.5]],
+    ]])->and($response->getContent())->not->toContain('original-geheim123');
+});
+
+it('sums up a file by its size, and an image without a size by its size on the disk only', function (array $attributes, string $meta): void {
+    Storage::fake('public');
+    $media = Media::factory()->create($attributes);
+    $page = Page::factory()->withDraft([storedStrip('hero', ['foto' => $media->id], id: 'a')])->create();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->getJson('made-cms/pages/'.$page->id.'/strips/a')
+        ->assertJsonPath('strip.media.0.meta', $meta);
+})->with([
+    'an svg' => [['mime' => 'image/svg+xml', 'width' => null, 'height' => null, 'size' => 2_300], '2 kB'],
+    'a tiny file' => [['width' => 16, 'height' => 16, 'size' => 120], '16 × 16 · 1 kB'],
+    'a large photo' => [['width' => 1920, 'height' => 1280, 'size' => 1_460_000], '1920 × 1280 · 1,5 MB'],
+]);
+
+it('hands the side panel no files for a strip without images, and none for a file that is gone', function (): void {
+    $page = Page::factory()->withDraft([
+        storedStrip('hero', ['kop' => 'Zonder foto'], id: 'a'),
+        storedStrip('hero', ['foto' => 999], id: 'b'),
+    ])->create();
+    $editor = Editor::factory()->create();
+
+    $this->actingAs($editor, 'made-cms')->getJson('made-cms/pages/'.$page->id.'/strips/a')->assertJsonPath('strip.media', []);
+    $this->actingAs($editor, 'made-cms')->getJson('made-cms/pages/'.$page->id.'/strips/b')
+        ->assertJsonPath('strip.values.foto', 999)
+        ->assertJsonPath('strip.media', []);
 });
 
 it('offers every page of the site as a link, in the order of the menu', function (): void {

@@ -274,6 +274,20 @@
 <template data-part="level">
     <li class="niveauoptie" role="option" aria-selected="false"><span class="niveauoptie-naam" data-slot="level-label"></span><span class="niveauoptie-uitleg" data-slot="level-description"></span><span class="vink" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span></li>
 </template>
+{{--
+    An image of the media library: which file the field holds, by its name and size, or that it holds none. Choosing,
+    uploading and cropping come with the media element of the side panel (#52).
+--}}
+<template data-field="image">
+    <div class="veld beeldveld">
+        <span class="veld-label" data-slot="label"></span>
+        <p class="beeldveld-bestand" data-slot="image-file" hidden><span class="beeldveld-naam" data-slot="image-name"></span> <span class="veld-hint" data-slot="image-meta"></span></p>
+        <p class="veld-hint" data-slot="image-empty" hidden>{{ $t('cms.edit.image_empty') }}</p>
+        <p class="veld-hint" data-slot="image-gone" hidden>{{ $t('cms.edit.image_gone') }}</p>
+        <p class="veld-hint" data-slot="hint" hidden></p>
+        <p class="veld-fout" data-slot="error" hidden></p>
+    </div>
+</template>
 <template data-field="choice">
     <div class="veld">
         <label data-slot="label"></label>

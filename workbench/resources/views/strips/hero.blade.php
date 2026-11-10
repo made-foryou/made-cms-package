@@ -2,6 +2,7 @@
     The hero strip of the workbench: data-cms-strip on the root is required, data-cms-field per field is optional.
     A field sits on the element that holds only its text; in data-cms-items every direct child is one item.
     A heading is printed as the element of its level, so its look hangs on a class, never on h2.
+    An image is {url, alt, width, height, focal} or null; the focal point is the place object-position keeps in view.
 --}}
 <section data-cms-strip="{{ $strip->id }}">
     @if ($strip->label)
@@ -12,6 +13,16 @@
 
     @if ($strip->intro)
         <div data-cms-field="intro">{!! $strip->intro !!}</div>
+    @endif
+
+    @if ($strip->foto)
+        <img
+            src="{{ $strip->foto['url'] }}"
+            alt="{{ $strip->foto['alt'] }}"
+            @if ($strip->foto['width']) width="{{ $strip->foto['width'] }}" height="{{ $strip->foto['height'] }}" @endif
+            style="max-width: 100%; height: auto; object-fit: cover; object-position: {{ $strip->foto['focal']['x'] * 100 }}% {{ $strip->foto['focal']['y'] * 100 }}%"
+            data-cms-field="foto"
+        >
     @endif
 
     @if ($strip->knoppen !== [])

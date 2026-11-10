@@ -98,6 +98,8 @@ return [
         'link_remove' => 'Remove link',
         'link_cancel' => 'Cancel',
         'link_hint' => 'A page of your site, or an outside address.',
+        'image_empty' => 'No image yet',
+        'image_gone' => 'This image is no longer in Media.',
         'heading_hint' => 'The level is for Google and screen readers. On the site the heading looks the same, whichever level you choose.',
         'heading_item_hint' => 'Applies to this item. The level is for Google and screen readers; on the site the heading looks the same.',
         'structure' => 'Layout',

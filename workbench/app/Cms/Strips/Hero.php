@@ -6,13 +6,14 @@ namespace Workbench\App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\RichText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
 
 /**
- * The opening strip of a page: a heading, an introduction and up to two buttons.
+ * The opening strip of a page: a heading, an introduction, up to two buttons and a photo from the media library.
  */
 final class Hero extends StripType
 {
@@ -33,6 +34,7 @@ final class Hero extends StripType
             Heading::make('kop')->required(),
             RichText::make('intro')->hint('Twee zinnen is genoeg.'),
             Items::make('knoppen', [Button::make('knop')->required()])->max(2),
+            Image::make('foto')->hint('Minimaal 1600 px breed.'),
         ];
     }
 }

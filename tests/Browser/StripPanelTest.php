@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 const KNOP_LID = '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d';
@@ -252,3 +254,40 @@ it('throws away what was typed but not saved yet', function (): void {
 
     $shell->assertNoJavaScriptErrors();
 });
+
+it('shows which image a field holds and keeps it when the editor saves the strip', function (): void {
+    Storage::fake('public');
+    $photo = Media::factory()->create(['name' => 'teamfoto', 'width' => 1600, 'height' => 1067, 'size' => 412_000]);
+    $page = Page::factory()->published()->at('/teams')->withStrips([
+        storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $photo->id], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen'], id: 'cards'),
+    ])->create(['title' => 'Teams']);
+
+    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Onze teams'");
+
+    $shell->assertSeeIn('[data-path="foto"] [data-slot="label"]', 'Foto')
+        ->assertSeeIn('[data-path="foto"] [data-slot="image-name"]', 'teamfoto')
+        ->assertSeeIn('[data-path="foto"] [data-slot="image-meta"]', '1600 × 1067 · 412 kB')
+        ->assertSeeIn('[data-path="foto"] [data-slot="hint"]', 'Minimaal 1600 px breed.')
+        ->type('[data-path="kop"] input', 'Al onze teams');
+
+    expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and(draftOf($page, 'hero')['values']['foto'] ?? null)->toBe($photo->id);
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('says that a field holds no image, or one whose file left Media', function (mixed $foto, string $text): void {
+    $page = Page::factory()->published()->at('/teams')->withStrips([
+        storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $foto], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen'], id: 'cards'),
+    ])->create(['title' => 'Teams']);
+
+    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Onze teams'");
+
+    $shell->assertSeeIn('[data-path="foto"]', $text)
+        ->assertNoJavaScriptErrors();
+})->with([
+    'no image' => [null, 'Nog geen afbeelding'],
+    'a file that is gone' => [999, 'Deze afbeelding staat niet meer in Media.'],
+]);

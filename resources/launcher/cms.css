@@ -1849,6 +1849,16 @@ ul.lijst {
     display: none;
 }
 
+.beeldveld-bestand {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.beeldveld-naam {
+    font: 600 14px/1.4 var(--font-tekst);
+    color: var(--made-inhoud);
+}
+
 .paneel .schakelrij {
     padding: 12px 14px;
 }

@@ -50,6 +50,8 @@ const ui = {
 // Every strip the editor opened keeps its state, so going back to it loses nothing that was not saved yet.
 const states = new Map();
 let pages = [];
+// The files of the media library the panel knows, by id: what it shows of an image and how the site renders it.
+const media = new Map();
 let current = null;
 let opening = 0;
 let uid = 0;
@@ -149,6 +151,11 @@ async function open(id) {
         }
 
         pages = data.pages ?? pages;
+
+        for (const file of data.strip.media ?? []) {
+            media.set(file.id, file);
+        }
+
         state = {
             id,
             label: data.strip.label,
@@ -214,6 +221,9 @@ function rendered(field, value) {
             return typeof value?.text === 'string' && value.text !== '' ? { text: value.text, tag: value.tag ?? field.tag } : null;
         case 'items':
             return null;
+        case 'image':
+            // The id of a file, rendered as the server described it: {url, alt, width, height, focal}.
+            return media.get(value)?.image ?? null;
         case 'rich_text': {
             // edit.js puts rich text into the site as HTML, so it only ever gets the markup the panel builds itself.
             const html = typeof value === 'string' ? richHtml(new DOMParser().parseFromString(value, 'text/html').body) : '';
@@ -540,6 +550,9 @@ function control(state, field, owner, path, follow = null) {
         case 'items':
             items(state, element, field, owner, path);
             break;
+        case 'image':
+            image(element, owner[key]);
+            break;
     }
 
     describedBy(element, input);
@@ -563,6 +576,21 @@ function choice(select, field, value, set) {
 
     select.value = value ?? '';
     select.addEventListener('change', () => set(select.value === '' ? null : select.value));
+}
+
+/*
+ * An image is the id of a file of the media library. The panel shows which file it holds (its name and size), that it
+ * holds none, or that its file left Media; saving keeps the id as it is. Choosing and uploading come with #52.
+ */
+function image(element, value) {
+    const held = value !== null && value !== undefined;
+    const file = held ? (media.get(value) ?? null) : null;
+
+    slot('image-file', element).hidden = file === null;
+    slot('image-name', element).textContent = file?.name ?? '';
+    slot('image-meta', element).textContent = file?.meta ?? '';
+    slot('image-empty', element).hidden = held;
+    slot('image-gone', element).hidden = ! held || file !== null;
 }
 
 /* A button is a text and a link: two parts of one value, {text, link}, or nothing when both are empty. */

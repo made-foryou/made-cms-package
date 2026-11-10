@@ -64,7 +64,7 @@ it('shows the opbouw of the page with every strip in order', function (): void {
         ->assertSeeIn('[data-slot="head-name"]', 'Home')
         ->assertSeeIn('[data-slot="head-sub"]', '2 stroken · Klik een strook op de site, of kies er hier een.')
         ->assertSeeIn('[data-slot="head-position"]', 'Pagina')
-        ->assertSeeIn('[data-strip="hero"] [data-slot="row-sub"]', 'Welkom bij de club · 4 velden')
+        ->assertSeeIn('[data-strip="hero"] [data-slot="row-sub"]', 'Welkom bij de club · 5 velden')
         ->assertSeeIn('[data-strip="cards"] [data-slot="row-sub"]', 'Wat we doen · 3 velden')
         ->assertAttribute('[data-strip="cards"] [data-slot="row-grip"]', 'aria-label', 'Kaarten, plek 2 van 2. Verplaatsen met pijltje omhoog of omlaag.')
         ->assertNoJavaScriptErrors();

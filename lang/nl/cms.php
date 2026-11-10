@@ -98,6 +98,8 @@ return [
         'link_remove' => 'Link weghalen',
         'link_cancel' => 'Annuleren',
         'link_hint' => 'Een pagina van je site, of een extern adres.',
+        'image_empty' => 'Nog geen afbeelding',
+        'image_gone' => 'Deze afbeelding staat niet meer in Media.',
         'heading_hint' => 'Het niveau is voor Google en schermlezers. Op de site ziet de kop er hetzelfde uit, welk niveau je ook kiest.',
         'heading_item_hint' => 'Geldt voor dit item. Het niveau is voor Google en schermlezers; op de site ziet de kop er hetzelfde uit.',
         'structure' => 'Opbouw',

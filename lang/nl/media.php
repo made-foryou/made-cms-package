@@ -19,4 +19,11 @@ return [
     ],
 
     'or' => 'of',
+
+    'details' => [
+        'dimensions' => ':width × :height',
+        'kb' => ':size kB',
+        'mb' => ':size MB',
+        'decimal' => ',',
+    ],
 ];

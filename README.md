@@ -334,6 +334,14 @@ Without a chosen strip the side panel shows the opbouw of the page: every strip 
 - A strip of a type that is no longer in the catalogue stays in the opbouw as "Niet op de site": its content is kept, it cannot be chosen or moved and it can only be removed.
 - "Strook 2 van 6", in the panel and on the outlines in the frame, is the place of a strip in the opbouw: hidden strips and strips of a type the site no longer has count too.
 
+An editor who opens Meta-overzicht (the SEO specialist and the admin) switches with a tab between the opbouw and "Koppen": every heading of the page as the frame shows it, in order and indented by level, so it also sees the headings of the layout and of a site that renders in the browser.
+
+- A heading of a field of a strip shows the name of the strip ("Kaarten › Kaarten" in a list) and opens that field, in its item when it lies in a list; "← Koppen" goes back. A heading field at "Geen kop" is listed as `span`, so it can become a heading again.
+- A heading the site or a strip view prints itself is fixed ("vast in de site", "vast in de strook"): it is listed dimmed and cannot be clicked. A `span` of the site is never listed.
+- A heading the site hides with css stays in the list with "niet zichtbaar op het scherm" and counts in the signals, because search engines read it. A hidden strip is not on the site, so its headings are not listed.
+- Above the list the overview signals a page without an H1, more than one H1, a skipped level (an H4 right after an H2) and an empty heading (an h1–h6 without a text; a `Heading` field without a text renders nothing). A signal on a fixed heading asks to have the developer of the site change it.
+- The overview follows the frame: after a level is chosen the frame reloads and the list follows.
+
 Choosing a strip shows its fields, built from its strip type, with the values of the draft:
 
 | Field | Control |

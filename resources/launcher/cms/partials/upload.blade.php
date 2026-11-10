@@ -5,7 +5,7 @@
 --}}
 @php($t = $upload['t'])
 <section class="upload" data-upload data-moment="rest" data-config="{{ json_encode($upload['config'], JSON_THROW_ON_ERROR) }}" aria-label="{{ $t('label') }}">
-    <div class="upload-vlak">
+    <div class="upload-vlak" data-slot="upload-zone">
         <span class="upload-icoon" aria-hidden="true">
             <svg data-slot="upload-icon-rest" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M6 10l6-6 6 6"></path><path d="M4 20h16"></path></svg>
             <svg data-slot="upload-icon-drag" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M12 4v12"></path><path d="M6 10l6 6 6-6"></path><path d="M4 20h16"></path></svg>
@@ -26,7 +26,7 @@
     <ul class="upload-lijst" aria-label="{{ $t('list') }}" data-slot="upload-list" hidden></ul>
 
     <p class="upload-klein" role="status" data-slot="upload-summary" hidden></p>
-    <p class="upload-klein" data-slot="upload-errors-note" hidden>{{ $t('errors_note') }}</p>
+    <p class="upload-klein" data-slot="upload-errors-note" hidden><span data-slot="upload-errors-others">{{ $t('errors_others') }} </span>{{ $t('errors_note') }}</p>
 
     <div class="upload-acties" data-slot="upload-actions" hidden>
         <button type="button" class="knop" data-slot="upload-save">{{ $t('save_alts') }}</button>

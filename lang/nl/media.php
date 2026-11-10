@@ -59,7 +59,8 @@ return [
         'later' => 'Later doen',
         'later_hint' => 'Later doen kan: ze staan dan met een amber stip in Media.',
         'close' => 'Klaar',
-        'errors_note' => 'De andere bestanden zijn gewoon doorgegaan. Fouten blijven staan tot je ze weglaat of opnieuw probeert.',
+        'errors_others' => 'De andere bestanden zijn gewoon doorgegaan.',
+        'errors_note' => 'Fouten blijven staan tot je ze weglaat of opnieuw probeert.',
         'texts' => [
             'drag_one' => '1 bestand · het komt in :folder',
             'drag_many' => ':count bestanden · ze komen in :folder',

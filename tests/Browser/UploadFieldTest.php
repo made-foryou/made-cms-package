@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Media;
@@ -10,6 +11,10 @@ use Made\CmsPackage\Content\Models\MediaFolder;
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost']);
     Storage::fake('public');
+
+    // The fake media disk has no address of its own: this serves its files, so the thumbnail of a photo loads. It
+    // goes before the site, whose pages take every address that is left.
+    Route::get('storage/{path}', fn (string $path) => response()->file(Storage::disk('public')->path($path)))->where('path', '.*');
     useWorkbenchSite();
 
     $this->actingAs(Editor::factory()->create(), 'made-cms');
@@ -65,16 +70,13 @@ function uploadRows(): string
 {
     return <<<'JS'
         () => [...document.querySelectorAll('[data-upload] [data-slot="upload-list"] > li')].map((row) => {
-            const shown = (slot) => {
-                const element = row.querySelector('[data-slot="upload-row-' + slot + '"]');
-
-                return element !== null && ! element.hidden;
-            };
+            const shown = (slot) => row.querySelector('[data-slot="upload-row-' + slot + '"]')?.checkVisibility() === true;
 
             return {
                 state: row.dataset.state,
                 name: row.querySelector('[data-slot="upload-row-name"]').textContent,
                 note: row.querySelector('[data-slot="upload-row-note"]').textContent,
+                icon: ['icon-image', 'icon-file', 'thumb', 'cross'].filter(shown),
                 buttons: ['cancel', 'retry', 'dismiss'].filter(shown),
                 alt: shown('alt'),
             };
@@ -102,7 +104,9 @@ it('takes the good files of a drop and keeps the error of the one that is too la
 
     $page->assertSeeIn('[data-slot="upload-drag-title"]', 'Laat maar los')
         ->assertSeeIn('[data-slot="upload-drag-line"]', '3 bestanden · ze komen in de map Teams')
-        ->assertMissing('[data-slot="upload-title"]');
+        ->assertMissing('[data-slot="upload-title"]')
+        ->assertMissing('[data-slot="upload-icon-rest"]')
+        ->assertVisible('[data-slot="upload-icon-drag"]');
 
     $page->script(dragFiles($files, drop: true));
 
@@ -113,12 +117,13 @@ it('takes the good files of a drop and keeps the error of the one that is too la
 
     expect(Media::query()->count())->toBe(2)
         ->and(Media::query()->pluck('folder_id')->unique()->all())->toBe([$folder->id])
-        ->and($rows[0])->toMatchArray(['state' => 'done', 'name' => 'teamfoto-merwestad-4.webp', 'buttons' => [], 'alt' => true])
+        ->and($rows[0])->toMatchArray(['state' => 'done', 'name' => 'teamfoto-merwestad-4.webp', 'icon' => ['thumb'], 'buttons' => [], 'alt' => true])
         ->and($rows[0]['note'])->toStartWith('1920 × 1280 · ')->toContain(' · was ')
         ->and($rows[1])->toBe([
             'state' => 'error',
             'name' => 'finale-2026.mov · 1,2 MB',
             'note' => 'Te groot: een bestand mag 1 MB zijn. Zet de video op YouTube of Vimeo en plak de link in een videoblok; dat laadt voor bezoekers ook sneller.',
+            'icon' => ['cross'],
             'buttons' => ['dismiss'],
             'alt' => false,
         ])
@@ -126,6 +131,7 @@ it('takes the good files of a drop and keeps the error of the one that is too la
             'state' => 'done',
             'name' => 'wedstrijdschema-najaar.pdf',
             'note' => '1 kB · geen afbeelding, dus geen alt-tekst nodig',
+            'icon' => ['icon-file'],
             'buttons' => [],
             'alt' => false,
         ]);
@@ -175,6 +181,12 @@ it('works with the keyboard and the file chooser, and saves the alt text the edi
     expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue();
 
     $media = Media::query()->sole();
+
+    // A thumbnail that does not load makes way for the icon.
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"upload-row-thumb\"]').naturalWidth > 0")))->toBeTrue();
+    $page->script("() => { document.querySelector('[data-slot=\"upload-row-thumb\"]').src = '/storage/media/weg.webp'; }");
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"upload-row-icon-image\"]').checkVisibility() && ! document.querySelector('[data-slot=\"upload-row-thumb\"]').checkVisibility()")))->toBeTrue();
 
     $page->assertSeeIn('[data-slot="upload-done-text"]', '1 bestand toegevoegd aan Alle bestanden')
         ->assertSeeIn('[data-slot="upload-row-alt-label"]', 'Alt-tekst')
@@ -230,11 +242,12 @@ it('uploads one file at a time, shows its progress and lets a waiting file be ca
 
     $rows = $page->script(uploadRows());
 
-    expect($rows[0])->toMatchArray(['state' => 'uploading', 'name' => 'teamfoto-merwestad-4.jpg', 'buttons' => []])
+    expect($rows[0])->toMatchArray(['state' => 'uploading', 'name' => 'teamfoto-merwestad-4.jpg', 'icon' => ['icon-image'], 'buttons' => []])
         ->and($rows[1])->toBe([
             'state' => 'waiting',
             'name' => 'wedstrijdschema-najaar.pdf',
             'note' => 'Wacht · 1 kB',
+            'icon' => ['icon-file'],
             'buttons' => ['cancel'],
             'alt' => false,
         ]);
@@ -265,12 +278,16 @@ it('shows what the server refuses with the file and reads it out', function (): 
             'state' => 'error',
             'name' => 'logo-nieuw.psd · 1 kB',
             'note' => 'Dit type kent de site niet. Sla het op als jpg, png, webp, gif, svg, pdf of mp4 en probeer het opnieuw.',
+            'icon' => ['cross'],
             'buttons' => ['dismiss'],
             'alt' => false,
         ]])
         ->and(Media::query()->count())->toBe(0);
 
-    $page->assertSeeIn('[data-slot="upload-announce"]', 'logo-nieuw.psd: Dit type kent de site niet.')
+    // Nothing else went on, so the note only says that the error stays.
+    $page->assertSeeIn('[data-slot="upload-errors-note"]', 'Fouten blijven staan tot je ze weglaat of opnieuw probeert.')
+        ->assertMissing('[data-slot="upload-errors-others"]')
+        ->assertSeeIn('[data-slot="upload-announce"]', 'logo-nieuw.psd: Dit type kent de site niet.')
         ->assertAttribute('[data-slot="upload-announce"]', 'aria-live', 'polite')
         ->assertNoJavaScriptErrors();
 });

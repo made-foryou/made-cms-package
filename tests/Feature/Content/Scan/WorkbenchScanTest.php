@@ -73,8 +73,8 @@ it('proposes the hero and the cards, with the cards on both pages as one type', 
 
     expect(array_map(static fn (ScanType $type): array => [$type->key, $type->count], $scan->types))->toBe([['strook-1', 1], ['strook-2', 2]])
         ->and(array_map(static fn ($page): array => [$page->url, $page->title, array_column($page->toArray()['strips'], 'type')], $scan->pages))->toBe([
-            ['/', 'Home', ['strook-1', 'strook-2']],
-            ['/over-ons', 'Over ons', ['strook-2']],
+            ['/', 'Home · Made CMS Workbench', ['strook-1', 'strook-2']],
+            ['/over-ons', 'Over ons · Made CMS Workbench', ['strook-2']],
         ]);
 });
 

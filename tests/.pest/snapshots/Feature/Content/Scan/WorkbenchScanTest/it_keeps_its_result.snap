@@ -123,7 +123,7 @@
     "pages": [
         {
             "url": "/",
-            "title": "Home",
+            "title": "Home · Made CMS Workbench",
             "strips": [
                 {
                     "type": "strook-1",
@@ -186,7 +186,7 @@
         },
         {
             "url": "/over-ons",
-            "title": "Over ons",
+            "title": "Over ons · Made CMS Workbench",
             "strips": [
                 {
                     "type": "strook-2",

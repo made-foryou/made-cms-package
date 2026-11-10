@@ -3014,3 +3014,257 @@ button.tekstlink.alarm {
         transition-delay: 120ms;
     }
 }
+
+/*
+ * The upload field (13.5, 14.5): one field with five moments, in the media library, the picker and the edit shell.
+ * It stands on the tokens only, so it follows light and dark by itself.
+ */
+
+.upload {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.upload-vlak {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 30px 22px;
+    border: 1.5px dashed var(--made-rand-sterk);
+    border-radius: var(--made-radius-m);
+    color: var(--made-inhoud-zwak);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.upload-vlak .tekstlink {
+    font-size: 14px;
+}
+
+.upload-titel {
+    font: 700 17px/1.3 var(--font-kop);
+    color: var(--made-inhoud);
+}
+
+.upload-icoon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: 50%;
+    color: var(--made-inhoud);
+    transition: border-color 120ms ease, background-color 120ms ease, color 120ms ease;
+}
+
+/* Files hang above the field: it says where they land. */
+.upload[data-drag] .upload-vlak {
+    border-style: solid;
+    border-color: var(--made-accent);
+    background: rgb(190 138 28 / .1);
+}
+
+.upload[data-drag] .upload-icoon {
+    border-color: var(--made-amber);
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+}
+
+/* While files hang above it, the field is one target: nothing inside takes the drop away. */
+.upload[data-drag] * {
+    pointer-events: none;
+}
+
+.upload-klein {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--made-inhoud-subtiel);
+}
+
+.upload-lijst {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.upload-rij {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.upload-rij[data-state="error"] {
+    border-color: var(--made-alarm);
+}
+
+.upload-rij-kop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.upload-rij[data-state="done"] .upload-rij-kop {
+    align-items: flex-start;
+}
+
+/* A file that waits is dimmed, its button is not. */
+.upload-rij[data-state="waiting"] .upload-mini,
+.upload-rij[data-state="waiting"] .upload-rij-tekst {
+    opacity: .7;
+}
+
+.upload-mini {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 36px;
+    border-radius: 6px;
+    background: var(--made-nachtgroen);
+    color: #a9b6b1;
+    overflow: hidden;
+}
+
+.upload-mini[data-kind="file"] {
+    border: 1px solid var(--made-rand);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud-subtiel);
+}
+
+.upload-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.upload-kruis,
+.upload-vinkje {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--made-alarm);
+    color: var(--made-oppervlak-verhoogd);
+}
+
+.upload-vinkje {
+    background: var(--made-status);
+}
+
+.upload-rij-tekst {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 2px;
+    min-width: 0;
+}
+
+.upload-naam {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.upload-rij[data-state="error"] .upload-rij-tekst .upload-klein {
+    color: var(--made-inhoud-zwak);
+}
+
+.upload-procent {
+    flex-shrink: 0;
+    font: 700 14px/1 var(--font-kop);
+    font-variant-numeric: tabular-nums;
+}
+
+.upload-rij[data-state="processing"] .upload-procent {
+    color: var(--made-inhoud-zwak);
+}
+
+.upload-balk {
+    position: relative;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--made-rand);
+    overflow: hidden;
+}
+
+.upload-balk span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 0;
+    border-radius: 3px;
+    background: var(--made-amber);
+    transition: width 160ms linear;
+}
+
+.upload-alt {
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.upload-alt label {
+    font-size: 13px;
+}
+
+.upload-alt input {
+    padding: 10px 14px;
+    border-width: 1.5px;
+    font-size: 15px;
+}
+
+.upload-alt .veld-fout {
+    font-size: 13px;
+}
+
+.upload-kop {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.upload-acties {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding-top: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .upload[data-drag] .upload-vlak {
+        background: rgb(217 166 58 / .14);
+    }
+
+    /* A row is as dark as the border token here, so the track takes the page behind it. */
+    .upload-balk {
+        background: var(--made-oppervlak);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .upload-vlak,
+    .upload-icoon,
+    .upload-balk span {
+        transition: none;
+    }
+}

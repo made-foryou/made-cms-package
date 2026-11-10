@@ -103,6 +103,21 @@ it('takes items that differ a little as one list and doubts it', function (): vo
     ]);
 });
 
+it('takes items whose headings differ in level only as one list, without doubt', function (): void {
+    $strip = '<section><div class="lijst">'
+        .'<div class="item"><h3>Een</h3><p>Tekst.</p></div>'
+        .'<div class="item"><h4>Twee</h4><p>Tekst.</p></div>'
+        .'</div></section>';
+
+    expect(listOf($strip))->toMatchArray([
+        'doubts' => [],
+        'items' => [
+            ['h3' => ['heading', 'Een'], 'p' => ['paragraph', 'Tekst.']],
+            ['h4' => ['heading', 'Twee'], 'p' => ['paragraph', 'Tekst.']],
+        ],
+    ]);
+});
+
 it('does not make a list of siblings that hold different things', function (): void {
     $strip = '<section><div class="wrap"><div class="reveal"><span>Lid worden</span></div><div class="reveal"><h2>Doe mee</h2></div><div class="reveal"><p>Kom spelen.</p></div></div></section>';
 

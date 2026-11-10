@@ -24,7 +24,20 @@ it('leaves texts, attributes, icons and decoration out', function (): void {
 it('differs when the structure differs', function (): void {
     expect(fingerprintOf('<section><h2>Kop</h2><p>Tekst</p></section>'))
         ->not->toBe(fingerprintOf('<section><h2>Kop</h2><div><p>Tekst</p></div></section>'))
-        ->not->toBe(fingerprintOf('<section><h3>Kop</h3><p>Tekst</p></section>'));
+        ->not->toBe(fingerprintOf('<section><p>Tekst</p></section>'));
+});
+
+it('leaves the level of a heading out: the level is content', function (): void {
+    expect(fingerprintOf('<section><h2>Kop</h2><p>Tekst</p></section>'))
+        ->toBe(fingerprintOf('<section><h3>Kop</h3><p>Tekst</p></section>'))
+        ->toBe(fingerprintOf('<section><h1>Kop</h1><p>Tekst</p></section>'));
+});
+
+it('counts every heading of a row, whatever their levels', function (): void {
+    expect(fingerprintOf('<section><h2>Label</h2><h3>Kop</h3></section>'))
+        ->not->toBe(fingerprintOf('<section><h2>Kop</h2></section>'))
+        ->toBe(fingerprintOf('<section><h3>Label</h3><h4>Kop</h4></section>'))
+        ->toBe(fingerprintOf('<section><h2>Label</h2><h2>Kop</h2></section>'));
 });
 
 it('does not count the items of a list, nor the items of a list inside them', function (): void {

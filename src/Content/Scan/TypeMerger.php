@@ -243,6 +243,10 @@ final class TypeMerger
      * Lines up the fields of the instances by their place: a field one instance lacks goes after the field that
      * comes before it in the instance that has it.
      *
+     * A heading lines up by its parent and its place among the headings the scan read there, not by its selector:
+     * its level is content, so the h2 of one page and the h3 of another are one field. An empty heading the scan
+     * passed by does not count, so an empty heading before a filled one on one page only can shift the line-up.
+     *
      * @param  list<list<RecognisedField>>  $instances
      * @return list<array{selector: string, cells: array<int, RecognisedField>}>
      */
@@ -253,9 +257,10 @@ final class TypeMerger
 
         foreach ($instances as $instance => $fields) {
             $previous = null;
+            $headings = [];
 
             foreach ($fields as $field) {
-                $key = $field->selector.'|'.self::family($field->role);
+                $key = self::place($field, $headings);
 
                 if (! isset($columns[$key])) {
                     $columns[$key] = ['selector' => $field->selector, 'cells' => []];
@@ -269,6 +274,26 @@ final class TypeMerger
         }
 
         return array_map(static fn (string $key): array => $columns[$key], $order);
+    }
+
+    /**
+     * Where a field stands in its instance: its selector and the family of its role, or for a heading the selector
+     * of its parent and its number among the headings in that parent.
+     *
+     * @param  array<string, int>  $headings  the headings counted so far per parent
+     */
+    private static function place(RecognisedField $field, array &$headings): string
+    {
+        if ($field->role !== ScanRole::Heading) {
+            return $field->selector.'|'.self::family($field->role);
+        }
+
+        $steps = explode(' > ', $field->selector);
+        array_pop($steps);
+        $parent = implode(' > ', $steps);
+        $headings[$parent] = ($headings[$parent] ?? 0) + 1;
+
+        return $parent.'|heading|'.$headings[$parent];
     }
 
     /**

@@ -25,8 +25,10 @@ final class PublishPage
      * Makes the draft, as it is stored now, the published version of the page.
      *
      * Every strip of the draft must pass its strip type, hidden strips too, so they never
-     * break once they are shown. Strips of a type that is no longer in the catalogue cannot
-     * be checked and are published as they are.
+     * break once they are shown. A stored value is checked in its current form, so a heading
+     * stored as text or a level its field no longer offers never stops the publication.
+     * Strips of a type that is no longer in the catalogue cannot be checked and are published
+     * as they are.
      *
      * @throws PageAlreadyPublished when the page is published and has no draft
      * @throws ValidationException keyed by "strips.<strip id>.<field path>"
@@ -64,7 +66,9 @@ final class PublishPage
             }
 
             try {
-                CheckStripValues::run($this->types->find($strip->type), $strip->values);
+                $type = $this->types->find($strip->type);
+
+                CheckStripValues::run($type, $type->normalize($strip->values));
             } catch (ValidationException $exception) {
                 foreach ($exception->errors() as $path => $messages) {
                     $errors["strips.{$strip->id}.{$path}"] = $messages;

@@ -6,6 +6,8 @@ use Made\CmsPackage\Content\Actions\DescribeStrip;
 use Made\CmsPackage\Content\Exceptions\StripNotFound;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -81,4 +83,15 @@ it('refuses a strip of a type that is no longer in the catalogue', function (): 
     $page = Page::factory()->withDraft([storedStrip('oud', ['x' => 1], id: 'a')])->create();
 
     expect(fn (): mixed => DescribeStrip::run($page, 'a'))->toThrow(UnknownStripType::class);
+});
+
+it('describes a heading stored as text as a text with its level', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $page = Page::factory()->withDraft([storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['id' => 'k1', 'titel' => 'Teams']]], id: 'a')])->create();
+
+    expect(DescribeStrip::run($page, 'a')->values)->toBe([
+        'kop' => ['text' => 'Welkom', 'tag' => 'h2'],
+        'label' => null,
+        'kaarten' => [['id' => 'k1', 'titel' => ['text' => 'Teams', 'tag' => 'h3']]],
+    ]);
 });

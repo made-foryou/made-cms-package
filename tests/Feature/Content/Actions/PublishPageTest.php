@@ -9,6 +9,8 @@ use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PagePublished;
 use Made\CmsPackage\Content\Exceptions\PageAlreadyPublished;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -115,6 +117,19 @@ it('checks a field the strip does not hold yet as its default, as the site rende
 
 it('publishes a strip of a type that no longer exists without checking it', function (): void {
     $draft = [storedStrip('oud', ['x' => 1], id: 'old'), storedStrip('cards', id: 'a')];
+    $page = Page::factory()->withDraft($draft)->create();
+
+    PublishPage::run($page);
+
+    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+});
+
+it('publishes a heading stored as text, or with a level its field no longer offers', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $draft = [
+        storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['titel' => 'Spelen']]], id: 'a'),
+        storedStrip('banner', ['kop' => ['text' => 'Agenda', 'tag' => 'h5'], 'kaarten' => [['titel' => ['text' => 'Teams', 'tag' => 'h6']]]], id: 'b'),
+    ];
     $page = Page::factory()->withDraft($draft)->create();
 
     PublishPage::run($page);

@@ -25,7 +25,8 @@ final class RestoreStrip
 
     /**
      * Puts a removed strip back in the draft with its own id, visibility and values, so comparing the draft finds
-     * nothing left of the removal. The values are checked against the strip type like UpdateStrip does. A strip whose
+     * nothing left of the removal. The values are checked against the strip type like UpdateStrip does, in their
+     * current form (a heading stored as text is its text with the default level). A strip whose
      * type left the catalogue can only come back with the values the published page holds; the values that come along
      * are ignored, its visibility is kept.
      *
@@ -62,7 +63,9 @@ final class RestoreStrip
      */
     private function checked(Strip $strip): Strip
     {
-        return $strip->withValues(CheckStripValues::run($this->types->find($strip->type), $strip->values));
+        $type = $this->types->find($strip->type);
+
+        return $strip->withValues(CheckStripValues::run($type, $type->normalize($strip->values)));
     }
 
     /**

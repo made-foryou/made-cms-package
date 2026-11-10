@@ -13,6 +13,8 @@ use Made\CmsPackage\Content\Exceptions\InvalidStripPosition;
 use Made\CmsPackage\Content\Exceptions\StripAlreadyOnPage;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -123,4 +125,14 @@ it('refuses a strip of an unknown type that the published page does not hold', f
     $page = Page::factory()->withDraft([])->create();
 
     expect(fn (): mixed => RestoreStrip::run($page, new Strip('old', 'oud', true, ['x' => 1]), 0))->toThrow(UnknownStripType::class);
+});
+
+it('puts a heading that was stored as text back as a text with its level', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $page = Page::factory()->withDraft([])->create();
+
+    $strip = RestoreStrip::run($page, new Strip('banner-1', 'banner', true, ['kop' => 'Welkom', 'kaarten' => [['titel' => ['text' => 'Teams', 'tag' => 'h6']]]]), 0);
+
+    expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h2'])
+        ->and($strip->values['kaarten'][0]['titel'])->toBe(['text' => 'Teams', 'tag' => 'h3']);
 });

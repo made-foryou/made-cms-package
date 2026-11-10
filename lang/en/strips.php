@@ -43,5 +43,8 @@ return [
         'link' => 'Choose a page or enter an address for :attribute.',
         'link_page' => 'The chosen page for :attribute does not exist.',
         'link_url' => 'The address for :attribute is invalid. Start with https://, mailto:, tel:, / or #.',
+        'image' => 'Choose an image from Media for :attribute.',
+        'image_missing' => 'The chosen image for :attribute no longer exists.',
+        'image_kind' => 'The chosen file for :attribute is not an image.',
     ],
 ];

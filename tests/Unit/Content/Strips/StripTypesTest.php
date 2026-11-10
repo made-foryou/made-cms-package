@@ -8,6 +8,7 @@ use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -91,6 +92,8 @@ it('refuses a definition that breaks the rules', function (string $key, Closure 
     'a default level outside its levels' => ['hero', fn (): array => [Heading::make('kop')->tag('h1')->tags(['h2', 'h3'])], 'field [kop] has the default level [h1] outside its levels'],
     'a heading without levels' => ['hero', fn (): array => [Heading::make('kop')->tags([])], 'field [kop] has the default level [h2] outside its levels'],
     'a default level outside its levels in an item' => ['hero', fn (): array => [Items::make('kaarten', [Heading::make('titel')->tag('h3')->tags(['h2'])])], 'field [titel] has the default level [h3] outside its levels'],
+    'an image with a default' => ['hero', fn (): array => [Image::make('foto')->default(12)], 'field [foto] is an image and cannot have a default'],
+    'an image with a default in an item' => ['hero', fn (): array => [Items::make('kaarten', [Image::make('icoon')->default(12)])], 'field [icoon] is an image and cannot have a default'],
 ]);
 
 it('allows the names type and visible inside an item', function (): void {

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Strips\Fields;
 
+use Made\CmsPackage\Content\Data\MediaFiles;
+
 /**
  * A button: a text and a link, stored as {"text": "…", "link": {…}}.
  */
@@ -68,7 +70,7 @@ final class Button extends Field
      *
      * @return array{text: string, url: string}|null
      */
-    public function render(mixed $value): ?array
+    public function render(mixed $value, ?MediaFiles $media = null): ?array
     {
         if (! is_array($value)) {
             return null;

@@ -29,6 +29,7 @@ it('adds a strip of a type at a place in the draft and answers with it and the n
             'known' => true,
             'fields' => '6 velden',
             'summary' => 'Welkom',
+            'headings' => [],
         ])
         ->and($response->json('counts'))->toBe('3 stroken');
 });

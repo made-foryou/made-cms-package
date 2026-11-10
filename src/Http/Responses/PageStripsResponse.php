@@ -50,7 +50,7 @@ final class PageStripsResponse
     /**
      * Every strip of the working copy with the texts the edit shell shows of it.
      *
-     * @return list<array{id: string, type: string, label: string, visible: bool, known: bool, fields: string, summary: string|null}>
+     * @return list<array{id: string, type: string, label: string, visible: bool, known: bool, fields: string, summary: string|null, headings: list<array{path: string, list: string|null}>}>
      */
     public static function strips(EditableStrips $strips): array
     {
@@ -64,6 +64,7 @@ final class PageStripsResponse
             'known' => $strip->known,
             'fields' => trans_choice('made-cms-package::cms.edit.fields', $strip->fields, [], $locale),
             'summary' => $strip->summary,
+            'headings' => $strip->headings,
         ], $strips->strips);
     }
 

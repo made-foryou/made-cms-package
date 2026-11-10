@@ -12,6 +12,10 @@
  * frame, bar.js asks for the state of the draft, panel.js forgets a strip that left the page. Before removing a strip
  * the panel saves what it holds of it (made-cms:removing). Choosing a strip goes through edit.js (made-cms:choose),
  * which tells everyone (made-cms:select); no strip (null) shows the opbouw.
+ *
+ * Whoever chooses the level of a heading switches with two tabs between the opbouw and the headings of the page
+ * (headings.js fills that view in). No strip then goes back to the tab the editor came from, "← Koppen" included;
+ * showing the headings asks edit.js to read them again (made-cms:view).
  */
 
 const SEARCH_FROM = 10;
@@ -21,6 +25,7 @@ const config = JSON.parse(document.querySelector('script[data-config]')?.textCon
 const texts = config.texts?.structure ?? {};
 const shellTexts = config.texts ?? {};
 const types = config.types ?? [];
+const headingTexts = config.texts?.headings ?? {};
 
 const slot = (name, root = shell) => root?.querySelector('[data-slot="' + name + '"]');
 
@@ -48,6 +53,11 @@ const ui = {
     cancel: slot('catalogue-cancel'),
     catalogueStatus: slot('catalogue-status'),
     back: slot('structure-back'),
+    backName: slot('structure-back-name'),
+    tabs: slot('head-tabs'),
+    tabStructure: slot('head-tab-structure'),
+    tabHeadings: slot('head-tab-headings'),
+    headings: slot('headings'),
     crumb: slot('structure-crumb'),
     up: slot('structure-up'),
     down: slot('structure-down'),
@@ -61,6 +71,12 @@ const structureEyebrow = ui.eyebrow?.textContent ?? '';
 let strips = config.strips ?? [];
 let counts = config.counts ?? '';
 let view = 'structure';
+
+// The tab "no strip" goes back to: the opbouw, or the headings of the page.
+let home = 'structure';
+
+// The number of headings edit.js read in the frame, for the head of the headings; null until it read them.
+let headingCount = null;
 let selected = null;
 let previous = null;
 
@@ -201,9 +217,15 @@ function renderHead() {
         return;
     }
 
-    ui.eyebrow.textContent = structureEyebrow;
+    ui.eyebrow.textContent = view === 'headings' ? (texts.eyebrow_headings ?? '') : structureEyebrow;
     ui.name.textContent = config.page?.title ?? '';
     ui.position.textContent = texts.page ?? '';
+
+    if (view === 'headings') {
+        ui.sub.textContent = headingCount === null ? '' : format(headingTexts.sub, { count: headingCountText() });
+
+        return;
+    }
 
     if (view === 'catalogue') {
         ui.sub.textContent = texts.sub_catalogue ?? '';
@@ -212,11 +234,67 @@ function renderHead() {
     }
 }
 
+function headingCountText() {
+    if (headingCount === 0) {
+        return headingTexts.count_none ?? '';
+    }
+
+    return format(headingCount === 1 ? headingTexts.count_one : headingTexts.count_many, { count: headingCount });
+}
+
 function showView(next) {
     view = next;
     ui.structure.hidden = view !== 'structure';
     ui.catalogue.hidden = view !== 'catalogue';
+
+    if (ui.headings) {
+        ui.headings.hidden = view !== 'headings';
+    }
+
+    renderTabs();
     renderHead();
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+ * The tabs Opbouw | Koppen, only for whoever chooses the level of a heading
+ * ------------------------------------------------------------------------------------------------------------ */
+
+function renderTabs() {
+    if (! ui.tabs) {
+        return;
+    }
+
+    ui.tabs.hidden = view !== 'structure' && view !== 'headings';
+
+    for (const [tab, name] of [[ui.tabStructure, 'structure'], [ui.tabHeadings, 'headings']]) {
+        tab.setAttribute('aria-selected', String(view === name));
+        tab.tabIndex = view === name ? 0 : -1;
+    }
+}
+
+function showTab(next) {
+    home = next;
+    showView(next);
+
+    if (next === 'headings') {
+        shell.dispatchEvent(new CustomEvent('made-cms:view', { detail: { view: next } }));
+    } else {
+        renderList();
+        refresh();
+    }
+}
+
+/* ←/→ (and Home/End) move between the tabs and show the tab they reach. */
+function tabKeys(event) {
+    const next = { ArrowLeft: 'structure', Home: 'structure', ArrowRight: 'headings', End: 'headings' }[event.key];
+
+    if (next === undefined) {
+        return;
+    }
+
+    event.preventDefault();
+    showTab(next);
+    (next === 'headings' ? ui.tabHeadings : ui.tabStructure).focus();
 }
 
 function render() {
@@ -478,6 +556,7 @@ function renderStripNav() {
     const strip = stripOf(selected);
 
     ui.crumb.textContent = strip?.label ?? '';
+    ui.backName.textContent = home === 'headings' ? texts.back_headings : texts.back_structure;
     ui.up.setAttribute('aria-label', format(texts.up, { n: Math.max(index, 1) }));
     ui.down.setAttribute('aria-label', format(texts.down, { n: Math.min(index + 2, strips.length) }));
     ui.up.setAttribute('aria-disabled', String(index <= 0));
@@ -534,7 +613,9 @@ async function removeStrip(id) {
     renderNotices();
     update(data, { reload: true });
 
+    // "Ongedaan maken" is at the top of the opbouw, so a removed strip goes back there, also from the headings.
     if (wasChosen) {
+        home = 'structure';
         choose(null);
     }
 
@@ -653,10 +734,12 @@ if (shell && ui.list && ui.catalogue) {
 
         if (id === null) {
             selected = null;
-            showView('structure');
+            showView(home);
             renderList();
 
-            if (previous !== null) {
+            if (home === 'headings') {
+                shell.dispatchEvent(new CustomEvent('made-cms:view', { detail: { view: home } }));
+            } else if (previous !== null) {
                 focusRow(previous, 'row-edit');
             }
 
@@ -714,6 +797,18 @@ if (shell && ui.list && ui.catalogue) {
     }
 
     ui.remove.addEventListener('click', () => selected !== null && removeStrip(selected));
+
+    if (ui.tabs) {
+        ui.tabStructure.addEventListener('click', () => showTab('structure'));
+        ui.tabHeadings.addEventListener('click', () => showTab('headings'));
+        ui.tabs.addEventListener('keydown', tabKeys);
+
+        // The head of the headings counts what edit.js read in the frame.
+        shell.addEventListener('made-cms:headings', (event) => {
+            headingCount = event.detail.headings?.length ?? 0;
+            renderHead();
+        });
+    }
 
     renderNotices();
     renderList();

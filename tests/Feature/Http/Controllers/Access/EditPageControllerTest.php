@@ -5,7 +5,9 @@ declare(strict_types=1);
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -174,8 +176,8 @@ it('hands the strips of the working copy and the texts to the script', function 
         ->getContent());
 
     expect($config['strips'])->toBe([
-        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => '6 velden', 'summary' => 'Welkom'],
-        ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => false, 'known' => true, 'fields' => '1 veld', 'summary' => null],
+        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => '6 velden', 'summary' => 'Welkom', 'headings' => []],
+        ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => false, 'known' => true, 'fields' => '1 veld', 'summary' => null, 'headings' => []],
     ])->and($config['counts'])->toBe('2 stroken, 1 verborgen')
         ->and($config['texts'])->toMatchArray([
             'position' => 'Strook :n van :m',
@@ -238,6 +240,53 @@ it('tells the side panel whether the editor chooses the level of a heading: whoe
     'content manager' => [Role::ContentManager, false],
     'owner' => [Role::Owner, false],
 ]);
+
+it('hands the edit shell the fields of every strip that are headings', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('banner', id: 'a')])->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')
+        ->getContent());
+
+    expect($config['strips'][0]['headings'])->toBe([
+        ['path' => 'kop', 'list' => null],
+        ['path' => 'kaarten.*.titel', 'list' => 'Kaarten'],
+    ]);
+});
+
+it('gives whoever opens Meta-overzicht the tab Koppen next to the opbouw, with its texts and script', function (Role $role): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $response = $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $config = editShellConfig((string) $response->getContent());
+
+    $response->assertSee('role="tablist"', false)
+        ->assertSee('data-slot="headings"', false)
+        ->assertSeeInOrder(['Opbouw', 'Koppen'])
+        ->assertSee('Koppen op deze pagina, in volgorde')
+        ->assertSee(LauncherAssetController::url('headings.js'), false);
+
+    expect($config['texts']['headings'])->toMatchArray([
+        'no_h1' => 'Geen H1 op deze pagina',
+        'source_site' => 'vast in de site',
+        'source_strip' => 'vast in de strook',
+    ])->and($config['texts']['headings']['levels'])->toBe([
+        'h1' => 'H1', 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4', 'h5' => 'H5', 'h6' => 'H6', 'span' => 'span',
+    ]);
+})->with([Role::Admin, Role::SeoSpecialist]);
+
+it('leaves the tab Koppen out for an editor who does not open Meta-overzicht', function (Role $role): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $response = $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+
+    $response->assertDontSee('role="tablist"', false)
+        ->assertDontSee('data-slot="headings"', false)
+        ->assertDontSee(LauncherAssetController::url('headings.js'), false);
+
+    expect(editShellConfig((string) $response->getContent())['texts'])->not->toHaveKey('headings');
+})->with([Role::ContentManager, Role::Webmaster, Role::Owner]);
 
 it('speaks English when the launcher locale is English', function (): void {
     config(['made-cms-package.launcher.locale' => 'en']);

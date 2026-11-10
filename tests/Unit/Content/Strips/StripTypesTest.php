@@ -94,6 +94,7 @@ it('refuses a definition that breaks the rules', function (string $key, Closure 
     'a default level outside its levels in an item' => ['hero', fn (): array => [Items::make('kaarten', [Heading::make('titel')->tag('h3')->tags(['h2'])])], 'field [titel] has the default level [h3] outside its levels'],
     'an image with a default' => ['hero', fn (): array => [Image::make('foto')->default(12)], 'field [foto] is an image and cannot have a default'],
     'an image with a default in an item' => ['hero', fn (): array => [Items::make('kaarten', [Image::make('icoon')->default(12)])], 'field [icoon] is an image and cannot have a default'],
+    'a list with a default that holds a file' => ['hero', fn (): array => [Items::make('fotos', [Image::make('foto')])->default([['foto' => 7]])], 'field [fotos] has a default that holds a file of the media library'],
 ]);
 
 it('allows the names type and visible inside an item', function (): void {

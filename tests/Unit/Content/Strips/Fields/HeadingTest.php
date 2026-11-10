@@ -125,7 +125,7 @@ it('sums up its text', function (mixed $value, ?string $summary): void {
     'nothing' => [null, null],
 ]);
 
-it('describes its levels with their labels, its default level and the label of its text', function (): void {
+it('describes its levels with their labels and what each level means, its default level and the label of its text', function (): void {
     $description = Heading::make('kop')->tag('h3')->tags(['span', 'h3', 'h2'])->default('Welkom')->describe();
 
     expect($description['type'])->toBe('heading')
@@ -133,16 +133,31 @@ it('describes its levels with their labels, its default level and the label of i
         ->and($description['max_length'])->toBe(255)
         ->and($description['tag'])->toBe('h3')
         ->and($description['tags'])->toBe([
-            ['value' => 'h2', 'label' => 'H2'],
-            ['value' => 'h3', 'label' => 'H3'],
-            ['value' => 'span', 'label' => 'Geen kop'],
+            ['value' => 'h2', 'label' => 'H2', 'description' => 'Een hoofdstuk: de kop van een strook.'],
+            ['value' => 'h3', 'label' => 'H3', 'description' => 'Een onderdeel binnen een strook, zoals een kaart.'],
+            ['value' => 'span', 'label' => 'Geen kop', 'description' => 'Ziet er hetzelfde uit, maar Google leest het niet als kop.'],
         ])
         ->and($description['parts'])->toBe(['text' => 'Tekst']);
 });
 
-it('labels every level in English too', function (): void {
-    app()->setLocale('en');
+it('labels every level and says what it means', function (string $locale, array $labels): void {
+    app()->setLocale($locale);
+    $tags = Heading::make('kop')->describe()['tags'];
 
-    expect(array_column(Heading::make('kop')->describe()['tags'], 'label'))
-        ->toBe(['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'No heading']);
+    expect(array_column($tags, 'label'))->toBe($labels)
+        ->and(array_filter(array_column($tags, 'description'), static fn (string $description): bool => $description !== ''))->toHaveCount(7)
+        ->and(array_unique(array_column($tags, 'description')))->toHaveCount(7);
+})->with([
+    'Dutch' => ['nl', ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'Geen kop']],
+    'English' => ['en', ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'No heading']],
+]);
+
+it('says that only "no heading" is no heading for search engines', function (): void {
+    $descriptions = array_column(Heading::make('kop')->describe()['tags'], 'description', 'value');
+
+    expect($descriptions['span'])->toBe('Ziet er hetzelfde uit, maar Google leest het niet als kop.')
+        ->and($descriptions['h1'])->toBe('De hoofdkop van de pagina, één per pagina.')
+        ->and($descriptions['h4'])->toBe('Een kopje daar weer onder.')
+        ->and($descriptions['h5'])->toBe('Zelden nodig; alleen onder een H4.')
+        ->and($descriptions['h6'])->toBe('Het laagste niveau; bijna nooit nodig.');
 });

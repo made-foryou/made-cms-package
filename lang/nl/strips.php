@@ -19,6 +19,15 @@ return [
             'h6' => 'H6',
             'span' => 'Geen kop',
         ],
+        'descriptions' => [
+            'h1' => 'De hoofdkop van de pagina, één per pagina.',
+            'h2' => 'Een hoofdstuk: de kop van een strook.',
+            'h3' => 'Een onderdeel binnen een strook, zoals een kaart.',
+            'h4' => 'Een kopje daar weer onder.',
+            'h5' => 'Zelden nodig; alleen onder een H4.',
+            'h6' => 'Het laagste niveau; bijna nooit nodig.',
+            'span' => 'Ziet er hetzelfde uit, maar Google leest het niet als kop.',
+        ],
     ],
     'validation' => [
         'required' => 'Vul :attribute in.',

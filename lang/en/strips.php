@@ -19,6 +19,15 @@ return [
             'h6' => 'H6',
             'span' => 'No heading',
         ],
+        'descriptions' => [
+            'h1' => 'The main heading of the page, one per page.',
+            'h2' => 'A chapter: the heading of a strip.',
+            'h3' => 'A part within a strip, such as a card.',
+            'h4' => 'A heading below that again.',
+            'h5' => 'Rarely needed; only below an H4.',
+            'h6' => 'The lowest level; hardly ever needed.',
+            'span' => 'Looks the same, but Google does not read it as a heading.',
+        ],
     ],
     'validation' => [
         'required' => 'Fill in :attribute.',

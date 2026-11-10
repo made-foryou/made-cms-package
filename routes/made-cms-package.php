@@ -39,8 +39,10 @@ use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripsController;
 use Made\CmsPackage\Http\Controllers\Content\StorePageController;
 use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
+use Made\CmsPackage\Http\Controllers\Content\UpdateAltTextController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateStripController;
+use Made\CmsPackage\Http\Controllers\Content\UploadMediaController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
 use Made\CmsPackage\Http\Middleware\EnsureScanAccess;
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
@@ -155,6 +157,13 @@ Route::prefix($prefix)
                 Route::get('pages/{page}/draft', ShowDraftController::class)->whereNumber('page')->name('pages.draft.show');
                 Route::delete('pages/{page}/draft', DiscardDraftController::class)->whereNumber('page')->name('pages.draft.destroy');
                 Route::post('pages/{page}/publish', PublishPageController::class)->whereNumber('page')->name('pages.publish');
+            });
+
+            // The upload field talks JSON, one file per request. It stands in the edit shell (the pages) and in the
+            // media library, so it opens for an editor who opens one of the two.
+            Route::middleware(EnsureScreenAccess::using(Screen::Pages, Screen::Media))->group(function (): void {
+                Route::post('media', UploadMediaController::class)->name('media.store');
+                Route::put('media/{media}/alt', UpdateAltTextController::class)->whereNumber('media')->name('media.alt.update');
             });
 
             // The scan of the site writes code into it: only for an admin at APP_ENV=local, whatever its panel shows.

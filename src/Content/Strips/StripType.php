@@ -276,13 +276,48 @@ abstract class StripType
      */
     final public function media(array $values): array
     {
-        $ids = [];
+        return array_values(array_unique(array_values($this->places($values))));
+    }
+
+    /**
+     * The files of the media library the strip uses by the path of their place, in the order of its fields: "foto",
+     * or "kaarten.2.foto" for an image in the third item of a list. A file in two places is there twice. Values of
+     * fields the type no longer has are left out.
+     *
+     * @param  array<string, mixed>  $values  stored values
+     * @return array<string, int>
+     */
+    final public function places(array $values): array
+    {
+        $places = [];
 
         foreach ($this->fields() as $field) {
-            $ids = [...$ids, ...$field->media($values[$field->getKey()] ?? null)];
+            $key = $field->getKey();
+            $places = [...$places, ...$field->places($values[$key] ?? null, $key)];
         }
 
-        return array_values(array_unique($ids));
+        return $places;
+    }
+
+    /**
+     * The labels that name a place of the strip, without the name of the strip: ["Achtergrondfoto"], or
+     * ["Foto 3", "Afbeelding"] for a field in an item of a list. Null when the path is no place of a field the type
+     * has (any more).
+     *
+     * @return list<string>|null
+     */
+    final public function placeLabels(string $path): ?array
+    {
+        $segments = explode('.', $path);
+        $key = array_shift($segments);
+
+        foreach ($this->fields() as $field) {
+            if ($field->getKey() === $key) {
+                return $field->placeLabels($segments);
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -309,19 +309,43 @@ final class Items extends Field
     }
 
     /**
-     * The files of every item, in order, each once.
+     * The files of every item, in order, by the position of the item in the list: "kaarten.2.foto".
      */
-    public function media(mixed $value): array
+    public function places(mixed $value, string $path): array
     {
-        $ids = [];
+        $places = [];
 
-        foreach (is_array($value) ? $value : [] as $item) {
+        foreach (is_array($value) ? $value : [] as $position => $item) {
             foreach (is_array($item) ? $this->fields : [] as $field) {
-                $ids = [...$ids, ...$field->media($item[$field->getKey()] ?? null)];
+                $key = $field->getKey();
+                $places = [...$places, ...$field->places($item[$key] ?? null, "{$path}.{$position}.{$key}")];
             }
         }
 
-        return array_values(array_unique($ids));
+        return $places;
+    }
+
+    /**
+     * An item by its label and its number ("Foto 3" for position 2), then the labels of the field in it.
+     */
+    public function placeLabels(array $rest): ?array
+    {
+        $position = $rest[0] ?? '';
+        $key = $rest[1] ?? null;
+
+        if (! ctype_digit($position) || $key === null) {
+            return null;
+        }
+
+        foreach ($this->fields as $field) {
+            if ($field->getKey() === $key) {
+                $labels = $field->placeLabels(array_slice($rest, 2));
+
+                return $labels === null ? null : [$this->getItemLabel().' '.((int) $position + 1), ...$labels];
+            }
+        }
+
+        return null;
     }
 
     /**

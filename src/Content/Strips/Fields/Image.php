@@ -44,11 +44,11 @@ final class Image extends Field
         return self::id($value);
     }
 
-    public function media(mixed $value): array
+    public function places(mixed $value, string $path): array
     {
         $id = self::id($value);
 
-        return $id === null ? [] : [$id];
+        return $id === null ? [] : [$path => $id];
     }
 
     /**

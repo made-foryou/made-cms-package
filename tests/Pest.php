@@ -481,7 +481,9 @@ function pintComplaints(array $sources): string
             file_put_contents($folder.'/'.$file, $source);
         }
 
-        $process = new Process([PHP_BINARY, __DIR__.'/../vendor/laravel/pint/builds/pint', '--test', '--preset=laravel', '.'], $folder);
+        // The plain text report, not the summary Pint renders as a Blade view: Pint 1.32.2 no longer finds that view in
+        // its phar on Windows and fails after checking the files. The exit code says the same either way.
+        $process = new Process([PHP_BINARY, __DIR__.'/../vendor/laravel/pint/builds/pint', '--test', '--preset=laravel', '--format=txt', '.'], $folder);
         $process->run();
 
         return $process->getExitCode() === 0

@@ -91,7 +91,8 @@ final class Heading extends Field
     }
 
     /**
-     * The levels as a list of {value, label}, the default level and the label of the text in the side panel.
+     * The levels as a list of {value, label, description} (what a level means for the structure of the page), the
+     * default level and the label of the text in the side panel.
      */
     protected function details(): array
     {
@@ -101,6 +102,7 @@ final class Heading extends Field
             'tags' => array_map(static fn (string $tag): array => [
                 'value' => $tag,
                 'label' => (string) __('made-cms-package::strips.heading.tags.'.$tag),
+                'description' => (string) __('made-cms-package::strips.heading.descriptions.'.$tag),
             ], $this->getTags()),
             'parts' => [
                 'text' => (string) __('made-cms-package::strips.heading.text'),

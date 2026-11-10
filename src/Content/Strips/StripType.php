@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Strips;
 
 use Illuminate\Support\Str;
+use Made\CmsPackage\Content\Data\MediaFiles;
 use Made\CmsPackage\Content\Strips\Fields\Field;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
@@ -267,19 +268,39 @@ abstract class StripType
     }
 
     /**
-     * The values as the site renders them: every field in the order of the definition,
-     * a missing one from its default, links as urls, and the extra data of with() on top.
+     * The ids of the files of the media library the strip uses, in the order of its fields, each once: an image, also
+     * in an item of a list. Values of fields the type no longer has are left out.
      *
      * @param  array<string, mixed>  $values  stored values
+     * @return list<int>
+     */
+    final public function media(array $values): array
+    {
+        $ids = [];
+
+        foreach ($this->fields() as $field) {
+            $ids = [...$ids, ...$field->media($values[$field->getKey()] ?? null)];
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * The values as the site renders them: every field in the order of the definition,
+     * a missing one from its default, links as urls, images from the files of the library,
+     * and the extra data of with() on top.
+     *
+     * @param  array<string, mixed>  $values  stored values
+     * @param  MediaFiles|null  $media  the files the strip uses (FindMedia); without them an image renders as null
      * @return array<string, mixed>
      */
-    final public function render(array $values): array
+    final public function render(array $values, ?MediaFiles $media = null): array
     {
         $rendered = [];
 
         foreach ($this->fields() as $field) {
             $key = $field->getKey();
-            $rendered[$key] = $field->render(array_key_exists($key, $values) ? $values[$key] : $field->getDefault());
+            $rendered[$key] = $field->render(array_key_exists($key, $values) ? $values[$key] : $field->getDefault(), $media);
         }
 
         return [...$rendered, ...$this->with($rendered)];

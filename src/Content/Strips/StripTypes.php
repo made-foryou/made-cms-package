@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -183,6 +184,10 @@ final class StripTypes
 
             if ($field instanceof Heading) {
                 self::checkHeading($type, $field);
+            }
+
+            if ($field instanceof Image && $field->getDefault() !== null) {
+                throw InvalidStripType::imageDefault($type, $key);
             }
 
             if ($field instanceof Items) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Strips\Fields;
 
 use Illuminate\Support\Str;
+use Made\CmsPackage\Content\Data\MediaFiles;
 
 /**
  * One field of a strip type. Fields are immutable: every setter returns a changed copy,
@@ -158,10 +159,23 @@ abstract class Field
 
     /**
      * The value as the site renders it, from the stored value: what a view or a front-end component gets.
+     *
+     * @param  MediaFiles|null  $media  the files of the library the strip uses (FindMedia); an image renders as null without them
      */
-    public function render(mixed $value): mixed
+    public function render(mixed $value, ?MediaFiles $media = null): mixed
     {
         return $value;
+    }
+
+    /**
+     * The ids of the files of the media library a stored value holds: an image its file, a list the files of its items.
+     * Fields without a file hold none.
+     *
+     * @return list<int>
+     */
+    public function media(mixed $value): array
+    {
+        return [];
     }
 
     /**

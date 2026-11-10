@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Strips\Fields;
 
 use Closure;
+use Made\CmsPackage\Content\Data\MediaFiles;
 use Made\CmsPackage\Content\Models\Page;
 
 /**
@@ -40,7 +41,7 @@ final class Link extends Field
         return self::normalizeTarget($value);
     }
 
-    public function render(mixed $value): ?string
+    public function render(mixed $value, ?MediaFiles $media = null): ?string
     {
         return self::resolve($value);
     }

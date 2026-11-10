@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Strips\Fields;
 
 use Illuminate\Support\Str;
+use Made\CmsPackage\Content\Data\MediaFiles;
 
 /**
  * A list of items that all have the same fields, such as buttons, cards or opening hours.
@@ -281,7 +282,7 @@ final class Items extends Field
      *
      * @return list<array<string, mixed>>
      */
-    public function render(mixed $value): array
+    public function render(mixed $value, ?MediaFiles $media = null): array
     {
         if (! is_array($value)) {
             return [];
@@ -298,13 +299,29 @@ final class Items extends Field
 
             foreach ($this->fields as $field) {
                 $key = $field->getKey();
-                $rendered[$key] = $field->render(array_key_exists($key, $item) ? $item[$key] : $field->getDefault());
+                $rendered[$key] = $field->render(array_key_exists($key, $item) ? $item[$key] : $field->getDefault(), $media);
             }
 
             $items[] = $rendered;
         }
 
         return $items;
+    }
+
+    /**
+     * The files of every item, in order, each once.
+     */
+    public function media(mixed $value): array
+    {
+        $ids = [];
+
+        foreach (is_array($value) ? $value : [] as $item) {
+            foreach (is_array($item) ? $this->fields : [] as $field) {
+                $ids = [...$ids, ...$field->media($item[$field->getKey()] ?? null)];
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     /**

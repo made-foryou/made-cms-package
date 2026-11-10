@@ -43,5 +43,8 @@ return [
         'link' => 'Kies bij :attribute een pagina of vul een adres in.',
         'link_page' => 'De gekozen pagina bij :attribute bestaat niet.',
         'link_url' => 'Het adres bij :attribute is ongeldig. Begin met https://, mailto:, tel:, / of #.',
+        'image' => 'Kies bij :attribute een afbeelding uit Media.',
+        'image_missing' => 'De gekozen afbeelding bij :attribute bestaat niet meer.',
+        'image_kind' => 'Het gekozen bestand bij :attribute is geen afbeelding.',
     ],
 ];

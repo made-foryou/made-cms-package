@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Strips\Fields;
 
+use Made\CmsPackage\Content\Data\MediaFiles;
 use Made\CmsPackage\Content\Strips\RichTextParser;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerAction;
@@ -80,7 +81,7 @@ final class RichText extends Field
      * strips directly, a field may have been another type before, and a default is never stored. A value that is not
      * a string renders as nothing. Cleaning stays the last step of rendering, also when links get their address here.
      */
-    public function render(mixed $value): ?string
+    public function render(mixed $value, ?MediaFiles $media = null): ?string
     {
         return is_string($value) ? self::sanitizer()->sanitize($value) : null;
     }

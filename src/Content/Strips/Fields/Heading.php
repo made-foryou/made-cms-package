@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Strips\Fields;
 
 use Illuminate\Validation\Rule;
+use Made\CmsPackage\Content\Data\MediaFiles;
 
 /**
  * A heading: a text with its level, stored and rendered as {"text": "…", "tag": "h2"}.
@@ -177,7 +178,7 @@ final class Heading extends Field
      *
      * @return array{text: string, tag: string}|null
      */
-    public function render(mixed $value): ?array
+    public function render(mixed $value, ?MediaFiles $media = null): ?array
     {
         $value = $this->normalize($value);
 

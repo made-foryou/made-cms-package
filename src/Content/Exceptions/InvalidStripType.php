@@ -61,6 +61,11 @@ final class InvalidStripType extends RuntimeException
         return new self("Strip type [{$type}] field [{$field}] has the default level [{$tag}] outside its levels.");
     }
 
+    public static function imageDefault(string $type, string $field): self
+    {
+        return new self("Strip type [{$type}] field [{$field}] is an image and cannot have a default; the id of a file differs per database.");
+    }
+
     public static function fieldType(string $type, string $field, string $fieldType): self
     {
         return new self("Strip type [{$type}] field [{$field}] has an unknown type [{$fieldType}].");

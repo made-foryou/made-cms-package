@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Made\CmsPackage\Content\Actions\UpdateStrip;
 use Made\CmsPackage\Content\Events\StripUpdated;
 use Made\CmsPackage\Content\Exceptions\StripNotFound;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -269,3 +272,34 @@ it('refuses to change a strip of a type that no longer exists and keeps its data
     expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
     Event::assertNotDispatched(StripUpdated::class);
 });
+
+it('stores a heading that was stored as text as a text with its level when another field changes', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $card = (string) Str::uuid();
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['id' => $card, 'titel' => 'Spelen']]], id: 'a'),
+    ])->create();
+
+    $strip = UpdateStrip::run($page, 'a', ['label' => 'Nieuw']);
+
+    expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h2'])
+        ->and($strip->values['kaarten'])->toBe([['id' => $card, 'titel' => ['text' => 'Spelen', 'tag' => 'h3']]]);
+});
+
+it('refuses a level its heading does not offer', function (array $values, string $path): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $draft = [storedStrip('banner', ['kop' => ['text' => 'Welkom', 'tag' => 'h2']], id: 'a')];
+    $page = Page::factory()->withDraft($draft)->create();
+
+    try {
+        UpdateStrip::run($page, 'a', $values);
+        $this->fail('The values were accepted.');
+    } catch (ValidationException $exception) {
+        expect(array_keys($exception->errors()))->toBe([$path]);
+    }
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+})->with([
+    'its own heading' => [['kop' => ['text' => 'Welkom', 'tag' => 'h4']], 'kop.tag'],
+    'a heading in a card' => [['kaarten' => [['titel' => ['text' => 'Spelen', 'tag' => 'h1']]]], 'kaarten.0.titel.tag'],
+]);

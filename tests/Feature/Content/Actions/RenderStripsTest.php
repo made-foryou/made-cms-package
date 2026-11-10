@@ -6,6 +6,7 @@ use Made\CmsPackage\Content\Actions\RenderStrips;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 use Made\CmsPackage\Tests\Fixtures\Strips\Teaser;
 
 beforeEach(function (): void {
@@ -152,5 +153,18 @@ it('keeps the id and type of a strip when the extra data of the site uses those 
 
     expect(RenderStrips::run($page)->toArray())->toBe([
         ['id' => 'a', 'type' => 'teaser', 'kop' => 'Uit with', 'lees_meer' => '/nieuws', 'doel' => '/nieuws'],
+    ]);
+});
+
+it('renders a heading as its text and level, also one stored as text', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('banner', ['kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'kaarten' => [['id' => 'k1', 'titel' => 'Teams']]], id: 'a'),
+        storedStrip('banner', ['kop' => 'Agenda'], id: 'b'),
+    ])->create();
+
+    expect(RenderStrips::run($page)->toArray())->toBe([
+        ['id' => 'a', 'type' => 'banner', 'kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'label' => null, 'kaarten' => [['id' => 'k1', 'titel' => ['text' => 'Teams', 'tag' => 'h3']]]],
+        ['id' => 'b', 'type' => 'banner', 'kop' => ['text' => 'Agenda', 'tag' => 'h2'], 'label' => null, 'kaarten' => []],
     ]);
 });

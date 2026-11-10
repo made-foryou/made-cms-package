@@ -25,8 +25,8 @@ final class UpdateStrip
     /**
      * Changes the values of a strip in the draft after checking them against its strip type.
      *
-     * The values are merged with the stored values: a field left out keeps its value, a field sent as
-     * null is cleared. A list replaces the stored list, but an item with the id of a stored item keeps
+     * The values are merged with the stored values, read in their current form first (a heading stored as text is
+     * its text with the default level): a field left out keeps its value, a field sent as null is cleared. A list replaces the stored list, but an item with the id of a stored item keeps
      * the fields it leaves out; an item without a known id is new and gets an id. The merged values are
      * checked as a whole, so a field left out can still be refused. Values the type does not know are dropped.
      * It returns the strip as it is stored afterwards.
@@ -43,7 +43,7 @@ final class UpdateStrip
             $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
             $type = $this->types->find($strip->type);
 
-            $strip = $strip->withValues(CheckStripValues::run($type, $type->merge([...$type->defaults(), ...$strip->values], $values)));
+            $strip = $strip->withValues(CheckStripValues::run($type, $type->merge($type->normalize([...$type->defaults(), ...$strip->values]), $values)));
 
             $page->draft_strips = $strips->replace($strip)->toArray();
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Made\CmsPackage\Content\Actions\CompareDraft;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -160,6 +162,32 @@ it('compares the values of a strip whose type left the catalogue as they are', f
     $page = Page::factory()->published()
         ->withStrips([storedStrip('oud', ['x' => 1], id: 'a')])
         ->withDraft([storedStrip('oud', ['x' => 1, 'y' => null], id: 'a')])
+        ->create();
+
+    expect(CompareDraft::run($page)->changed)->toBe(['a']);
+});
+
+it('counts only another level of a heading as a change, not the form it was stored in', function (mixed $published, mixed $draft, bool $changed): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('banner', ['kop' => $published], id: 'a')])
+        ->withDraft([storedStrip('banner', ['kop' => $draft], id: 'a')])
+        ->create();
+
+    expect(CompareDraft::run($page)->changed)->toBe($changed ? ['a'] : []);
+})->with([
+    'another level' => [['text' => 'Welkom', 'tag' => 'h2'], ['text' => 'Welkom', 'tag' => 'h3'], true],
+    'the main heading' => ['Welkom', ['text' => 'Welkom', 'tag' => 'h1'], true],
+    'another text' => [['text' => 'Welkom', 'tag' => 'h2'], ['text' => 'Hallo', 'tag' => 'h2'], true],
+    'a text stored before the field was a heading' => ['Welkom', ['text' => 'Welkom', 'tag' => 'h2'], false],
+    'a level the field no longer offers' => [['text' => 'Welkom', 'tag' => 'h5'], ['text' => 'Welkom', 'tag' => 'h2'], false],
+]);
+
+it('counts a heading in a card that only changes its level as a change', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $page = Page::factory()->published()
+        ->withStrips([storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['id' => 'k1', 'titel' => 'Teams']]], id: 'a')])
+        ->withDraft([storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['id' => 'k1', 'titel' => ['text' => 'Teams', 'tag' => 'h2']]]], id: 'a')])
         ->create();
 
     expect(CompareDraft::run($page)->changed)->toBe(['a']);

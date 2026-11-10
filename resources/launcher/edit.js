@@ -10,6 +10,11 @@
  * The strips of the page come from the server in their stored order (config.strips, then made-cms:strips from
  * structure.js after every change of the opbouw), so "Strook n van m" is the place of a strip in that list, also for a
  * hidden strip that is not on the site. Choosing no strip (made-cms:choose with id null) goes back to the opbouw.
+ *
+ * For whoever chooses the level of a heading (config.heading_levels) it also reads the headings of the page as the
+ * frame shows them, after every load, change and patch, and hands them to the shell as made-cms:headings
+ * (headings.js). Only the frame knows the real structure: the fixed headings of the site, and the page of a site that
+ * renders in the browser.
  */
 
 const HOST = 'made-cms-outlines';
@@ -20,6 +25,10 @@ const ITEMS = 'data-cms-items';
 // A site rendered in the browser puts its strips in the page after it loaded; only a strip that is still
 // missing once the page has been quiet this long counts as a view without the attribute.
 const WARN_AFTER = 400;
+
+// The headings are read once the page has been quiet this long, so a burst of changes reads them once.
+const READ_AFTER = 60;
+const LEVELS = 'h1, h2, h3, h4, h5, h6';
 
 const shell = document.querySelector('[data-edit-shell]');
 const frame = shell?.querySelector('iframe.bewerkframe');
@@ -154,6 +163,7 @@ class Outlines {
         this.elements = elements;
         this.place();
         this.warnLater();
+        readHeadingsLater();
     }
 
     schedule() {
@@ -416,6 +426,107 @@ function follow(input) {
     if (! shown) {
         markStale(input.id, input.seq);
     }
+
+    readHeadingsLater();
+}
+
+/* ---------------------------------------------------------------------------------------------------------------
+ * The headings of the page: every h1–h6 in the order of the document, and the element of a heading field that is at
+ * "Geen kop" (a span). A span the site prints itself is no heading: the frame cannot know it was meant as one.
+ * ------------------------------------------------------------------------------------------------------------ */
+
+let lastHeadings = null;
+let headingsTimer = null;
+
+/* The heading fields of a strip ("kop", or "kaarten.*.titel" in a list), with the label of their list. */
+function headingField(id, path) {
+    const pattern = path.split('.').map((part, index) => (index === 1 ? '*' : part)).join('.');
+
+    return strips.get(id)?.headings?.find((heading) => heading.path === pattern) ?? null;
+}
+
+/* What a heading says: its text, else what an image in it or its label says, so a logo in an h1 is no empty heading. */
+function headingText(node) {
+    const text = node.textContent.replace(/\s+/g, ' ').trim();
+
+    if (text !== '') {
+        return text;
+    }
+
+    const alt = [...node.querySelectorAll('img[alt]')].map((image) => image.alt.trim()).filter(Boolean).join(' ');
+
+    return alt || node.getAttribute('aria-label')?.trim() || '';
+}
+
+/*
+ * Whether a visitor sees the heading on the screen. A heading the site hides (display, visibility, opacity, or the
+ * one pixel of a text for screen readers only) still counts for search engines, so it stays in the list.
+ */
+function headingVisible(node) {
+    const shown = typeof node.checkVisibility === 'function'
+        ? node.checkVisibility({ opacityProperty: true, visibilityProperty: true })
+        : node.getClientRects().length > 0;
+
+    if (! shown) {
+        return false;
+    }
+
+    const box = node.getBoundingClientRect();
+
+    return box.width > 1 || box.height > 1;
+}
+
+function headingsOf(doc) {
+    const headings = [];
+
+    for (const node of doc.querySelectorAll(LEVELS + ', [' + FIELD + ']')) {
+        const level = /^h[1-6]$/.test(node.localName);
+        const strip = node.closest('[' + ATTRIBUTE + ']');
+        const id = strip?.getAttribute(ATTRIBUTE) ?? null;
+        const field = strip !== null && node.hasAttribute(FIELD) ? pathOf(node, strip) : null;
+        const known = field === null ? null : headingField(id, field.path);
+
+        if (! level && known === null) {
+            continue;
+        }
+
+        headings.push({
+            tag: level ? node.localName : 'span',
+            text: headingText(node),
+            strip: id,
+            field: field?.path ?? null,
+            count: field?.count ?? null,
+            heading: known !== null,
+            list: known?.list ?? null,
+            visible: headingVisible(node),
+        });
+    }
+
+    return headings;
+}
+
+/* Reads the headings a moment later and tells the shell when they changed, or always when it asks (force). */
+function readHeadingsLater(force = false) {
+    if (config.heading_levels !== true) {
+        return;
+    }
+
+    window.clearTimeout(headingsTimer);
+    headingsTimer = window.setTimeout(() => {
+        const doc = outlines?.doc;
+
+        if (! doc?.defaultView) {
+            return;
+        }
+
+        const headings = headingsOf(doc);
+        const key = JSON.stringify(headings);
+
+        if (force || key !== lastHeadings) {
+            lastHeadings = key;
+            shell.dispatchEvent(new CustomEvent('made-cms:headings', { detail: { headings } }));
+        }
+    }, READ_AFTER);
 }
 
 /* The server stored the changes of a strip up to seq: they are on the site after a reload, which they may need. */
@@ -524,7 +635,17 @@ if (shell) {
     });
     shell.addEventListener('made-cms:saved', (event) => saved(event.detail.id, event.detail.seq ?? Infinity));
     shell.addEventListener('made-cms:published', reloadFrame);
-    shell.addEventListener('made-cms:choose', (event) => select(event.detail.id ?? null, event.detail.errors ?? null, null, event.detail.added ?? null));
+    // The overview of the headings chooses a strip with the field of the heading (field, with count in a list).
+    shell.addEventListener('made-cms:choose', (event) => {
+        const field = event.detail.field ? { path: event.detail.field, count: event.detail.count ?? null } : null;
+
+        select(event.detail.id ?? null, event.detail.errors ?? null, field, event.detail.added ?? null);
+    });
+    shell.addEventListener('made-cms:view', (event) => {
+        if (event.detail.view === 'headings') {
+            readHeadingsLater(true);
+        }
+    });
 
     // The opbouw changed: new labels and places, and a frame that shows the strips in their new order.
     shell.addEventListener('made-cms:strips', (event) => {

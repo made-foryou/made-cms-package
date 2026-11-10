@@ -15,7 +15,7 @@ return [
         'type_unknown' => 'Dit type kent de site niet. Sla het op als :types en probeer het opnieuw.',
         'svg_unsafe' => 'Deze svg bevat code die de site niet toelaat, zoals een script of een link naar buiten. Exporteer hem opnieuw als gewone tekening en probeer het nog eens.',
         'unreadable' => 'Dit bestand kunnen we niet lezen. Misschien is het beschadigd; sla het opnieuw op en probeer het nog eens.',
-        'alt_long' => 'Houd de alt-tekst korter dan :max tekens.',
+        'alt_long' => 'Een alt-tekst mag hoogstens :max tekens zijn.',
     ],
 
     'or' => 'of',

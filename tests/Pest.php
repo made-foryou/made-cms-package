@@ -465,12 +465,13 @@ function sourcesText(array $sources): string
 }
 
 /**
- * Whether Pint (Laravel preset) leaves the class files as they are; they are checked in a folder of their own, so the
- * Pint configuration of the package does not count.
+ * What Pint (Laravel preset) would change in the class files, with its exit code; an empty text when it leaves them as
+ * they are. They are checked in a folder of their own, so the Pint configuration of the package does not count, and a
+ * refusal shows what Pint said, also on a runner where it fails for another reason than the style.
  *
  * @param  array<string, string>  $sources
  */
-function pintAccepts(array $sources): bool
+function pintComplaints(array $sources): string
 {
     $folder = sys_get_temp_dir().'/made-cms-pint-'.Str::random(8);
     mkdir($folder);
@@ -483,7 +484,9 @@ function pintAccepts(array $sources): bool
         $process = new Process([PHP_BINARY, __DIR__.'/../vendor/laravel/pint/builds/pint', '--test', '--preset=laravel', '.'], $folder);
         $process->run();
 
-        return $process->getExitCode() === 0;
+        return $process->getExitCode() === 0
+            ? ''
+            : "Pint exited with {$process->getExitCode()}:\n".$process->getOutput().$process->getErrorOutput();
     } finally {
         foreach (glob($folder.'/*') ?: [] as $file) {
             unlink($file);

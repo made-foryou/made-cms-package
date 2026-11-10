@@ -16,4 +16,9 @@ return [
     'prune' => [
         'pruned' => '{0} No pages removed for good.|{1} 1 page removed for good.|[2,*] :count pages removed for good.',
     ],
+    'media_usage' => [
+        'rebuilt' => 'Rebuilt the usage of media from :pages: :places.',
+        'pages' => '{0} no pages|{1} 1 page|[2,*] :count pages',
+        'places' => '{0} no files in use|{1} 1 place with a file|[2,*] :count places with a file',
+    ],
 ];

@@ -31,6 +31,7 @@ final class EditPageController
             ListEditableStrips::run($page),
             CompareDraft::run($page),
             $types,
+            Visitor::choosesHeadingLevels($request),
         );
     }
 }

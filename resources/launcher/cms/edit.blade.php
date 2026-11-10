@@ -229,13 +229,30 @@
         <p class="veld-fout" data-slot="error" hidden></p>
     </fieldset>
 </template>
+{{--
+    A heading: its name with its level next to it, and its text. Whoever opens Meta-overzicht chooses the level from the
+    list below the name (design 11.18–11.19); anyone else sees the level as a label (11.20). The choice is only UI: the
+    server keeps the level of a heading for an editor who does not choose it.
+--}}
 <template data-field="heading">
-    <fieldset class="veld veldgroep">
-        <legend class="veld-label" data-slot="label"></legend>
-        <div class="veldgroep-delen enkel" data-slot="parts"></div>
+    <div class="veld kopveld">
+        <div class="kopveld-keuze" data-slot="choice">
+            <div class="kopveld-kop">
+                <span class="veld-label" data-slot="label"></span>
+                <button type="button" class="niveau" aria-haspopup="listbox" aria-expanded="false" data-slot="level"><span data-slot="level-name"></span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"/></svg></button>
+                <span class="niveau vast" role="img" data-slot="level-fixed"></span>
+            </div>
+            <ul class="niveaulijst" role="listbox" tabindex="-1" data-slot="levels" hidden></ul>
+            <p class="veld-fout" data-slot="error" hidden></p>
+        </div>
+        <div data-slot="parts"></div>
         <p class="veld-hint" data-slot="hint" hidden></p>
+        <p class="veld-hint" data-slot="level-hint" data-choose="{{ $t('cms.edit.heading_hint') }}" data-item="{{ $t('cms.edit.heading_item_hint') }}"></p>
         <p class="veld-fout" data-slot="error" hidden></p>
-    </fieldset>
+    </div>
+</template>
+<template data-part="level">
+    <li class="niveauoptie" role="option" aria-selected="false"><span class="niveauoptie-naam" data-slot="level-label"></span><span class="niveauoptie-uitleg" data-slot="level-description"></span><span class="vink" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span></li>
 </template>
 <template data-field="choice">
     <div class="veld">

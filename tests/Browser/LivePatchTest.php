@@ -26,30 +26,6 @@ beforeEach(function (): void {
 });
 
 /**
- * A JavaScript expression for the document of the site in the frame of the edit shell.
- */
-function siteInFrame(): string
-{
-    return "document.querySelector('.bewerkframe').contentDocument";
-}
-
-/**
- * A script that marks the window in the frame: the mark is gone once the frame has reloaded.
- */
-function markFrame(): string
-{
-    return "() => { document.querySelector('.bewerkframe').contentWindow.voorHerladen = true; }";
-}
-
-/**
- * A JavaScript condition: the frame reloaded since markFrame().
- */
-function frameReloaded(): string
-{
-    return "! document.querySelector('.bewerkframe').contentWindow.voorHerladen";
-}
-
-/**
  * A script that clicks the site in the frame at the middle of the element, as the editor does: the click lands on
  * the outline that lies over the strip.
  */
@@ -112,7 +88,7 @@ it('patches the text of a heading in an item while the element is its level, and
 
     $shell->script(markFrame());
     $shell->click('[data-path="kaarten"] li:nth-child(2) [data-slot="edit"]')
-        ->assertSeeIn('[data-path="kaarten.1.titel"] legend', 'Titel')
+        ->assertSeeIn('[data-path="kaarten.1.titel"] .kopveld-kop [data-slot="label"]', 'Titel')
         ->type('[data-path="kaarten.1.titel.text"] input', 'Wedstrijden');
 
     expect($shell->script(waitUntil("{$title} === 'Wedstrijden'")))->toBeTrue();

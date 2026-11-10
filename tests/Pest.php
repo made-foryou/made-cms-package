@@ -229,6 +229,30 @@ function openStrip(Page $page, string $strip, string $ready): mixed
 }
 
 /**
+ * A JavaScript expression for the document of the site in the frame of the edit shell.
+ */
+function siteInFrame(): string
+{
+    return "document.querySelector('.bewerkframe').contentDocument";
+}
+
+/**
+ * A script that marks the window in the frame: the mark is gone once the frame has reloaded.
+ */
+function markFrame(): string
+{
+    return "() => { document.querySelector('.bewerkframe').contentWindow.voorHerladen = true; }";
+}
+
+/**
+ * A JavaScript condition: the frame reloaded since markFrame().
+ */
+function frameReloaded(): string
+{
+    return "! document.querySelector('.bewerkframe').contentWindow.voorHerladen";
+}
+
+/**
  * A JavaScript condition: the panel says the draft is saved.
  */
 function savedAsDraft(): string

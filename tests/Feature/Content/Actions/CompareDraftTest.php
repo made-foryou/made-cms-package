@@ -181,6 +181,8 @@ it('counts only another level of a heading as a change, not the form it was stor
     'another text' => [['text' => 'Welkom', 'tag' => 'h2'], ['text' => 'Hallo', 'tag' => 'h2'], true],
     'a text stored before the field was a heading' => ['Welkom', ['text' => 'Welkom', 'tag' => 'h2'], false],
     'a level the field no longer offers' => [['text' => 'Welkom', 'tag' => 'h5'], ['text' => 'Welkom', 'tag' => 'h2'], false],
+    'a heading emptied at its default level' => [null, ['text' => null, 'tag' => 'h2'], false],
+    'a level chosen before the text' => [null, ['text' => null, 'tag' => 'h3'], true],
 ]);
 
 it('counts a heading in a card that only changes its level as a change', function (): void {

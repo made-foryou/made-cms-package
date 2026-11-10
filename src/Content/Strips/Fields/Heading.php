@@ -133,25 +133,24 @@ final class Heading extends Field
 
     /**
      * Exactly a text and a level: a former text gets the default level, and so does a level that is missing,
-     * unknown or no longer one of the levels to choose from.
+     * unknown or no longer one of the levels to choose from. Without a text, a heading at the default level is
+     * nothing (null); another level stays, so a level chosen before the text is typed is kept.
      */
     public function normalize(mixed $value): mixed
     {
         if (is_string($value)) {
-            return ['text' => $value, 'tag' => $this->tag];
+            $value = ['text' => $value];
         }
 
         if (! is_array($value)) {
             return $value;
         }
 
-        $text = $value['text'] ?? null;
+        $text = is_string($value['text'] ?? null) && $value['text'] !== '' ? $value['text'] : null;
         $tag = $value['tag'] ?? null;
+        $tag = is_string($tag) && in_array($tag, $this->tags, true) && in_array($tag, self::TAGS, true) ? $tag : $this->tag;
 
-        return [
-            'text' => is_string($text) ? $text : null,
-            'tag' => is_string($tag) && in_array($tag, $this->tags, true) && in_array($tag, self::TAGS, true) ? $tag : $this->tag,
-        ];
+        return $text === null && $tag === $this->tag ? null : ['text' => $text, 'tag' => $tag];
     }
 
     /**
@@ -163,7 +162,7 @@ final class Heading extends Field
     {
         $value = $this->normalize($value);
 
-        if (! is_array($value) || ! is_string($value['text']) || $value['text'] === '') {
+        if (! is_array($value) || $value['text'] === null) {
             return null;
         }
 

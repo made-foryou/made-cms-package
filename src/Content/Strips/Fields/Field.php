@@ -137,6 +137,18 @@ abstract class Field
     }
 
     /**
+     * The value an editor who does not choose the level of a heading sends, with the levels as stored: only a heading
+     * has a level (also in a list), every other field gives the value back.
+     *
+     * @param  mixed  $stored  the stored value in its current form, null when there is none
+     * @param  mixed  $value  the value the editor sends
+     */
+    public function keepLevel(mixed $stored, mixed $value): mixed
+    {
+        return $value;
+    }
+
+    /**
      * The value as it is stored, after validation.
      */
     public function normalize(mixed $value): mixed

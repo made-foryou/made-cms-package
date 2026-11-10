@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Validator;
 use Made\CmsPackage\Content\Strips\StripType;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 use Made\CmsPackage\Tests\Fixtures\Strips\Teaser;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
@@ -141,6 +142,27 @@ it('merges new values into the stored ones: a field it gets replaces, a field it
         'tekst' => null,
         'onbekend' => 'y',
     ]);
+});
+
+it('keeps the stored levels of its headings, also in a list, and leaves the other fields alone', function (): void {
+    $card = '6f1d2c3b-4a5e-4f60-8b7c-1d2e3f4a5b6c';
+    $stored = ['kop' => ['text' => 'Welkom', 'tag' => 'h3'], 'label' => 'Oud', 'kaarten' => [['id' => $card, 'titel' => ['text' => 'Een', 'tag' => 'h2']]]];
+
+    expect((new Banner)->keepLevels($stored, [
+        'kop' => ['text' => 'Hallo', 'tag' => 'h1'],
+        'label' => 'Nieuw',
+        'kaarten' => [['id' => $card, 'titel' => ['text' => 'Een', 'tag' => 'h3']], ['titel' => ['text' => 'Twee', 'tag' => 'h2']]],
+        'onbekend' => 'y',
+    ]))->toBe([
+        'kop' => ['text' => 'Hallo', 'tag' => 'h3'],
+        'label' => 'Nieuw',
+        'kaarten' => [['id' => $card, 'titel' => ['text' => 'Een', 'tag' => 'h2']], ['titel' => ['text' => 'Twee', 'tag' => 'h3']]],
+        'onbekend' => 'y',
+    ]);
+});
+
+it('keeps the levels of the fields it gets only', function (): void {
+    expect((new Banner)->keepLevels(['kop' => ['text' => 'Welkom', 'tag' => 'h3']], ['label' => 'Nieuw']))->toBe(['label' => 'Nieuw']);
 });
 
 it('renders every field in the order of its definition, a missing one from its default', function (): void {

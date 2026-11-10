@@ -79,6 +79,22 @@ it('stores a text with its level, a text that was stored before as its default l
     'nothing' => [null, null],
 ]);
 
+it('keeps the level it stored for an editor who does not choose levels', function (mixed $stored, mixed $value, mixed $kept): void {
+    expect(Heading::make('kop')->tags(['h1', 'h2', 'h3'])->keepLevel($stored, $value))->toBe($kept);
+})->with([
+    'another level' => [['text' => 'Welkom', 'tag' => 'h3'], ['text' => 'Hallo', 'tag' => 'h1'], ['text' => 'Hallo', 'tag' => 'h3']],
+    'no level' => [['text' => 'Welkom', 'tag' => 'h3'], ['text' => 'Hallo'], ['text' => 'Hallo', 'tag' => 'h3']],
+    'a level that is no tag' => [['text' => 'Welkom', 'tag' => 'h3'], ['text' => 'Hallo', 'tag' => 'p'], ['text' => 'Hallo', 'tag' => 'h3']],
+    'a level chosen before the text' => [['text' => null, 'tag' => 'h1'], ['text' => 'Hallo', 'tag' => 'h3'], ['text' => 'Hallo', 'tag' => 'h1']],
+    'nothing stored' => [null, ['text' => 'Hallo', 'tag' => 'h1'], ['text' => 'Hallo', 'tag' => 'h2']],
+    'a former text stored' => ['Welkom', ['text' => 'Hallo', 'tag' => 'h1'], ['text' => 'Hallo', 'tag' => 'h2']],
+    'a stored level outside its levels' => [['text' => 'Welkom', 'tag' => 'h5'], ['text' => 'Hallo', 'tag' => 'h1'], ['text' => 'Hallo', 'tag' => 'h2']],
+    'emptied at another level' => [['text' => 'Welkom', 'tag' => 'h3'], null, ['text' => null, 'tag' => 'h3']],
+    'emptied at the default level' => [['text' => 'Welkom', 'tag' => 'h2'], null, null],
+    'another key' => [['text' => 'Welkom', 'tag' => 'h3'], ['text' => 'Hallo', 'tag' => 'h1', 'class' => 'groot'], ['text' => 'Hallo', 'tag' => 'h3', 'class' => 'groot']],
+    'something else' => [['text' => 'Welkom', 'tag' => 'h3'], 'Hallo', 'Hallo'],
+]);
+
 it('renders a text with its level, or nothing without a text', function (mixed $value, ?array $rendered): void {
     expect(Heading::make('kop')->tag('h1')->tags(['h1', 'h2'])->render($value))->toBe($rendered);
 })->with([

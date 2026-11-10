@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\RichText;
@@ -183,6 +184,43 @@ it('leaves a value that is not a list of items alone when it merges', function (
     expect($items->merge([['id' => ITEM_A, 'tekst' => 'Een']], 'geen lijst'))->toBe('geen lijst')
         ->and($items->merge([['id' => ITEM_A, 'tekst' => 'Een']], null))->toBeNull()
         ->and($items->merge([], ['geen item']))->toBe(['geen item']);
+});
+
+it('keeps the stored level of a heading in every item by its id, and gives a new item the default level', function (): void {
+    $items = Items::make('kaarten', [Heading::make('titel')->tag('h3'), Text::make('tekst')]);
+
+    $kept = $items->keepLevel(
+        [['id' => ITEM_A, 'titel' => ['text' => 'Een', 'tag' => 'h4'], 'tekst' => 'x'], ['id' => ITEM_B, 'titel' => ['text' => 'Twee', 'tag' => 'h2']]],
+        [
+            ['id' => ITEM_B, 'titel' => ['text' => 'Twee!', 'tag' => 'h1']],
+            ['titel' => ['text' => 'Nieuw', 'tag' => 'h1'], 'tekst' => 'y'],
+            ['id' => ITEM_A, 'titel' => ['text' => 'Een', 'tag' => 'h1'], 'tekst' => 'z'],
+            ['id' => '2c5a7d1e-3f4b-4c8d-ae9f-1a2b3c4d5e6f', 'titel' => ['text' => 'Onbekend', 'tag' => 'h1']],
+        ],
+    );
+
+    expect($kept)->toBe([
+        ['id' => ITEM_B, 'titel' => ['text' => 'Twee!', 'tag' => 'h2']],
+        ['titel' => ['text' => 'Nieuw', 'tag' => 'h3'], 'tekst' => 'y'],
+        ['id' => ITEM_A, 'titel' => ['text' => 'Een', 'tag' => 'h4'], 'tekst' => 'z'],
+        ['id' => '2c5a7d1e-3f4b-4c8d-ae9f-1a2b3c4d5e6f', 'titel' => ['text' => 'Onbekend', 'tag' => 'h3']],
+    ]);
+});
+
+it('gives every heading in a list the default level when nothing is stored', function (mixed $stored): void {
+    expect(Items::make('kaarten', [Heading::make('titel')->tag('h3')])->keepLevel($stored, [['id' => ITEM_A, 'titel' => ['text' => 'Een', 'tag' => 'h1']]]))
+        ->toBe([['id' => ITEM_A, 'titel' => ['text' => 'Een', 'tag' => 'h3']]]);
+})->with([
+    'nothing' => [null],
+    'no list' => ['geen lijst'],
+]);
+
+it('leaves a value that is not a list of items alone when it keeps the levels', function (): void {
+    $items = Items::make('kaarten', [Heading::make('titel')]);
+
+    expect($items->keepLevel([], 'geen lijst'))->toBe('geen lijst')
+        ->and($items->keepLevel([], null))->toBeNull()
+        ->and($items->keepLevel([], ['geen item']))->toBe(['geen item']);
 });
 
 it('names one item, "Item" when the site does not', function (): void {

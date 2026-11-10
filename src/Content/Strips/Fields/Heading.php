@@ -132,6 +132,23 @@ final class Heading extends Field
     }
 
     /**
+     * The heading with the level it has stored, or the default level when nothing is stored. An emptied heading keeps
+     * a level that is not the default level, so emptying it and typing again never changes the level either. Anything
+     * else is left for the validation to refuse.
+     */
+    public function keepLevel(mixed $stored, mixed $value): mixed
+    {
+        $stored = $this->normalize($stored);
+        $tag = is_array($stored) ? $stored['tag'] : $this->tag;
+
+        if ($value === null) {
+            return $tag === $this->tag ? null : ['text' => null, 'tag' => $tag];
+        }
+
+        return is_array($value) ? [...$value, 'tag' => $tag] : $value;
+    }
+
+    /**
      * Exactly a text and a level: a former text gets the default level, and so does a level that is missing,
      * unknown or no longer one of the levels to choose from. Without a text, a heading at the default level is
      * nothing (null); another level stays, so a level chosen before the text is typed is kept.

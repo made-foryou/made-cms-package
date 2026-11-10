@@ -367,7 +367,8 @@ function setHref(node, url) {
 
 /*
  * An empty value is never patched: a view usually leaves an empty field out, and the server fills in a default.
- * A choice or a list decides more than one element shows, so it reloads the frame as well.
+ * A choice or a list decides more than one element shows, so it reloads the frame as well. A heading changes its text
+ * while the element is its level; another level needs another element, which only the site makes, so it reloads.
  */
 function patch(node, type, value) {
     if (value === null || value === '') {
@@ -389,6 +390,8 @@ function patch(node, type, value) {
             return setHref(node, value);
         case 'button':
             return node.hasAttribute('href') && holdsText(node) && setText(node, value.text) && setHref(node, value.url);
+        case 'heading':
+            return node.localName === value.tag && setText(node, value.text);
         default:
             return false;
     }

@@ -8,7 +8,7 @@ namespace Made\CmsPackage\Content\Data;
  * One strip of the working copy as the edit shell shows it: which strip it is, what its type is called and a few words
  * of what it holds. A strip whose type left the catalogue is not known: its content is kept, the site does not show it.
  *
- * @phpstan-type EditableStripArray array{id: string, type: string, label: string, visible: bool, known: bool, fields: int, summary: string|null}
+ * @phpstan-type EditableStripArray array{id: string, type: string, label: string, visible: bool, known: bool, fields: int, summary: string|null, headings: list<array{path: string, list: string|null}>}
  */
 final readonly class EditableStrip
 {
@@ -17,6 +17,7 @@ final readonly class EditableStrip
      * @param  bool  $known  whether the type of the strip is in the catalogue
      * @param  int  $fields  the number of fields of the strip type
      * @param  string|null  $summary  the strip in a few words (StripType::summary()), null when it holds no text yet
+     * @param  list<array{path: string, list: string|null}>  $headings  the fields that are a heading (StripType::headings())
      */
     public function __construct(
         public string $id,
@@ -26,6 +27,7 @@ final readonly class EditableStrip
         public bool $known,
         public int $fields,
         public ?string $summary,
+        public array $headings,
     ) {}
 
     /**
@@ -41,6 +43,7 @@ final readonly class EditableStrip
             'known' => $this->known,
             'fields' => $this->fields,
             'summary' => $this->summary,
+            'headings' => $this->headings,
         ];
     }
 }

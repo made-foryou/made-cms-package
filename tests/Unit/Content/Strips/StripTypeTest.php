@@ -215,6 +215,13 @@ it('describes itself for the side panel: its key, name, explanation and fields i
         ->toBe(['text', 'text', 'long_text', 'rich_text', 'button', 'items']);
 });
 
+it('names the fields that are headings for the overview of the headings, a heading in a list with its list', function (): void {
+    expect((new Banner)->headings())->toBe([
+        ['path' => 'kop', 'list' => null],
+        ['path' => 'kaarten.*.titel', 'list' => 'Kaarten'],
+    ])->and((new Hero)->headings())->toBe([]);
+});
+
 it('validates with messages of its own, in the language of the CMS', function (array $values, string $path, string $message): void {
     app()->setLocale('nl');
     $hero = new Hero;

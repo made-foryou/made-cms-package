@@ -56,6 +56,7 @@ it('gives every field a value, a missing one its default, in the order of the ty
         'tekst' => null,
         'actie' => null,
         'knoppen' => [],
+        'foto' => null,
     ]);
 });
 

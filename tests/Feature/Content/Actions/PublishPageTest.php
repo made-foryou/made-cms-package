@@ -8,6 +8,7 @@ use Made\CmsPackage\Content\Actions\PublishPage;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PagePublished;
 use Made\CmsPackage\Content\Exceptions\PageAlreadyPublished;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
@@ -130,6 +131,39 @@ it('publishes a heading stored as text, or with a level its field no longer offe
         storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['titel' => 'Spelen']]], id: 'a'),
         storedStrip('banner', ['kop' => ['text' => 'Agenda', 'tag' => 'h5'], 'kaarten' => [['titel' => ['text' => 'Teams', 'tag' => 'h6']]]], id: 'b'),
     ];
+    $page = Page::factory()->withDraft($draft)->create();
+
+    PublishPage::run($page);
+
+    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+});
+
+it('refuses a draft with an image whose file is gone or is no image, on the field of the strip', function (): void {
+    $gone = Media::factory()->create();
+    $document = Media::factory()->document()->create();
+    $draft = [
+        storedStrip('hero', [...publishableHero(), 'foto' => $gone->id], id: 'a'),
+        storedStrip('cards', ['kaarten' => [['titel' => 'Een', 'icoon' => $document->id]]], id: 'b'),
+    ];
+    $page = Page::factory()->withDraft($draft)->create();
+    $gone->delete();
+
+    try {
+        PublishPage::run($page);
+        $this->fail('The draft was published.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toBe([
+            'strips.a.foto' => ['De gekozen afbeelding bij Foto bestaat niet meer.'],
+            'strips.b.kaarten.0.icoon' => ['Het gekozen bestand bij Icoon is geen afbeelding.'],
+        ]);
+    }
+
+    expect(Page::query()->findOrFail($page->id)->strips)->toBe([]);
+});
+
+it('publishes an image of the library as the id of its file', function (): void {
+    $media = Media::factory()->create();
+    $draft = [storedStrip('hero', [...publishableHero(), 'foto' => $media->id], id: 'a')];
     $page = Page::factory()->withDraft($draft)->create();
 
     PublishPage::run($page);

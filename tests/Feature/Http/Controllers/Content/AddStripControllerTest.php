@@ -27,7 +27,7 @@ it('adds a strip of a type at a place in the draft and answers with it and the n
             'label' => 'Hero',
             'visible' => true,
             'known' => true,
-            'fields' => '6 velden',
+            'fields' => '7 velden',
             'summary' => 'Welkom',
             'headings' => [],
         ])

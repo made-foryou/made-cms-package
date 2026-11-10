@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested;
 
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -37,6 +38,6 @@ final class Cards extends StripType
 
     public function fields(): array
     {
-        return [Items::make('kaarten', [Text::make('titel')])];
+        return [Items::make('kaarten', [Text::make('titel'), Image::make('icoon')])];
     }
 }

@@ -52,6 +52,7 @@ it('collects the rules of all its fields by path', function (): void {
         'label', 'kop', 'intro', 'tekst',
         'actie', 'actie.text', 'actie.link',
         'knoppen', 'knoppen.*', 'knoppen.*.id', 'knoppen.*.tekst', 'knoppen.*.gaat_naar', 'knoppen.*.stijl',
+        'foto',
     ]);
 });
 
@@ -69,6 +70,7 @@ it('labels every path for the validation messages', function (): void {
         'knoppen.*.tekst' => 'Tekst',
         'knoppen.*.gaat_naar' => 'Gaat naar',
         'knoppen.*.stijl' => 'Stijl',
+        'foto' => 'Foto',
     ]);
 });
 
@@ -80,6 +82,7 @@ it('starts a new strip with the defaults of its fields', function (): void {
         'tekst' => null,
         'actie' => null,
         'knoppen' => [],
+        'foto' => null,
     ]);
 });
 
@@ -173,6 +176,7 @@ it('renders every field in the order of its definition, a missing one from its d
         'tekst' => '<p>Hoi</p>',
         'actie' => null,
         'knoppen' => [],
+        'foto' => null,
     ]);
 
     expect((new Hero)->render([])['kop'])->toBe('Welkom');
@@ -190,7 +194,7 @@ it('renders the links and buttons inside its fields', function (): void {
 
 it('adds the extra data of the site to the rendered values', function (): void {
     expect((new Cards)->render(['kaarten' => [['titel' => 'Een'], ['titel' => 'Twee']]]))->toBe([
-        'kaarten' => [['id' => null, 'titel' => 'Een'], ['id' => null, 'titel' => 'Twee']],
+        'kaarten' => [['id' => null, 'titel' => 'Een', 'icoon' => null], ['id' => null, 'titel' => 'Twee', 'icoon' => null]],
         'aantal' => 2,
     ]);
 });
@@ -212,7 +216,7 @@ it('describes itself for the side panel: its key, name, explanation and fields i
         ->and($description['description'])->toBe('Een rij kaarten met een titel.')
         ->and(array_column($description['fields'], 'key'))->toBe(['kaarten'])
         ->and(array_column((new Hero)->describe()['fields'], 'type'))
-        ->toBe(['text', 'text', 'long_text', 'rich_text', 'button', 'items']);
+        ->toBe(['text', 'text', 'long_text', 'rich_text', 'button', 'items', 'image']);
 });
 
 it('names the fields that are headings for the overview of the headings, a heading in a list with its list', function (): void {

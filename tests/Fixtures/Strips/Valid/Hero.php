@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Tests\Fixtures\Strips\Valid;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
@@ -34,6 +35,7 @@ final class Hero extends StripType
                 Link::make('gaat_naar')->required(),
                 Choice::make('stijl', ButtonStyle::class),
             ])->min(1)->max(2),
+            Image::make('foto')->hint('Minimaal 1600 px breed.'),
         ];
     }
 }

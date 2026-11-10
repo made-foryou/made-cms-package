@@ -9,6 +9,7 @@ use Made\CmsPackage\Content\Actions\UpdateStrip;
 use Made\CmsPackage\Content\Events\StripUpdated;
 use Made\CmsPackage\Content\Exceptions\StripNotFound;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
@@ -50,6 +51,7 @@ it('stores the validated and cleaned values in the draft', function (): void {
             'tekst' => '<p>Wij <strong>spelen</strong>.</p>',
             'actie' => null,
             'knoppen' => [['id' => $itemId, 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary']],
+            'foto' => null,
         ])
         ->and($stored->draft_strips)->toBe([$strip->toArray()])
         ->and($stored->strips)->toBe($published);
@@ -72,6 +74,7 @@ function storedHeroValues(): array
             ['id' => '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary'],
             ['id' => '1b4f6c0d-2e3a-4b7c-9d8e-0f1a2b3c4d5e', 'tekst' => 'Contact', 'gaat_naar' => ['url' => '/contact'], 'stijl' => 'secondary'],
         ],
+        'foto' => null,
     ];
 }
 
@@ -360,4 +363,30 @@ it('changes the level of a heading for an editor who chooses levels, also in a l
 
     expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h1'])
         ->and($strip->values['kaarten'][0]['titel'])->toBe(['text' => 'Spelen', 'tag' => 'h3']);
+});
+
+it('stores an image as the id of its file', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
+
+    $strip = UpdateStrip::run($page, 'a', ['foto' => (string) $media->id], chooseLevels: true);
+
+    expect($strip->values['foto'])->toBe($media->id)
+        ->and(Page::query()->findOrFail($page->id)->draft_strips[0]['values']['foto'] ?? null)->toBe($media->id);
+});
+
+it('refuses an image whose file is gone, also when another field changes', function (): void {
+    $media = Media::factory()->create();
+    $draft = [storedStrip('hero', [...storedHeroValues(), 'foto' => $media->id], id: 'a')];
+    $page = Page::factory()->withDraft($draft)->create();
+    $media->delete();
+
+    try {
+        UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.'], chooseLevels: true);
+        $this->fail('The values were accepted.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toBe(['foto' => ['De gekozen afbeelding bij Foto bestaat niet meer.']]);
+    }
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
 });

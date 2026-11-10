@@ -34,6 +34,7 @@ it('adds a strip of a type to the draft with the defaults of the type', function
             'tekst' => null,
             'actie' => null,
             'knoppen' => [],
+            'foto' => null,
         ])
         ->and($stored->draft_strips)->toBe([$strip->toArray()])
         ->and($stored->strips)->toBe([]);

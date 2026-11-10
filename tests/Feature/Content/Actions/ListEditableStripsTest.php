@@ -19,7 +19,7 @@ it('lists the strips of the working copy in order with the name, the number of f
     ])->create();
 
     expect(ListEditableStrips::run($page)->toArray())->toBe([
-        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => 6, 'summary' => 'TTV Merwestad', 'headings' => []],
+        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => 7, 'summary' => 'TTV Merwestad', 'headings' => []],
         ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => true, 'known' => true, 'fields' => 1, 'summary' => 'Trainen, Spelen', 'headings' => []],
         ['id' => 'c', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => true, 'known' => true, 'fields' => 1, 'summary' => null, 'headings' => []],
     ]);

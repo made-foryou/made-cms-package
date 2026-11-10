@@ -176,7 +176,7 @@ it('hands the strips of the working copy and the texts to the script', function 
         ->getContent());
 
     expect($config['strips'])->toBe([
-        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => '6 velden', 'summary' => 'Welkom', 'headings' => []],
+        ['id' => 'a', 'type' => 'hero', 'label' => 'Hero', 'visible' => true, 'known' => true, 'fields' => '7 velden', 'summary' => 'Welkom', 'headings' => []],
         ['id' => 'b', 'type' => 'cards', 'label' => 'Kaarten', 'visible' => false, 'known' => true, 'fields' => '1 veld', 'summary' => null, 'headings' => []],
     ])->and($config['counts'])->toBe('2 stroken, 1 verborgen')
         ->and($config['texts'])->toMatchArray([
@@ -195,7 +195,7 @@ it('hands the opbouw the catalogue of strip types, sorted by name, and the addre
         ->assertSee(LauncherAssetController::url('structure.js'), false);
 
     expect($config['types'])->toBe([
-        ['key' => 'hero', 'label' => 'Hero', 'description' => null, 'fields' => '6 velden'],
+        ['key' => 'hero', 'label' => 'Hero', 'description' => null, 'fields' => '7 velden'],
         ['key' => 'cards', 'label' => 'Kaarten', 'description' => 'Een rij kaarten met een titel.', 'fields' => '1 veld'],
     ])->and($config['urls']['strips'])->toBe('/made-cms/pages/'.$page->id.'/strips')
         ->and($config['counts'])->toBe('Nog geen stroken')

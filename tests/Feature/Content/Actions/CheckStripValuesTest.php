@@ -17,7 +17,7 @@ function checkedButtons(): array
 it('gives every field of the type, a missing one from its default', function (): void {
     $values = CheckStripValues::run(new Hero, ['knoppen' => checkedButtons()]);
 
-    expect(array_keys($values))->toBe(['label', 'kop', 'intro', 'tekst', 'actie', 'knoppen'])
+    expect(array_keys($values))->toBe(['label', 'kop', 'intro', 'tekst', 'actie', 'knoppen', 'foto'])
         ->and($values['kop'])->toBe('Welkom')
         ->and($values['label'])->toBeNull();
 });

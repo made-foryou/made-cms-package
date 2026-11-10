@@ -34,6 +34,7 @@ function removedHero(): Strip
         'tekst' => null,
         'actie' => null,
         'knoppen' => [['id' => RESTORED_ITEM, 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary']],
+        'foto' => null,
     ]);
 }
 

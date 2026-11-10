@@ -25,6 +25,7 @@ return [
         'items_differ' => 'De items zijn niet allemaal precies gelijk opgebouwd.',
         'nested_list' => 'Een lijst in een item: één waarde per regel.',
         'same_in_every_item' => 'Staat in elk item hetzelfde: misschien vaste tekst van het ontwerp.',
+        'heading_levels_differ' => 'Een kop met een ander niveau in de voorbeelden: het niveau dat het vaakst voorkomt is de standaard.',
     ],
     'generate' => [
         'left_out' => ':field: wacht op het veldtype Afbeelding.',

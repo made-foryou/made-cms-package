@@ -14,6 +14,7 @@ it('stores every doubt as a string value', function (): void {
         'items_differ',
         'nested_list',
         'same_in_every_item',
+        'heading_levels_differ',
     ]);
 });
 

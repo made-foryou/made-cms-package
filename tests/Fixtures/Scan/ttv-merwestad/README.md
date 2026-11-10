@@ -7,7 +7,9 @@ The home page of TTV Merwestad (`made-foryou/ttv-merwestad`, Inertia + React, re
 | `home.html` | The scan's input: the rendered DOM of the live site (`https://ttvmerwestad.nl/`) before the coupling, without any `data-cms-*` attribute. |
 | `home.coupled.html` | The answer key: the same page rendered from CMS strips, with `data-cms-strip` on every strip, `data-cms-field` on the fields and `data-cms-items` around the lists. Its Inertia `data-page` holds the rendered strips. |
 | `strips/*.php.stub` | The strip types the developer wrote for TTV (`App\Cms\Strips`), as the scan should generate them. `Icons` holds the icon options two of them share. `.stub` keeps them out of Pint; the test loads them under a namespace of its own, so `App\Cms\Strips` stays empty for the other tests. |
-| `content.json` | The stored strips of the home page (`type`, `visible`, `values`), as the import should store them. Its items have no `id`: storing them gives every item one. |
+| `content.json` | The stored strips of the home page (`type`, `visible`, `values`), as the import should store them. Its items have no `id`: storing them gives every item one. A heading is stored with its level (`{"text": "…", "tag": "h2"}`), as the page shows it. |
+
+Since #129 the headings of the stubs and the content are a `Heading` with the level of the live page. `home.coupled.html` is the capture of 2026-11-03, when they were still a `Text`: its headings carry `data-cms-field` on the element of the design, not through `<x-made-cms::heading>`.
 
 The navigation and the footer are no strips. The hero photo and the map are static until the image field (3.2).
 

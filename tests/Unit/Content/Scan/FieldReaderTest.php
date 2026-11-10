@@ -6,7 +6,7 @@ use Made\CmsPackage\Content\Enums\ScanDoubt;
 
 it('reads a heading as one line of text', function (): void {
     expect(fieldsOf('<section><h2 class="kop">Over <span class="accent">ons</span></h2></section>'))
-        ->toBe(['h2' => ['heading', 'Over ons']]);
+        ->toBe(['h2' => ['heading', ['text' => 'Over ons', 'tag' => 'h2']]]);
 });
 
 it('reads a paragraph with a line for every br', function (): void {
@@ -46,7 +46,7 @@ it('reads a link around a card as a link and the fields in it', function (): voi
     expect(fieldsOf('<section><a href="https://ttapp.nl/poule/1"><span aria-hidden="true">1</span><h3>Merwestad 1</h3><p>Senioren</p></a></section>'))
         ->toBe([
             'a' => ['link', ['url' => 'https://ttapp.nl/poule/1']],
-            'a > h3' => ['heading', 'Merwestad 1'],
+            'a > h3' => ['heading', ['text' => 'Merwestad 1', 'tag' => 'h3']],
             'a > p' => ['paragraph', 'Senioren'],
         ]);
 });
@@ -54,14 +54,14 @@ it('reads a link around a card as a link and the fields in it', function (): voi
 it('reads a link without text as a link', function (): void {
     expect(fieldsOf('<section><h2>Volg ons</h2><a href="https://instagram.com/club"><svg><path d="M0 0"></path></svg></a></section>'))
         ->toBe([
-            'h2' => ['heading', 'Volg ons'],
+            'h2' => ['heading', ['text' => 'Volg ons', 'tag' => 'h2']],
             'a' => ['link', ['url' => 'https://instagram.com/club']],
         ]);
 });
 
 it('passes buttons of the interface by', function (): void {
     expect(fieldsOf('<section><h2>Menu</h2><button type="button">Open</button></section>'))
-        ->toBe(['h2' => ['heading', 'Menu']]);
+        ->toBe(['h2' => ['heading', ['text' => 'Menu', 'tag' => 'h2']]]);
 });
 
 it('reads images, also hidden and in the background, and doubts the decorative ones', function (): void {
@@ -77,12 +77,12 @@ it('reads images, also hidden and in the background, and doubts the decorative o
 
     expect(fieldsOf($strip))->toBe([
         'img' => ['image', ['url' => '/zaal.jpg', 'alt' => 'De zaal']],
-        'h2' => ['heading', 'De zaal'],
+        'h2' => ['heading', ['text' => 'De zaal', 'tag' => 'h2']],
         'img:nth-of-type(2)' => ['image', ['url' => '/sfeer.jpg', 'alt' => ''], ['decorative_image']],
         'div > img' => ['image', ['url' => '/foto.jpg', 'alt' => ''], ['decorative_image']],
         'picture' => ['image', ['url' => '/kaart.jpg', 'alt' => 'Kaart']],
         'div:nth-of-type(2)' => ['image', ['url' => '/achter.jpg', 'alt' => ''], ['background_image']],
-        'div:nth-of-type(2) > h2' => ['heading', 'Op de foto'],
+        'div:nth-of-type(2) > h2' => ['heading', ['text' => 'Op de foto', 'tag' => 'h2']],
         'div:nth-of-type(3) > p' => ['paragraph', 'Verloop'],
     ]);
 });
@@ -90,20 +90,20 @@ it('reads images, also hidden and in the background, and doubts the decorative o
 it('takes nothing from a form, and doubts the strip that holds one', function (): void {
     $strip = recognise('<main><section><h2>Contact</h2><form><label>Naam</label><input placeholder="Je naam"><button>Verstuur</button></form></section></main>')->strips[0];
 
-    expect(array_map(fieldRow(...), $strip->fields))->toBe([['heading', 'Contact']])
+    expect(array_map(fieldRow(...), $strip->fields))->toBe([['heading', ['text' => 'Contact', 'tag' => 'h2']]])
         ->and($strip->doubts)->toBe([ScanDoubt::ContainsForm]);
 });
 
 it('passes hidden texts and icons outside a list by', function (): void {
     expect(fieldsOf('<section><span aria-hidden="true">1</span><svg class="lucide lucide-star"></svg><i class="fa fa-star"></i><h3>Team</h3></section>'))
-        ->toBe(['h3' => ['heading', 'Team']]);
+        ->toBe(['h3' => ['heading', ['text' => 'Team', 'tag' => 'h3']]]);
 });
 
 it('reads the text of a block next to the blocks in it', function (): void {
     expect(fieldsOf('<section><div>Vooraf <div><h3>Kop</h3><p>Tekst</p></div></div></section>'))
         ->toBe([
             'div' => ['text', 'Vooraf'],
-            'div > div > h3' => ['heading', 'Kop'],
+            'div > div > h3' => ['heading', ['text' => 'Kop', 'tag' => 'h3']],
             'div > div > p' => ['paragraph', 'Tekst'],
         ]);
 });

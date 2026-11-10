@@ -10,7 +10,7 @@ namespace Made\CmsPackage\Content\Enums;
  */
 enum ScanRole: string
 {
-    /** A heading, h1 to h6. */
+    /** A heading, h1 to h6: its text with its level. */
     case Heading = 'heading';
 
     /** A short text in any other element. */
@@ -46,7 +46,8 @@ enum ScanRole: string
     public function type(): string
     {
         return match ($this) {
-            self::Heading, self::Text => 'text',
+            self::Heading => 'heading',
+            self::Text => 'text',
             self::Paragraph, self::List => 'long_text',
             self::RichText => 'rich_text',
             self::Button => 'button',

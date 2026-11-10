@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Made\CmsPackage\Content\Actions\CombinePageScans;
 use Made\CmsPackage\Content\Data\RecognisedPage;
 use Made\CmsPackage\Content\Data\ScanField;
+use Made\CmsPackage\Content\Data\ScanPage;
 use Made\CmsPackage\Content\Data\ScanResult;
 use Made\CmsPackage\Content\Data\ScanType;
 
@@ -31,14 +32,14 @@ it('proposes a strip type per structure, named after its id or generic', functio
     ])
         ->and($scan->types[0]->certain())->toBeTrue()
         ->and($scan->types[1]->toArray()['doubts'])->toBe(['generic_name'])
-        ->and(outline($scan->types[0]))->toBe(['kop: text', 'tekst: long_text'])
-        ->and(outline($scan->types[1]))->toBe(['kop: text', 'knop: button'])
+        ->and(outline($scan->types[0]))->toBe(['kop: heading', 'tekst: long_text'])
+        ->and(outline($scan->types[1]))->toBe(['kop: heading', 'knop: button'])
         ->and($scan->pages[0]->toArray())->toBe([
             'url' => '/1',
             'title' => 'Testpagina',
             'strips' => [
-                ['type' => 'over-ons', 'selector' => '#over-ons', 'values' => ['kop' => 'Over ons', 'tekst' => 'Wij zijn een club.']],
-                ['type' => 'strook-2', 'selector' => 'body > main > section:nth-of-type(2)', 'values' => ['kop' => 'Doe mee', 'knop' => ['text' => 'Lid worden', 'link' => ['url' => '/lid']]]],
+                ['type' => 'over-ons', 'selector' => '#over-ons', 'values' => ['kop' => ['text' => 'Over ons', 'tag' => 'h2'], 'tekst' => 'Wij zijn een club.']],
+                ['type' => 'strook-2', 'selector' => 'body > main > section:nth-of-type(2)', 'values' => ['kop' => ['text' => 'Doe mee', 'tag' => 'h2'], 'knop' => ['text' => 'Lid worden', 'link' => ['url' => '/lid']]]],
             ],
         ]);
 });
@@ -56,20 +57,20 @@ it('takes strips with the same structure on several pages as one type', function
         ->and([$type->fields[2]->item, $type->fields[2]->min, $type->fields[2]->max])->toBe(['div', 1, 3])
         ->and($scan->pages[1]->strips[0]->type)->toBe('teaser')
         ->and($scan->pages[1]->strips[0]->values)->not->toHaveKey('tekst')
-        ->and($scan->pages[1]->strips[0]->values['items'][0])->toBe(['kop' => 'Drie', 'tekst' => 'Bericht Drie.', 'knop' => ['text' => 'Meer over Drie', 'link' => ['url' => '/drie']]]);
+        ->and($scan->pages[1]->strips[0]->values['items'][0])->toBe(['kop' => ['text' => 'Drie', 'tag' => 'h3'], 'tekst' => 'Bericht Drie.', 'knop' => ['text' => 'Meer over Drie', 'link' => ['url' => '/drie']]]);
 });
 
 it('numbers the fields with the same name, in the language of the launcher', function (): void {
     $body = '<main><section><h2>Een</h2><h3>Twee</h3><p>Drie.</p></section></main>';
 
-    expect(outline(combine($body)->types[0]))->toBe(['kop: text', 'kop_2: text', 'tekst: long_text']);
+    expect(outline(combine($body)->types[0]))->toBe(['kop: heading', 'kop_2: heading', 'tekst: long_text']);
 
     config(['made-cms-package.launcher.locale' => 'en']);
     $scan = combine($body);
 
     expect($scan->types[0]->key)->toBe('strip-1')
         ->and($scan->types[0]->label)->toBe('Strip 1')
-        ->and(outline($scan->types[0]))->toBe(['heading: text', 'heading_2: text', 'text: long_text']);
+        ->and(outline($scan->types[0]))->toBe(['heading: heading', 'heading_2: heading', 'text: long_text']);
 });
 
 it('makes a choice of the icons that differ per item, and passes icons that are all the same by', function (): void {
@@ -78,7 +79,7 @@ it('makes a choice of the icons that differ per item, and passes icons that are 
     $scan = combine('<main><section id="waarom"><div class="grid">'.$card('users', 'Alle niveaus').$card('heart', 'Gezelligheid').$card('trophy', 'Competitie').'</div></section></main>');
     $icon = $scan->types[0]->fields[0]->fields[0];
 
-    expect(outline($scan->types[0]))->toBe([['items: items' => ['icoon: choice', 'kop: text']]])
+    expect(outline($scan->types[0]))->toBe([['items: items' => ['icoon: choice', 'kop: heading']]])
         ->and($icon->options)->toBe(['users', 'heart', 'trophy'])
         ->and($icon->toArray()['doubts'])->toBe(['icon_choice'])
         ->and($icon->selector)->toBe('div > svg')
@@ -91,10 +92,25 @@ it('passes text that every item shows the same by when it is a short label, and 
     $scan = combine('<main><section id="teams"><div class="grid">'.$team('Merwestad 1', '/1').$team('Merwestad 2', '/2').$team('Merwestad 3', '/3').'</div></section></main>');
     $items = $scan->types[0]->fields[0];
 
-    expect(outline($scan->types[0]))->toBe([['items: items' => ['kop: text', 'tekst: long_text', 'label: text', 'link: link']]])
+    expect(outline($scan->types[0]))->toBe([['items: items' => ['kop: heading', 'tekst: long_text', 'label: text', 'link: link']]])
         ->and($items->fields[1]->toArray()['doubts'])->toBe(['same_in_every_item'])
         ->and($items->fields[2]->toArray()['doubts'])->toBe(['same_in_every_item'])
-        ->and($scan->pages[0]->strips[0]->values['items'][1])->toBe(['kop' => 'Merwestad 2', 'tekst' => 'West - Senioren DUO', 'label' => '19:30', 'link' => ['url' => '/2']]);
+        ->and($scan->pages[0]->strips[0]->values['items'][1])->toBe(['kop' => ['text' => 'Merwestad 2', 'tag' => 'h3'], 'tekst' => 'West - Senioren DUO', 'label' => '19:30', 'link' => ['url' => '/2']]);
+});
+
+it('passes a heading that every item shows the same by when it is a short label, and doubts a longer one', function (): void {
+    $team = static fn (string $name, string $heading): string => '<div class="team"><h3>'.$name.'</h3><h4>'.$heading.'</h4><p>Over '.$name.'.</p></div>';
+    $teams = static fn (string $heading): string => '<main><section id="teams"><div class="grid">'.$team('Een', $heading).$team('Twee', $heading).'</div></section></main>';
+
+    $label = combine($teams('Spelers'))->types[0]->fields[0];
+    $text = combine($teams('Wie er deze week spelen'))->types[0]->fields[0];
+
+    expect(array_map(static fn (ScanField $field): string => $field->key, $label->fields))->toBe(['kop', 'tekst'])
+        ->and(array_map(static fn (ScanField $field): array => [$field->key, $field->type, $field->required, $field->toArray()['doubts']], $text->fields))->toBe([
+            ['kop', 'heading', true, []],
+            ['kop_2', 'heading', true, ['same_in_every_item']],
+            ['tekst', 'long_text', true, []],
+        ]);
 });
 
 it('leaves a list out when every item is the same, and a type without fields', function (): void {
@@ -115,7 +131,29 @@ it('takes strips that differ in the level of their headings only as one type, wi
             ['kop', 'h2', true],
             ['kop_2', 'h3', true],
             ['tekst', 'p', true],
+        ])
+        ->and(array_map(static fn (ScanPage $page): mixed => $page->strips[0]->values['kop_2'], $scan->pages))->toBe([
+            ['text' => 'Wie wij zijn', 'tag' => 'h3'],
+            ['text' => 'Wie wij zijn', 'tag' => 'h4'],
+            ['text' => 'Wie wij zijn', 'tag' => 'h2'],
         ]);
+});
+
+it('proposes a heading at the level most examples have, and doubts a heading whose examples differ', function (): void {
+    $strip = static fn (string $tag): string => '<main><section class="tekst"><'.$tag.'>Over ons</'.$tag.'><p>Een club.</p></section></main>';
+
+    $mixed = combine($strip('h3'), $strip('h2'), $strip('h3'), $strip('h3'))->types[0]->fields[0];
+    $same = combine($strip('h1'), $strip('h1'))->types[0]->fields[0];
+
+    expect([$mixed->type, $mixed->tag, $mixed->toArray()['doubts']])->toBe(['heading', 'h3', ['heading_levels_differ']])
+        ->and([$same->type, $same->tag, $same->toArray()['doubts']])->toBe(['heading', 'h1', []]);
+});
+
+it('takes the highest heading when as many examples have each level', function (): void {
+    $strip = static fn (string $tag): string => '<main><section class="tekst"><'.$tag.'>Over ons</'.$tag.'><p>Een club.</p></section></main>';
+
+    expect(combine($strip('h4'), $strip('h3'))->types[0]->fields[0]->tag)->toBe('h3')
+        ->and(combine($strip('h2'), $strip('h5'), $strip('h5'), $strip('h2'))->types[0]->fields[0]->tag)->toBe('h2');
 });
 
 it('lines the headings in the items of a list up by their place, whatever their level', function (): void {
@@ -125,7 +163,12 @@ it('lines the headings in the items of a list up by their place, whatever their 
     $items = $scan->types[0]->fields[0];
 
     expect(array_map(static fn (ScanField $field): array => [$field->key, $field->required], $items->fields))->toBe([['kop', true], ['tekst', true]])
-        ->and($items->doubts)->toBe([]);
+        ->and($items->doubts)->toBe([])
+        ->and([$items->fields[0]->tag, $items->fields[0]->toArray()['doubts']])->toBe(['h3', ['heading_levels_differ']])
+        ->and(array_column($scan->pages[0]->strips[0]->values['items'], 'kop'))->toBe([
+            ['text' => 'Een', 'tag' => 'h3'],
+            ['text' => 'Twee', 'tag' => 'h4'],
+        ]);
 });
 
 it('gives another structure with a name already taken a number', function (): void {
@@ -140,7 +183,7 @@ it('widens a field that holds a link on one page to rich text on every page', fu
 
     $scan = combine($strip('Gewoon & simpel.'), $strip('Lees <a href="/meer">meer</a>.'));
 
-    expect(outline($scan->types[0]))->toBe(['kop: text', 'tekst: rich_text'])
+    expect(outline($scan->types[0]))->toBe(['kop: heading', 'tekst: rich_text'])
         ->and($scan->pages[0]->strips[0]->values['tekst'])->toBe('<p>Gewoon &amp; simpel.</p>')
         ->and($scan->pages[1]->strips[0]->values['tekst'])->toBe('<p>Lees <a href="/meer">meer</a>.</p>');
 });

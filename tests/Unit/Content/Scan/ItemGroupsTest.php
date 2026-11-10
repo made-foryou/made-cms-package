@@ -50,9 +50,9 @@ it('reads siblings with the same structure as a list, with the fields of every i
             'item' => 'div',
             'doubts' => [],
             'items' => [
-                ['h3' => ['heading', 'Alle niveaus'], 'p' => ['paragraph', 'Een.']],
-                ['h3' => ['heading', 'Gezelligheid'], 'p' => ['paragraph', 'Twee.']],
-                ['h3' => ['heading', 'Competitie'], 'p' => ['paragraph', 'Drie.']],
+                ['h3' => ['heading', ['text' => 'Alle niveaus', 'tag' => 'h3']], 'p' => ['paragraph', 'Een.']],
+                ['h3' => ['heading', ['text' => 'Gezelligheid', 'tag' => 'h3']], 'p' => ['paragraph', 'Twee.']],
+                ['h3' => ['heading', ['text' => 'Competitie', 'tag' => 'h3']], 'p' => ['paragraph', 'Drie.']],
             ],
         ]);
 });
@@ -82,7 +82,7 @@ it('reads elements right after each other as separate words', function (): void 
         .'<div><h3>Dinsdag</h3><div class="tags"><span>Vrij spelen</span><span>competitie</span></div></div>'
         .'<div><h3>Donderdag</h3><div class="tags"><span>Jeugd</span><span>training</span></div></div>'
         .'</div></section>')['items'][0] ?? null)->toBe([
-            'h3' => ['heading', 'Dinsdag'],
+            'h3' => ['heading', ['text' => 'Dinsdag', 'tag' => 'h3']],
             'div' => ['list', "Vrij spelen\ncompetitie", ['nested_list']],
         ])
         ->and(fieldsOf('<section><p><span>Vrij</span><span>spelen</span></p></section>'))->toBe(['p' => ['paragraph', 'Vrij spelen']]);
@@ -97,8 +97,8 @@ it('takes items that differ a little as one list and doubts it', function (): vo
     expect(listOf($strip))->toMatchArray([
         'doubts' => ['items_differ'],
         'items' => [
-            ['img' => ['image', ['url' => '/a.jpg', 'alt' => 'A']], 'h3' => ['heading', 'Een'], 'p' => ['paragraph', 'Tekst.']],
-            ['h3' => ['heading', 'Twee'], 'p' => ['paragraph', 'Tekst.']],
+            ['img' => ['image', ['url' => '/a.jpg', 'alt' => 'A']], 'h3' => ['heading', ['text' => 'Een', 'tag' => 'h3']], 'p' => ['paragraph', 'Tekst.']],
+            ['h3' => ['heading', ['text' => 'Twee', 'tag' => 'h3']], 'p' => ['paragraph', 'Tekst.']],
         ],
     ]);
 });
@@ -112,8 +112,8 @@ it('takes items whose headings differ in level only as one list, without doubt',
     expect(listOf($strip))->toMatchArray([
         'doubts' => [],
         'items' => [
-            ['h3' => ['heading', 'Een'], 'p' => ['paragraph', 'Tekst.']],
-            ['h4' => ['heading', 'Twee'], 'p' => ['paragraph', 'Tekst.']],
+            ['h3' => ['heading', ['text' => 'Een', 'tag' => 'h3']], 'p' => ['paragraph', 'Tekst.']],
+            ['h4' => ['heading', ['text' => 'Twee', 'tag' => 'h4']], 'p' => ['paragraph', 'Tekst.']],
         ],
     ]);
 });
@@ -124,15 +124,15 @@ it('does not make a list of siblings that hold different things', function (): v
     expect(listOf($strip))->toBeNull()
         ->and(fieldsOf($strip))->toBe([
             'div > div > span' => ['text', 'Lid worden'],
-            'div > div:nth-of-type(2) > h2' => ['heading', 'Doe mee'],
+            'div > div:nth-of-type(2) > h2' => ['heading', ['text' => 'Doe mee', 'tag' => 'h2']],
             'div > div:nth-of-type(3) > p' => ['paragraph', 'Kom spelen.'],
         ]);
 });
 
 it('never makes a list of paragraphs or headings', function (): void {
     expect(fieldsOf('<section><div><h3>Kop</h3><h3>Nog een kop</h3><p>Een.</p><p>Twee.</p></div></section>'))->toBe([
-        'div > h3' => ['heading', 'Kop'],
-        'div > h3:nth-of-type(2)' => ['heading', 'Nog een kop'],
+        'div > h3' => ['heading', ['text' => 'Kop', 'tag' => 'h3']],
+        'div > h3:nth-of-type(2)' => ['heading', ['text' => 'Nog een kop', 'tag' => 'h3']],
         'div > p' => ['paragraph', 'Een.'],
         'div > p:nth-of-type(2)' => ['paragraph', 'Twee.'],
     ]);
@@ -142,8 +142,8 @@ it('passes empty siblings by: they never form a list and never break one', funct
     $strip = '<section><div class="grid">'.card('Een', 'A.').'<div class="lijn"></div>'.card('Twee', 'B.').'<div class="schaal"><i></i><i></i><i></i></div></div></section>';
 
     expect(listOf($strip)['items'] ?? null)->toBe([
-        ['h3' => ['heading', 'Een'], 'p' => ['paragraph', 'A.']],
-        ['h3' => ['heading', 'Twee'], 'p' => ['paragraph', 'B.']],
+        ['h3' => ['heading', ['text' => 'Een', 'tag' => 'h3']], 'p' => ['paragraph', 'A.']],
+        ['h3' => ['heading', ['text' => 'Twee', 'tag' => 'h3']], 'p' => ['paragraph', 'B.']],
     ]);
 });
 
@@ -154,8 +154,8 @@ it('reads a repeat inside an item as a long text with a line per element', funct
     $strip = '<section><div class="teams">'.$team('Merwestad 1', $player('Gert-Jan').$player('Stefan')).$team('Merwestad 2', $player('Jaap').$player('Gerrit').$player('Desmond')).'</div></section>';
 
     expect(listOf($strip)['items'] ?? null)->toBe([
-        ['h3' => ['heading', 'Merwestad 1'], 'div' => ['list', "Gert-Jan\nStefan", ['nested_list']]],
-        ['h3' => ['heading', 'Merwestad 2'], 'div' => ['list', "Jaap\nGerrit\nDesmond", ['nested_list']]],
+        ['h3' => ['heading', ['text' => 'Merwestad 1', 'tag' => 'h3']], 'div' => ['list', "Gert-Jan\nStefan", ['nested_list']]],
+        ['h3' => ['heading', ['text' => 'Merwestad 2', 'tag' => 'h3']], 'div' => ['list', "Jaap\nGerrit\nDesmond", ['nested_list']]],
     ]);
 });
 
@@ -163,8 +163,8 @@ it('keeps the icons of the items with their classes', function (): void {
     $card = static fn (string $icon, string $title): string => '<div class="kaart"><div class="icoon"><svg class="lucide lucide-'.$icon.' h-5"><path d="M0 0"></path></svg></div><h3>'.$title.'</h3></div>';
 
     expect(listOf('<section><div class="grid">'.$card('users', 'Alle niveaus').$card('heart', 'Gezelligheid').'</div></section>')['items'] ?? null)->toBe([
-        ['div > svg' => ['icon', ['lucide', 'lucide-users', 'h-5']], 'h3' => ['heading', 'Alle niveaus']],
-        ['div > svg' => ['icon', ['lucide', 'lucide-heart', 'h-5']], 'h3' => ['heading', 'Gezelligheid']],
+        ['div > svg' => ['icon', ['lucide', 'lucide-users', 'h-5']], 'h3' => ['heading', ['text' => 'Alle niveaus', 'tag' => 'h3']]],
+        ['div > svg' => ['icon', ['lucide', 'lucide-heart', 'h-5']], 'h3' => ['heading', ['text' => 'Gezelligheid', 'tag' => 'h3']]],
     ]);
 });
 

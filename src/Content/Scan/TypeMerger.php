@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Data\ScanStrip;
 use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Enums\ScanRole;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 
 /**
  * Combines what the scan read on every page into strip types, and decides what needs all of them.
@@ -24,7 +25,10 @@ use Made\CmsPackage\Content\Enums\ScanRole;
  * - a link with the same text in every item is a link of its own (the text belongs to the design), with the
  *   same address too it is left out, like an image or link that is the same everywhere;
  * - a text that is the same in every item is left out when it is a short label (two words at most, no digits),
- *   and doubted otherwise.
+ *   and doubted otherwise; for a heading only its text counts.
+ *
+ * A heading proposes the level most of its examples have, the highest heading when levels are as frequent, and
+ * is doubted when its examples have more than one level; every strip keeps the level it had.
  */
 final class TypeMerger
 {
@@ -142,9 +146,15 @@ final class TypeMerger
         }
 
         $values = array_map(static fn (RecognisedField $cell): mixed => self::convert($cell->value, $cell->role, $role), $cells);
+        $compared = $role === ScanRole::Heading ? array_map(self::textOf(...), $values) : $values;
         $same = $inItems && $everywhere && $instances > 1;
+        $levels = $role === ScanRole::Heading ? self::levels($values) : [];
 
-        if ($same && $role === ScanRole::Button && count(array_unique(array_map(self::buttonText(...), $values))) === 1) {
+        if (count($levels) > 1) {
+            $doubts = ScanDoubt::sorted([...$doubts, ScanDoubt::HeadingLevelsDiffer]);
+        }
+
+        if ($same && $role === ScanRole::Button && count(array_unique(array_map(self::textOf(...), $values))) === 1) {
             $links = array_map(static fn (mixed $value): mixed => is_array($value) ? $value['link'] ?? null : null, $values);
 
             if (count(array_unique(array_map(self::encode(...), $links))) === 1) {
@@ -152,8 +162,8 @@ final class TypeMerger
             }
 
             [$role, $values] = [ScanRole::Link, $links];
-        } elseif ($same && count(array_unique(array_map(self::encode(...), $values))) === 1) {
-            if (! in_array($role, [ScanRole::Heading, ScanRole::Text, ScanRole::Paragraph, ScanRole::List, ScanRole::RichText], true) || self::isLabel(reset($values))) {
+        } elseif ($same && count(array_unique(array_map(self::encode(...), $compared))) === 1) {
+            if (! in_array($role, [ScanRole::Heading, ScanRole::Text, ScanRole::Paragraph, ScanRole::List, ScanRole::RichText], true) || self::isLabel(reset($compared))) {
                 return null;
             }
 
@@ -169,7 +179,35 @@ final class TypeMerger
             doubts: $doubts,
             values: $filled,
             name: $role === ScanRole::Link || $first->role === ScanRole::Link ? null : $first->role,
+            tag: $levels[0] ?? null,
         );
+    }
+
+    /**
+     * The levels of the examples of a heading, the most frequent first and the highest heading first when levels
+     * are as frequent.
+     *
+     * @param  array<int, mixed>  $values
+     * @return list<string>
+     */
+    private static function levels(array $values): array
+    {
+        $counts = [];
+
+        foreach ($values as $value) {
+            $tag = is_array($value) && is_string($value['tag'] ?? null) ? $value['tag'] : null;
+
+            if ($tag !== null) {
+                $counts[$tag] = ($counts[$tag] ?? 0) + 1;
+            }
+        }
+
+        $order = array_flip(Heading::TAGS);
+        $levels = array_keys($counts);
+
+        usort($levels, static fn (string $a, string $b): int => [$counts[$b], $order[$a] ?? PHP_INT_MAX] <=> [$counts[$a], $order[$b] ?? PHP_INT_MAX]);
+
+        return $levels;
     }
 
     /**
@@ -302,7 +340,7 @@ final class TypeMerger
     private static function family(ScanRole $role): string
     {
         return match ($role) {
-            ScanRole::Heading, ScanRole::Text, ScanRole::Paragraph, ScanRole::List, ScanRole::RichText => 'text',
+            ScanRole::Text, ScanRole::Paragraph, ScanRole::List, ScanRole::RichText => 'text',
             ScanRole::Button, ScanRole::Link => 'link',
             default => $role->value,
         };
@@ -358,8 +396,12 @@ final class TypeMerger
             return $value !== null;
         }
 
+        if (array_key_exists('tag', $value)) {
+            return trim(self::textOf($value)) !== '';
+        }
+
         if (array_key_exists('text', $value)) {
-            return self::buttonText($value) !== '' && self::isFilled($value['link'] ?? null);
+            return self::textOf($value) !== '' && self::isFilled($value['link'] ?? null);
         }
 
         if (array_key_exists('url', $value)) {
@@ -380,7 +422,10 @@ final class TypeMerger
         return $text !== '' && count($words) <= 2 && preg_match('/\d/', $text) !== 1;
     }
 
-    private static function buttonText(mixed $value): string
+    /**
+     * The text of a button or a heading.
+     */
+    private static function textOf(mixed $value): string
     {
         return is_array($value) && is_string($value['text'] ?? null) ? $value['text'] : '';
     }

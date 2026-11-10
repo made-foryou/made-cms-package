@@ -22,11 +22,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "inhoud",
@@ -72,11 +73,12 @@
             "fields": [
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "items",
@@ -91,11 +93,12 @@
                     "fields": [
                         {
                             "key": "kop",
-                            "type": "text",
+                            "type": "heading",
                             "selector": "h3",
                             "required": true,
                             "certain": true,
-                            "doubts": []
+                            "doubts": [],
+                            "tag": "h3"
                         },
                         {
                             "key": "tekst",
@@ -130,7 +133,10 @@
                     "selector": "body > main > section",
                     "values": {
                         "tekst": "Workbench",
-                        "kop": "Welkom",
+                        "kop": {
+                            "text": "Welkom",
+                            "tag": "h2"
+                        },
                         "inhoud": "<p>Twee <strong>zinnen</strong>.</p><p>En nog een.</p>",
                         "items": [
                             {
@@ -156,24 +162,36 @@
                     "type": "strook-2",
                     "selector": "body > main > section:nth-of-type(2)",
                     "values": {
-                        "kop": "Kaarten",
+                        "kop": {
+                            "text": "Kaarten",
+                            "tag": "h2"
+                        },
                         "items": [
                             {
-                                "kop": "Spelen",
+                                "kop": {
+                                    "text": "Spelen",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Regel een\nRegel twee",
                                 "link": {
                                     "url": "/spelen"
                                 }
                             },
                             {
-                                "kop": "Trainen",
+                                "kop": {
+                                    "text": "Trainen",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Regel een\nRegel twee",
                                 "link": {
                                     "url": "/trainen"
                                 }
                             },
                             {
-                                "kop": "Teams",
+                                "kop": {
+                                    "text": "Teams",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Regel een\nRegel twee",
                                 "link": {
                                     "url": "/teams"
@@ -192,17 +210,26 @@
                     "type": "strook-2",
                     "selector": "body > main > section",
                     "values": {
-                        "kop": "Meer",
+                        "kop": {
+                            "text": "Meer",
+                            "tag": "h2"
+                        },
                         "items": [
                             {
-                                "kop": "Bestuur",
+                                "kop": {
+                                    "text": "Bestuur",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Regel een\nRegel twee",
                                 "link": {
                                     "url": "/bestuur"
                                 }
                             },
                             {
-                                "kop": "Leden",
+                                "kop": {
+                                    "text": "Leden",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Regel een\nRegel twee",
                                 "link": {
                                     "url": "/leden"

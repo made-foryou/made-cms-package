@@ -13,7 +13,7 @@ use Made\CmsPackage\Content\Strips\Fields\RichText;
 /**
  * Reads the fields of a strip from its markup, in the order of the document.
  *
- * A heading is a text, a paragraph a long text, a block of paragraphs or a list of plain lines rich text, a link a
+ * A heading is a heading with its level ({text, tag}), a paragraph a long text, a block of paragraphs or a list of plain lines rich text, a link a
  * button or (around more than text, or without text) a link, an img, a picture or an inline background an image.
  * Forms, buttons of the interface, hidden texts and icons are passed by; inside an item of a list an icon stays,
  * because the icons of the items can be a choice.
@@ -91,7 +91,7 @@ final class FieldReader
         if (Html::isHeading($element)) {
             $text = Html::text($element);
 
-            return $text === '' ? [] : [new RecognisedField(ScanRole::Heading, $selector, $text)];
+            return $text === '' ? [] : [new RecognisedField(ScanRole::Heading, $selector, ['text' => $text, 'tag' => $name])];
         }
 
         if ($name === 'p' && ! $this->holdsOnlyLinks($element)) {

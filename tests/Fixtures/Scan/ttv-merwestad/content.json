@@ -6,7 +6,10 @@
             "type": "hero",
             "visible": true,
             "values": {
-                "kop": "TTV",
+                "kop": {
+                    "text": "TTV",
+                    "tag": "h1"
+                },
                 "intro": "Sinds 1962 dé plek voor tafeltennissers van alle niveaus. Van recreant tot competitiespeler — iedereen is welkom aan onze tafels.",
                 "label": "Tafeltennisvereniging in Dordrecht",
                 "knoppen": [
@@ -60,7 +63,10 @@
             "type": "over-ons",
             "visible": true,
             "values": {
-                "kop": "Meer dan alleen tafeltennis",
+                "kop": {
+                    "text": "Meer dan alleen tafeltennis",
+                    "tag": "h2"
+                },
                 "anker": "over-ons",
                 "intro": "Bij TTV Merwestad draait het om sport, plezier en verbinding. Of je nu jong of oud bent, beginner of gevorderd — je bent welkom.",
                 "label": "Over ons",
@@ -68,17 +74,26 @@
                     {
                         "icoon": "users",
                         "tekst": "Of je nu voor het eerst een batje vasthoudt of al jaren competitie speelt — bij ons vind je altijd een passende tafel.",
-                        "titel": "Alle niveaus"
+                        "titel": {
+                            "text": "Alle niveaus",
+                            "tag": "h3"
+                        }
                     },
                     {
                         "icoon": "heart",
                         "tekst": "Meer dan alleen sport. Na de training schuiven we aan de bar aan voor een drankje en een goed gesprek.",
-                        "titel": "Gezelligheid"
+                        "titel": {
+                            "text": "Gezelligheid",
+                            "tag": "h3"
+                        }
                     },
                     {
                         "icoon": "trophy",
                         "tekst": "Met 3 teams strijden we in de regionale duocompetitie.",
-                        "titel": "Competitie"
+                        "titel": {
+                            "text": "Competitie",
+                            "tag": "h3"
+                        }
                     }
                 ]
             }
@@ -87,7 +102,10 @@
             "type": "trainingstijden",
             "visible": true,
             "values": {
-                "kop": "Wanneer kun je spelen?",
+                "kop": {
+                    "text": "Wanneer kun je spelen?",
+                    "tag": "h2"
+                },
                 "adres": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht",
                 "anker": "trainingstijden",
                 "intro": "We trainen meerdere keren per week in de sporthal. Kies de avond die bij jou past en kom gerust een keer vrijblijvend meespelen.",
@@ -112,13 +130,19 @@
             "type": "teams",
             "visible": true,
             "values": {
-                "kop": "Onze teams",
+                "kop": {
+                    "text": "Onze teams",
+                    "tag": "h2"
+                },
                 "anker": "teams",
                 "intro": "Met drie teams zijn we actief in de regionale duocompetitie van de NTTB. Bekijk de uitslagen en standen via de links bij elk team.",
                 "label": "Competitie",
                 "teams": [
                     {
-                        "naam": "Merwestad 1",
+                        "naam": {
+                            "text": "Merwestad 1",
+                            "tag": "h3"
+                        },
                         "poule": "Poule G",
                         "klasse": "4e klasse",
                         "spelers": "Gert-Jan\nStefan",
@@ -129,7 +153,10 @@
                         "competitie": "West - Senioren DUO"
                     },
                     {
-                        "naam": "Merwestad 2",
+                        "naam": {
+                            "text": "Merwestad 2",
+                            "tag": "h3"
+                        },
                         "poule": "Poule F",
                         "klasse": "6e klasse",
                         "spelers": "Jaap\nGerrit\nDesmond\nArjan",
@@ -140,7 +167,10 @@
                         "competitie": "West - Senioren DUO"
                     },
                     {
-                        "naam": "Merwestad 3",
+                        "naam": {
+                            "text": "Merwestad 3",
+                            "tag": "h3"
+                        },
                         "poule": "Poule A",
                         "klasse": "7e klasse",
                         "spelers": "Rob\nRuud\nHenk\nAbdol Majid",
@@ -157,7 +187,10 @@
             "type": "locatie",
             "visible": true,
             "values": {
-                "kop": "Zo vind je ons",
+                "kop": {
+                    "text": "Zo vind je ons",
+                    "tag": "h2"
+                },
                 "anker": "locatie",
                 "intro": "We spelen in het gebouw van Mountain Network op het Leerpark in Dordrecht. Hieronder zie je precies waar je kunt parkeren en hoe je bij de ingang komt.",
                 "label": "Locatie",
@@ -165,17 +198,26 @@
                     {
                         "icoon": "building",
                         "tekst": "Ons gebouw heet Mountain Network en bevindt zich op het Leerpark in Dordrecht. We zitten in Zaal 1 op de begane grond.",
-                        "titel": "Mountain Network"
+                        "titel": {
+                            "text": "Mountain Network",
+                            "tag": "h3"
+                        }
                     },
                     {
                         "icoon": "car",
                         "tekst": "Je kunt gratis parkeren aan de achterkant van het gebouw. Let op: de ingang van het gebouw bevindt zich aan de voorkant, aan de kant van het Leerpark.",
-                        "titel": "Parkeren"
+                        "titel": {
+                            "text": "Parkeren",
+                            "tag": "h3"
+                        }
                     },
                     {
                         "icoon": "map-pin",
                         "tekst": "Loop vanaf de parkeerplaats om het gebouw heen naar de voorzijde (kant Leerpark). Daar vind je de hoofdingang van Mountain Network.",
-                        "titel": "Ingang"
+                        "titel": {
+                            "text": "Ingang",
+                            "tag": "h3"
+                        }
                     }
                 ],
                 "kaart_alt": "Satellietbeeld van de locatie van TTV Merwestad bij Mountain Network op het Leerpark in Dordrecht",
@@ -191,7 +233,10 @@
             "type": "lid-worden",
             "visible": true,
             "values": {
-                "kop": "Klaar om mee te spelen?",
+                "kop": {
+                    "text": "Klaar om mee te spelen?",
+                    "tag": "h2"
+                },
                 "knop": {
                     "link": {
                         "url": "mailto:info@ttvmerwestad.nl"
@@ -213,13 +258,19 @@
             "type": "contact",
             "visible": true,
             "values": {
-                "kop": "Stuur ons een bericht",
+                "kop": {
+                    "text": "Stuur ons een bericht",
+                    "tag": "h2"
+                },
                 "adres": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht",
                 "anker": "contact",
                 "email": "info@ttvmerwestad.nl",
                 "intro": "Heb je een vraag, wil je je aanmelden of gewoon even kennismaken? Vul het formulier in en we nemen zo snel mogelijk contact met je op.",
                 "label": "Contact",
-                "bedankt_kop": "Bericht verstuurd!",
+                "bedankt_kop": {
+                    "text": "Bericht verstuurd!",
+                    "tag": "h3"
+                },
                 "bedankt_tekst": "Bedankt voor je bericht. We nemen zo snel mogelijk contact met je op."
             }
         }

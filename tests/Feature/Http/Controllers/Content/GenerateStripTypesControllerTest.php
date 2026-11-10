@@ -70,6 +70,16 @@ it('writes the strip types of a scan for an admin and says what it wrote', funct
         ->and(is_file($this->folder.'/Trainingstijden.php'))->toBeTrue();
 });
 
+it('writes a heading at the level the scan found', function (): void {
+    postScan(['version' => 1, 'types' => [['key' => 'quote', 'label' => 'Quote', 'fields' => [
+        ['key' => 'kop', 'type' => 'heading', 'selector' => 'h3', 'tag' => 'h3'],
+    ]]], 'pages' => []])
+        ->assertOk()
+        ->assertJsonPath('written.0.key', 'quote');
+
+    expect((string) file_get_contents($this->folder.'/Quote.php'))->toContain("Heading::make('kop')->tag('h3')->required(),");
+});
+
 it('says which strip types it skipped and why', function (): void {
     useStripTypes();
 
@@ -157,6 +167,11 @@ it('refuses what is no scan result it can read', function (array $scan, string $
     'a max that is no number' => [
         ['version' => 1, 'types' => [['key' => 'quote', 'label' => 'Quote', 'fields' => [['key' => 'items', 'type' => 'items', 'max' => 'drie', 'fields' => [['key' => 'regel', 'type' => 'text']]]]]]],
         'types.0.fields.0.max',
+        'Het scanresultaat heeft geen striptypes met velden in de goede vorm.',
+    ],
+    'a level that is no text' => [
+        ['version' => 1, 'types' => [['key' => 'quote', 'label' => 'Quote', 'fields' => [['key' => 'kop', 'type' => 'heading', 'tag' => ['h2']]]]]],
+        'types.0.fields.0.tag',
         'Het scanresultaat heeft geen striptypes met velden in de goede vorm.',
     ],
     'a field of a list without a type' => [

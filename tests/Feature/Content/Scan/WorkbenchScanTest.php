@@ -82,8 +82,8 @@ it('proposes the fields of the workbench strip types', function (): void {
     // Hero: label is a Text in a <p><small>, which reads as a paragraph. Cards: kolommen is a choice that only
     // the data-kolommen attribute shows, so no field holds it.
     expect(array_map(outline(...), workbenchScan()->types))->toBe([
-        ['tekst: long_text', 'kop: text', 'inhoud: rich_text', ['items: items' => ['knop: button']]],
-        ['kop: text', ['items: items' => ['kop: text', 'tekst: long_text', 'link: link']]],
+        ['tekst: long_text', 'kop: heading', 'inhoud: rich_text', ['items: items' => ['knop: button']]],
+        ['kop: heading', ['items: items' => ['kop: heading', 'tekst: long_text', 'link: link']]],
     ])
         ->and([workbenchScan()->types[1]->fields[1]->min, workbenchScan()->types[1]->fields[1]->max])->toBe([1, 3]);
 });
@@ -93,14 +93,14 @@ it('reads the values that the editor stored', function (): void {
 
     expect($strips[0]->values)->toBe([
         'tekst' => 'Workbench',
-        'kop' => 'Welkom',
+        'kop' => ['text' => 'Welkom', 'tag' => 'h2'],
         'inhoud' => '<p>Twee <strong>zinnen</strong>.</p><p>En nog een.</p>',
         'items' => [
             ['knop' => ['text' => 'Over ons', 'link' => ['url' => '/over-ons']]],
             ['knop' => ['text' => 'Lid worden', 'link' => ['url' => '/lid-worden']]],
         ],
     ])
-        ->and($strips[1]->values['items'][2])->toBe(['kop' => 'Teams', 'tekst' => "Regel een\nRegel twee", 'link' => ['url' => '/teams']]);
+        ->and($strips[1]->values['items'][2])->toBe(['kop' => ['text' => 'Teams', 'tag' => 'h3'], 'tekst' => "Regel een\nRegel twee", 'link' => ['url' => '/teams']]);
 });
 
 it('points at the strips and the fields that the views mark', function (): void {

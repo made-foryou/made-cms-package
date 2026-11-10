@@ -25,6 +25,7 @@ return [
         'items_differ' => 'The items are not all built exactly alike.',
         'nested_list' => 'A list inside an item: one value per line.',
         'same_in_every_item' => 'The same in every item: perhaps fixed text of the design.',
+        'heading_levels_differ' => 'A heading with another level in the examples: the level most of them have is the default.',
     ],
     'generate' => [
         'left_out' => ':field: waits for the image field type.',

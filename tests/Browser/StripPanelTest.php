@@ -197,7 +197,8 @@ it('undoes the saved changes of a strip one step at a time', function (): void {
 
     $shell->click('[data-slot="undo"]');
 
-    expect($shell->script(waitUntil("{$heading} === 'Samen' && document.querySelector('[data-path=\"kop\"] input').value === 'Samen'")))->toBeTrue()
+    // The frame and the field follow the step back at once; the draft only once the panel saved it.
+    expect($shell->script(waitUntil("{$heading} === 'Samen' && document.querySelector('[data-path=\"kop\"] input').value === 'Samen' && ".savedAsDraft())))->toBeTrue()
         ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Samen', 'tag' => 'h2']);
 
     $shell->assertSeeIn('[data-slot="announce"]', 'De laatste wijziging is ongedaan gemaakt.')

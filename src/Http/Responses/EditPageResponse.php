@@ -26,8 +26,9 @@ final class EditPageResponse
     /**
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
      * @param  StripTypes  $types  the catalogue an editor adds strips from
+     * @param  bool  $headingLevels  whether the editor chooses the level of a heading (Visitor::choosesHeadingLevels)
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, StripTypes $types): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, StripTypes $types, bool $headingLevels): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
@@ -70,6 +71,8 @@ final class EditPageResponse
                     'fields' => trans_choice('made-cms-package::cms.edit.fields', count($type->fields()), [], $locale),
                 ], $types->all()),
                 'page' => ['title' => $page->title],
+                // Only UI: the strip Actions keep the level of a heading for an editor who does not choose it.
+                'heading_levels' => $headingLevels,
                 'texts' => [
                     'position' => $t('position'),
                     'unknown' => $t('unknown'),

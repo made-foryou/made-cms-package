@@ -225,6 +225,20 @@ it('hands the side panel the address of a strip, the csrf token and its texts', 
         ->assertSee(LauncherAssetController::url('panel.js'), false);
 });
 
+it('tells the side panel whether the editor chooses the level of a heading: whoever opens Meta-overzicht', function (Role $role, bool $chooses): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $response = $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+
+    expect(editShellConfig((string) $response->getContent())['heading_levels'])->toBe($chooses);
+})->with([
+    'admin' => [Role::Admin, true],
+    'seo specialist' => [Role::SeoSpecialist, true],
+    'webmaster' => [Role::Webmaster, false],
+    'content manager' => [Role::ContentManager, false],
+    'owner' => [Role::Owner, false],
+]);
+
 it('speaks English when the launcher locale is English', function (): void {
     config(['made-cms-package.launcher.locale' => 'en']);
     $page = Page::factory()->at('/over-ons')->create(['title' => 'About']);

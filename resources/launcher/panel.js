@@ -210,6 +210,8 @@ function rendered(field, value) {
 
             return typeof value?.text === 'string' && value.text !== '' && url !== null ? { text: value.text, url } : null;
         }
+        case 'heading':
+            return typeof value?.text === 'string' && value.text !== '' ? { text: value.text, tag: value.tag ?? field.tag } : null;
         case 'items':
             return null;
         case 'rich_text': {
@@ -532,6 +534,9 @@ function control(state, field, owner, path, follow = null) {
         case 'button':
             button(state, element, field, owner, path);
             break;
+        case 'heading':
+            heading(state, element, field, owner, path);
+            break;
         case 'items':
             items(state, element, field, owner, path);
             break;
@@ -539,7 +544,7 @@ function control(state, field, owner, path, follow = null) {
 
     describedBy(element, input);
     element.addEventListener('focusout', (event) => {
-        if (! element.contains(event.relatedTarget) && field.type !== 'items' && field.type !== 'button') {
+        if (! element.contains(event.relatedTarget) && field.type !== 'items' && field.type !== 'button' && field.type !== 'heading') {
             leave(state, path);
         }
     });
@@ -584,6 +589,28 @@ function button(state, element, field, owner, path) {
     parts.append(
         control(state, { key: 'text', type: 'text', label: field.parts.text, hint: null, required: field.required, max_length: 255 }, holder, path + '.text', follow),
         control(state, { key: 'link', type: 'link', label: field.parts.link, hint: null, required: field.required }, holder, path + '.link', follow),
+    );
+}
+
+/*
+ * A heading is a text with its level, {text, tag}. The panel edits its text; the heading keeps its level, or gets the
+ * default level of the field when it had none.
+ */
+function heading(state, element, field, owner, path) {
+    const parts = slot('parts', element);
+    const key = path.split('.').pop();
+
+    // The text reads and writes the heading through this, so it works like a field of its own.
+    const holder = {
+        get text() { return owner[key]?.text ?? null; },
+        set text(value) { owner[key] = { text: value, tag: owner[key]?.tag ?? field.tag }; },
+    };
+
+    // The frame shows a heading as a whole: its text in the element of its level.
+    const follow = () => liveInput(state, path, field, owner[key]);
+
+    parts.append(
+        control(state, { key: 'text', type: 'text', label: field.parts.text, hint: null, required: field.required, max_length: field.max_length }, holder, path + '.text', follow),
     );
 }
 
@@ -974,6 +1001,7 @@ function summary(field, value) {
         case 'rich_text':
             return new DOMParser().parseFromString(value ?? '', 'text/html').body.textContent.trim();
         case 'button':
+        case 'heading':
             return value?.text ?? '';
         case 'choice':
             return field.options.find((option) => option.value === value)?.label ?? '';
@@ -1381,7 +1409,8 @@ function showAdded(state) {
         return;
     }
 
-    const required = state.fields.filter((field) => field.required && emptyValue(state.values[field.key]));
+    const required = state.fields.filter((field) => field.required
+        && emptyValue(field.type === 'heading' ? state.values[field.key]?.text : state.values[field.key]));
     const names = new Intl.ListFormat(document.documentElement.lang || 'nl', { type: 'conjunction' })
         .format(required.map((field) => field.label));
     const parts = [state.added.after ? format(texts.new_after, { strip: state.added.after }) : texts.new_top];

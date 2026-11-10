@@ -229,6 +229,14 @@
         <p class="veld-fout" data-slot="error" hidden></p>
     </fieldset>
 </template>
+<template data-field="heading">
+    <fieldset class="veld veldgroep">
+        <legend class="veld-label" data-slot="label"></legend>
+        <div class="veldgroep-delen enkel" data-slot="parts"></div>
+        <p class="veld-hint" data-slot="hint" hidden></p>
+        <p class="veld-fout" data-slot="error" hidden></p>
+    </fieldset>
+</template>
 <template data-field="choice">
     <div class="veld">
         <label data-slot="label"></label>

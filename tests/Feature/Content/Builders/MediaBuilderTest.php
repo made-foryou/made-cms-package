@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Made\CmsPackage\Content\Builders\MediaBuilder;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
+use Made\CmsPackage\Content\Models\MediaUsage;
+use Made\CmsPackage\Content\Models\Page;
 
 it('uses the custom builder for media queries', function (): void {
     expect(Media::query())->toBeInstanceOf(MediaBuilder::class);
@@ -54,4 +56,43 @@ it('finds every file for a blank search', function (): void {
     Media::factory()->count(2)->create();
 
     expect(Media::query()->search('  ')->count())->toBe(2);
+});
+
+it('returns the files in use somewhere, in a draft, a published version or on a deleted page', function (): void {
+    $published = MediaUsage::factory()->create()->media_id;
+    $draft = MediaUsage::factory()->draft()->create()->media_id;
+    $deleted = MediaUsage::factory()->for(Page::factory()->deletedAt(now()))->create()->media_id;
+    Media::factory()->create();
+
+    expect(Media::query()->inUse()->orderBy('id')->pluck('id')->all())->toBe([$published, $draft, $deleted]);
+});
+
+it('counts a file in use once, whatever the number of places', function (): void {
+    $media = Media::factory()->create();
+    MediaUsage::factory()->for($media)->count(3)->create();
+
+    expect(Media::query()->inUse()->count())->toBe(1);
+});
+
+it('counts the images in use without an alt text', function (): void {
+    $usedWithout = Media::factory()->create();
+    MediaUsage::factory()->for($usedWithout)->create();
+    MediaUsage::factory()->for(Media::factory()->withAlt('Het eerste team'))->create();
+    Media::factory()->create();
+
+    expect(Media::query()->withoutAlt()->inUse()->pluck('id')->all())->toBe([$usedWithout->id]);
+});
+
+it('loads the places of the files with their pages, deleted pages too', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->create(['title' => 'Onze teams']);
+    $gone = Page::factory()->deletedAt(now())->create(['title' => 'Oud nieuws']);
+    MediaUsage::factory()->for($media)->for($page)->create();
+    MediaUsage::factory()->for($media)->for($gone)->create();
+
+    $loaded = Media::query()->withUsage()->findOrFail($media->id);
+
+    expect($loaded->relationLoaded('usages'))->toBeTrue()
+        ->and($loaded->usages->map(static fn (MediaUsage $usage): ?string => $usage->page?->title)->sort()->values()->all())
+        ->toBe(['Onze teams', 'Oud nieuws']);
 });

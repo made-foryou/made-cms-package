@@ -17,6 +17,7 @@ enum ScanDoubt: string
     case ItemsDiffer = 'items_differ';
     case NestedList = 'nested_list';
     case SameInEveryItem = 'same_in_every_item';
+    case HeadingLevelsDiffer = 'heading_levels_differ';
 
     public function label(): string
     {

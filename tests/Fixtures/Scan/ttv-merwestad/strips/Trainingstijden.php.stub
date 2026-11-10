@@ -3,6 +3,7 @@
 namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
@@ -25,7 +26,7 @@ final class Trainingstijden extends StripType
         return [
             Text::make('anker')->default('trainingstijden')->hint('Het #-adres van deze strook in het menu.'),
             Text::make('label'),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('intro'),
             Items::make('avonden', [
                 Choice::make('dag', [

@@ -3,6 +3,7 @@
 namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -29,7 +30,7 @@ final class LidWorden extends StripType
         return [
             Text::make('anker')->default('lid-worden')->hint('Het #-adres van deze strook in het menu.'),
             Text::make('label'),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst'),
             Button::make('knop'),
             Button::make('tweede_knop'),

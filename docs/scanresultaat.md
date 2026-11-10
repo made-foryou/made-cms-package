@@ -38,7 +38,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
       "doubts": [],
       "fields": [
         {"key": "label", "type": "text", "selector": "div > div > div > span", "required": true, "certain": true, "doubts": []},
-        {"key": "kop", "type": "text", "selector": "div > div > div > h2", "required": true, "certain": true, "doubts": []},
+        {"key": "kop", "type": "heading", "selector": "div > div > div > h2", "required": true, "certain": true, "doubts": [], "tag": "h2"},
         {"key": "tekst", "type": "long_text", "selector": "div > div > div > p", "required": true, "certain": true, "doubts": []},
         {
           "key": "items",
@@ -52,7 +52,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
           "max": 3,
           "fields": [
             {"key": "icoon", "type": "choice", "selector": "div > div > svg", "required": true, "certain": false, "doubts": ["icon_choice"], "options": ["users", "heart", "trophy"]},
-            {"key": "kop", "type": "text", "selector": "div > h3", "required": true, "certain": true, "doubts": []},
+            {"key": "kop", "type": "heading", "selector": "div > h3", "required": true, "certain": true, "doubts": [], "tag": "h3"},
             {"key": "tekst", "type": "long_text", "selector": "div > p", "required": true, "certain": true, "doubts": []}
           ]
         }
@@ -69,11 +69,11 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
           "selector": "#over-ons",
           "values": {
             "label": "Over ons",
-            "kop": "Meer dan alleen tafeltennis",
+            "kop": {"text": "Meer dan alleen tafeltennis", "tag": "h2"},
             "tekst": "Bij TTV Merwestad draait het om sport, plezier en verbinding.",
             "items": [
-              {"icoon": "users", "kop": "Alle niveaus", "tekst": "Of je nu voor het eerst een batje vasthoudt …"},
-              {"icoon": "heart", "kop": "Gezelligheid", "tekst": "Meer dan alleen sport. …"}
+              {"icoon": "users", "kop": {"text": "Alle niveaus", "tag": "h3"}, "tekst": "Of je nu voor het eerst een batje vasthoudt …"},
+              {"icoon": "heart", "kop": {"text": "Gezelligheid", "tag": "h3"}, "tekst": "Meer dan alleen sport. …"}
             ]
           }
         }
@@ -132,7 +132,8 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
 
 | `type` | Herkend aan | Waarde |
 |---|---|---|
-| `text` | `h1`–`h6`, of een ander element met alleen (inline) tekst | `"Over ons"` |
+| `heading` | `h1`–`h6` | `{"text": "Over ons", "tag": "h2"}`, met het niveau dat op de pagina stond |
+| `text` | een ander element met alleen (inline) tekst | `"Over ons"` |
 | `long_text` | een `p`; een herhaling binnen een item (één regel per element) | `"Kom\nspelen"` (een regel per `br`) |
 | `rich_text` | een blok met twee of meer alinea's of lijsten, een lijst van gewone regels, een `p` met een link | opgeschoonde HTML (`p`, `strong`, `em`, `a`, `ul`, `ol`, `li`) |
 | `button` | een `a[href]` met eigen tekst | `{"text": "Lid worden", "link": {"url": "#lid-worden"}}` |
@@ -154,7 +155,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
   - Browser: `document.querySelector(strook + ' > ' + veld)`, of `wortel.querySelector(':scope > ' + veld)`.
 - **Items:** de selector van een lijst wijst de ouder aan. De items zijn de kinderen met de tag uit `item`, zonder lege elementen.
 - De selectors van een type komen van het eerste voorbeeld. Een optionele broer met een andere tag verschuift ze niet.
-- **Koppen:** het niveau van een kop is inhoud, geen opbouw. Een kop lijnt uit op zijn plek onder de koppen van zijn ouder, niet op zijn selector. Staat een kop op een andere pagina op een ander niveau, dan vind je hem daar dus niet met de selector van het type (`h2`), maar met dezelfde stap op zijn eigen niveau (`h3`).
+- **Koppen:** staat een kop op een andere pagina op een ander niveau, dan vind je hem daar niet met de selector van het type (`h2`), maar met dezelfde stap op zijn eigen niveau (`h3`, zie [Koppen](#koppen)).
 
 ## Twijfels
 
@@ -171,6 +172,7 @@ Een veld of type met twijfel heeft `certain: false`. 4.3 toont die eerst. De uit
 | `items_differ` | veld | De items van de lijst zijn niet allemaal precies gelijk opgebouwd. |
 | `nested_list` | veld | Een lijst in een item: één waarde per regel, want een lijst in een lijst kan niet. |
 | `same_in_every_item` | veld | Staat in elk item hetzelfde: misschien vaste tekst van het ontwerp. |
+| `heading_levels_differ` | veld | Een kop met een ander niveau in de voorbeelden; het niveau dat het vaakst voorkomt is de standaard. |
 <!-- doubts:end -->
 
 ## Hoe de scan herkent
@@ -182,7 +184,18 @@ Een veld of type met twijfel heeft `certain: false`. 4.3 toont die eerst. De uit
   - een icoon dat per item verschilt is een keuze, een icoon dat overal gelijk is versiering;
   - een link met dezelfde tekst in elk item is een `link` (de tekst hoort bij het ontwerp), met hetzelfde adres valt hij weg, net als een afbeelding die overal gelijk is;
   - een tekst die in elk item gelijk is, valt weg als het een kort label is (hooguit twee woorden, geen cijfers, zoals "Spelers"), anders krijgt hij `same_in_every_item`;
-  - een veld dat op een pagina een link in de tekst heeft, wordt overal `rich_text`.
+  - een veld dat op een pagina een link in de tekst heeft, wordt overal `rich_text`;
+  - bij een kop telt alleen de tekst om te zien of hij in elk item hetzelfde is.
+
+## Koppen
+
+Het niveau van een kop is inhoud, geen opbouw. De redacteur met Meta-overzicht kan het per strook kiezen (#126).
+
+- **Herkennen:** een `h1`–`h6` met tekst is een veld `heading`. De waarde is de tekst met de tag die op de pagina stond.
+- **Opbouw:** de vingerafdruk en de lijsten zien elke kop als "een kop". Stroken of items die alleen in het niveau van een kop verschillen, zijn één type of één lijst.
+- **Uitlijnen:** een kop lijnt uit op zijn plek onder de koppen van zijn ouder, niet op zijn selector. De `h2` van de ene pagina en de `h3` van de andere zijn zo één veld.
+- **Standaardniveau (`tag`):** de tag die in de voorbeelden (stroken, of alle items van alle stroken) het vaakst voorkomt. Bij een gelijke stand wint de hoogste kop. Hebben de voorbeelden meer dan één niveau, dan krijgt het veld `heading_levels_differ`.
+- **Waarden:** elke strook houdt het niveau dat hij op zijn pagina had. De import (#33) neemt het over, de views (#32) printen de tag uit de waarde.
 
 ## Van type naar klasse (4.4)
 

@@ -46,14 +46,14 @@ it('finds the eight strips of the home in their order, as the developer coupled 
 
 it('proposes the fields of every strip on the main lines of the handwritten types', function (): void {
     expect(array_map(outline(...), ttvTypes()))->toBe([
-        'strook-1' => ['afbeelding: image', 'label: text', 'kop: text', 'tekst: long_text', 'knop: button', 'knop_2: button'],
+        'strook-1' => ['afbeelding: image', 'label: text', 'kop: heading', 'tekst: long_text', 'knop: button', 'knop_2: button'],
         'strook-2' => [['items: items' => ['label: text', 'label_2: text']]],
-        'over-ons' => ['label: text', 'kop: text', 'tekst: long_text', ['items: items' => ['icoon: choice', 'kop: text', 'tekst: long_text']]],
-        'trainingstijden' => ['label: text', 'kop: text', 'tekst: long_text', ['items: items' => ['kop: text', 'label: text', 'label_2: text', 'lijst: long_text']], 'tekst_2: long_text'],
-        'teams' => ['label: text', 'kop: text', 'tekst: long_text', ['items: items' => ['link: link', 'kop: text', 'tekst: long_text', 'lijst: long_text', 'lijst_2: long_text']]],
-        'locatie' => ['label: text', 'kop: text', 'tekst: long_text', 'afbeelding: image', 'knop: button', ['items: items' => ['icoon: choice', 'kop: text', 'tekst: long_text']]],
-        'lid-worden' => ['label: text', 'kop: text', 'tekst: long_text', 'knop: button', 'knop_2: button'],
-        'contact' => ['label: text', 'kop: text', 'tekst: long_text', 'label_2: text', 'knop: button'],
+        'over-ons' => ['label: text', 'kop: heading', 'tekst: long_text', ['items: items' => ['icoon: choice', 'kop: heading', 'tekst: long_text']]],
+        'trainingstijden' => ['label: text', 'kop: heading', 'tekst: long_text', ['items: items' => ['kop: heading', 'label: text', 'label_2: text', 'lijst: long_text']], 'tekst_2: long_text'],
+        'teams' => ['label: text', 'kop: heading', 'tekst: long_text', ['items: items' => ['link: link', 'kop: heading', 'tekst: long_text', 'lijst: long_text', 'lijst_2: long_text']]],
+        'locatie' => ['label: text', 'kop: heading', 'tekst: long_text', 'afbeelding: image', 'knop: button', ['items: items' => ['icoon: choice', 'kop: heading', 'tekst: long_text']]],
+        'lid-worden' => ['label: text', 'kop: heading', 'tekst: long_text', 'knop: button', 'knop_2: button'],
+        'contact' => ['label: text', 'kop: heading', 'tekst: long_text', 'label_2: text', 'knop: button'],
     ]);
 });
 
@@ -137,6 +137,11 @@ it('finds every strip and every field back in the page by its selector', functio
 
             if (is_string($value) && in_array($field->type, ['text', 'long_text'], true)) {
                 expect(str_replace("\n", ' ', $value))->toBe(Html::text($element));
+            }
+
+            if ($field->type === 'heading') {
+                expect($value)->toBe(['text' => Html::text($element), 'tag' => $element->localName])
+                    ->and($field->tag)->toBe($element->localName);
             }
         }
     }

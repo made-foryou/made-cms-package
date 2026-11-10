@@ -32,11 +32,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div:nth-of-type(7) > div > h1",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h1"
                 },
                 {
                     "key": "tekst",
@@ -125,11 +126,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div > div > div > h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "tekst",
@@ -167,11 +169,12 @@
                         },
                         {
                             "key": "kop",
-                            "type": "text",
+                            "type": "heading",
                             "selector": "div > h3",
                             "required": true,
                             "certain": true,
-                            "doubts": []
+                            "doubts": [],
+                            "tag": "h3"
                         },
                         {
                             "key": "tekst",
@@ -204,11 +207,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div > div > div > h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "tekst",
@@ -231,11 +235,12 @@
                     "fields": [
                         {
                             "key": "kop",
-                            "type": "text",
+                            "type": "heading",
                             "selector": "div > div:nth-of-type(2) > div > h3",
                             "required": true,
                             "certain": true,
-                            "doubts": []
+                            "doubts": [],
+                            "tag": "h3"
                         },
                         {
                             "key": "label",
@@ -297,11 +302,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div > div > div > h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "tekst",
@@ -332,11 +338,12 @@
                         },
                         {
                             "key": "kop",
-                            "type": "text",
+                            "type": "heading",
                             "selector": "a > div > div > h3",
                             "required": true,
                             "certain": true,
-                            "doubts": []
+                            "doubts": [],
+                            "tag": "h3"
                         },
                         {
                             "key": "tekst",
@@ -391,11 +398,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div > div > div > h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "tekst",
@@ -449,11 +457,12 @@
                         },
                         {
                             "key": "kop",
-                            "type": "text",
+                            "type": "heading",
                             "selector": "div > h3",
                             "required": true,
                             "certain": true,
-                            "doubts": []
+                            "doubts": [],
+                            "tag": "h3"
                         },
                         {
                             "key": "tekst",
@@ -486,11 +495,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div:nth-of-type(4) > div:nth-of-type(2) > h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "tekst",
@@ -539,11 +549,12 @@
                 },
                 {
                     "key": "kop",
-                    "type": "text",
+                    "type": "heading",
                     "selector": "div > div > div > div > div > h2",
                     "required": true,
                     "certain": true,
-                    "doubts": []
+                    "doubts": [],
+                    "tag": "h2"
                 },
                 {
                     "key": "tekst",
@@ -586,7 +597,10 @@
                             "alt": ""
                         },
                         "label": "Tafeltennisvereniging in Dordrecht",
-                        "kop": "TTV Merwestad",
+                        "kop": {
+                            "text": "TTV Merwestad",
+                            "tag": "h1"
+                        },
                         "tekst": "Sinds 1962 dé plek voor tafeltennissers van alle niveaus. Van recreant tot competitiespeler — iedereen is welkom aan onze tafels.",
                         "knop": {
                             "text": "Lid worden",
@@ -631,22 +645,34 @@
                     "selector": "#over-ons",
                     "values": {
                         "label": "Over ons",
-                        "kop": "Meer dan alleen tafeltennis",
+                        "kop": {
+                            "text": "Meer dan alleen tafeltennis",
+                            "tag": "h2"
+                        },
                         "tekst": "Bij TTV Merwestad draait het om sport, plezier en verbinding. Of je nu jong of oud bent, beginner of gevorderd — je bent welkom.",
                         "items": [
                             {
                                 "icoon": "users",
-                                "kop": "Alle niveaus",
+                                "kop": {
+                                    "text": "Alle niveaus",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Of je nu voor het eerst een batje vasthoudt of al jaren competitie speelt — bij ons vind je altijd een passende tafel."
                             },
                             {
                                 "icoon": "heart",
-                                "kop": "Gezelligheid",
+                                "kop": {
+                                    "text": "Gezelligheid",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Meer dan alleen sport. Na de training schuiven we aan de bar aan voor een drankje en een goed gesprek."
                             },
                             {
                                 "icoon": "trophy",
-                                "kop": "Competitie",
+                                "kop": {
+                                    "text": "Competitie",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Met 3 teams strijden we in de regionale duocompetitie."
                             }
                         ]
@@ -657,17 +683,26 @@
                     "selector": "#trainingstijden",
                     "values": {
                         "label": "Trainingstijden",
-                        "kop": "Wanneer kun je spelen?",
+                        "kop": {
+                            "text": "Wanneer kun je spelen?",
+                            "tag": "h2"
+                        },
                         "tekst": "We trainen meerdere keren per week in de sporthal. Kies de avond die bij jou past en kom gerust een keer vrijblijvend meespelen.",
                         "items": [
                             {
-                                "kop": "Dinsdag",
+                                "kop": {
+                                    "text": "Dinsdag",
+                                    "tag": "h3"
+                                },
                                 "label": "Vanavond!",
                                 "label_2": "19:30 – 22:00",
                                 "lijst": "Vrij spelen\ncompetitie"
                             },
                             {
-                                "kop": "Donderdag",
+                                "kop": {
+                                    "text": "Donderdag",
+                                    "tag": "h3"
+                                },
                                 "label_2": "19:30 – 22:00",
                                 "lijst": "Vrij spelen\ncompetitie"
                             }
@@ -680,14 +715,20 @@
                     "selector": "#teams",
                     "values": {
                         "label": "Competitie",
-                        "kop": "Onze teams",
+                        "kop": {
+                            "text": "Onze teams",
+                            "tag": "h2"
+                        },
                         "tekst": "Met drie teams zijn we actief in de regionale duocompetitie van de NTTB. Bekijk de uitslagen en standen via de links bij elk team.",
                         "items": [
                             {
                                 "link": {
                                     "url": "https://ttapp.nl/poule/5022335"
                                 },
-                                "kop": "Merwestad 1",
+                                "kop": {
+                                    "text": "Merwestad 1",
+                                    "tag": "h3"
+                                },
                                 "tekst": "West - Senioren DUO",
                                 "lijst": "4e klasse\nPoule G",
                                 "lijst_2": "Gert-Jan\nStefan"
@@ -696,7 +737,10 @@
                                 "link": {
                                     "url": "https://ttapp.nl/poule/5022362"
                                 },
-                                "kop": "Merwestad 2",
+                                "kop": {
+                                    "text": "Merwestad 2",
+                                    "tag": "h3"
+                                },
                                 "tekst": "West - Senioren DUO",
                                 "lijst": "6e klasse\nPoule F",
                                 "lijst_2": "Jaap\nGerrit\nDesmond\nArjan"
@@ -705,7 +749,10 @@
                                 "link": {
                                     "url": "https://ttapp.nl/poule/5022369"
                                 },
-                                "kop": "Merwestad 3",
+                                "kop": {
+                                    "text": "Merwestad 3",
+                                    "tag": "h3"
+                                },
                                 "tekst": "West - Senioren DUO",
                                 "lijst": "7e klasse\nPoule A",
                                 "lijst_2": "Rob\nRuud\nHenk\nAbdol Majid"
@@ -718,7 +765,10 @@
                     "selector": "#locatie",
                     "values": {
                         "label": "Locatie",
-                        "kop": "Zo vind je ons",
+                        "kop": {
+                            "text": "Zo vind je ons",
+                            "tag": "h2"
+                        },
                         "tekst": "We spelen in het gebouw van Mountain Network op het Leerpark in Dordrecht. Hieronder zie je precies waar je kunt parkeren en hoe je bij de ingang komt.",
                         "afbeelding": {
                             "url": "/map.png",
@@ -733,17 +783,26 @@
                         "items": [
                             {
                                 "icoon": "building2",
-                                "kop": "Mountain Network",
+                                "kop": {
+                                    "text": "Mountain Network",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Ons gebouw heet Mountain Network en bevindt zich op het Leerpark in Dordrecht. We zitten in Zaal 1 op de begane grond."
                             },
                             {
                                 "icoon": "car",
-                                "kop": "Parkeren",
+                                "kop": {
+                                    "text": "Parkeren",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Je kunt gratis parkeren aan de achterkant van het gebouw. Let op: de ingang van het gebouw bevindt zich aan de voorkant, aan de kant van het Leerpark."
                             },
                             {
                                 "icoon": "map-pin",
-                                "kop": "Ingang",
+                                "kop": {
+                                    "text": "Ingang",
+                                    "tag": "h3"
+                                },
                                 "tekst": "Loop vanaf de parkeerplaats om het gebouw heen naar de voorzijde (kant Leerpark). Daar vind je de hoofdingang van Mountain Network."
                             }
                         ]
@@ -754,7 +813,10 @@
                     "selector": "#lid-worden",
                     "values": {
                         "label": "Lid worden",
-                        "kop": "Klaar om mee te spelen?",
+                        "kop": {
+                            "text": "Klaar om mee te spelen?",
+                            "tag": "h2"
+                        },
                         "tekst": "Word lid van TTV Merwestad en ontdek de leukste tafeltennisvereniging van de regio. Je mag als nieuwkomer 3 keer langs komen om te kijken of het iets voor je is — kom gerust langs om kennis te maken.",
                         "knop": {
                             "text": "Neem contact op",
@@ -775,7 +837,10 @@
                     "selector": "#contact",
                     "values": {
                         "label": "Contact",
-                        "kop": "Stuur ons een bericht",
+                        "kop": {
+                            "text": "Stuur ons een bericht",
+                            "tag": "h2"
+                        },
                         "tekst": "Heb je een vraag, wil je je aanmelden of gewoon even kennismaken? Vul het formulier in en we nemen zo snel mogelijk contact met je op.",
                         "label_2": "Maria Montessorilaan 3 – Zaal 1, 3312 KJ Dordrecht",
                         "knop": {

@@ -13,7 +13,7 @@ use Made\CmsPackage\Http\Requests\LauncherRequest;
  * The (reviewed) result of a scan whose strip types become classes in the site.
  *
  * Only what writing the classes needs is checked here: the version, and per type and field the key, label, type,
- * whether it is required, options and limits. Whether a definition is valid is for the catalogue, through the
+ * whether it is required, options, the level of a heading and limits. Whether a definition is valid is for the catalogue, through the
  * Action. Selectors, fingerprints, doubts and pages pass unchecked.
  */
 final class GenerateStripTypesRequest extends LauncherRequest
@@ -76,6 +76,7 @@ final class GenerateStripTypesRequest extends LauncherRequest
             "{$path}.required" => ['sometimes', 'boolean'],
             "{$path}.options" => ['sometimes', 'array', 'list'],
             "{$path}.options.*" => ['string'],
+            "{$path}.tag" => ['sometimes', 'nullable', 'string'],
             "{$path}.min" => ['sometimes', 'nullable', 'integer'],
             "{$path}.max" => ['sometimes', 'nullable', 'integer'],
             "{$path}.fields" => ['sometimes', 'array', 'list'],

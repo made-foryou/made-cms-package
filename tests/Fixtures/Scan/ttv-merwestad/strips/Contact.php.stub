@@ -2,6 +2,7 @@
 
 namespace App\Cms\Strips;
 
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -23,11 +24,11 @@ final class Contact extends StripType
         return [
             Text::make('anker')->default('contact')->hint('Het #-adres van deze strook in het menu.'),
             Text::make('label'),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('intro'),
             Text::make('adres'),
             Text::make('email')->label('E-mailadres'),
-            Text::make('bedankt_kop')->label('Kop na versturen')->default('Bericht verstuurd!'),
+            Heading::make('bedankt_kop')->tag('h3')->label('Kop na versturen')->default('Bericht verstuurd!'),
             LongText::make('bedankt_tekst')->label('Tekst na versturen'),
         ];
     }

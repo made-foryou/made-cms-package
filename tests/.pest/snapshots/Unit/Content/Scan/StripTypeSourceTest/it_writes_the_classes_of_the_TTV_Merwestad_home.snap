@@ -4,6 +4,7 @@
 namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -19,7 +20,7 @@ final class Contact extends StripType
     {
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst')->required(),
             Text::make('label_2')->required(),
             Button::make('knop')->required(),
@@ -32,6 +33,7 @@ final class Contact extends StripType
 namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -52,7 +54,7 @@ final class LidWorden extends StripType
     {
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst')->required(),
             Button::make('knop')->required(),
             Button::make('knop_2')->required(),
@@ -66,6 +68,7 @@ namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
@@ -83,12 +86,12 @@ final class Locatie extends StripType
         // afbeelding: wacht op het veldtype Afbeelding.
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst')->required(),
             Button::make('knop')->required(),
             Items::make('items', [
                 Choice::make('icoon', ['building2' => 'Building2', 'car' => 'Car', 'map-pin' => 'Map pin'])->required(),
-                Text::make('kop')->required(),
+                Heading::make('kop')->tag('h3')->required(),
                 LongText::make('tekst')->required(),
             ])->max(3)->required(),
         ];
@@ -100,6 +103,7 @@ final class Locatie extends StripType
 namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
@@ -121,11 +125,11 @@ final class OverOns extends StripType
     {
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst')->required(),
             Items::make('items', [
                 Choice::make('icoon', ['users' => 'Users', 'heart' => 'Heart', 'trophy' => 'Trophy'])->required(),
-                Text::make('kop')->required(),
+                Heading::make('kop')->tag('h3')->required(),
                 LongText::make('tekst')->required(),
             ])->max(3)->required(),
         ];
@@ -137,6 +141,7 @@ final class OverOns extends StripType
 namespace App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -158,7 +163,7 @@ final class Strook1 extends StripType
         // afbeelding: wacht op het veldtype Afbeelding.
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->tag('h1')->required(),
             LongText::make('tekst')->required(),
             Button::make('knop')->required(),
             Button::make('knop_2')->required(),
@@ -201,6 +206,7 @@ final class Strook2 extends StripType
 
 namespace App\Cms\Strips;
 
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
@@ -218,11 +224,11 @@ final class Teams extends StripType
     {
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst')->required(),
             Items::make('items', [
                 Link::make('link')->required(),
-                Text::make('kop')->required(),
+                Heading::make('kop')->tag('h3')->required(),
                 LongText::make('tekst')->required(),
                 LongText::make('lijst')->required(),
                 LongText::make('lijst_2')->required(),
@@ -235,6 +241,7 @@ final class Teams extends StripType
 
 namespace App\Cms\Strips;
 
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
@@ -251,10 +258,10 @@ final class Trainingstijden extends StripType
     {
         return [
             Text::make('label')->required(),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             LongText::make('tekst')->required(),
             Items::make('items', [
-                Text::make('kop')->required(),
+                Heading::make('kop')->tag('h3')->required(),
                 Text::make('label'),
                 Text::make('label_2')->required(),
                 LongText::make('lijst')->required(),

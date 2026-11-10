@@ -62,7 +62,7 @@ it('names the field in the messages about its text and its level', function (): 
     ]);
 });
 
-it('stores a text with its level, a text that was stored before as its default level', function (mixed $value, mixed $stored): void {
+it('stores a text with its level, a text that was stored before as its default level and an empty one as nothing', function (mixed $value, mixed $stored): void {
     expect(Heading::make('kop')->tags(['h1', 'h2', 'h3'])->normalize($value))->toBe($stored);
 })->with([
     'a text with a level' => [['text' => 'Welkom', 'tag' => 'h3'], ['text' => 'Welkom', 'tag' => 'h3']],
@@ -72,6 +72,9 @@ it('stores a text with its level, a text that was stored before as its default l
     'an unknown level' => [['text' => 'Welkom', 'tag' => 'h7'], ['text' => 'Welkom', 'tag' => 'h2']],
     'a level outside its levels' => [['text' => 'Welkom', 'tag' => 'h5'], ['text' => 'Welkom', 'tag' => 'h2']],
     'a level without a text' => [['tag' => 'h3'], ['text' => null, 'tag' => 'h3']],
+    'an empty text' => [['text' => '', 'tag' => 'h3'], ['text' => null, 'tag' => 'h3']],
+    'the default level without a text' => [['text' => null, 'tag' => 'h2'], null],
+    'an empty former text' => ['', null],
     'another key' => [['text' => 'Welkom', 'tag' => 'h2', 'class' => 'groot'], ['text' => 'Welkom', 'tag' => 'h2']],
     'nothing' => [null, null],
 ]);
@@ -93,6 +96,7 @@ it('renders a text with its level, or nothing without a text', function (mixed $
 it('gives its default as a text with its level, whatever the order of the definition', function (): void {
     expect(Heading::make('kop')->default('Welkom')->tag('h1')->getDefault())->toBe(['text' => 'Welkom', 'tag' => 'h1'])
         ->and(Heading::make('kop')->tag('h3')->default(['text' => 'Welkom'])->getDefault())->toBe(['text' => 'Welkom', 'tag' => 'h3'])
+        ->and(Heading::make('kop')->default(['tag' => 'h1'])->getDefault())->toBe(['text' => null, 'tag' => 'h1'])
         ->and(Heading::make('kop')->getDefault())->toBeNull();
 });
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Actions\AddStrip;
 use Made\CmsPackage\Content\Actions\DiscardDraft;
 use Made\CmsPackage\Content\Actions\MoveStrip;
@@ -11,6 +12,7 @@ use Made\CmsPackage\Content\Actions\RestoreStrip;
 use Made\CmsPackage\Content\Actions\SetStripVisibility;
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Actions\UpdateStrip;
+use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
@@ -36,20 +38,41 @@ function usageRows(Page $page): array
 }
 
 /**
- * A cards strip with an icon in some of its cards.
+ * A card of a cards strip in its stored form, with an id of its own.
  *
- * @param  list<int|null>  $icons  one card per entry, without an icon for null
+ * @return array{id: string, titel: string, icoon: int|null}
+ */
+function iconCard(?int $icon, ?string $id = null): array
+{
+    return ['id' => $id ?? (string) Str::uuid(), 'titel' => 'Kaart', 'icoon' => $icon];
+}
+
+/**
+ * A cards strip in its stored form.
+ *
+ * @param  list<array<string, mixed>>  $cards
  * @return array{id: string, type: string, visible: bool, values: array<string, mixed>}
  */
-function cardsWithIcons(string $id, array $icons): array
+function cardsStrip(string $id, array $cards): array
 {
-    return storedStrip('cards', [
-        'kaarten' => array_map(static fn (?int $icon): array => ['titel' => 'Kaart', 'icoon' => $icon], $icons),
-    ], id: $id);
+    return storedStrip('cards', ['kaarten' => $cards], id: $id);
+}
+
+/**
+ * The ids of the cards of a strip in the stored draft.
+ *
+ * @return list<string>
+ */
+function draftCardIds(Page $page, string $stripId): array
+{
+    $stored = Page::query()->findOrFail($page->id);
+    $cards = PageStrips::fromArray($stored->draft_strips ?? [])->find($stripId)->values['kaarten'] ?? [];
+
+    return array_map(static fn (array $card): string => $card['id'], $cards);
 }
 
 describe('through the Actions that change the draft', function (): void {
-    it('records the places of the draft after saving a strip, an image in an item of a list too', function (): void {
+    it('records the places of the draft after saving a strip, an image in an item of a list by the id of the item', function (): void {
         [$a, $b] = Media::factory()->count(2)->create()->all();
         $page = Page::factory()->create();
         $strip = AddStrip::run($page, 'cards', 0);
@@ -60,28 +83,30 @@ describe('through the Actions that change the draft', function (): void {
             ['titel' => 'Drie', 'icoon' => $b->id],
         ]], chooseLevels: true);
 
-        expect(usageRows($page))->toBe([
-            "draft {$strip->id} kaarten.0.icoon {$a->id}",
-            "draft {$strip->id} kaarten.2.icoon {$b->id}",
-        ]);
+        [$one, , $three] = draftCardIds($page, $strip->id);
+
+        expect(usageRows($page))->toBe(collect([
+            "draft {$strip->id} kaarten.{$one}.icoon {$a->id}",
+            "draft {$strip->id} kaarten.{$three}.icoon {$b->id}",
+        ])->sort()->values()->all());
     });
 
     it('moves the places to the published version after publishing', function (): void {
         $a = Media::factory()->create();
-        $page = Page::factory()->withDraft([cardsWithIcons('s', [$a->id])])->create();
+        $page = Page::factory()->withDraft([cardsStrip('s', [$card = iconCard($a->id)])])->create();
 
         PublishPage::run($page);
 
-        expect(usageRows($page))->toBe(["published s kaarten.0.icoon {$a->id}"]);
+        expect(usageRows($page))->toBe(["published s kaarten.{$card['id']}.icoon {$a->id}"]);
     });
 
     it('keeps the published places of a strip removed from the draft until the draft is published', function (): void {
         $a = Media::factory()->create();
-        $page = Page::factory()->published()->withStrips([cardsWithIcons('s', [$a->id])])->create();
+        $page = Page::factory()->published()->withStrips([cardsStrip('s', [$card = iconCard($a->id)])])->create();
 
         RemoveStrip::run($page, 's');
 
-        expect(usageRows($page))->toBe(["published s kaarten.0.icoon {$a->id}"]);
+        expect(usageRows($page))->toBe(["published s kaarten.{$card['id']}.icoon {$a->id}"]);
 
         PublishPage::run($page);
 
@@ -90,58 +115,80 @@ describe('through the Actions that change the draft', function (): void {
 
     it('drops the places of a draft that is thrown away', function (): void {
         [$a, $b] = Media::factory()->count(2)->create()->all();
-        $page = Page::factory()->published()
-            ->withStrips([cardsWithIcons('s', [$a->id])])
-            ->withDraft([cardsWithIcons('s', [$b->id])])
-            ->create();
+        $page = Page::factory()->published()->withStrips([cardsStrip('s', [$card = iconCard($a->id)])])->create();
 
-        UpdateStrip::run($page, 's', ['kaarten' => [['titel' => 'Kaart', 'icoon' => $b->id], ['titel' => 'Nieuw', 'icoon' => $a->id]]], chooseLevels: true);
+        UpdateStrip::run($page, 's', ['kaarten' => [
+            ['id' => $card['id'], 'titel' => 'Kaart', 'icoon' => $b->id],
+            ['titel' => 'Nieuw', 'icoon' => $a->id],
+        ]], chooseLevels: true);
+        $added = draftCardIds($page, 's')[1];
 
-        expect(usageRows($page))->toBe([
-            "draft s kaarten.0.icoon {$b->id}",
-            "draft s kaarten.1.icoon {$a->id}",
-            "published s kaarten.0.icoon {$a->id}",
-        ]);
+        expect(usageRows($page))->toBe(collect([
+            "draft s kaarten.{$card['id']}.icoon {$b->id}",
+            "draft s kaarten.{$added}.icoon {$a->id}",
+            "published s kaarten.{$card['id']}.icoon {$a->id}",
+        ])->sort()->values()->all());
 
         DiscardDraft::run($page);
 
-        expect(usageRows($page))->toBe(["published s kaarten.0.icoon {$a->id}"]);
+        expect(usageRows($page))->toBe(["published s kaarten.{$card['id']}.icoon {$a->id}"]);
     });
 
     it('drops the places of a draft that changes nothing any more', function (): void {
         [$a, $b] = Media::factory()->count(2)->create()->all();
-        $page = Page::factory()->published()->withStrips([cardsWithIcons('s', [$a->id])])->create();
+        $page = Page::factory()->published()->withStrips([cardsStrip('s', [$card = iconCard($a->id)])])->create();
 
-        UpdateStrip::run($page, 's', ['kaarten' => [['titel' => 'Kaart', 'icoon' => $b->id]]], chooseLevels: true);
-        UpdateStrip::run($page, 's', ['kaarten' => [['titel' => 'Kaart', 'icoon' => $a->id]]], chooseLevels: true);
+        UpdateStrip::run($page, 's', ['kaarten' => [[...$card, 'icoon' => $b->id]]], chooseLevels: true);
+        UpdateStrip::run($page, 's', ['kaarten' => [[...$card, 'icoon' => $a->id]]], chooseLevels: true);
 
         expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull()
-            ->and(usageRows($page))->toBe(["published s kaarten.0.icoon {$a->id}"]);
+            ->and(usageRows($page))->toBe(["published s kaarten.{$card['id']}.icoon {$a->id}"]);
+    });
+
+    it('keeps the place of an image in an item that moves, so both versions hold the same place', function (): void {
+        [$a, $b] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->published()->withStrips([cardsStrip('s', [$first = iconCard($a->id), $second = iconCard($b->id)])])->create();
+
+        UpdateStrip::run($page, 's', ['kaarten' => [$second, $first]], chooseLevels: true);
+
+        expect(usageRows($page))->toBe(collect([
+            "draft s kaarten.{$first['id']}.icoon {$a->id}",
+            "draft s kaarten.{$second['id']}.icoon {$b->id}",
+            "published s kaarten.{$first['id']}.icoon {$a->id}",
+            "published s kaarten.{$second['id']}.icoon {$b->id}",
+        ])->sort()->values()->all());
     });
 
     it('counts a hidden strip, follows a move and brings the places of a strip back with it', function (): void {
         [$a, $b] = Media::factory()->count(2)->create()->all();
-        $page = Page::factory()->withDraft([cardsWithIcons('s', [$a->id]), cardsWithIcons('t', [null, $b->id])])->create();
+        $page = Page::factory()->withDraft([
+            cardsStrip('s', [$one = iconCard($a->id)]),
+            cardsStrip('t', [iconCard(null), $two = iconCard($b->id)]),
+        ])->create();
+        $rows = ["draft s kaarten.{$one['id']}.icoon {$a->id}", "draft t kaarten.{$two['id']}.icoon {$b->id}"];
 
         SetStripVisibility::run($page, 's', false);
         MoveStrip::run($page, 't', 0);
 
-        expect(usageRows($page))->toBe(["draft s kaarten.0.icoon {$a->id}", "draft t kaarten.1.icoon {$b->id}"]);
+        expect(usageRows($page))->toBe($rows);
 
         $removed = RemoveStrip::run($page, 't');
 
-        expect(usageRows($page))->toBe(["draft s kaarten.0.icoon {$a->id}"]);
+        expect(usageRows($page))->toBe([$rows[0]]);
 
         RestoreStrip::run($page, $removed, 1, chooseLevels: true);
 
-        expect(usageRows($page))->toBe(["draft s kaarten.0.icoon {$a->id}", "draft t kaarten.1.icoon {$b->id}"]);
+        expect(usageRows($page))->toBe($rows);
     });
 });
 
-it('builds the places of both versions from the strips of the page', function (): void {
+it('builds the places of both versions from the strips of the page, an item without an id by its position', function (): void {
     [$a, $b] = Media::factory()->count(2)->create()->all();
     $page = Page::factory()->published()
-        ->withStrips([storedStrip('hero', ['foto' => $a->id], id: 'h'), cardsWithIcons('c', [$b->id, $a->id])])
+        ->withStrips([
+            storedStrip('hero', ['foto' => $a->id], id: 'h'),
+            storedStrip('cards', ['kaarten' => [['icoon' => $b->id], ['icoon' => $a->id]]], id: 'c'),
+        ])
         ->withDraft([storedStrip('hero', ['foto' => (string) $b->id], id: 'h')])
         ->create();
 
@@ -157,15 +204,18 @@ it('builds the places of both versions from the strips of the page', function ()
 
 it('writes only what changed, so a place that stays keeps its row', function (): void {
     [$a, $b] = Media::factory()->count(2)->create()->all();
-    $page = Page::factory()->withStrips([cardsWithIcons('c', [$a->id, $b->id])])->create();
+    $page = Page::factory()->withStrips([cardsStrip('c', [$first = iconCard($a->id), $second = iconCard($b->id)])])->create();
     SyncMediaUsage::run($page);
-    $kept = MediaUsage::query()->where('field', 'kaarten.0.icoon')->value('id');
+    $kept = MediaUsage::query()->where('field', "kaarten.{$first['id']}.icoon")->value('id');
 
-    $page->update(['strips' => [cardsWithIcons('c', [$a->id, $a->id])]]);
+    $page->update(['strips' => [cardsStrip('c', [$first, [...$second, 'icoon' => $a->id]])]]);
     SyncMediaUsage::run($page);
 
-    expect(usageRows($page))->toBe(["published c kaarten.0.icoon {$a->id}", "published c kaarten.1.icoon {$a->id}"])
-        ->and(MediaUsage::query()->where('field', 'kaarten.0.icoon')->value('id'))->toBe($kept);
+    expect(usageRows($page))->toBe(collect([
+        "published c kaarten.{$first['id']}.icoon {$a->id}",
+        "published c kaarten.{$second['id']}.icoon {$a->id}",
+    ])->sort()->values()->all())
+        ->and(MediaUsage::query()->where('field', "kaarten.{$first['id']}.icoon")->value('id'))->toBe($kept);
 });
 
 it('drops the places a page no longer holds', function (): void {
@@ -185,38 +235,68 @@ it('gives no place to the id of a file that is not in the library', function ():
     expect(usageRows($page))->toBe([]);
 });
 
-it('keeps the places of a strip whose type left the catalogue, and gives its copy in the draft the same places', function (): void {
-    $a = Media::factory()->create();
-    $strip = storedStrip('oud', ['beeld' => $a->id], id: 'o');
-    $page = Page::factory()->withStrips([$strip])->create();
-    MediaUsage::factory()->for($a)->for($page)->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'beeld']);
+describe('a strip whose type left the catalogue', function (): void {
+    it('keeps its places, and its copy in the draft gets the same places', function (): void {
+        $a = Media::factory()->create();
+        $strip = storedStrip('oud', ['beeld' => $a->id], id: 'o');
+        $page = Page::factory()->withStrips([$strip])->create();
+        MediaUsage::factory()->for($a)->for($page)->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'beeld']);
 
-    $page->update(['draft_strips' => [$strip, cardsWithIcons('c', [$a->id])]]);
-    SyncMediaUsage::run($page);
+        $page->update(['draft_strips' => [$strip, cardsStrip('c', [$card = iconCard($a->id)])]]);
+        SyncMediaUsage::run($page);
 
-    expect(usageRows($page))->toBe([
-        "draft c kaarten.0.icoon {$a->id}",
-        "draft o beeld {$a->id}",
-        "published o beeld {$a->id}",
-    ]);
-});
+        expect(usageRows($page))->toBe([
+            "draft c kaarten.{$card['id']}.icoon {$a->id}",
+            "draft o beeld {$a->id}",
+            "published o beeld {$a->id}",
+        ]);
+    });
 
-it('drops the places of a strip whose type left the catalogue once it is off the page', function (): void {
-    $a = Media::factory()->create();
-    $page = Page::factory()->withStrips([])->create();
-    MediaUsage::factory()->for($a)->for($page)->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'beeld']);
+    it('holds the file its values hold after publishing, the file of the draft', function (): void {
+        [$a, $b] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->published()
+            ->withStrips([storedStrip('oud', ['beeld' => $a->id], id: 'o')])
+            ->withDraft([storedStrip('oud', ['beeld' => $b->id], id: 'o')])
+            ->create();
+        MediaUsage::factory()->for($a)->for($page)->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'beeld']);
+        MediaUsage::factory()->for($b)->for($page)->draft()->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'beeld']);
 
-    SyncMediaUsage::run($page);
+        PublishPage::run($page);
 
-    expect(usageRows($page))->toBe([]);
+        expect(usageRows($page))->toBe(["published o beeld {$b->id}"]);
+    });
+
+    it('reads the file of an item of a list by the id of the item', function (): void {
+        [$a, $b] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->published()
+            ->withStrips([storedStrip('oud', ['fotos' => [['id' => 'x', 'foto' => $a->id]]], id: 'o')])
+            ->withDraft([storedStrip('oud', ['fotos' => [['id' => 'y', 'foto' => null], ['id' => 'x', 'foto' => (string) $b->id]]], id: 'o')])
+            ->create();
+        MediaUsage::factory()->for($a)->for($page)->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'fotos.x.foto']);
+        MediaUsage::factory()->for($b)->for($page)->draft()->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'fotos.x.foto']);
+
+        PublishPage::run($page);
+
+        expect(usageRows($page))->toBe(["published o fotos.x.foto {$b->id}"]);
+    });
+
+    it('drops its places once it is off the page', function (): void {
+        $a = Media::factory()->create();
+        $page = Page::factory()->withStrips([])->create();
+        MediaUsage::factory()->for($a)->for($page)->create(['strip_id' => 'o', 'strip_type' => 'oud', 'field' => 'beeld']);
+
+        SyncMediaUsage::run($page);
+
+        expect(usageRows($page))->toBe([]);
+    });
 });
 
 it('leaves the places of other pages alone', function (): void {
     $a = Media::factory()->create();
-    $other = Page::factory()->withStrips([cardsWithIcons('c', [$a->id])])->create();
+    $other = Page::factory()->withStrips([cardsStrip('c', [$card = iconCard($a->id)])])->create();
     SyncMediaUsage::run($other);
 
     SyncMediaUsage::run(Page::factory()->create());
 
-    expect(usageRows($other))->toBe(["published c kaarten.0.icoon {$a->id}"]);
+    expect(usageRows($other))->toBe(["published c kaarten.{$card['id']}.icoon {$a->id}"]);
 });

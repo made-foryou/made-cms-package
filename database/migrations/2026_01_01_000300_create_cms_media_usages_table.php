@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('strip_id');
             // The key of the strip type, so the place is named from the catalogue without reading the strips.
             $table->string('strip_type');
-            // The path of the field in the strip: "foto", or "kaarten.2.foto" in the third item of a list.
+            // The path of the field in the strip: "foto", or "kaarten.{id}.foto" in an item of a list, by the id of the item.
             $table->string('field');
             $table->unique(['page_id', 'version', 'strip_id', 'field'], 'cms_media_usages_place_unique');
             $table->index(['media_id', 'page_id']);

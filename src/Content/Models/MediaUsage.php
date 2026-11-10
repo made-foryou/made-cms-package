@@ -21,7 +21,7 @@ use Made\CmsPackage\Database\Factories\Content\MediaUsageFactory;
  * @property UsageVersion $version
  * @property string $strip_id
  * @property string $strip_type the key of the strip type; it may no longer be in the catalogue
- * @property string $field the path of the field in the strip: "foto", or "kaarten.2.foto" in an item of a list
+ * @property string $field the path of the field in the strip: "foto", or "kaarten.{id}.foto" in an item of a list
  * @property-read Media|null $media
  * @property-read Page|null $page
  *
@@ -66,11 +66,13 @@ class MediaUsage extends Model
     }
 
     /**
+     * The page the place is on, also when it is deleted: a deleted page keeps its places until it is pruned.
+     *
      * @return BelongsTo<Page, $this>
      */
     public function page(): BelongsTo
     {
-        return $this->belongsTo(Page::class, 'page_id');
+        return $this->belongsTo(Page::class, 'page_id')->withTrashed();
     }
 
     /**

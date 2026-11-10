@@ -168,14 +168,39 @@ abstract class Field
     }
 
     /**
-     * The ids of the files of the media library a stored value holds: an image its file, a list the files of its items.
-     * Fields without a file hold none.
+     * The ids of the files of the media library a stored value holds, each once: an image its file, a list the files
+     * of its items. Fields without a file hold none.
      *
      * @return list<int>
      */
-    public function media(mixed $value): array
+    final public function media(mixed $value): array
+    {
+        return array_values(array_unique(array_values($this->places($value, $this->key))));
+    }
+
+    /**
+     * The files of the media library a stored value holds, by the path of their place: an image its file at the path
+     * it gets, a list the files of its items by their position ("kaarten.2.foto"). Fields without a file hold none.
+     * It is the one place that says which values are files; the usage of the media library is built from it.
+     *
+     * @param  string  $path  the path of this field in the strip
+     * @return array<string, int>
+     */
+    public function places(mixed $value, string $path): array
     {
         return [];
+    }
+
+    /**
+     * The labels that name a place in this field, from the rest of its path after its key: the label of the field
+     * itself without a rest. A list names an item by its label and number. Null when the rest is no place in it.
+     *
+     * @param  list<string>  $rest
+     * @return list<string>|null
+     */
+    public function placeLabels(array $rest): ?array
+    {
+        return $rest === [] ? [$this->getLabel()] : null;
     }
 
     /**

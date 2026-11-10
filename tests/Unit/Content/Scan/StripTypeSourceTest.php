@@ -181,5 +181,5 @@ it('writes classes that Pint leaves as they are', function (): void {
         'Dagen.php' => sourceOf('dagen', 'Dagen', [new ScanField('dag', 'choice', 'span', options: ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'])]),
     ];
 
-    expect(pintAccepts($sources))->toBeTrue();
+    expect(pintComplaints($sources))->toBe('');
 });

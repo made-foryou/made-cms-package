@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -53,3 +56,23 @@ it('answers 401 to a guest', function (): void {
     $this->postJson('made-cms/pages/'.$page->id.'/strips/b/restore', ['type' => 'hero', 'visible' => true, 'values' => [], 'position' => 0])
         ->assertUnauthorized();
 });
+
+it('puts a heading back at its published level unless the editor opens Meta-overzicht', function (Role $role, string $tag): void {
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('banner', ['kop' => ['text' => 'Welkom', 'tag' => 'h3'], 'label' => 'Gepubliceerd'], id: 'b'),
+    ])->withDraft([])->create();
+
+    $this->postJson('made-cms/pages/'.$page->id.'/strips/b/restore', [
+        'type' => 'banner',
+        'visible' => true,
+        'values' => ['kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'label' => 'Terug'],
+        'position' => 0,
+    ])->assertCreated();
+
+    expect($page->refresh()->draft_strips[0]['values']['kop'] ?? null)->toBe(['text' => 'Welkom', 'tag' => $tag]);
+})->with([
+    'content manager' => [Role::ContentManager, 'h3'],
+    'seo specialist' => [Role::SeoSpecialist, 'h1'],
+]);

@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -128,3 +131,59 @@ it('answers 401 to a guest', function (): void {
 
     $this->putJson('made-cms/pages/'.$page->id.'/strips/a', ['values' => panelHero()])->assertUnauthorized();
 });
+
+const PANEL_CARD = '3d6b8e2f-4a5c-4d9e-bf0a-2b3c4d5e6f7a';
+
+/**
+ * A published banner with its heading at H3 and a card whose title is at H2, edited by an editor with the role.
+ */
+function bannerPageFor(Role $role): Page
+{
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    test()->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+
+    return Page::factory()->published()->withStrips([
+        storedStrip('banner', ['kop' => ['text' => 'Welkom', 'tag' => 'h3'], 'kaarten' => [['id' => PANEL_CARD, 'titel' => ['text' => 'Spelen', 'tag' => 'h2']]]], id: 'a'),
+    ])->create();
+}
+
+/**
+ * Every field of the banner as the side panel sends it, with other texts and other levels.
+ *
+ * @return array<string, mixed>
+ */
+function bannerAtNewLevels(): array
+{
+    return [
+        'kop' => ['text' => 'Welkom bij de club', 'tag' => 'h1'],
+        'label' => null,
+        'kaarten' => [['id' => PANEL_CARD, 'titel' => ['text' => 'Spelen en trainen', 'tag' => 'h3']]],
+    ];
+}
+
+it('stores the text of a heading but keeps its level for an editor who does not open Meta-overzicht, also in a list', function (Role $role): void {
+    $page = bannerPageFor($role);
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a', ['values' => bannerAtNewLevels()])
+        ->assertOk()
+        ->assertJsonPath('strip.values.kop', ['text' => 'Welkom bij de club', 'tag' => 'h3'])
+        ->assertJsonPath('strip.values.kaarten.0.titel', ['text' => 'Spelen en trainen', 'tag' => 'h2']);
+
+    expect($page->refresh()->draft_strips[0]['values']['kop'] ?? null)->toBe(['text' => 'Welkom bij de club', 'tag' => 'h3']);
+})->with([
+    'content manager' => [Role::ContentManager],
+    'webmaster' => [Role::Webmaster],
+    'owner' => [Role::Owner],
+]);
+
+it('changes the level of a heading for an editor who opens Meta-overzicht, also in a list', function (Role $role): void {
+    $page = bannerPageFor($role);
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a', ['values' => bannerAtNewLevels()])
+        ->assertOk()
+        ->assertJsonPath('strip.values.kop', ['text' => 'Welkom bij de club', 'tag' => 'h1'])
+        ->assertJsonPath('strip.values.kaarten.0.titel', ['text' => 'Spelen en trainen', 'tag' => 'h3']);
+})->with([
+    'seo specialist' => [Role::SeoSpecialist],
+    'admin' => [Role::Admin],
+]);

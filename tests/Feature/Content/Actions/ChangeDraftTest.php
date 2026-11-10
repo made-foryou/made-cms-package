@@ -181,7 +181,7 @@ it('keeps a change to another strip that was stored after the page was loaded', 
     $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])->create();
     $loaded = Page::query()->findOrFail($page->id);
 
-    UpdateStrip::run(Page::query()->findOrFail($page->id), 'b', ['kaarten' => [['titel' => 'Elders']]]);
+    UpdateStrip::run(Page::query()->findOrFail($page->id), 'b', ['kaarten' => [['titel' => 'Elders']]], chooseLevels: true);
     $change($loaded);
 
     expect(firstCardTitle($page, 'b'))->toBe('Elders')
@@ -192,7 +192,7 @@ it('keeps a change to another strip that was stored after the page was loaded', 
         static fn (PageStrips $strips): bool => $strips->count() === 3,
     ],
     'UpdateStrip' => [
-        static fn (Page $page): Strip => UpdateStrip::run($page, 'a', ['kaarten' => [['titel' => 'Hier']]]),
+        static fn (Page $page): Strip => UpdateStrip::run($page, 'a', ['kaarten' => [['titel' => 'Hier']]], chooseLevels: true),
         static fn (PageStrips $strips): bool => ($strips->find('a')?->values['kaarten'][0]['titel'] ?? null) === 'Hier',
     ],
     'MoveStrip' => [
@@ -208,7 +208,7 @@ it('keeps a change to another strip that was stored after the page was loaded', 
         static fn (PageStrips $strips): bool => $strips->find('a')?->visible === false,
     ],
     'RestoreStrip' => [
-        static fn (Page $page): Strip => RestoreStrip::run($page, new Strip('c', 'cards', true, ['kaarten' => []]), 0),
+        static fn (Page $page): Strip => RestoreStrip::run($page, new Strip('c', 'cards', true, ['kaarten' => []]), 0, chooseLevels: true),
         static fn (PageStrips $strips): bool => draftStripIds($strips) === ['c', 'a', 'b'],
     ],
 ]);
@@ -250,7 +250,7 @@ it('publishes the draft as it is stored, not as the loaded page holds it', funct
     $page = Page::factory()->published()->withStrips([storedStrip(id: 'a')])->create();
     $loaded = Page::query()->findOrFail($page->id);
 
-    UpdateStrip::run(Page::query()->findOrFail($page->id), 'a', ['kaarten' => [['titel' => 'Nieuw']]]);
+    UpdateStrip::run(Page::query()->findOrFail($page->id), 'a', ['kaarten' => [['titel' => 'Nieuw']]], chooseLevels: true);
     PublishPage::run($loaded);
 
     $stored = Page::query()->findOrFail($page->id);
@@ -264,7 +264,7 @@ it('discards the draft as it is stored, not as the loaded page holds it', functi
     $page = Page::factory()->published()->withStrips([storedStrip(id: 'a')])->create();
     $loaded = Page::query()->findOrFail($page->id);
 
-    UpdateStrip::run(Page::query()->findOrFail($page->id), 'a', ['kaarten' => [['titel' => 'Nieuw']]]);
+    UpdateStrip::run(Page::query()->findOrFail($page->id), 'a', ['kaarten' => [['titel' => 'Nieuw']]], chooseLevels: true);
     DiscardDraft::run($loaded);
 
     expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();

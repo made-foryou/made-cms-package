@@ -36,7 +36,7 @@ it('stores the validated and cleaned values in the draft', function (): void {
         ...heroValues(),
         'tekst' => '<p>Wij <strong>spelen</strong>.</p><script>x</script>',
         'onbekend' => 'weg',
-    ]);
+    ], chooseLevels: true);
 
     $stored = Page::query()->findOrFail($page->id);
 
@@ -78,7 +78,7 @@ function storedHeroValues(): array
 it('changes one field and leaves the other fields of the strip alone', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
 
-    $strip = UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV']);
+    $strip = UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV'], chooseLevels: true);
 
     expect($strip->values)->toBe([...storedHeroValues(), 'kop' => 'Welkom bij TTV'])
         ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$strip->toArray()]);
@@ -88,7 +88,7 @@ it('starts from the published strip when the page has no draft', function (): vo
     $published = [storedStrip('hero', storedHeroValues(), id: 'a')];
     $page = Page::factory()->published()->withStrips($published)->create();
 
-    $strip = UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.']);
+    $strip = UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.'], chooseLevels: true);
 
     expect($strip->values)->toBe([...storedHeroValues(), 'intro' => 'Sinds 1962.'])
         ->and(Page::query()->findOrFail($page->id)->strips)->toBe($published);
@@ -97,11 +97,11 @@ it('starts from the published strip when the page has no draft', function (): vo
 it('drops the draft once a field is changed back', function (): void {
     $page = Page::factory()->published()->withStrips([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
 
-    UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV']);
+    UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV'], chooseLevels: true);
 
     expect($page->draft_strips)->not->toBeNull();
 
-    UpdateStrip::run($page, 'a', ['kop' => 'TTV Merwestad']);
+    UpdateStrip::run($page, 'a', ['kop' => 'TTV Merwestad'], chooseLevels: true);
 
     expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
 });
@@ -113,9 +113,9 @@ it('answers the strip as the published page holds it once the draft falls away',
     /** @var list<array<string, mixed>> $buttons */
     $buttons = storedHeroValues()['knoppen'];
 
-    UpdateStrip::run($page, 'a', ['knoppen' => [$buttons[0]]]);
+    UpdateStrip::run($page, 'a', ['knoppen' => [$buttons[0]]], chooseLevels: true);
     // "Ongedaan maken" brings the second button back; the draft no longer knows its id, so it gets a new one.
-    $strip = UpdateStrip::run($page, 'a', ['knoppen' => $buttons]);
+    $strip = UpdateStrip::run($page, 'a', ['knoppen' => $buttons], chooseLevels: true);
 
     $stored = Page::query()->findOrFail($page->id);
 
@@ -127,7 +127,7 @@ it('answers the strip as the published page holds it once the draft falls away',
 it('clears a field that it gets as null', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', storedHeroValues(), id: 'a')])->create();
 
-    $strip = UpdateStrip::run($page, 'a', ['label' => null, 'tekst' => null]);
+    $strip = UpdateStrip::run($page, 'a', ['label' => null, 'tekst' => null], chooseLevels: true);
 
     expect($strip->values['label'])->toBeNull()
         ->and($strip->values['tekst'])->toBeNull()
@@ -140,7 +140,7 @@ it('merges the items of a list by their id', function (): void {
     $strip = UpdateStrip::run($page, 'a', ['knoppen' => [
         ['tekst' => 'Agenda', 'gaat_naar' => ['url' => '/agenda']],
         ['id' => '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', 'tekst' => 'Word lid'],
-    ]]);
+    ]], chooseLevels: true);
 
     /** @var list<array<string, mixed>> $knoppen */
     $knoppen = $strip->values['knoppen'];
@@ -155,9 +155,9 @@ it('merges the items of a list by their id', function (): void {
 
 it('keeps the ids of the items when other fields change', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
-    $first = UpdateStrip::run($page, 'a', heroValues());
+    $first = UpdateStrip::run($page, 'a', heroValues(), chooseLevels: true);
 
-    $second = UpdateStrip::run($page, 'a', ['kop' => 'Nieuw']);
+    $second = UpdateStrip::run($page, 'a', ['kop' => 'Nieuw'], chooseLevels: true);
 
     expect($second->values['knoppen'])->toBe($first->values['knoppen']);
 });
@@ -168,7 +168,7 @@ it('checks the merged values, also the fields it does not get', function (): voi
     $page = Page::factory()->withDraft($draft)->create();
 
     try {
-        UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.']);
+        UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.'], chooseLevels: true);
         $this->fail('The values were accepted.');
     } catch (ValidationException $exception) {
         expect($exception->errors())->toHaveKey('kop')->not->toHaveKey('intro');
@@ -181,13 +181,13 @@ it('checks the merged values, also the fields it does not get', function (): voi
 it('drops stored values of fields the type no longer has', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', [...storedHeroValues(), 'oud' => 'x'], id: 'a')])->create();
 
-    expect(UpdateStrip::run($page, 'a', ['kop' => 'Nieuw'])->values)->not->toHaveKey('oud');
+    expect(UpdateStrip::run($page, 'a', ['kop' => 'Nieuw'], chooseLevels: true)->values)->not->toHaveKey('oud');
 });
 
 it('keeps the id, type and visibility of the strip', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', visible: false, id: 'a')])->create();
 
-    $strip = UpdateStrip::run($page, 'a', heroValues());
+    $strip = UpdateStrip::run($page, 'a', heroValues(), chooseLevels: true);
 
     expect($strip->id)->toBe('a')
         ->and($strip->type)->toBe('hero')
@@ -198,7 +198,7 @@ it('dispatches an event for the updated strip', function (): void {
     Event::fake([StripUpdated::class]);
     $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
 
-    UpdateStrip::run($page, 'a', heroValues());
+    UpdateStrip::run($page, 'a', heroValues(), chooseLevels: true);
 
     Event::assertDispatched(StripUpdated::class, fn (StripUpdated $event): bool => $event->page->is($page)
         && $event->strip->id === 'a'
@@ -211,7 +211,7 @@ it('refuses values that break the definition', function (array $change, string $
     $page = Page::factory()->withDraft($draft)->create();
 
     try {
-        UpdateStrip::run($page, 'a', [...heroValues(), ...$change]);
+        UpdateStrip::run($page, 'a', [...heroValues(), ...$change], chooseLevels: true);
         $this->fail('The values were accepted.');
     } catch (ValidationException $exception) {
         expect($exception->errors())->toHaveKey($path);
@@ -231,7 +231,7 @@ it('labels the fields in the validation messages', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
 
     try {
-        UpdateStrip::run($page, 'a', [...heroValues(), 'kop' => null]);
+        UpdateStrip::run($page, 'a', [...heroValues(), 'kop' => null], chooseLevels: true);
         $this->fail('The values were accepted.');
     } catch (ValidationException $exception) {
         expect($exception->errors()['kop'][0] ?? '')->toContain('Kop');
@@ -243,7 +243,7 @@ it('refuses with the messages of the CMS, in its language', function (string $lo
     $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
 
     try {
-        UpdateStrip::run($page, 'a', [...heroValues(), 'kop' => null]);
+        UpdateStrip::run($page, 'a', [...heroValues(), 'kop' => null], chooseLevels: true);
         $this->fail('The values were accepted.');
     } catch (ValidationException $exception) {
         expect($exception->errors()['kop'][0] ?? '')->toBe($message);
@@ -257,7 +257,7 @@ it('refuses a strip that is not on the page', function (): void {
     Event::fake([StripUpdated::class]);
     $page = Page::factory()->withDraft([storedStrip('hero', id: 'a')])->create();
 
-    expect(fn (): mixed => UpdateStrip::run($page, 'x', heroValues()))->toThrow(StripNotFound::class);
+    expect(fn (): mixed => UpdateStrip::run($page, 'x', heroValues(), chooseLevels: true))->toThrow(StripNotFound::class);
 
     Event::assertNotDispatched(StripUpdated::class);
 });
@@ -267,7 +267,7 @@ it('refuses to change a strip of a type that no longer exists and keeps its data
     $draft = [storedStrip('oud', ['x' => 1], id: 'old')];
     $page = Page::factory()->withDraft($draft)->create();
 
-    expect(fn (): mixed => UpdateStrip::run($page, 'old', ['x' => 2]))->toThrow(UnknownStripType::class);
+    expect(fn (): mixed => UpdateStrip::run($page, 'old', ['x' => 2], chooseLevels: true))->toThrow(UnknownStripType::class);
 
     expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
     Event::assertNotDispatched(StripUpdated::class);
@@ -280,7 +280,7 @@ it('stores a heading that was stored as text as a text with its level when anoth
         storedStrip('banner', ['kop' => 'Welkom', 'kaarten' => [['id' => $card, 'titel' => 'Spelen']]], id: 'a'),
     ])->create();
 
-    $strip = UpdateStrip::run($page, 'a', ['label' => 'Nieuw']);
+    $strip = UpdateStrip::run($page, 'a', ['label' => 'Nieuw'], chooseLevels: true);
 
     expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h2'])
         ->and($strip->values['kaarten'])->toBe([['id' => $card, 'titel' => ['text' => 'Spelen', 'tag' => 'h3']]]);
@@ -292,7 +292,7 @@ it('refuses a level its heading does not offer', function (array $values, string
     $page = Page::factory()->withDraft($draft)->create();
 
     try {
-        UpdateStrip::run($page, 'a', $values);
+        UpdateStrip::run($page, 'a', $values, chooseLevels: true);
         $this->fail('The values were accepted.');
     } catch (ValidationException $exception) {
         expect(array_keys($exception->errors()))->toBe([$path]);
@@ -303,3 +303,61 @@ it('refuses a level its heading does not offer', function (array $values, string
     'its own heading' => [['kop' => ['text' => 'Welkom', 'tag' => 'h4']], 'kop.tag'],
     'a heading in a card' => [['kaarten' => [['titel' => ['text' => 'Spelen', 'tag' => 'h1']]]], 'kaarten.0.titel.tag'],
 ]);
+
+/**
+ * A published banner with a heading of its own at H3 and a card whose title is at H2: neither is the default level.
+ *
+ * @return array{0: Page, 1: string}
+ */
+function bannerAtOtherLevels(): array
+{
+    app()->instance(StripTypes::class, new StripTypes([new Banner]));
+    $card = (string) Str::uuid();
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('banner', ['kop' => ['text' => 'Welkom', 'tag' => 'h3'], 'kaarten' => [['id' => $card, 'titel' => ['text' => 'Spelen', 'tag' => 'h2']]]], id: 'a'),
+    ])->create();
+
+    return [$page, $card];
+}
+
+it('keeps the stored level of every heading for an editor who does not choose levels, also in a list', function (): void {
+    [$page, $card] = bannerAtOtherLevels();
+
+    $strip = UpdateStrip::run($page, 'a', [
+        'kop' => ['text' => 'Welkom bij de club', 'tag' => 'h1'],
+        'kaarten' => [['id' => $card, 'titel' => ['text' => 'Spelen en trainen', 'tag' => 'h3']], ['titel' => ['text' => 'Nieuw', 'tag' => 'h2']]],
+    ], chooseLevels: false);
+
+    expect($strip->values['kop'])->toBe(['text' => 'Welkom bij de club', 'tag' => 'h3'])
+        ->and($strip->values['kaarten'][0])->toBe(['id' => $card, 'titel' => ['text' => 'Spelen en trainen', 'tag' => 'h2']])
+        ->and($strip->values['kaarten'][1]['titel'])->toBe(['text' => 'Nieuw', 'tag' => 'h3'])
+        ->and(Page::query()->findOrFail($page->id)->draft_strips[0]['values']['kop'] ?? null)->toBe(['text' => 'Welkom bij de club', 'tag' => 'h3']);
+});
+
+it('keeps a level that is not the default level when an editor who does not choose levels empties a heading', function (): void {
+    [$page, $card] = bannerAtOtherLevels();
+
+    $strip = UpdateStrip::run($page, 'a', ['kaarten' => [['id' => $card, 'titel' => null]]], chooseLevels: false);
+
+    expect($strip->values['kaarten'][0]['titel'])->toBe(['text' => null, 'tag' => 'h2']);
+});
+
+it('ignores a level the heading does not offer from an editor who does not choose levels', function (): void {
+    [$page] = bannerAtOtherLevels();
+
+    $strip = UpdateStrip::run($page, 'a', ['kop' => ['text' => 'Welkom', 'tag' => 'h6']], chooseLevels: false);
+
+    expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h3']);
+});
+
+it('changes the level of a heading for an editor who chooses levels, also in a list', function (): void {
+    [$page, $card] = bannerAtOtherLevels();
+
+    $strip = UpdateStrip::run($page, 'a', [
+        'kop' => ['text' => 'Welkom', 'tag' => 'h1'],
+        'kaarten' => [['id' => $card, 'titel' => ['text' => 'Spelen', 'tag' => 'h3']]],
+    ], chooseLevels: true);
+
+    expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h1'])
+        ->and($strip->values['kaarten'][0]['titel'])->toBe(['text' => 'Spelen', 'tag' => 'h3']);
+});

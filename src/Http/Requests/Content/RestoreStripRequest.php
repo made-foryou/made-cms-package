@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Requests\Content;
 
 use Made\CmsPackage\Content\Data\Strip;
+use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
@@ -45,6 +46,14 @@ final class RestoreStripRequest extends LauncherRequest
         $values = $this->array('values');
 
         return new Strip($id, $this->string('type')->toString(), $this->boolean('visible'), $values);
+    }
+
+    /**
+     * Whether the editor chooses the level of a heading; for anyone else the Action keeps the stored level.
+     */
+    public function choosesLevels(): bool
+    {
+        return Visitor::choosesHeadingLevels($this);
     }
 
     public function position(): int

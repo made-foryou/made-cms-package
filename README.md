@@ -215,6 +215,7 @@ namespace App\Cms\Strips;
 use App\Enums\ButtonStyle;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\RichText;
@@ -234,6 +235,7 @@ final class Hero extends StripType
             Text::make('label')->hint('Korte regel boven de kop.'),
             Heading::make('kop')->tag('h1')->required(),
             RichText::make('intro'),
+            Image::make('foto')->label('Achtergrondfoto')->hint('Minimaal 1600 px breed.'),
             Items::make('knoppen', [
                 Text::make('tekst')->required(),
                 Link::make('gaat_naar')->required(),
@@ -254,14 +256,15 @@ final class Hero extends StripType
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published; an address the validation would refuse, e.g. from a seeder, renders as `null` too. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
 | `Heading::make('kop')` | `{"text": "…", "tag": "h2"}` | `{"text": "…", "tag": "h2"}` or `null` | A text (as a `Text`) with its level: `h1` to `h6`, or `span` for a text that is no heading for search engines. `->tag('h1')` gives the level of the design (`h2` by default), `->tags(['h1', 'h2', 'h3'])` limits the levels to choose from (all seven by default). A text stored before the field became a `Heading`, and a level no longer in `tags()`, count as the default level. `null` without a text. See [Headings](#headings). |
+| `Image::make('foto')` | the id of a file of the [media library](#media) | `{"url": "…", "alt": "…", "width": 1600, "height": 1067, "focal": {"x": 0.5, "y": 0.5}}` or `null` | An image of the library, so a file changes everywhere it is used. The url comes from the media disk, never the place on the disk; the alt text is the one of the file (an empty text without one); an svg has no `width` and `height`; without a focal point it is the centre. `null` without an image and when its file is gone or is no image, so the site shows its own fallback; saving or publishing the strip refuses such a file. No `default()`: the id of a file differs per database. See [Images](#images). |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
 | `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one, `itemLabel('Knop')` names one item in the side panel ("Knop toevoegen", "Item" by default). One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
 
 Every field takes `label()` (by default the key as a sentence: `gaat_naar` becomes "Gaat naar"), `hint()`, `required()` and `default()`. Fields are immutable: each of these returns a changed copy.
 
-The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options, a heading level that is no tag or a default level outside `tags()`) throws an exception that names the strip type.
+The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options, a heading level that is no tag or a default level outside `tags()`, an image with a default) throws an exception that names the strip type.
 
-Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the labels and `messages()` for Dutch and English messages of the package, which take the place of the host's `validation.*` lines), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top) how new values combine with stored ones (`merge()`, which `UpdateStrip` uses) and the description the side panel builds its controls from (`describe()`: the key, name and fields, each field with its `type()`, label, hint, default and what its type adds).
+Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the labels and `messages()` for Dutch and English messages of the package, which take the place of the host's `validation.*` lines), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render($values, $media)`, every field in order, a missing one from its default, images from the files `FindMedia` found, with `with()` on top), the files of the media library the strip uses (`media()`) how new values combine with stored ones (`merge()`, which `UpdateStrip` uses) and the description the side panel builds its controls from (`describe()`: the key, name and fields, each field with its `type()`, label, hint, default and what its type adds).
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 
@@ -324,6 +327,7 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
 - A field marked with [`data-cms-field`](#the-data-cms-attributes) changes on the site while the editor types; anything else shows once the draft is saved and the frame reloads at the same scroll position, with the same strip chosen.
 - Clicking a field on the site opens it in the side panel with the focus in it, inside its item when it lies in a list. The tab with the name of the strip only chooses the strip.
+- An `Image` field shows the file it holds by its name and size ("1920 × 1080 · 412 kB"), "Nog geen afbeelding", or that its file is no longer in Media. Choosing and uploading an image in the panel follow.
 
 The bar shows whether the page is live and what its draft changes:
 
@@ -390,7 +394,7 @@ The site renders the strips itself, in its own stack; the package hands over the
 
 ```php
 [
-    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'intro' => '<p>…</p>', 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
+    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'intro' => '<p>…</p>', 'foto' => ['url' => 'https://…/storage/media/01k9…/teamfoto.webp', 'alt' => 'Het eerste team', 'width' => 1600, 'height' => 1067, 'focal' => ['x' => 0.5, 'y' => 0.5]], 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
     ['id' => '4f0a…', 'type' => 'cards', 'kop' => 'Trainingen', 'kaarten' => [/* … */], 'aantal' => 3],
 ]
 ```
@@ -461,6 +465,31 @@ A `Heading` field holds the level of the heading next to its text, so the elemen
 
 A heading that was a `Text` switches without a migration: change `Text::make('kop')` into `Heading::make('kop')` with the level the view printed (`->tag('h1')`), and print the heading as above. A stored text counts as that text with the default level until an editor saves the strip; publishing and the count of changes treat both the same.
 
+### Images
+
+An `Image` field stores the id of a file of the [media library](#media) and renders as `{url, alt, width, height, focal}`, so the site never deals with ids. `RenderStrips` finds the files of every image on the page in one query. Without an image, and when its file is gone from the library or is no image, the field is `null`: show a fallback of your own. The focal point (`x` and `y` from 0 to 1) is the place a crop keeps in view; use it as `object-position`.
+
+```blade
+@if ($strip->foto)
+    <img src="{{ $strip->foto['url'] }}" alt="{{ $strip->foto['alt'] }}" width="{{ $strip->foto['width'] }}" height="{{ $strip->foto['height'] }}"
+         style="object-fit: cover; object-position: {{ $strip->foto['focal']['x'] * 100 }}% {{ $strip->foto['focal']['y'] * 100 }}%" data-cms-field="foto">
+@endif
+```
+
+```tsx
+{strip.foto && (
+  <img src={strip.foto.url} alt={strip.foto.alt} width={strip.foto.width ?? undefined} height={strip.foto.height ?? undefined}
+       style={{ objectFit: 'cover', objectPosition: `${strip.foto.focal.x * 100}% ${strip.foto.focal.y * 100}%` }} data-cms-field="foto" />
+)}
+```
+
+```vue
+<img v-if="strip.foto" :src="strip.foto.url" :alt="strip.foto.alt" :width="strip.foto.width" :height="strip.foto.height"
+     :style="{ objectFit: 'cover', objectPosition: `${strip.foto.focal.x * 100}% ${strip.foto.focal.y * 100}%` }" data-cms-field="foto" />
+```
+
+The alt text belongs to the file, so it is the same on every page; an empty one means the image has none yet. An svg has no `width` and `height` (`null`). With `data-cms-field` on the `<img>` the editor sees another image at once; a `srcset`, a `<picture>` or a background reloads the frame instead.
+
 ### The data-cms attributes
 
 - `data-cms-strip` with the id of the strip on the root element of every strip is required. It is the only dynamic value: the [edit shell](#edit-shell) finds the strip by it.
@@ -476,11 +505,12 @@ The edit shell patches the element with `data-cms-field` in the page as it is, s
 | `Link` | Has the address in its `href`. |
 | `Button` | Holds only the text and has the address in its `href`. |
 | `Heading` | Is the element of its level and holds only the text, as `<x-made-cms::heading>` prints it. An element of another level reloads the frame. |
+| `Image` | Is the `<img>` that shows it, without `srcset` and not in a `<picture>`; the shell sets its `src` and `alt`, and its `width` and `height` when the site prints them. Another element (a background) reloads the frame. |
 | `Choice`, `Items` | Not patched: the frame reloads. |
 
 - In `data-cms-items="knoppen"` every direct child is one item, in the order of the list. A `data-cms-field` inside it names a field of that item (`titel`, not `kaarten.0.titel`) and may sit on the child itself. A view that leaves an item out shows fewer children than there are items; the shell then patches nothing in that list and reloads instead.
 - An emptied field, a link to a page that is not published, an item that is added, removed or moved, and a strip that is shown or hidden reload the frame: they decide whether an element shows at all, or a default fills them in.
-- The shell changes only the text node, `href` or HTML inside the element, never the element itself, so React and Vue keep the patch until the page renders again.
+- The shell changes only the text node, `href`, HTML or the attributes of an image inside the element, never the element itself, so React and Vue keep the patch until the page renders again.
 
 ```blade
 <ul data-cms-items="kaarten">
@@ -547,7 +577,7 @@ $media = UploadMedia::run(new UploadedMedia(
 UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 ```
 
-A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search('merwestad')`, and the folders with `MediaFolder::query()->alphabetical()`.
+A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search('merwestad')`, and the folders with `MediaFolder::query()->alphabetical()`. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
 
 Config keys: `media.disk`, `media.max_upload_kb`, `media.allowed_mimes`, `media.image.driver`, `media.image.max_width`, `media.image.format` and `media.image.quality`.
 

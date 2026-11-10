@@ -175,6 +175,27 @@ abstract class StripType
     }
 
     /**
+     * The values of an editor who does not choose the level of a heading, with every heading at its stored level
+     * (also in a list, by the id of the item) and a new one at its default level. Only the fields it gets change.
+     *
+     * @param  array<string, mixed>  $stored  stored values in their current form
+     * @param  array<string, mixed>  $values  the values to store
+     * @return array<string, mixed>
+     */
+    final public function keepLevels(array $stored, array $values): array
+    {
+        foreach ($this->fields() as $field) {
+            $key = $field->getKey();
+
+            if (array_key_exists($key, $values)) {
+                $values[$key] = $field->keepLevel($stored[$key] ?? null, $values[$key]);
+            }
+        }
+
+        return $values;
+    }
+
+    /**
      * The values as they are stored: rich text cleaned, links in their stored form.
      *
      * @param  array<string, mixed>  $values  validated values

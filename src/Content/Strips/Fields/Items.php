@@ -238,6 +238,44 @@ final class Items extends Field
     }
 
     /**
+     * Every item with the levels of the stored item of the same id; an item without a known id is new, so its
+     * headings get their default level.
+     */
+    public function keepLevel(mixed $stored, mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $known = [];
+
+        foreach (is_array($stored) ? $stored : [] as $item) {
+            if (is_array($item) && is_string($item['id'] ?? null)) {
+                $known[$item['id']] = $item;
+            }
+        }
+
+        return array_map(function (mixed $item) use ($known): mixed {
+            if (! is_array($item)) {
+                return $item;
+            }
+
+            $id = $item['id'] ?? null;
+            $storedItem = is_string($id) ? ($known[$id] ?? []) : [];
+
+            foreach ($this->fields as $field) {
+                $key = $field->getKey();
+
+                if (array_key_exists($key, $item)) {
+                    $item[$key] = $field->keepLevel($storedItem[$key] ?? null, $item[$key]);
+                }
+            }
+
+            return $item;
+        }, $value);
+    }
+
+    /**
      * Always a list: every item with its id (null for an item stored without one) and every field rendered,
      * a missing one from its default.
      *

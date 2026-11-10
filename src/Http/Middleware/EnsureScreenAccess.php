@@ -18,22 +18,26 @@ use Symfony\Component\HttpFoundation\Response;
 final class EnsureScreenAccess
 {
     /**
-     * The middleware for a route of this screen: ->middleware(EnsureScreenAccess::using(Screen::Redirects)).
+     * The middleware for a route of this screen: ->middleware(EnsureScreenAccess::using(Screen::Redirects)). With
+     * more screens the route opens for an editor who opens one of them, such as uploading a file from the pages
+     * (the edit shell) and from the media library: using(Screen::Pages, Screen::Media).
      */
-    public static function using(Screen $screen): string
+    public static function using(Screen $screen, Screen ...$others): string
     {
-        return self::class.':'.$screen->value;
+        return self::class.':'.implode(',', array_map(static fn (Screen $screen): string => $screen->value, [$screen, ...$others]));
     }
 
     /**
      * @param  Closure(Request): Response  $next
      */
-    public function handle(Request $request, Closure $next, string $screen): Response
+    public function handle(Request $request, Closure $next, string ...$screens): Response
     {
         $editor = Visitor::editor($request);
 
-        if (CheckScreenAccess::run(new ScreenVisit(editor: $editor, screen: Screen::from($screen)))) {
-            return $next($request);
+        foreach ($screens as $screen) {
+            if (CheckScreenAccess::run(new ScreenVisit(editor: $editor, screen: Screen::from($screen)))) {
+                return $next($request);
+            }
         }
 
         if ($editor === null) {

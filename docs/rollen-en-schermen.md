@@ -58,7 +58,8 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 
 | Handeling | Valt onder | Waarom | Bron |
 |---|---|---|---|
-| Media kiezen en uploaden vanuit de bewerkschil | `Screen::Pages` | Hoort bij een pagina bewerken, dus ook Eigenaar en SEO-specialist kunnen een foto kiezen. Bibliotheek en beheer vallen onder `Screen::Media`. | #49, besluit 8 (voorstel) |
+| Een bestand uploaden en de alt-tekst van een bestand opslaan (`POST made-cms/media`, `PUT made-cms/media/{media}/alt`) | `Screen::Pages` of `Screen::Media` | Het uploadveld staat in de bewerkschil en in de bibliotheek. Uploaden hoort bij een pagina bewerken, dus ook Eigenaar en SEO-specialist kunnen een foto uploaden en beschrijven; de alt-tekst hoort bij het bestand en geldt overal. Eén route per handeling: `EnsureScreenAccess::using(Screen::Pages, Screen::Media)` laat door wie een van beide opent. | #49 (besluit 8), #51 |
+| Media kiezen vanuit de bewerkschil | `Screen::Pages` | Hoort bij een pagina bewerken. Bibliotheek en beheer (mappen, vervangen, verplaatsen, verwijderen) vallen onder `Screen::Media`. | #49, besluit 8 (voorstel), #53 |
 | Een link kiezen in het zijpaneel | `Screen::Pages` | Hoort bij een pagina bewerken. | #75 |
 | De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
 | Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop"), en de weergave "Koppen" naast de Opbouw | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De weergave Koppen toont daarvoor alle koppen van de pagina met de signalen; ze is alleen UI. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2 en 3), #126, #127 |
@@ -99,6 +100,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | 2026-11-06 | Het accountmenu en je account zijn altijd open voor elke ingelogde redacteur, zonder `Screen`-case. | #101 (besluit 4), #105 |
 | 2026-11-07 | Het niveau van een kop kiezen in de bewerkschil valt onder Meta-overzicht; de anderen zien het niveau als label. | #124 (besluit 2), #126 |
 | 2026-11-07 | De weergave Koppen naast de Opbouw valt ook onder Meta-overzicht; de anderen zien alleen de Opbouw. | #124 (besluit 3), #127 |
+| 2026-11-10 | Uploaden en de alt-tekst van een bestand opslaan staan open voor wie Pagina's of Media opent: één route per handeling, voor de bewerkschil en de bibliotheek. | #51 |
 
 ## Bijwerken
 

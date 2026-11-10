@@ -19,7 +19,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 
 ### 1. Inspect the Laravel app context
 
-- confirm the app is a Laravel 12 or 13 project on PHP 8.4+ with `ext-dom` and `ext-fileinfo`; for uploaded photos GD with WebP support (or Imagick), `exif`, and a `memory_limit` of at least 128 MB
+- confirm the app is a Laravel 12 or 13 project on PHP 8.4+ with `ext-dom` and `ext-fileinfo`; for uploaded photos GD with WebP support (or Imagick), `exif`, and a `memory_limit` of at least 128 MB, and for uploads through the CMS an `upload_max_filesize` and `post_max_size` of at least `media.max_upload_kb` (25 MB by default)
 - inspect the target code paths where the package should be applied
 
 ### 2. Install

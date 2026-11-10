@@ -18,6 +18,7 @@ Content management system from Made
 - Laravel 12 or 13.
 - For uploaded photos: GD with WebP support (the default) or Imagick, and `exif` so photos from a phone come out upright.
 - A `memory_limit` of at least 128 MB: GD needs about 65 MB to scale a photo of 4000 × 2667 px.
+- An `upload_max_filesize` and a `post_max_size` of at least `media.max_upload_kb` (25 MB by default), so PHP lets an upload through to the media library.
 - A public disk for the media library, by default `public` (run `php artisan storage:link`). See [Media](#media).
 
 ## Installation
@@ -580,6 +581,19 @@ UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 ```
 
 A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search('merwestad')`, and the folders with `MediaFolder::query()->alphabetical()`. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
+
+### Uploading in the CMS
+
+Editors upload through one upload field, the same in the media library, the picker and the edit shell. No screen shows it yet (the media element of the side panel comes first); the field, its script and its two endpoints are there:
+
+| Request | Does | Answers |
+|---|---|---|
+| `POST /made-cms/media` | Takes one file (`file`, multipart) into the library, in the folder `folder` when given, through `UploadMedia`. | 201 with `{"file": …}`; 422 keyed by `file` (the message of the check) or `folder`. |
+| `PUT /made-cms/media/{media}/alt` | Gives a file its alt text (`{"alt": "…"}`, blank takes it away) through `UpdateAltText`. | 200 with `{"file": …}`; 422 keyed by `alt`; 404. |
+
+`file` is the file as the CMS shows it: `{id, url, name, meta, folder, alt, image, kind, file, size}`, with `meta` as "1920 × 1280 · 388 kB" and `image` as the site renders it; never its place on the disk. Both endpoints open for an editor who opens the pages or the media library, so every role uploads a photo while editing a page. A guest gets 401.
+
+The field sends files one at a time, refuses a file larger than `media.max_upload_kb` before it travels (the server checks every file again) and keeps an error with its file while the others go on. PHP must let the upload through: with an `upload_max_filesize` or `post_max_size` below `media.max_upload_kb` the field tells the editor that the server is the limit.
 
 ### Where a file is used
 

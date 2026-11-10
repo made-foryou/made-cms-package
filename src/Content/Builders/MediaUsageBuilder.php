@@ -20,4 +20,15 @@ final class MediaUsageBuilder extends Builder
     {
         return $this->where('page_id', $page->id);
     }
+
+    /**
+     * The number of places these rows are: a place in the draft and in the published version of a page counts once,
+     * as the library counts it.
+     */
+    public function placeCount(): int
+    {
+        return $this->getQuery()->newQuery()
+            ->fromSub($this->clone()->select(['page_id', 'strip_id', 'field'])->distinct(), 'places')
+            ->count();
+    }
 }

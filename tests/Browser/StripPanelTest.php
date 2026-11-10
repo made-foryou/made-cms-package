@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
 
 const KNOP_LID = '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d';
@@ -255,7 +256,7 @@ it('throws away what was typed but not saved yet', function (): void {
     $shell->assertNoJavaScriptErrors();
 });
 
-it('shows which image a field holds and keeps it when the editor saves the strip', function (): void {
+it('shows which image a field holds and keeps it, also in the usage of media, when the editor saves the strip', function (): void {
     Storage::fake('public');
     $photo = Media::factory()->create(['name' => 'teamfoto', 'width' => 1600, 'height' => 1067, 'size' => 412_000]);
     $page = Page::factory()->published()->at('/teams')->withStrips([
@@ -272,7 +273,11 @@ it('shows which image a field holds and keeps it when the editor saves the strip
         ->type('[data-path="kop"] input', 'Al onze teams');
 
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
-        ->and(draftOf($page, 'hero')['values']['foto'] ?? null)->toBe($photo->id);
+        ->and(draftOf($page, 'hero')['values']['foto'] ?? null)->toBe($photo->id)
+        ->and(MediaUsage::query()->onPage($page)->orderBy('version')->get(['media_id', 'version', 'strip_id', 'field'])->toArray())->toBe([
+            ['media_id' => $photo->id, 'version' => 'draft', 'strip_id' => 'hero', 'field' => 'foto'],
+            ['media_id' => $photo->id, 'version' => 'published', 'strip_id' => 'hero', 'field' => 'foto'],
+        ]);
 
     $shell->assertNoJavaScriptErrors();
 });

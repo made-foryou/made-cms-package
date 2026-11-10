@@ -56,8 +56,15 @@
                 </div>
                 <span class="bewerkpaneel-positie" data-slot="head-position">{{ $t('cms.edit.structure_texts.page') }}</span>
             </div>
+            @if ($headingLevels)
+                {{-- Whoever chooses the level of a heading switches between the opbouw and the headings of the page (design 11.21). --}}
+                <div class="tabs" role="tablist" aria-label="{{ $t('cms.edit.tabs') }}" data-slot="head-tabs">
+                    <button type="button" class="tab" role="tab" id="paneel-tab-opbouw" aria-selected="true" aria-controls="paneel-opbouw" data-slot="head-tab-structure">{{ $t('cms.edit.structure') }}</button>
+                    <button type="button" class="tab" role="tab" id="paneel-tab-koppen" aria-selected="false" aria-controls="paneel-koppen" tabindex="-1" data-slot="head-tab-headings">{{ $t('cms.edit.headings') }}</button>
+                </div>
+            @endif
             {{-- The opbouw (design 11.6–11.13): every strip of the page in order; structure.js adds, moves and removes them. --}}
-            <div class="opbouw-deel" data-slot="structure">
+            <div class="opbouw-deel" id="paneel-opbouw" data-slot="structure"@if ($headingLevels) role="tabpanel" aria-labelledby="paneel-tab-opbouw"@endif>
                 <div class="meldingen" data-slot="structure-notices"></div>
                 <div class="opbouw-leeg" data-slot="structure-empty" hidden>
                     <span class="opbouw-leeg-titel">{{ $t('cms.edit.empty_title') }}</span>
@@ -92,12 +99,25 @@
                 <button type="button" class="tekstlink klein opbouw-annuleren" data-slot="catalogue-cancel">{{ $t('cms.edit.catalogue_cancel') }}</button>
                 <p class="opbouw-status" role="status" data-slot="catalogue-status"></p>
             </div>
+            @if ($headingLevels)
+                {{--
+                    The headings of the page as the frame shows them (design 11.21–11.22): edit.js reads them from the site,
+                    headings.js fills in the signals and the list.
+                --}}
+                <div class="opbouw-deel" id="paneel-koppen" role="tabpanel" aria-labelledby="paneel-tab-koppen" data-slot="headings" hidden>
+                    <div class="kopsignalen" data-slot="headings-signals"></div>
+                    <div class="melding" role="status" data-slot="headings-fine" hidden><span class="bol goed" aria-hidden="true"></span><span class="melding-tekst"><strong>{{ $t('cms.edit.headings_fine_title') }}</strong> {{ $t('cms.edit.headings_fine_text') }}</span></div>
+                    <p class="veld-hint" data-slot="headings-none" hidden>{{ $t('cms.edit.headings_none') }}</p>
+                    <ol class="opbouw koppen" aria-label="{{ $t('cms.edit.headings_list') }}" data-slot="headings-list"></ol>
+                    <p class="veld-hint">{{ $t('cms.edit.headings_hint') }}</p>
+                </div>
+            @endif
             {{-- panel.js builds the fields of the chosen strip from the templates below and saves them as the draft. --}}
             <form class="paneel" data-slot="form" aria-label="{{ $t('cms.edit.fields_label') }}" novalidate hidden>
                 <div class="paneel-deel" data-slot="strip-view">
                     <div class="strook-nav">
                         <nav class="kruimel" aria-label="{{ $t('cms.edit.breadcrumb') }}">
-                            <button type="button" class="actie klein" data-slot="structure-back"><span aria-hidden="true">←</span> {{ $t('cms.edit.structure') }}</button>
+                            <button type="button" class="actie klein" data-slot="structure-back"><span aria-hidden="true">←</span> <span data-slot="structure-back-name">{{ $t('cms.edit.structure') }}</span></button>
                             <span class="kruimel-slash" aria-hidden="true">/</span>
                             <span class="kruimel-hier" aria-current="location" data-slot="structure-crumb"></span>
                         </nav>
@@ -325,6 +345,18 @@
 <template data-part="notice">
     <div class="melding"><span class="bol" aria-hidden="true"></span><span class="melding-tekst" data-slot="notice-text"></span><button type="button" class="tekstlink klein" data-slot="notice-undo">{{ $t('cms.edit.undo') }}</button></div>
 </template>
+@if ($headingLevels)
+    {{-- The parts of the overview of the headings. headings.js clones them for every heading and signal. --}}
+    <template data-part="heading-row">
+        <li class="kopitem"><button type="button" class="koprij" data-slot="headings-open"><span class="kopbadge" data-slot="headings-level"></span><span class="tekst" data-slot="headings-text"></span><span class="bron" data-slot="headings-source"></span></button></li>
+    </template>
+    <template data-part="heading-fixed">
+        <li class="kopitem"><span class="koprij vast"><span class="kopbadge" data-slot="headings-level"></span><span class="tekst" data-slot="headings-text"></span><span class="bron" data-slot="headings-source"></span></span></li>
+    </template>
+    <template data-part="heading-signal">
+        <div class="kopsignaal"><span class="bol" aria-hidden="true"></span><span class="kopsignaal-tekst"><span class="kopsignaal-titel" data-slot="headings-signal-title"></span><span class="veld-hint" data-slot="headings-signal-meta"></span></span><button type="button" class="tekstlink klein" data-slot="headings-signal-action" hidden></button></div>
+    </template>
+@endif
 <template data-part="type">
     <button type="button" class="soortkaart">
         <span class="soortkaart-kop"><span class="soortkaart-naam" data-slot="type-name"></span><span class="veld-hint" data-slot="type-fields"></span></span>
@@ -336,5 +368,8 @@
 <script type="module" src="{{ $panelScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $barScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $structureScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+@if ($headingsScript !== null)
+    <script type="module" src="{{ $headingsScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+@endif
 </body>
 </html>

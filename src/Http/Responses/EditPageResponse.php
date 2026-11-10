@@ -11,6 +11,7 @@ use Made\CmsPackage\Content\Data\DraftChanges;
 use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\Shell;
@@ -51,6 +52,9 @@ final class EditPageResponse
             'panelScript' => LauncherAssetController::url('panel.js'),
             'barScript' => LauncherAssetController::url('bar.js'),
             'structureScript' => LauncherAssetController::url('structure.js'),
+            // The tab Koppen is only UI, for whoever chooses the level of a heading.
+            'headingLevels' => $headingLevels,
+            'headingsScript' => $headingLevels ? LauncherAssetController::url('headings.js') : null,
             'config' => [
                 // The side panel and the bar talk JSON with the server, so the shell and the site in its frame stay loaded.
                 'csrf_token' => csrf_token(),
@@ -85,6 +89,7 @@ final class EditPageResponse
                         'draft' => (string) __('made-cms-package::pages.status.'.PageStatus::Draft->value, [], $locale),
                         ...self::texts('cms.edit.bar_texts', $locale),
                     ],
+                    ...($headingLevels ? ['headings' => self::headingTexts($locale)] : []),
                 ],
             ],
         ]);
@@ -99,6 +104,26 @@ final class EditPageResponse
     private static function panelTexts(string $locale): array
     {
         return self::texts('cms.edit.panel_texts', $locale);
+    }
+
+    /**
+     * The texts the overview of the headings fills in (sources, signals, counts), with the name of every level as its
+     * badge shows it: "H1" to "H6", and "span" for a heading at "Geen kop".
+     *
+     * @return array<string, mixed>
+     */
+    private static function headingTexts(string $locale): array
+    {
+        $texts = self::texts('cms.edit.headings_texts', $locale);
+        $levels = [];
+
+        foreach (Heading::TAGS as $tag) {
+            $levels[$tag] = $tag === 'span'
+                ? ($texts['span'] ?? $tag)
+                : (string) __('made-cms-package::strips.heading.tags.'.$tag, [], $locale);
+        }
+
+        return [...$texts, 'levels' => $levels];
     }
 
     /**

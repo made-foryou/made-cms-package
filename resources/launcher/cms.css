@@ -2500,6 +2500,191 @@ ul.lijst {
     display: none;
 }
 
+/* The tabs Opbouw | Koppen and the overview of the headings (design 11.21–11.22b). */
+
+.tabs {
+    display: inline-flex;
+    align-self: flex-start;
+    gap: 3px;
+    padding: 3px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-pil);
+}
+
+.tabs[hidden] {
+    display: none;
+}
+
+.tab {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: var(--made-radius-pil);
+    background: transparent;
+    color: var(--made-inhoud-zwak);
+    font: 700 13px/1 var(--font-kop);
+    cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+    background: var(--made-oppervlak-nadruk);
+    color: var(--made-inhoud-op-nadruk);
+}
+
+.melding .bol.goed {
+    background: var(--made-status);
+}
+
+.kopsignalen {
+    display: flex;
+    flex-direction: column;
+}
+
+.kopsignalen:empty {
+    display: none;
+}
+
+.kopsignaal {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--made-rand);
+}
+
+.kopsignaal .bol {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--made-amber);
+}
+
+.kopsignaal-tekst {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 1px;
+    min-width: 0;
+}
+
+.kopsignaal-titel {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.kopsignaal .tekstlink {
+    flex-shrink: 0;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+.koppen {
+    gap: 6px;
+}
+
+/* Indented per level as in the design: 18px for every level below H1; a span stays at the left. */
+.kopitem[data-level="2"] {
+    margin-left: 18px;
+}
+
+.kopitem[data-level="3"] {
+    margin-left: 36px;
+}
+
+.kopitem[data-level="4"] {
+    margin-left: 54px;
+}
+
+.kopitem[data-level="5"] {
+    margin-left: 72px;
+}
+
+.kopitem[data-level="6"] {
+    margin-left: 90px;
+}
+
+.koprij {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    font-family: var(--font-tekst);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 120ms ease;
+}
+
+.koprij:hover {
+    border-color: var(--made-accent);
+}
+
+.koprij.vast {
+    border-style: dashed;
+    background: transparent;
+    cursor: default;
+    opacity: .6;
+}
+
+.koprij.vast:hover {
+    border-color: var(--made-rand);
+}
+
+.koprij.signaal,
+.koprij.signaal:hover {
+    border-color: var(--made-amber);
+}
+
+.kopbadge {
+    flex-shrink: 0;
+    width: 34px;
+    color: var(--made-inhoud-zwak);
+    font: 700 12px/1 var(--font-kop);
+    letter-spacing: .06em;
+}
+
+.koprij.h1 .kopbadge {
+    color: var(--made-inhoud);
+}
+
+.koprij .tekst {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.koprij .tekst.leeg {
+    color: var(--made-inhoud-zwak);
+    font-style: italic;
+    font-weight: 400;
+}
+
+.koprij.css .tekst {
+    color: var(--made-inhoud-zwak);
+}
+
+.koprij .bron {
+    flex-shrink: 0;
+    margin-left: auto;
+    color: var(--made-inhoud-subtiel);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .koprij {
+        transition: none;
+    }
+}
+
 .opbouw-plek {
     display: flex;
     align-items: center;

@@ -10,6 +10,7 @@ use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Strips\Fields\Button;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
@@ -21,7 +22,8 @@ use Made\CmsPackage\Content\Strips\StripType;
  * A strip type the scan proposes, built from a ScanType with the field API of the package, so the catalogue checks it
  * before its class is written and the class says exactly what this definition says.
  *
- * A list proposes the most items seen as its max; a min of 1 is left to required, which already asks for one item and
+ * A heading proposes the level the scan found as its default level, with every level to choose from. A list proposes
+ * the most items seen as its max; a min of 1 is left to required, which already asks for one item and
  * leaves an optional list free to be empty. Images wait for the image field (#27): they are left out, and so is a list
  * that holds nothing else.
  */
@@ -34,6 +36,7 @@ final class ScannedStripType extends StripType
      */
     public const array FIELDS = [
         'text' => Text::class,
+        'heading' => Heading::class,
         'long_text' => LongText::class,
         'rich_text' => RichText::class,
         'button' => Button::class,
@@ -111,6 +114,7 @@ final class ScannedStripType extends StripType
 
             $definition = match ($field->type) {
                 'text' => Text::make($field->key),
+                'heading' => $field->tag === null ? Heading::make($field->key) : Heading::make($field->key)->tag($field->tag),
                 'long_text' => LongText::make($field->key),
                 'rich_text' => RichText::make($field->key),
                 'button' => Button::make($field->key),

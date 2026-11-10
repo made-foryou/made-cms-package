@@ -24,6 +24,7 @@ use Made\CmsPackage\Content\Enums\ScanDoubt;
  *     min?: int|null,
  *     max?: int|null,
  *     fields?: list<array<string, mixed>>,
+ *     tag?: string|null,
  * }
  */
 final readonly class ScanField
@@ -34,6 +35,7 @@ final readonly class ScanField
      * @param  list<string>  $options  the options of a choice
      * @param  string|null  $item  the tag of one item of a list
      * @param  list<ScanField>  $fields  the fields of every item of a list
+     * @param  string|null  $tag  the level of a heading: the tag most of its examples have
      */
     public function __construct(
         public string $key,
@@ -46,6 +48,7 @@ final readonly class ScanField
         public ?int $min = null,
         public ?int $max = null,
         public array $fields = [],
+        public ?string $tag = null,
     ) {}
 
     /**
@@ -80,6 +83,7 @@ final readonly class ScanField
             min: is_int($data['min'] ?? null) ? $data['min'] : null,
             max: is_int($data['max'] ?? null) ? $data['max'] : null,
             fields: $fields,
+            tag: is_string($data['tag'] ?? null) ? $data['tag'] : null,
         );
     }
 
@@ -89,7 +93,8 @@ final readonly class ScanField
     }
 
     /**
-     * Only a choice has options, and only a list has an item tag, a range and fields of its own.
+     * Only a choice has options, only a heading a level, and only a list has an item tag, a range and fields of its
+     * own.
      *
      * @return ScanFieldArray
      */
@@ -106,6 +111,10 @@ final readonly class ScanField
 
         if ($this->type === 'choice') {
             $array['options'] = $this->options;
+        }
+
+        if ($this->type === 'heading') {
+            $array['tag'] = $this->tag;
         }
 
         if ($this->type === 'items') {

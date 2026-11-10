@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Content\Scan;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Support\Locale;
@@ -14,7 +15,8 @@ use Made\CmsPackage\Support\Locale;
 /**
  * The source of the class file for a strip type the scan proposes, as the developer would write it: the key, the
  * label when the class name does not read as it, and the fields with only what the scan knows about them. It builds
- * text and never writes; GenerateStripTypes puts the file in the site.
+ * text and never writes; GenerateStripTypes puts the file in the site. A heading gets its level only when that is
+ * not the default level of the field.
  *
  * The output passes Pint (Laravel preset) unchanged: imports in order, four spaces, trailing commas, and a list or a
  * choice on lines of its own once it no longer fits on one line.
@@ -122,6 +124,10 @@ final class StripTypeSource
 
         if ($field instanceof Choice) {
             return self::listed($make.', [', self::options($field), '])'.$required, $indent);
+        }
+
+        if ($field instanceof Heading && $field->getTag() !== Heading::make($field->getKey())->getTag()) {
+            return $make.')->tag('.self::string($field->getTag()).')'.$required;
         }
 
         return $make.')'.$required;

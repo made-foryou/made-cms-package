@@ -116,6 +116,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
 | `required` | Gevuld in elk voorbeeld (of elk item). |
 | `certain`, `doubts` | Twijfel over dit veld. |
 | `options` | Alleen bij `choice`: de opties. |
+| `tag` | Alleen bij `heading`: het standaardniveau, de tag die in de voorbeelden het vaakst voorkomt (zie [Koppen](#koppen)). |
 | `item`, `min`, `max`, `fields` | Alleen bij `items`: de tag van één item, het voorstel 1 en het grootste aantal items dat de scan zag, en de velden van elk item. |
 
 **Pagina (`ScanPage`) en strook (`ScanStrip`)**
@@ -191,7 +192,8 @@ Een veld of type met twijfel heeft `certain: false`. 4.3 toont die eerst. De uit
 |---|---|
 | `key` | `key()` en de klassenaam (`over-ons` wordt `OverOns`, met `Strip` erachter als PHP of een import die naam al gebruikt) |
 | `label` | `label()`, alleen als de klassenaam het niet al zo leest (`Over ons`, `Strook 1`) |
-| `type` | `Text`, `LongText`, `RichText`, `Button`, `Link`, `Choice` of `Items`; `image` valt weg met een regel commentaar |
+| `type` | `Text`, `Heading`, `LongText`, `RichText`, `Button`, `Link`, `Choice` of `Items`; `image` valt weg met een regel commentaar |
+| `tag` | `->tag('h3')`, alleen als het niveau niet `h2` is, het standaardniveau van `Heading`; de redacteur met Meta-overzicht kiest uit alle niveaus |
 | `required` | `->required()` |
 | `options` | een keuze met per waarde een label om te vertalen (`'map-pin' => 'Map pin'`) |
 | `min`, `max` | `->max()`; `->min()` alleen boven 1, want `required` vraagt al om één item |

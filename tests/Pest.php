@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\Format;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Interfaces\AnimationFactoryInterface;
 use Made\CmsPackage\Access\Actions\RememberDevice;
 use Made\CmsPackage\Access\Enums\LoginMethod;
 use Made\CmsPackage\Access\Models\Editor;
@@ -565,4 +569,69 @@ function ttvStripTypes(): StripTypes
     }
 
     return new StripTypes($types);
+}
+
+/**
+ * A file to upload as the browser hands it over: in a folder of its own, removed after the test.
+ */
+function uploadable(string $name, string $contents): string
+{
+    $folder = sys_get_temp_dir().'/made-cms-upload-'.Str::random(8);
+    (new Filesystem)->ensureDirectoryExists($folder);
+    (new Filesystem)->put("{$folder}/{$name}", $contents);
+
+    test()->beforeApplicationDestroyed(static function () use ($folder): void {
+        (new Filesystem)->deleteDirectory($folder);
+    });
+
+    return "{$folder}/{$name}";
+}
+
+/**
+ * A photo of a size in a format GD writes (jpg, png, webp or gif), to upload. A jpg can carry an EXIF orientation,
+ * such as 6 for a camera held a quarter turn clockwise.
+ */
+function photo(int $width, int $height, string $format = 'jpg', ?string $name = null, ?int $orientation = null): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    imagefilledrectangle($image, 0, 0, intdiv($width, 2), $height, (int) imagecolorallocate($image, 28, 61, 90));
+
+    ob_start();
+    match ($format) {
+        'jpg' => imagejpeg($image, null, 80),
+        'png' => imagepng($image),
+        'webp' => imagewebp($image),
+        'gif' => imagegif($image),
+    };
+    $contents = (string) ob_get_clean();
+
+    if ($orientation !== null) {
+        $tiff = "MM\x00\x2A\x00\x00\x00\x08".pack('n', 1).pack('nnN', 0x0112, 3, 1).pack('n', $orientation)."\x00\x00".pack('N', 0);
+        $exif = "Exif\x00\x00".$tiff;
+        $contents = substr($contents, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($contents, 2);
+    }
+
+    return uploadable($name ?? "foto.{$format}", $contents);
+}
+
+/**
+ * A gif of two frames that keeps moving, to upload.
+ */
+function animatedGif(string $name = 'laden.gif'): string
+{
+    $animation = ImageManager::usingDriver(Driver::class)
+        ->createImage(40, 30, function (AnimationFactoryInterface $animation): void {
+            $animation->add('1c3d5a', 0.2);
+            $animation->add('f2b134', 0.2);
+        });
+
+    return uploadable($name, (string) $animation->encodeUsingFormat(Format::GIF));
+}
+
+/**
+ * A file of tests/Fixtures/Media, to upload under its own name or another one.
+ */
+function mediaFixture(string $fixture, ?string $name = null): string
+{
+    return uploadable($name ?? $fixture, (string) file_get_contents(__DIR__."/Fixtures/Media/{$fixture}"));
 }

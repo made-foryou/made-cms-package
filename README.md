@@ -206,6 +206,7 @@ namespace App\Cms\Strips;
 
 use App\Enums\ButtonStyle;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\RichText;
@@ -223,7 +224,7 @@ final class Hero extends StripType
     {
         return [
             Text::make('label')->hint('Korte regel boven de kop.'),
-            Text::make('kop')->required(),
+            Heading::make('kop')->tag('h1')->required(),
             RichText::make('intro'),
             Items::make('knoppen', [
                 Text::make('tekst')->required(),
@@ -244,12 +245,13 @@ final class Hero extends StripType
 | `RichText::make('tekst')` | HTML | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative, but not `//`). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. Cleaned when it is stored and again when it is rendered, so print it unescaped. |
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published; an address the validation would refuse, e.g. from a seeder, renders as `null` too. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
+| `Heading::make('kop')` | `{"text": "…", "tag": "h2"}` | `{"text": "…", "tag": "h2"}` or `null` | A text (as a `Text`) with its level: `h1` to `h6`, or `span` for a text that is no heading for search engines. `->tag('h1')` gives the level of the design (`h2` by default), `->tags(['h1', 'h2', 'h3'])` limits the levels to choose from (all seven by default). A text stored before the field became a `Heading`, and a level no longer in `tags()`, count as the default level. `null` without a text. See [Headings](#headings). |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
 | `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one, `itemLabel('Knop')` names one item in the side panel ("Knop toevoegen", "Item" by default). One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
 
 Every field takes `label()` (by default the key as a sentence: `gaat_naar` becomes "Gaat naar"), `hint()`, `required()` and `default()`. Fields are immutable: each of these returns a changed copy.
 
-The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options) throws an exception that names the strip type.
+The field names `id`, `type` and `visible` are reserved for the strip itself, and `id` inside an item. Every definition is checked when the catalogue is built; a mistake (an invalid or duplicate key, a reserved field, an invalid `min`/`max`, a choice without options, a heading level that is no tag or a default level outside `tags()`) throws an exception that names the strip type.
 
 Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(StripTypes::class)->all()`, `->has('hero')` and `->find('hero')`. A strip type derives its validation rules (`rules()`, with `attributes()` for the labels and `messages()` for Dutch and English messages of the package, which take the place of the host's `validation.*` lines), the values of a new strip (`defaults()`), the stored form of validated values (`normalize()`), the rendered values (`render()`, every field in order, a missing one from its default, with `with()` on top) how new values combine with stored ones (`merge()`, which `UpdateStrip` uses) and the description the side panel builds its controls from (`describe()`: the key, name and fields, each field with its `type()`, label, hint, default and what its type adds).
 
@@ -341,6 +343,7 @@ Choosing a strip shows its fields, built from its strip type, with the values of
 | `RichText` | A text with a fixed toolbar: bold, italic, link and list. Pasted text arrives without its markup; the package cleans the HTML again when it stores it. |
 | `Link` | One input that suggests the pages of the site. A chosen page, or the exact address of a page, is stored as that page and follows it when its address changes; anything else is stored as an address. |
 | `Button` | Its text and its link side by side. |
+| `Heading` | Its text. The heading keeps its level, or gets the default level of the field. |
 | `Choice` | A select with the options in their order; "Geen keuze" when the field is not required. |
 | `Items` | A row per item with its title (the first field that has a value), a grip and "Bewerken". The grip drags the item, or moves it with the arrow keys. "Bewerken" opens the item with a breadcrumb ("← Hero / Knoppen / Lid worden"); adding stops at `max()`, removing at `min()`. |
 
@@ -371,7 +374,7 @@ The site renders the strips itself, in its own stack; the package hands over the
 
 ```php
 [
-    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => 'Welkom', 'intro' => '<p>…</p>', 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
+    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'intro' => '<p>…</p>', 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
     ['id' => '4f0a…', 'type' => 'cards', 'kop' => 'Trainingen', 'kaarten' => [/* … */], 'aantal' => 3],
 ]
 ```
@@ -390,7 +393,7 @@ The component renders every strip with the view of its strip type, `strips.{key}
 ```blade
 {{-- resources/views/strips/hero.blade.php --}}
 <section data-cms-strip="{{ $strip->id }}">
-    <h1 data-cms-field="kop">{{ $strip->kop }}</h1>
+    <x-made-cms::heading :heading="$strip->kop" field="kop" class="hero__kop" />
     <div data-cms-field="intro">{!! $strip->intro !!}</div>
 
     @foreach ($strip->knoppen as $knop)
@@ -411,9 +414,11 @@ const types = { hero: Hero, cards: Cards };
 page.strips.map((s) => { const C = types[s.type]; return <C key={s.id} strip={s} />; });
 
 function Hero({ strip }) {
+  const Kop = strip.kop?.tag;
+
   return (
     <section data-cms-strip={strip.id}>
-      <h1 data-cms-field="kop">{strip.kop}</h1>
+      {Kop && <Kop data-cms-field="kop" className="hero__kop">{strip.kop.text}</Kop>}
       <div data-cms-field="intro" dangerouslySetInnerHTML={{ __html: strip.intro ?? '' }} />
     </section>
   );
@@ -425,10 +430,20 @@ function Hero({ strip }) {
 
 <!-- Hero.vue -->
 <section :data-cms-strip="strip.id">
-  <h1 data-cms-field="kop">{{ strip.kop }}</h1>
+  <component v-if="strip.kop" :is="strip.kop.tag" data-cms-field="kop" class="hero__kop">{{ strip.kop.text }}</component>
   <div data-cms-field="intro" v-html="strip.intro" />
 </section>
 ```
+
+### Headings
+
+A `Heading` field holds the level of the heading next to its text, so the element the site prints follows the value: `h1` to `h6`, or `span` for a text that is no heading for search engines. Give a heading its look with a class, not with `h2 { … }`, because the level can change while the heading should keep looking the same.
+
+- Blade: `<x-made-cms::heading :heading="$strip->kop" field="kop" class="hero__kop" />` renders `<h1 data-cms-field="kop" class="hero__kop">Welkom</h1>`, with the other attributes you give it and the text escaped, and nothing when the heading has no text. In a list `field` names the field of the item, as `data-cms-field` does: `<x-made-cms::heading :heading="$kaart['titel']" field="titel" class="kaart__titel" />`.
+- React: `const Kop = strip.kop?.tag;` and `{Kop && <Kop data-cms-field="kop" className="hero__kop">{strip.kop.text}</Kop>}`.
+- Vue: `<component v-if="strip.kop" :is="strip.kop.tag" data-cms-field="kop" class="hero__kop">{{ strip.kop.text }}</component>`.
+
+A heading that was a `Text` switches without a migration: change `Text::make('kop')` into `Heading::make('kop')` with the level the view printed (`->tag('h1')`), and print the heading as above. A stored text counts as that text with the default level until an editor saves the strip; publishing and the count of changes treat both the same.
 
 ### The data-cms attributes
 
@@ -444,6 +459,7 @@ The edit shell patches the element with `data-cms-field` in the page as it is, s
 | `RichText` | Prints the HTML unescaped: `{!! !!}`, `dangerouslySetInnerHTML`, `v-html`. |
 | `Link` | Has the address in its `href`. |
 | `Button` | Holds only the text and has the address in its `href`. |
+| `Heading` | Is the element of its level and holds only the text, as `<x-made-cms::heading>` prints it. An element of another level reloads the frame. |
 | `Choice`, `Items` | Not patched: the frame reloads. |
 
 - In `data-cms-items="knoppen"` every direct child is one item, in the order of the list. A `data-cms-field` inside it names a field of that item (`titel`, not `kaarten.0.titel`) and may sit on the child itself. A view that leaves an item out shows fewer children than there are items; the shell then patches nothing in that list and reloads instead.
@@ -570,7 +586,7 @@ src/
 │   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render
 │   └── ...
 ├── Console/    technical layer: artisan commands
-├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips> component, controllers grouped per context, the login session
+├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips> and <x-made-cms::heading> components, controllers grouped per context, the login session
 ├── Support/    context-free helpers: site name and url, launcher locale, QR code
 └── CmsPackageServiceProvider.php
 ```

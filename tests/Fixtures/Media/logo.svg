@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 120 40">
+  <defs>
+    <style>.cls-1{fill:url(#verloop);}.cls-2{fill:#1c3d5a;}</style>
+    <linearGradient id="verloop" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f2b134"/>
+      <stop offset="1" stop-color="#e07a2f"/>
+    </linearGradient>
+    <symbol id="bal" viewBox="0 0 10 10"><circle cx="5" cy="5" r="5"/></symbol>
+  </defs>
+  <title>TTV Merwestad</title>
+  <rect class="cls-1" width="40" height="40" rx="6"/>
+  <use xlink:href="#bal" x="15" y="15" width="10" height="10" class="cls-2"/>
+  <text x="48" y="26" style="font-family: Nunito, sans-serif; fill: #1c3d5a">Merwestad</text>
+</svg>

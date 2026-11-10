@@ -35,7 +35,7 @@ it('builds the fields of the chosen strip and saves what the editor types as the
 
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
         ->and($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelector('[data-cms-strip=\"hero\"] h2')?.textContent === 'Samen tafeltennissen'")))->toBeTrue()
-        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe('Samen tafeltennissen')
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Samen tafeltennissen', 'tag' => 'h2'])
         ->and(Page::query()->findOrFail($this->page->id)->strips[0]['values']['kop'] ?? null)->toBe('Welkom bij de club');
 
     $shell->assertNoJavaScriptErrors();
@@ -174,7 +174,7 @@ it('adds an item that links to a page of the site', function (): void {
 
     $kaarten = draftOf($this->page, 'cards')['values']['kaarten'] ?? [];
 
-    expect($kaarten[1]['titel'] ?? null)->toBe('Over de club')
+    expect($kaarten[1]['titel'] ?? null)->toBe(['text' => 'Over de club', 'tag' => 'h3'])
         ->and($kaarten[1]['link'] ?? null)->toBe(['page' => $about->id])
         ->and($kaarten[1]['id'] ?? null)->toBeString();
 
@@ -198,7 +198,7 @@ it('undoes the saved changes of a strip one step at a time', function (): void {
     $shell->click('[data-slot="undo"]');
 
     expect($shell->script(waitUntil("{$heading} === 'Samen' && document.querySelector('[data-path=\"kop\"] input').value === 'Samen'")))->toBeTrue()
-        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe('Samen');
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Samen', 'tag' => 'h2']);
 
     $shell->assertSeeIn('[data-slot="announce"]', 'De laatste wijziging is ongedaan gemaakt.')
         ->click('[data-slot="undo"]');

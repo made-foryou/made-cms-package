@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Workbench\App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Button;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\RichText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
@@ -29,7 +30,7 @@ final class Hero extends StripType
     {
         return [
             Text::make('label')->hint('Korte regel boven de kop.'),
-            Text::make('kop')->required(),
+            Heading::make('kop')->required(),
             RichText::make('intro')->hint('Twee zinnen is genoeg.'),
             Items::make('knoppen', [Button::make('knop')->required()])->max(2),
         ];

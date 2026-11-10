@@ -209,7 +209,7 @@ it('saves what the editor typed in a strip before removing it, so undoing brings
     $shell->click('[data-slot="notice-undo"]');
 
     expect($shell->script(waitUntil(slotSays('structure-status', 'Hero staat terug op plek 1.'))))->toBeTrue()
-        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe('Samen tafeltennissen');
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Samen tafeltennissen', 'tag' => 'h2']);
 
     $shell->assertNoJavaScriptErrors();
 });

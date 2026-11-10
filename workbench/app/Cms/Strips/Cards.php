@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Workbench\App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Choice;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
@@ -29,10 +30,10 @@ final class Cards extends StripType
     public function fields(): array
     {
         return [
-            Text::make('kop'),
+            Heading::make('kop'),
             Choice::make('kolommen', ['2' => 'Twee naast elkaar', '3' => 'Drie naast elkaar'])->default('3'),
             Items::make('kaarten', [
-                Text::make('titel')->required(),
+                Heading::make('titel')->tag('h3')->required(),
                 LongText::make('tekst'),
                 Link::make('link')->label('Gaat naar'),
             ])->min(1)->max(6),

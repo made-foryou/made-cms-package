@@ -81,7 +81,7 @@ it('patches a field with data-cms-field while the editor types, without reloadin
     expect($shell->script(waitUntil("{$heading} === 'Samen tafeltennissen' && document.querySelector('[data-slot=\"status\"]').dataset.state !== 'saved'")))->toBeTrue()
         ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
         ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse()
-        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe('Samen tafeltennissen');
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Samen tafeltennissen', 'tag' => 'h2']);
 
     $shell->assertNoJavaScriptErrors();
 });
@@ -102,6 +102,26 @@ it('patches the text and the address of a button in an item of a list', function
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
         ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse()
         ->and(draftOf($this->page, 'hero')['values']['knoppen'][0]['knop'] ?? null)->toBe(['text' => 'Word lid', 'link' => ['url' => '/word-lid']]);
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('patches the text of a heading in an item while the element is its level, and keeps the level', function (): void {
+    $shell = openStrip($this->page, 'cards', "document.querySelectorAll('[data-path=\"kaarten\"] li').length === 2");
+    $title = siteInFrame()."?.querySelectorAll('[data-cms-strip=\"cards\"] li')[1]?.querySelector('h3[data-cms-field=\"titel\"]')?.textContent";
+
+    $shell->script(markFrame());
+    $shell->click('[data-path="kaarten"] li:nth-child(2) [data-slot="edit"]')
+        ->assertSeeIn('[data-path="kaarten.1.titel"] legend', 'Titel')
+        ->type('[data-path="kaarten.1.titel.text"] input', 'Wedstrijden');
+
+    expect($shell->script(waitUntil("{$title} === 'Wedstrijden'")))->toBeTrue();
+
+    $shell->click('[data-slot="done"]');
+
+    expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse()
+        ->and(draftOf($this->page, 'cards')['values']['kaarten'][1]['titel'] ?? null)->toBe(['text' => 'Wedstrijden', 'tag' => 'h3']);
 
     $shell->assertNoJavaScriptErrors();
 });

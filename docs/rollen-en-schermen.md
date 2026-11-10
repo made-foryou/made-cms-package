@@ -31,7 +31,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Nieuws (`news`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
 | Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | #49 (#55) |
 | Berichten (`messages`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
-| Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#88) |
+| Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#88); het kopniveau in de bewerkschil: gebouwd (#126) |
 | Alt-teksten (`alt-texts`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#95) |
 | Links (`links`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #75 (#82); Beheerder ○ in #82 |
 | Redirects (`redirects`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #87 (#93); Beheerder ○ in #93 |
@@ -61,6 +61,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | Media kiezen en uploaden vanuit de bewerkschil | `Screen::Pages` | Hoort bij een pagina bewerken, dus ook Eigenaar en SEO-specialist kunnen een foto kiezen. Bibliotheek en beheer vallen onder `Screen::Media`. | #49, besluit 8 (voorstel) |
 | Een link kiezen in het zijpaneel | `Screen::Pages` | Hoort bij een pagina bewerken. | #75 |
 | De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
+| Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop") | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2), #126 |
 | Meta en "Staat in de sitemap" van één pagina | `Screen::Pages` | De paginadetail; de Vindbaarheid-schermen tonen dezelfde gegevens voor alle pagina's tegelijk. | #65, #87 (besluit 7) |
 | Een redirect bij het weghalen van een pagina | `Screen::Pages` | Hoort bij verwijderen. | #94 |
 | Automatisch doorsturen bij verhuizen | geen | Een Content-Action doet dit; Content kijkt nooit naar rollen. | #94 |
@@ -75,7 +76,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 - **Admin opent elk scherm**, ook schermen die later worden toegevoegd.
 - **Rollen koppelen aan schermen gebeurt alleen in `Role::screens()`.** Een nieuw scherm is een `Screen`-case, wordt daar toegekend en krijgt zijn groep in `Screen::group()`.
 - **Toegang geldt per scherm.** Binnen een scherm zijn er geen aparte rechten. Wie het scherm opent, mag alles wat het scherm doet (#82).
-- **De middleware van de route (`EnsureScreenAccess`) is de autorisatie.** Een menu-item verbergen is alleen UI.
+- **De middleware van de route (`EnsureScreenAccess`) is de autorisatie.** Een menu-item verbergen is alleen UI. Een handeling die onder een ander scherm valt dan haar route (het kopniveau), bewaakt de server in die route zelf.
 - **Content kijkt nooit naar rollen.** De toegang wordt in Http bewaakt.
 
 ## Waar het design afwijkt
@@ -96,6 +97,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | 2026-11-06 | Robots-regels vallen onder Sitemap. Meta en sitemap per pagina, en de redirect bij weghalen, vallen onder Pagina's. | #87, #94, #97 |
 | 2026-11-06 | Uitnodigen, intrekken en terugzetten vallen onder Gebruikers en rollen, met de admin-regels van rollen toekennen. Een account wordt nooit verwijderd, alleen ingetrokken. | #101 (besluiten 1, 2 en 8) |
 | 2026-11-06 | Het accountmenu en je account zijn altijd open voor elke ingelogde redacteur, zonder `Screen`-case. | #101 (besluit 4), #105 |
+| 2026-11-07 | Het niveau van een kop kiezen in de bewerkschil valt onder Meta-overzicht; de anderen zien het niveau als label. | #124 (besluit 2), #126 |
 
 ## Bijwerken
 

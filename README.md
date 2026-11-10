@@ -343,7 +343,7 @@ Choosing a strip shows its fields, built from its strip type, with the values of
 | `RichText` | A text with a fixed toolbar: bold, italic, link and list. Pasted text arrives without its markup; the package cleans the HTML again when it stores it. |
 | `Link` | One input that suggests the pages of the site. A chosen page, or the exact address of a page, is stored as that page and follows it when its address changes; anything else is stored as an address. |
 | `Button` | Its text and its link side by side. |
-| `Heading` | Its text. The heading keeps its level, or gets the default level of the field. |
+| `Heading` | Its text, with its level next to its name. An editor who opens Meta-overzicht (the SEO specialist and the admin) chooses the level from the levels of the field, each with what it means; anyone else sees the level as a label, and saving keeps it for them. |
 | `Choice` | A select with the options in their order; "Geen keuze" when the field is not required. |
 | `Items` | A row per item with its title (the first field that has a value), a grip and "Bewerken". The grip drags the item, or moves it with the arrow keys. "Bewerken" opens the item with a breadcrumb ("← Hero / Knoppen / Lid worden"); adding stops at `max()`, removing at `min()`. |
 
@@ -437,7 +437,7 @@ function Hero({ strip }) {
 
 ### Headings
 
-A `Heading` field holds the level of the heading next to its text, so the element the site prints follows the value: `h1` to `h6`, or `span` for a text that is no heading for search engines. Give a heading its look with a class, not with `h2 { … }`, because the level can change while the heading should keep looking the same.
+A `Heading` field holds the level of the heading next to its text, so the element the site prints follows the value: `h1` to `h6`, or `span` for a text that is no heading for search engines. Editors who open Meta-overzicht choose the level in the side panel while they see the page. Give a heading its look with a class, not with `h2 { … }`, because the level can change while the heading should keep looking the same.
 
 - Blade: `<x-made-cms::heading :heading="$strip->kop" field="kop" class="hero__kop" />` renders `<h1 data-cms-field="kop" class="hero__kop">Welkom</h1>`, with the other attributes you give it and the text escaped, and nothing when the heading has no text. In a list `field` names the field of the item, as `data-cms-field` does: `<x-made-cms::heading :heading="$kaart['titel']" field="titel" class="kaart__titel" />`.
 - React: `const Kop = strip.kop?.tag;` and `{Kop && <Kop data-cms-field="kop" className="hero__kop">{strip.kop.text}</Kop>}`.

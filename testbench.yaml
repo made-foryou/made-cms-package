@@ -6,6 +6,8 @@ providers:
 
 env:
   - APP_NAME="Made CMS Workbench"
+  # The address of `composer serve`: the public disk gives the url of a file of the media library from it.
+  - APP_URL=http://127.0.0.1:8000
   - MADE_CMS_LAUNCHER_IPS=127.0.0.1,::1
   # A login must survive between requests, and the login code ends up in the log.
   - SESSION_DRIVER=file
@@ -35,6 +37,9 @@ workbench:
     - create-sqlite-db
     - db-wipe
     - migrate-fresh
+    # The media library stores on the public disk; storage:link lets the browser open its files.
+    - storage-link:
+        --force: true
   assets:
     - laravel-assets
   sync:

@@ -9,7 +9,6 @@ use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CheckedMedia;
 use Made\CmsPackage\Content\Enums\MediaKind;
-use Symfony\Component\Mime\MimeTypes;
 
 final class CheckUploadedMedia
 {
@@ -39,22 +38,20 @@ final class CheckUploadedMedia
             throw self::refusal('unreadable');
         }
 
-        $maximum = config()->integer('made-cms-package.media.max_upload_kb');
+        $limits = DescribeUploadLimits::run();
 
-        if ($size > $maximum * 1024) {
-            throw self::refusal(MediaKind::fromMime($mime) === MediaKind::Video ? 'too_large_video' : 'too_large', [
-                'max' => $maximum % 1024 === 0 ? intdiv($maximum, 1024).' MB' : $maximum.' kB',
-            ]);
+        if ($size > $limits->maxBytes) {
+            throw self::refusal(MediaKind::fromMime($mime) === MediaKind::Video ? 'too_large_video' : 'too_large', ['max' => $limits->max]);
         }
 
         if (in_array($mime, self::TEXT, true) && $this->startsAsSvg((string) file_get_contents($path, length: 65536))) {
             $mime = self::SVG;
         }
 
-        $extension = $this->extension($mime);
+        $extension = $limits->extension($mime);
 
-        if ($extension === null || ! in_array($mime, $this->allowed(), true)) {
-            throw self::refusal('type_unknown', ['types' => $this->types()]);
+        if ($extension === null) {
+            throw self::refusal('type_unknown', ['types' => $limits->types]);
         }
 
         if ($mime === self::SVG) {
@@ -70,30 +67,6 @@ final class CheckUploadedMedia
     private function startsAsSvg(string $text): bool
     {
         return preg_match('/\A(?:\xEF\xBB\xBF)?\s*+(?:<\?xml[^>]*+>\s*+)?(?:(?:<!--.*?-->|<!DOCTYPE[^>\[]*+>)\s*+)*<svg[\s>\/]/s', $text) === 1;
-    }
-
-    private function extension(string $mime): ?string
-    {
-        return MimeTypes::getDefault()->getExtensions($mime)[0] ?? null;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function allowed(): array
-    {
-        return array_values(array_filter(config()->array('made-cms-package.media.allowed_mimes'), is_string(...)));
-    }
-
-    /**
-     * The types the library takes as their extensions, such as "jpg, png of svg".
-     */
-    private function types(): string
-    {
-        $extensions = array_values(array_unique(array_map(fn (string $mime): string => $this->extension($mime) ?? $mime, $this->allowed())));
-        $last = array_pop($extensions);
-
-        return $extensions === [] ? (string) $last : implode(', ', $extensions).' '.__('made-cms-package::media.or').' '.$last;
     }
 
     /**

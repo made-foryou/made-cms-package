@@ -5,7 +5,7 @@
             "key": "strook-1",
             "label": "Strook 1",
             "hint": null,
-            "fingerprint": "12df5bd72b0b08acb5bc944908317708",
+            "fingerprint": "b784ef1d925c6ac18956d40d9face30e",
             "count": 1,
             "certain": false,
             "doubts": [
@@ -63,7 +63,7 @@
             "key": "strook-2",
             "label": "Strook 2",
             "hint": null,
-            "fingerprint": "88eb3119bad14f633b9ccc20c169c503",
+            "fingerprint": "ebf021f88b28e34e7cf6b0945c5d63bd",
             "count": 2,
             "certain": false,
             "doubts": [

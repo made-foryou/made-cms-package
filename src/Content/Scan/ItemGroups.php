@@ -10,7 +10,7 @@ use Dom\Element;
  * Finds the lists of a strip: two or more siblings in a row with the same tag and (nearly) the same structure.
  *
  * The structure of an element is the set of paths of tags to what it holds: its texts, images and icons, without
- * decoration and empty elements. Siblings form a list when their sets overlap for at least SIMILAR (Jaccard), so
+ * decoration and empty elements, and with every heading as "h", whatever its level. Siblings form a list when their sets overlap for at least SIMILAR (Jaccard), so
  * an item with an extra badge or without its image still belongs; empty siblings between them are passed by.
  * Running text never forms a list: paragraphs, headings and lists of lines stay fields of their own.
  */
@@ -81,7 +81,8 @@ final class ItemGroups
                 continue;
             }
 
-            $path = $prefix.$child->localName;
+            // The level of a heading is content: items with an h3 and an h4 in the same place are built alike.
+            $path = $prefix.(Html::isHeading($child) ? 'h' : $child->localName);
             $paths[] = $path;
 
             if (! Html::isDecoration($child)) {

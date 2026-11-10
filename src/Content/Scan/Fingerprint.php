@@ -11,9 +11,15 @@ use Dom\Element;
  *
  * Strips with the same fingerprint are instances of one strip type, on one page or on several. Repeats count once:
  * the items of a list, a list inside an item and empty decoration in a row, so the number of items never matters.
+ * The level of a heading is content, not structure: every heading is "h", and each counts, also in a row.
  */
 final class Fingerprint
 {
+    /**
+     * The shape of every heading, h1 to h6.
+     */
+    private const string HEADING = 'h()';
+
     public static function of(Element $element): string
     {
         return hash('xxh128', self::shape($element));
@@ -29,8 +35,12 @@ final class Fingerprint
         }
 
         // Markup inside running text, such as a link or bold, is content rather than structure.
-        if ($element->localName === 'p' || Html::isHeading($element)) {
-            return $element->localName.'()';
+        if (Html::isHeading($element)) {
+            return self::HEADING;
+        }
+
+        if ($element->localName === 'p') {
+            return 'p()';
         }
 
         $runs = [];
@@ -50,7 +60,7 @@ final class Fingerprint
         foreach (Html::children($element) as $child) {
             $shape = $runs[spl_object_id($child)] ?? self::child($child);
 
-            if ($shape !== null && end($children) !== $shape) {
+            if ($shape !== null && (end($children) !== $shape || $shape === self::HEADING)) {
                 $children[] = $shape;
             }
         }

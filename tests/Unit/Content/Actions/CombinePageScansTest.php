@@ -104,6 +104,30 @@ it('leaves a list out when every item is the same, and a type without fields', f
         ->and($scan->pages[0]->strips)->toHaveCount(1);
 });
 
+it('takes strips that differ in the level of their headings only as one type, with one field per heading', function (): void {
+    $strip = static fn (string $label, string $heading): string => '<main><section class="tekst"><'.$label.'>Over ons</'.$label.'><'.$heading.'>Wie wij zijn</'.$heading.'><p>Een club.</p></section></main>';
+
+    $scan = combine($strip('h2', 'h3'), $strip('h3', 'h4'), $strip('h2', 'h2'));
+
+    expect($scan->types)->toHaveCount(1)
+        ->and($scan->types[0]->count)->toBe(3)
+        ->and(array_map(static fn (ScanField $field): array => [$field->key, $field->selector, $field->required], $scan->types[0]->fields))->toBe([
+            ['kop', 'h2', true],
+            ['kop_2', 'h3', true],
+            ['tekst', 'p', true],
+        ]);
+});
+
+it('lines the headings in the items of a list up by their place, whatever their level', function (): void {
+    $card = static fn (string $tag, string $title): string => '<div class="kaart"><'.$tag.'>'.$title.'</'.$tag.'><p>Over '.$title.'.</p></div>';
+
+    $scan = combine('<main><section id="kaarten"><div class="grid">'.$card('h3', 'Een').$card('h4', 'Twee').'</div></section></main>');
+    $items = $scan->types[0]->fields[0];
+
+    expect(array_map(static fn (ScanField $field): array => [$field->key, $field->required], $items->fields))->toBe([['kop', true], ['tekst', true]])
+        ->and($items->doubts)->toBe([]);
+});
+
 it('gives another structure with a name already taken a number', function (): void {
     $scan = combine('<main><section id="intro"><h2>Welkom</h2></section></main>', '<main><section id="intro"><p>Een andere opbouw.</p></section></main>');
 

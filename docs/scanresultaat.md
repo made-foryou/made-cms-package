@@ -32,7 +32,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
       "key": "over-ons",
       "label": "Over ons",
       "hint": "#over-ons",
-      "fingerprint": "5107109365ab1b34c5de8ef91d152299",
+      "fingerprint": "61f789569827f3f46ecb059a21119298",
       "count": 1,
       "certain": true,
       "doubts": [],
@@ -101,7 +101,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
 | `key` | De key van het striptype: de id van de strook (`over-ons`), anders een klasse die als naam leest (`hero`), anders algemeen naar de plek (`strook-3`). Een key die al bestaat, krijgt `-2` erachter. |
 | `label` | De naam voor de redacteur, afgeleid van de key ("Over ons", "Strook 3"). |
 | `hint` | Waar de naam vandaan komt: `#id` of `.klasse`, of `null`. |
-| `fingerprint` | De opbouw van de strook zonder teksten en zonder het aantal items. Dezelfde vingerafdruk is hetzelfde type, ook op andere pagina's. |
+| `fingerprint` | De opbouw van de strook zonder teksten, zonder het aantal items en zonder het niveau van de koppen. Dezelfde vingerafdruk is hetzelfde type, ook op andere pagina's. |
 | `count` | Hoeveel stroken van dit type de scan vond. |
 | `certain`, `doubts` | Twijfel over het type zelf (zie [Twijfels](#twijfels)). `certain` is `true` zonder twijfels. |
 | `fields` | De velden, in de volgorde van de pagina. |
@@ -153,6 +153,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
   - Browser: `document.querySelector(strook + ' > ' + veld)`, of `wortel.querySelector(':scope > ' + veld)`.
 - **Items:** de selector van een lijst wijst de ouder aan. De items zijn de kinderen met de tag uit `item`, zonder lege elementen.
 - De selectors van een type komen van het eerste voorbeeld. Een optionele broer met een andere tag verschuift ze niet.
+- **Koppen:** het niveau van een kop is inhoud, geen opbouw. Een kop lijnt uit op zijn plek onder de koppen van zijn ouder, niet op zijn selector. Staat een kop op een andere pagina op een ander niveau, dan vind je hem daar dus niet met de selector van het type (`h2`), maar met dezelfde stap op zijn eigen niveau (`h3`).
 
 ## Twijfels
 

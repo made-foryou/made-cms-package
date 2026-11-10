@@ -101,6 +101,10 @@ it('registers the editor command', function (): void {
     expect(Artisan::all())->toHaveKey('made-cms:editor');
 });
 
+it('registers the command that builds the usage of media again', function (): void {
+    expect(Artisan::all())->toHaveKey('made-cms:media-usage');
+});
+
 it('registers the prune command and runs it every day', function (): void {
     $events = collect(app(Schedule::class)->events())
         ->filter(fn (Event $event): bool => str_contains((string) $event->command, 'made-cms:prune'));
@@ -172,7 +176,7 @@ it('registers the publish tags promised in the README', function (string $tag): 
 
 it('ships the migrations for every context', function (string $table): void {
     expect(Schema::hasTable($table))->toBeTrue();
-})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes', 'cms_media_folders', 'cms_media']);
+})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes', 'cms_media_folders', 'cms_media', 'cms_media_usages']);
 
 it('maps the page model to a morph alias without forcing a map on the host', function (): void {
     expect(Relation::getMorphedModel('cms_page'))->toBe(Page::class)

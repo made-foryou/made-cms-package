@@ -21,6 +21,7 @@ use Made\CmsPackage\Access\Events\LoginCodeIssued;
 use Made\CmsPackage\Access\Listeners\SendLoginCode;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
+use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Models\Page;
@@ -95,6 +96,7 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->commands([
             CreateEditorCommand::class,
             PrunePagesCommand::class,
+            MediaUsageCommand::class,
         ]);
 
         // Deleted pages can be restored for a while; after that they go for good, with the host's scheduler.

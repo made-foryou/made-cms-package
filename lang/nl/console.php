@@ -16,4 +16,9 @@ return [
     'prune' => [
         'pruned' => '{0} Geen pagina’s definitief verwijderd.|{1} 1 pagina definitief verwijderd.|[2,*] :count pagina’s definitief verwijderd.',
     ],
+    'media_usage' => [
+        'rebuilt' => 'Gebruik van media opnieuw opgebouwd uit :pages: :places.',
+        'pages' => '{0} geen pagina’s|{1} 1 pagina|[2,*] :count pagina’s',
+        'places' => '{0} geen bestanden in gebruik|{1} 1 plek met een bestand|[2,*] :count plekken met een bestand',
+    ],
 ];

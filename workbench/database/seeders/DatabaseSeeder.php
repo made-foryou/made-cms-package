@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Made\CmsPackage\Access\Actions\CreateEditor;
 use Made\CmsPackage\Access\Data\NewEditor;
 use Made\CmsPackage\Access\Enums\Role;
+use Made\CmsPackage\Content\Actions\RebuildMediaUsage;
 use Made\CmsPackage\Content\Actions\UpdateAltText;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
@@ -76,6 +77,9 @@ class DatabaseSeeder extends Seeder
         Page::factory()->atPosition(2)->at('/concept')->withDraft([
             $this->strip('hero', ['kop' => 'Een pagina die nog niet gepubliceerd is']),
         ])->create(['title' => 'Concept', 'slug' => 'concept']);
+
+        // The factories write the strips without the Actions, so the library learns from them where its photo is.
+        RebuildMediaUsage::run();
     }
 
     /**

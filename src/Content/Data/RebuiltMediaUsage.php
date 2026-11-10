@@ -11,7 +11,8 @@ final readonly class RebuiltMediaUsage
 {
     /**
      * @param  int  $pages  the pages read, deleted pages too
-     * @param  int  $places  the places of a file afterwards, in every version of every page
+     * @param  int  $places  the places of a file afterwards on every page; a place in the draft and in the published
+     *                       version counts once, as the library counts it
      */
     public function __construct(
         public int $pages,

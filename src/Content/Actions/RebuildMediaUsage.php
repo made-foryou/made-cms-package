@@ -35,6 +35,6 @@ final class RebuildMediaUsage
             });
         }
 
-        return new RebuiltMediaUsage(pages: $ids->count(), places: MediaUsage::query()->count());
+        return new RebuiltMediaUsage(pages: $ids->count(), places: MediaUsage::query()->placeCount());
     }
 }

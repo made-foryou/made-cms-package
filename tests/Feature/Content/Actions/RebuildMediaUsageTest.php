@@ -76,6 +76,17 @@ it('drops rows the strips no longer hold and keeps those of a strip whose type l
     expect(allUsageRows())->toBe(["{$a->id} {$page->id} published o oud beeld"]);
 });
 
+it('counts a place in the draft and in the published version once, as the library does', function (): void {
+    $a = Media::factory()->create();
+    $strip = storedStrip('hero', ['foto' => $a->id], id: 'h');
+    Page::factory()->published()->withStrips([$strip])->withDraft([$strip, storedStrip('hero', ['foto' => $a->id], id: 'n')])->create();
+
+    $rebuilt = RebuildMediaUsage::run();
+
+    expect(MediaUsage::query()->count())->toBe(3)
+        ->and($rebuilt)->toEqual(new RebuiltMediaUsage(pages: 1, places: 2));
+});
+
 it('says so when there are no pages', function (): void {
     expect(RebuildMediaUsage::run())->toEqual(new RebuiltMediaUsage(pages: 0, places: 0));
 });

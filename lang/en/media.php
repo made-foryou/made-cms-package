@@ -42,6 +42,46 @@ return [
             'document' => '{0} No documents|{1} 1 document|[2,*] :count documents',
             'video' => '{0} No videos|{1} 1 video|[2,*] :count videos',
         ],
+        'all_files' => 'All files',
+        'folders' => 'Folders',
+        'search' => 'Search media',
+        'search_placeholder' => 'Search by name or alt text',
+        'filters' => 'Filters',
+        'kinds' => [
+            'image' => 'Images',
+            'document' => 'Documents',
+            'video' => 'Videos',
+        ],
+        'newest' => 'Newest first',
+        'without_alt' => 'Without alt text',
+        'files' => 'Files',
+        'more' => 'Show more',
+        'no_alt' => 'No alt text',
+        // Filled in by the script.
+        'texts' => [
+            'loading' => 'Loading files…',
+            'failed' => 'The files could not be loaded. Check your connection and try again.',
+            'expired' => 'Your session has expired. Reload the page to go on.',
+        ],
+    ],
+
+    // The picker of an image: the list of files in a dialog above the edit shell.
+    'picker' => [
+        'eyebrow' => 'Media',
+        'title' => 'Choose an image',
+        'close' => 'Close',
+        'empty' => 'No images found. Documents and videos are not chosen here.',
+        'cancel' => 'Cancel',
+        // Filled in by the script.
+        'texts' => [
+            'for' => 'for :field in :place',
+            'nothing' => 'Nothing chosen yet',
+            'nothing_hint' => 'Click an image to choose it.',
+            'alt' => 'Alt: :alt',
+            'no_alt' => 'No alt text yet — set it in Media and it applies everywhere.',
+            'use' => 'Use this one',
+            'choose_first' => 'Choose an image first',
+        ],
     ],
 
     // The upload field: one field for the library, the picker and the edit shell. The fixed texts are in its markup,

@@ -176,6 +176,8 @@
             <p id="paneel-sleephint" hidden>{{ $t('cms.edit.drag_hint') }}</p>
         </aside>
     </div>
+    {{-- In the shell, so its events reach it, and after the side panel, so the panel finds its own slots first. --}}
+    @include('made-cms-package-launcher::cms.partials.media-picker', ['picker' => $picker])
 </div>
 {{-- Cloned into a shadow root in the frame, so the site's css and the outlines never touch each other. --}}
 <template data-overlay>
@@ -285,9 +287,9 @@
 </template>
 {{--
     An image of the media library, the media element (design 13.2, 13.3): the photo the field holds with its name, size,
-    folder and alt text, that it holds none, or that its file left Media. "Uploaden" opens the upload field below it
-    (the part "upload"); the photo the editor uploads is the value of the field at once. Choosing from Media (#53) and
-    cropping (#54) follow.
+    folder and alt text, that it holds none, or that its file left Media. "Kiezen uit media" opens the picker (the
+    dialog media-picker in the shell), "Uploaden" the upload field below it (the part "upload"); the photo the editor
+    chooses or uploads is the value of the field at once. Cropping (#54) follows.
 --}}
 <template data-field="image">
     <div class="veld beeldveld" role="group">
@@ -317,6 +319,7 @@
                 <span class="veld-hint">{{ $t('cms.edit.image_gone_text') }}</span>
             </span>
             <div class="beeldkaart-acties">
+                <button type="button" class="actie klein" aria-haspopup="dialog" data-slot="image-pick">{{ $t('cms.edit.image_pick') }}</button>
                 <button type="button" class="actie klein" aria-expanded="false" data-slot="image-upload">{{ $t('cms.edit.image_upload') }}</button>
                 <button type="button" class="actie klein beeldkaart-weg" title="{{ $t('cms.edit.image_remove') }}" data-slot="image-remove" hidden><span aria-hidden="true">×</span></button>
             </div>
@@ -433,6 +436,7 @@
 <script type="module" src="{{ $barScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $structureScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $uploadScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+<script type="module" src="{{ $picker['browser']['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 @if ($headingsScript !== null)
     <script type="module" src="{{ $headingsScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 @endif

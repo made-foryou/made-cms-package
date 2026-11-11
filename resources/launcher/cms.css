@@ -3657,3 +3657,517 @@ button.tekstlink.alarm {
         transition: none;
     }
 }
+
+/*
+ * The picker of an image (design 13.4, 14.4): the list of the media library in a modal dialog above the edit shell,
+ * with the folders and the upload field on the left, the search, the filters and the tiles on the right and the choice
+ * at its foot. The list and its tiles (.mediabrowser, .kmap, .filter, .tegel) are the same in the media library.
+ */
+
+.kiezer {
+    width: min(1000px, calc(100vw - 72px));
+    max-width: none;
+    height: min(860px, calc(100vh - 72px));
+    max-height: none;
+    margin: auto;
+    padding: 0;
+    overflow: hidden;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+    font-family: var(--font-tekst);
+}
+
+/* Only an open dialog takes a display: a closed one keeps the display none of the browser. */
+.kiezer[open] {
+    display: flex;
+    flex-direction: column;
+    animation: kiezer-in 280ms var(--ease-uit) backwards;
+}
+
+/* The backdrop inherits no custom properties in every browser: night green, as a colour of its own. */
+.kiezer::backdrop {
+    background: rgb(14 43 38 / .55);
+}
+
+@keyframes kiezer-in {
+    from {
+        opacity: 0;
+        transform: scale(.96) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.kiezer-kop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px 26px 18px;
+    border-bottom: 1px solid var(--made-rand);
+}
+
+.kiezer-titel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.kiezer-titel h2 {
+    margin: 0;
+    font: 700 24px/1.2 var(--font-kop);
+}
+
+.kiezer-voor {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--made-inhoud-zwak);
+}
+
+.kiezer-sluit {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--made-inhoud);
+    cursor: pointer;
+}
+
+.kiezer-sluit:hover {
+    border-color: var(--made-accent);
+}
+
+.kiezer > .mediabrowser {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.kiezer-voet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px 20px;
+    padding: 14px 26px;
+    border-top: 1px solid var(--made-rand);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.kiezer-keuze {
+    display: flex;
+    flex: 1 1 320px;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.kiezer-mini {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 42px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: var(--made-nachtgroen);
+    color: #c7d2ea;
+}
+
+.kiezer-mini img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.kiezer-keuze-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.kiezer-naam,
+.kiezer-keuze-tekst .veld-hint {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kiezer-naam {
+    font: 600 13.5px/1.4 var(--font-tekst);
+}
+
+.kiezer-keuze-tekst [data-alt="set"] {
+    color: var(--made-status);
+}
+
+.kiezer-keuze-tekst [data-alt="missing"] {
+    color: var(--made-link);
+}
+
+.kiezer-knoppen {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.knop[aria-disabled="true"],
+.knop[aria-disabled="true"]:hover {
+    border-color: var(--made-accent);
+    background: var(--made-accent);
+    color: var(--made-op-accent);
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* The list: folders on the left, the tiles on the right, each scrolling on its own. */
+
+.mediabrowser {
+    display: flex;
+    min-width: 0;
+}
+
+.mediabrowser-zij {
+    display: flex;
+    flex: 0 0 240px;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 0;
+    padding: 18px 14px 18px 18px;
+    overflow-y: auto;
+    border-right: 1px solid var(--made-rand);
+}
+
+.mediabrowser-mappen ul {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.kmap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0 var(--made-radius-s) var(--made-radius-s) 0;
+    background: transparent;
+    color: var(--made-inhoud-zwak);
+    font: 700 14px/1.3 var(--font-kop);
+    text-align: left;
+    cursor: pointer;
+}
+
+.kmap:hover {
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+}
+
+.kmap[aria-pressed="true"] {
+    border-left-color: var(--made-accent);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+}
+
+.kmap svg {
+    flex-shrink: 0;
+}
+
+.kmap-naam {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kmap-aantal {
+    margin-left: auto;
+    font: 500 14px/1.3 var(--font-tekst);
+    color: var(--made-inhoud-subtiel);
+}
+
+.mediabrowser-upload .upload-vlak {
+    padding: 18px 12px;
+}
+
+.mediabrowser-upload .upload-titel {
+    font-size: 14px;
+}
+
+.mediabrowser-upload .upload-rij-kop {
+    flex-wrap: wrap;
+}
+
+.mediabrowser-hoofd {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    min-height: 0;
+    padding: 18px 26px 22px;
+    overflow-y: auto;
+}
+
+.mediabrowser-balk {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.mediabrowser-zoek {
+    flex: 1 1 240px;
+    max-width: 360px;
+}
+
+.mediabrowser-zoek .zoek-icoon {
+    left: 14px;
+}
+
+.mediabrowser-zoek .zoekveld {
+    padding: 10px 14px 10px 42px;
+    border-width: 1.5px;
+    font-size: 14px;
+}
+
+.mediabrowser-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 13px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-pil);
+    background: transparent;
+    color: var(--made-inhoud);
+    font: 700 13px/1 var(--font-kop);
+    cursor: pointer;
+}
+
+.filter[aria-pressed="true"],
+.filter.vast {
+    border-color: var(--made-inhoud);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.filter.vast {
+    cursor: default;
+}
+
+.filter-bol {
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--made-amber);
+}
+
+.mediabrowser-tegels {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
+    gap: 14px;
+    transition: opacity 120ms ease;
+}
+
+.mediabrowser[data-loading] .mediabrowser-tegels {
+    opacity: .6;
+}
+
+.mediabrowser-tegels:empty {
+    display: none;
+}
+
+.mediabrowser-leeg {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-meer {
+    align-self: flex-start;
+}
+
+.tegel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--made-radius-s);
+    background: transparent;
+    color: var(--made-inhoud);
+    font-family: var(--font-tekst);
+    text-align: left;
+    cursor: pointer;
+}
+
+/* The thumbnail lies on night green, like the media element, so a photo with transparent parts reads the same. */
+.tegel-beeld {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border: 2px solid transparent;
+    border-radius: var(--made-radius-s);
+    background: var(--made-nachtgroen);
+    color: #c7d2ea;
+    transition: border-color 120ms ease;
+}
+
+.tegel-beeld img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tegel:hover .tegel-beeld {
+    border-color: var(--made-accent);
+}
+
+.tegel[aria-pressed="true"] .tegel-beeld {
+    border-color: var(--made-accent);
+    box-shadow: 0 0 0 2px var(--made-oppervlak), 0 0 0 4px var(--made-accent);
+}
+
+.tegel-vink {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--made-accent);
+    color: var(--made-op-accent);
+}
+
+.tegel[aria-pressed="true"] .tegel-vink {
+    display: flex;
+}
+
+.tegel-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 0 2px;
+}
+
+.tegel-naam,
+.tegel-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tegel-naam {
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+.tegel-meta {
+    font-size: 11.5px;
+    color: var(--made-inhoud-zwak);
+}
+
+@media (prefers-color-scheme: dark) {
+    /* Night green is the surface here: thumbnails take the raised green of 14.4. */
+    .tegel-beeld,
+    .kiezer-mini {
+        background: var(--made-oppervlak-verhoogd);
+    }
+}
+
+/* On a phone the picker takes the screen and the folders go above the tiles. */
+@media (max-width: 720px) {
+    .kiezer {
+        width: 100vw;
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .kiezer-kop,
+    .kiezer-voet {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .kiezer > .mediabrowser {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .mediabrowser-zij {
+        flex: none;
+        padding: 14px 16px;
+        overflow: visible;
+        border-right: 0;
+        border-bottom: 1px solid var(--made-rand);
+    }
+
+    .mediabrowser-mappen ul {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .kmap {
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .mediabrowser-hoofd {
+        padding: 14px 16px 18px;
+        overflow: visible;
+    }
+
+    .mediabrowser-zoek {
+        max-width: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .kiezer[open] {
+        animation: none;
+    }
+
+    .mediabrowser-tegels,
+    .tegel-beeld {
+        transition: none;
+    }
+}

@@ -42,6 +42,46 @@ return [
             'document' => '{0} Geen documenten|{1} 1 document|[2,*] :count documenten',
             'video' => '{0} Geen video’s|{1} 1 video|[2,*] :count video’s',
         ],
+        'all_files' => 'Alle bestanden',
+        'folders' => 'Mappen',
+        'search' => 'Zoek in media',
+        'search_placeholder' => 'Zoek op naam of alt-tekst',
+        'filters' => 'Filters',
+        'kinds' => [
+            'image' => 'Afbeeldingen',
+            'document' => 'Documenten',
+            'video' => 'Video’s',
+        ],
+        'newest' => 'Nieuwste eerst',
+        'without_alt' => 'Zonder alt-tekst',
+        'files' => 'Bestanden',
+        'more' => 'Meer tonen',
+        'no_alt' => 'Geen alt-tekst',
+        // Filled in by the script.
+        'texts' => [
+            'loading' => 'Bestanden laden…',
+            'failed' => 'De bestanden konden niet geladen worden. Controleer je verbinding en probeer het opnieuw.',
+            'expired' => 'Je sessie is verlopen. Herlaad de pagina om verder te gaan.',
+        ],
+    ],
+
+    // The picker of an image: the list of files in a dialog above the edit shell.
+    'picker' => [
+        'eyebrow' => 'Media',
+        'title' => 'Kies een afbeelding',
+        'close' => 'Sluiten',
+        'empty' => 'Geen afbeeldingen gevonden. Documenten en video’s kies je hier niet.',
+        'cancel' => 'Annuleren',
+        // Filled in by the script.
+        'texts' => [
+            'for' => 'voor :field in :place',
+            'nothing' => 'Nog niets gekozen',
+            'nothing_hint' => 'Klik op een afbeelding om hem te kiezen.',
+            'alt' => 'Alt: :alt',
+            'no_alt' => 'Nog geen alt-tekst — zet die in Media, dan geldt hij overal.',
+            'use' => 'Deze gebruiken',
+            'choose_first' => 'Kies eerst een afbeelding',
+        ],
     ],
 
     // The upload field: one field for the library, the picker and the edit shell. The fixed texts are in its markup,

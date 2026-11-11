@@ -6,6 +6,7 @@ namespace Workbench\App\Cms\Strips;
 
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Link;
 use Made\CmsPackage\Content\Strips\Fields\LongText;
@@ -13,7 +14,7 @@ use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
 
 /**
- * A row of cards, each with a title, a short text and an optional link.
+ * A row of cards, each with a title, a short text, an optional link and an optional icon from the media library.
  */
 final class Cards extends StripType
 {
@@ -36,6 +37,7 @@ final class Cards extends StripType
                 Heading::make('titel')->tag('h3')->required(),
                 LongText::make('tekst'),
                 Link::make('link')->label('Gaat naar'),
+                Image::make('icoon')->hint('Vierkant werkt het best.'),
             ])->min(1)->max(6),
         ];
     }

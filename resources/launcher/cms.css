@@ -1849,14 +1849,246 @@ ul.lijst {
     display: none;
 }
 
-.beeldveld-bestand {
-    margin: 0;
-    overflow-wrap: anywhere;
+/*
+ * The media element (design 13.2, 13.3, 14.2, 14.3): an image of the media library with its name, size and alt text,
+ * or a dashed card when the field holds none. The thumbnail lies on night green in light and dark, so a photo with
+ * transparent parts reads the same in both; its extension, focal point and a missing alt text lie on top of it.
+ */
+
+.beeldveld-kop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-.beeldveld-naam {
-    font: 600 14px/1.4 var(--font-tekst);
+.beeldveld-kop .veld-hint {
+    text-align: right;
+}
+
+.beeldkaart {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.beeldkaart[data-state="empty"],
+.beeldkaart[data-state="gone"] {
+    align-items: center;
+    padding: 22px 16px;
+    border-style: dashed;
+    background: transparent;
+    text-align: center;
+}
+
+.beeldkaart-voorbeeld {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--made-radius-s);
+    background: var(--made-nachtgroen);
+    color: #c7d2ea;
+}
+
+.beeldkaart-voorbeeld img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.beeldkaart-ext {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    background: rgb(14 43 38 / .62);
+    color: var(--made-krijt);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.beeldkaart-ext:empty {
+    display: none;
+}
+
+.beeldkaart-brandpunt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    border: 2px solid var(--made-krijt);
+    border-radius: 50%;
+    background: rgb(190 138 28 / .9);
+    box-shadow: 0 0 0 2px rgb(14 43 38 / .4);
+    transform: translate(-50%, -50%);
+}
+
+.beeldkaart-stip {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--made-amber);
+    box-shadow: 0 0 0 2px var(--made-oppervlak-verhoogd);
+}
+
+.beeldkaart-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.beeldkaart-naam {
+    overflow: hidden;
+    font: 600 13.5px/1.4 var(--font-tekst);
     color: var(--made-inhoud);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.beeldkaart-alt[data-alt="set"] {
+    color: var(--made-status);
+}
+
+.beeldkaart-alt[data-alt="missing"] {
+    color: var(--made-link);
+}
+
+.beeldkaart-leegicoon {
+    display: flex;
+    color: var(--made-inhoud-subtiel);
+}
+
+.beeldkaart-leegtitel {
+    font: 600 13.5px/1.4 var(--font-tekst);
+    color: var(--made-inhoud);
+}
+
+.beeldkaart-acties {
+    display: flex;
+    flex-wrap: wrap;
+    align-self: stretch;
+    gap: 6px;
+}
+
+.beeldkaart[data-state="empty"] .beeldkaart-acties,
+.beeldkaart[data-state="gone"] .beeldkaart-acties {
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.beeldkaart-acties .actie.klein {
+    padding: 7px 10px;
+    font-size: 12.5px;
+}
+
+.beeldkaart-acties .beeldkaart-weg {
+    margin-left: auto;
+    border-color: transparent;
+    color: var(--made-inhoud-zwak);
+}
+
+.beeldkaart-acties .beeldkaart-weg:hover {
+    border-color: var(--made-alarm);
+    background: transparent;
+    color: var(--made-alarm);
+}
+
+.beeldkaart[data-state="gone"] .beeldkaart-weg {
+    margin-left: 0;
+}
+
+/* The upload field of an image opens below its card, as wide as the side panel. */
+
+.beeldveld-upload:empty {
+    display: none;
+}
+
+.beeldveld-uploadveld {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.beeldveld-uploadveld .upload {
+    align-self: stretch;
+}
+
+.beeldveld-uploadveld .upload-vlak {
+    padding: 20px 16px;
+}
+
+.beeldveld-uploadveld .upload-titel {
+    font-size: 15px;
+}
+
+/* The uploads of the side panel, at its foot also while the editor works on another strip. */
+
+.paneel-upload {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: auto -24px -34px;
+    padding: 12px 24px 16px;
+    border-top: 1px solid var(--made-rand);
+    background: var(--made-oppervlak);
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--made-inhoud-zwak);
+}
+
+.paneel-upload::before {
+    content: "";
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--made-accent);
+}
+
+.paneel-upload:not([data-state]),
+.paneel-upload[data-state=""] {
+    display: none;
+}
+
+.paneel-upload[data-state="done"]::before {
+    background: var(--made-status);
+}
+
+.paneel-upload[data-state="failed"] {
+    color: var(--made-alarm);
+}
+
+.paneel-upload[data-state="failed"]::before {
+    background: var(--made-alarm);
+}
+
+@media (prefers-color-scheme: dark) {
+    /* Night green is the surface here: the thumbnail takes the raised green of 14.2. */
+    .beeldkaart-voorbeeld {
+        background: var(--made-oppervlak-verhoogd);
+    }
 }
 
 .paneel .schakelrij {

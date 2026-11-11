@@ -13,6 +13,9 @@
  *
  * "Ongedaan maken" lives in the panel only: every strip keeps what the server stored before each save, for as long as
  * the shell is open, and a step back saves that again through the same endpoints.
+ *
+ * An image is the media element: it uploads a photo through the upload field (upload.js) and makes it the value of
+ * the field. An upload runs on while the editor works elsewhere; the line at the foot of the panel tells how it goes.
  */
 
 const SAVE_AFTER = 700;
@@ -45,6 +48,9 @@ const ui = {
     addedNote: slot('added-note'),
     addedText: slot('added-text'),
     removeStrip: slot('structure-remove'),
+    uploadStatus: slot('upload-status'),
+    uploadText: slot('upload-status-text'),
+    uploadPercent: slot('upload-status-percent'),
 };
 
 // Every strip the editor opened keeps its state, so going back to it loses nothing that was not saved yet.
@@ -551,7 +557,7 @@ function control(state, field, owner, path, follow = null) {
             items(state, element, field, owner, path);
             break;
         case 'image':
-            image(element, owner[key]);
+            image(state, element, field, owner, path, set);
             break;
     }
 
@@ -578,19 +584,330 @@ function choice(select, field, value, set) {
     select.addEventListener('change', () => set(select.value === '' ? null : select.value));
 }
 
-/*
- * An image is the id of a file of the media library. The panel shows which file it holds (its name and size), that it
- * holds none, or that its file left Media; saving keeps the id as it is. Choosing and uploading come with #52.
- */
-function image(element, value) {
-    const held = value !== null && value !== undefined;
-    const file = held ? (media.get(value) ?? null) : null;
+/* ---------------------------------------------------------------------------------------------------------------
+ * Images: the media element (design 13.2, 13.3). The field holds the id of a file of the media library; the panel
+ * shows the photo with its name, size, folder and alt text, that the field holds none, or that its file left Media.
+ * "Uploaden" opens the upload field below it, and the photo it takes is the value of the field at once; its alt text
+ * follows once the editor saved it. Choosing from Media (#53) and cropping (#54) follow.
+ *
+ * An upload runs on while the editor works elsewhere. The panel keeps the field of every upload and hangs it in again
+ * when it draws the field anew, so coming back shows how far it is. A photo that comes in goes to its field where it
+ * is now; a strip that left the page, or an item "Ongedaan maken" took away, no longer gets it and the photo stays in
+ * Media only.
+ * ------------------------------------------------------------------------------------------------------------ */
 
-    slot('image-file', element).hidden = file === null;
-    slot('image-name', element).textContent = file?.name ?? '';
-    slot('image-meta', element).textContent = file?.meta ?? '';
-    slot('image-empty', element).hidden = held;
-    slot('image-gone', element).hidden = ! held || file !== null;
+// Every upload field the panel opened, until the editor closes it.
+const uploads = new Set();
+
+// The place of the photo that came in last, for the line at the foot of the panel until the editor chooses a strip.
+let arrived = null;
+
+/* Where an image is, as the line at the foot of the panel names it: "Hero › Foto", "Kaarten › Kaart 2 › Icoon". */
+function placeOf(state, field, path) {
+    const [list, index] = path.split('.');
+    const parts = [state.label];
+
+    if (path.includes('.')) {
+        const items = state.fields.find((candidate) => candidate.key === list);
+
+        parts.push(format(texts.item, { item: items?.item_label ?? '', n: Number(index) + 1 }));
+    }
+
+    return [...parts, field.label].join(' › ');
+}
+
+/*
+ * The values that hold the field of an upload now, with its path: the values of the strip, or its item wherever it
+ * went in the list (by its id once "Ongedaan maken" put back a copy). Null once the strip or the item is gone.
+ */
+function where(upload) {
+    const { state, list, key } = upload;
+
+    if (states.get(state.id) !== state) {
+        return null;
+    }
+
+    if (list === null) {
+        return { owner: state.values, path: key };
+    }
+
+    const items = Array.isArray(state.values[list]) ? state.values[list] : [];
+    let index = items.indexOf(upload.item);
+
+    if (index < 0 && upload.item.id !== null && upload.item.id !== undefined) {
+        index = items.findIndex((candidate) => candidate.id === upload.item.id);
+    }
+
+    if (index < 0) {
+        return null;
+    }
+
+    upload.item = items[index];
+
+    return { owner: items[index], path: list + '.' + index + '.' + key };
+}
+
+function uploadOf(state, owner, key) {
+    return [...uploads].find((upload) => upload.state === state && upload.key === key && where(upload)?.owner === owner) ?? null;
+}
+
+/* The line at the foot of the panel: the uploads on their way, else one that failed out of sight, else the last photo. */
+function showUploads() {
+    const busy = [...uploads].filter((upload) => upload.busy);
+    const failed = [...uploads].find((upload) => upload.failed && ! upload.seen);
+    let text = '';
+    let percent = '';
+    let state = '';
+
+    if (busy.length === 1) {
+        text = format(texts.upload_busy, { place: busy[0].place });
+        percent = busy[0].percent === null ? '' : format(texts.upload_percent, { percent: busy[0].percent });
+        state = 'busy';
+    } else if (busy.length > 1) {
+        text = format(texts.upload_busy_many, { count: busy.length });
+        state = 'busy';
+    } else if (failed) {
+        text = format(texts.upload_failed, { place: failed.place });
+        state = 'failed';
+    } else if (arrived) {
+        text = format(texts.upload_done, { place: arrived });
+        state = 'done';
+    }
+
+    // The line speaks only when its text changes, not with every percent.
+    if (ui.uploadText.textContent !== text) {
+        ui.uploadText.textContent = text;
+    }
+
+    ui.uploadPercent.textContent = percent;
+    ui.uploadStatus.dataset.state = state;
+}
+
+/* Closes the upload field of an image once no photo is on its way; the files it took stay in Media. */
+function closeUpload(upload) {
+    if (upload.busy) {
+        return;
+    }
+
+    const focused = upload.element.contains(document.activeElement);
+
+    uploads.delete(upload);
+    upload.element.remove();
+    upload.draw?.();
+
+    if (focused) {
+        upload.button?.focus();
+    }
+
+    showUploads();
+}
+
+/* Opens the upload field of an image below it. upload.js starts the field once it is on the page. */
+function openUpload(state, field, owner, path) {
+    const list = path.includes('.') ? path.split('.')[0] : null;
+    const element = template('data-part="upload"');
+    const cancel = slot('image-upload-cancel', element);
+    const upload = {
+        state,
+        field,
+        list,
+        item: list === null ? null : owner,
+        key: path.split('.').pop(),
+        element,
+        busy: false,
+        failed: false,
+        seen: false,
+        percent: null,
+        place: placeOf(state, field, path),
+        waiting: [],
+        draw: null,
+        button: null,
+    };
+    const input = element.querySelector('[data-upload]');
+
+    cancel.addEventListener('click', () => closeUpload(upload));
+
+    input.addEventListener('made-cms:upload', (event) => {
+        const { busy, done, failed, percent } = event.detail;
+
+        if (busy && ! upload.busy) {
+            const spot = where(upload);
+
+            upload.place = spot ? placeOf(upload.state, upload.field, spot.path) : upload.place;
+            upload.seen = false;
+        }
+
+        upload.busy = busy;
+        upload.percent = percent;
+        upload.failed = ! busy && failed > 0;
+        // An error the editor sees in the field needs no line at the foot of the panel.
+        upload.seen ||= upload.failed && element.isConnected;
+        cancel.hidden = busy || done > 0;
+
+        if (! busy) {
+            upload.waiting.splice(0).forEach((resolve) => resolve());
+        }
+
+        showUploads();
+    });
+
+    input.addEventListener('made-cms:uploaded', (event) => {
+        const file = event.detail.file;
+        const spot = where(upload);
+
+        media.set(file.id, file);
+
+        if (spot) {
+            spot.owner[upload.key] = file.id;
+            liveInput(upload.state, spot.path, upload.field, file.id);
+            changed(upload.state);
+            leave(upload.state, spot.path);
+            arrived = placeOf(upload.state, upload.field, spot.path);
+        }
+
+        upload.draw?.();
+        showUploads();
+    });
+
+    // The editor left the moment "done": the alt text as it is stored goes to the panel and the frame.
+    input.addEventListener('made-cms:upload-closed', (event) => {
+        const spot = where(upload);
+
+        for (const file of event.detail.files ?? []) {
+            media.set(file.id, file);
+
+            if (spot && spot.owner[upload.key] === file.id) {
+                liveInput(upload.state, spot.path, upload.field, file.id);
+            }
+        }
+
+        closeUpload(upload);
+    });
+
+    uploads.add(upload);
+
+    return upload;
+}
+
+/* Waits for every photo on its way, so publishing takes the photo the editor is uploading. */
+async function landed() {
+    for (let busy = [...uploads].filter((upload) => upload.busy); busy.length > 0; busy = [...uploads].filter((upload) => upload.busy)) {
+        await Promise.all(busy.map((upload) => new Promise((resolve) => upload.waiting.push(resolve))));
+    }
+}
+
+function image(state, element, field, owner, path, set) {
+    const key = path.split('.').pop();
+    const label = slot('label', element);
+    const hint = slot('hint', element);
+    const card = slot('image-card', element);
+    const thumb = slot('image-thumb', element);
+    const focal = slot('image-focal', element);
+    const alt = slot('image-alt', element);
+    const button = slot('image-upload', element);
+    const remove = slot('image-remove', element);
+    const area = slot('image-upload-area', element);
+
+    label.id ||= 'paneel-' + (++uid);
+    area.id = 'paneel-' + (++uid);
+    element.setAttribute('aria-labelledby', label.id);
+    button.setAttribute('aria-controls', area.id);
+    remove.setAttribute('aria-label', format(texts.image_remove, { field: field.label }));
+
+    if (! hint.hidden) {
+        hint.id ||= 'paneel-' + (++uid);
+        element.setAttribute('aria-describedby', hint.id);
+    }
+
+    // Clicking the image on the site puts the focus on "Uploaden".
+    element.focusTarget = () => button;
+
+    // A thumbnail that does not load makes way for the icon.
+    thumb.addEventListener('error', () => {
+        thumb.hidden = true;
+    });
+
+    const draw = () => {
+        const value = owner[key] ?? null;
+        const file = value === null ? null : (media.get(value) ?? null);
+        const shown = file?.image ? file : null;
+        const gone = value !== null && shown === null;
+        const text = shown?.alt ?? '';
+
+        card.dataset.state = shown ? 'filled' : (gone ? 'gone' : 'empty');
+        slot('image-preview', element).hidden = shown === null;
+        slot('image-file', element).hidden = shown === null;
+        slot('image-none', element).hidden = shown !== null;
+        slot('image-empty', element).hidden = value !== null;
+        slot('image-empty-text', element).hidden = value !== null;
+        slot('image-gone', element).hidden = ! gone;
+        remove.hidden = value === null;
+        button.setAttribute('aria-expanded', String(uploadOf(state, owner, key) !== null));
+
+        if (shown === null) {
+            return;
+        }
+
+        const position = (shown.image.focal.x * 100) + '% ' + (shown.image.focal.y * 100) + '%';
+
+        if (thumb.getAttribute('src') !== shown.url) {
+            thumb.hidden = false;
+            thumb.src = shown.url;
+        }
+
+        thumb.style.objectPosition = position;
+        focal.style.left = (shown.image.focal.x * 100) + '%';
+        focal.style.top = (shown.image.focal.y * 100) + '%';
+        slot('image-extension', element).textContent = shown.extension ?? '';
+        slot('image-name', element).textContent = shown.name;
+        slot('image-meta', element).textContent = [shown.meta, shown.folder ? format(texts.image_folder, { folder: shown.folder }) : null]
+            .filter(Boolean)
+            .join(' · ');
+        slot('image-no-alt', element).hidden = text !== '';
+        alt.textContent = text === '' ? texts.image_no_alt : format(texts.image_alt, { alt: text });
+        alt.dataset.alt = text === '' ? 'missing' : 'set';
+    };
+
+    // An upload of this field that is still open comes back below it; an error in it is in sight now.
+    const open = uploadOf(state, owner, key);
+
+    if (open) {
+        open.draw = draw;
+        open.button = button;
+        open.seen ||= open.failed;
+        area.append(open.element);
+        showUploads();
+    }
+
+    button.addEventListener('click', () => {
+        let upload = uploadOf(state, owner, key);
+
+        // A field without a photo on its way closes again; one that is busy or done keeps its files.
+        if (upload && ! slot('image-upload-cancel', upload.element).hidden) {
+            closeUpload(upload);
+
+            return;
+        }
+
+        if (! upload) {
+            upload = openUpload(state, field, owner, path);
+            area.append(upload.element);
+        }
+
+        upload.draw = draw;
+        upload.button = button;
+        draw();
+        slot('upload-choose', upload.element)?.focus();
+    });
+
+    remove.addEventListener('click', () => {
+        set(null);
+        leave(state, path);
+        draw();
+        button.focus();
+    });
+
+    draw();
 }
 
 /* A button is a text and a link: two parts of one value, {text, link}, or nothing when both are empty. */
@@ -1343,7 +1660,7 @@ function refreshRows(state) {
 function openItem(state, key, index) {
     state.item = { key, index };
     render();
-    ui.itemFields.querySelector('input, textarea, select, [contenteditable]')?.focus();
+    ui.itemFields.querySelector('input:not([type="file"]), textarea, select, [contenteditable]')?.focus();
 }
 
 function renderItem(state) {
@@ -1517,6 +1834,8 @@ function pending() {
 
 /* Saves what is still open in every strip; true once everything the panel holds is stored. */
 async function flush() {
+    await landed();
+
     for (let waiting = pending(); waiting.length > 0; waiting = pending()) {
         for (const state of waiting) {
             state.showAll = true;
@@ -1650,6 +1969,12 @@ function close() {
  * added, with where it went (added), or no strip at all.
  */
 async function select(id, errors, field, count, added = null) {
+    // The photo that came in was told about; choosing a strip moves on.
+    if (arrived !== null) {
+        arrived = null;
+        showUploads();
+    }
+
     if (id === null) {
         close();
 
@@ -1688,7 +2013,7 @@ function focusIn(element) {
     }
 
     element.scrollIntoView({ block: 'nearest' });
-    (element.querySelector('input, textarea, select, [contenteditable]') ?? element.querySelector('button'))?.focus();
+    (element.focusTarget?.() ?? element.querySelector('input:not([type="file"]), textarea, select, [contenteditable]') ?? element.querySelector('button'))?.focus();
 }
 
 /*

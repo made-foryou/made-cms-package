@@ -1,5 +1,6 @@
 {{--
-    The cards strip of the workbench: rich values come ready to render, a link is a url or null.
+    The cards strip of the workbench: rich values come ready to render, a link is a url or null, an icon the image as
+    the site renders it or null.
     Every card is one direct child of data-cms-items; the fields in it name the field of the item.
     A heading renders nothing without a text, and its look hangs on a class, as the editor may change its level.
 --}}
@@ -9,6 +10,10 @@
     <ul data-cms-items="kaarten">
         @foreach ($strip->kaarten as $kaart)
             <li>
+                @if ($kaart['icoon'])
+                    <img src="{{ $kaart['icoon']['url'] }}" alt="{{ $kaart['icoon']['alt'] }}" style="width: 48px; height: 48px; object-fit: cover" data-cms-field="icoon">
+                @endif
+
                 <x-made-cms::heading :heading="$kaart['titel']" field="titel" class="kaart__titel" />
 
                 @if ($kaart['tekst'])

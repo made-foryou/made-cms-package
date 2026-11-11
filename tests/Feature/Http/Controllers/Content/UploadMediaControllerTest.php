@@ -40,6 +40,7 @@ it('stores a photo scaled down and answers with the file as the field shows it',
             'id' => $media->id,
             'url' => Storage::disk('public')->url($media->path),
             'name' => 'teamfoto-merwestad-4',
+            'extension' => 'webp',
             'meta' => '1920 × 1280 · '.max(1, (int) round($media->size / 1000)).' kB',
             'folder' => 'Teams',
             'alt' => null,
@@ -66,6 +67,7 @@ it('stores a document as it came in, outside a folder and without an image', fun
     expect($media->folder_id)->toBeNull()
         ->and($response->json('file.kind'))->toBe('document')
         ->and($response->json('file.file'))->toBe('wedstrijdschema-najaar.pdf')
+        ->and($response->json('file.extension'))->toBe('pdf')
         ->and($response->json('file.meta'))->toBe('1 kB')
         ->and($response->json('file.size'))->toBe(142)
         ->and($response->json('file.image'))->toBeNull();

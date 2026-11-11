@@ -8,12 +8,13 @@ use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Enums\MediaKind;
 
 /**
- * A file of the media library as the CMS shows it, the same in the side panel and in the upload field: its name,
- * "1600 × 1067 · 412 kB", its folder and alt text, and as the site renders it. Never its place on the disk.
+ * A file of the media library as the CMS shows it, the same in the side panel and in the upload field: its name, the
+ * extension of the file a visitor gets ("webp" for a photo that was scaled down), "1600 × 1067 · 412 kB", its folder
+ * and alt text, and as the site renders it. Never its place on the disk.
  *
  * @phpstan-import-type RenderedImage from MediaFile
  *
- * @phpstan-type Details array{id: int, url: string, name: string, meta: string, folder: string|null, alt: string|null, image: RenderedImage|null}
+ * @phpstan-type Details array{id: int, url: string, name: string, extension: string, meta: string, folder: string|null, alt: string|null, image: RenderedImage|null}
  */
 final class MediaDetails
 {
@@ -30,11 +31,20 @@ final class MediaDetails
             'id' => $file->id,
             'url' => $file->url,
             'name' => $file->name,
+            'extension' => self::extension($file->url),
             'meta' => implode(' · ', [...$meta, self::size($file->size)]),
             'folder' => $file->folder,
             'alt' => $file->alt,
             'image' => $file->kind === MediaKind::Image ? $file->image() : null,
         ];
+    }
+
+    /**
+     * The extension of the file a visitor opens, in small letters: the type of what the site serves.
+     */
+    private static function extension(string $url): string
+    {
+        return strtolower(pathinfo((string) parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
     }
 
     /**

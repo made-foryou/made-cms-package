@@ -73,6 +73,7 @@ it('hands the side panel the files of the images of the strip, by their url and 
         'id' => $photo->id,
         'url' => $url,
         'name' => 'teamfoto',
+        'extension' => 'webp',
         'meta' => '1600 × 1067 · 412 kB',
         'folder' => 'Teams',
         'alt' => 'Het eerste team',
@@ -92,6 +93,20 @@ it('sums up a file by its size, and an image without a size by its size on the d
     'an svg' => [['mime' => 'image/svg+xml', 'width' => null, 'height' => null, 'size' => 2_300], '2 kB'],
     'a tiny file' => [['width' => 16, 'height' => 16, 'size' => 120], '16 × 16 · 1 kB'],
     'a large photo' => [['width' => 1920, 'height' => 1280, 'size' => 1_460_000], '1920 × 1280 · 1,5 MB'],
+]);
+
+it('names the type of a file by the extension of its address, in small letters', function (string $path, string $extension): void {
+    Storage::fake('public');
+    $media = Media::factory()->create(['path' => $path]);
+    $page = Page::factory()->withDraft([storedStrip('hero', ['foto' => $media->id], id: 'a')])->create();
+
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->getJson('made-cms/pages/'.$page->id.'/strips/a')
+        ->assertJsonPath('strip.media.0.extension', $extension);
+})->with([
+    'a photo scaled down' => ['media/01k9/teamfoto.webp', 'webp'],
+    'a drawing in capitals' => ['media/01k9/Logo.SVG', 'svg'],
+    'a name with dots' => ['media/01k9/team.2026.gif', 'gif'],
 ]);
 
 it('hands the side panel no files for a strip without images, and none for a file that is gone', function (): void {

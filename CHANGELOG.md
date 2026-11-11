@@ -4,6 +4,8 @@
 
 ### Added
 
+- `MediaBuilder` reads the library for the picker and the media library: `ofKind(MediaKind $kind)`, `newestFirst()` (the files the library got last first), `byName()` (a to z) and `countPerFolder()` (the number of files in each folder by its id, in one query).
+
 - A file of the media library as the CMS shows it (`strip.media` of `GET /made-cms/pages/{page}/strips/{strip}` and `file` of the media endpoints) holds its `extension`: the type of the file a visitor gets, in small letters (`webp` for a photo that was scaled down, `svg`, `pdf`).
 
 - `POST /made-cms/media` (`made-cms-package.media.store`) takes one file into the media library: a multipart request with `file` and, when the file goes into a folder, `folder` (the id of a media folder). It answers 201 with `{"file": {"id", "url", "name", "meta", "folder", "alt", "image", "kind", "file", "size"}}`: the file as the side panel gets it (`meta` as "1920 × 1280 · 388 kB", `image` as the site renders it, `null` for a document or a video), its kind, the name of the file a visitor opens and its size in bytes, never its place on the disk or the original of a photo. A file the library refuses is a 422 keyed by `file` with the message of the check (too large, an unknown type, an svg that does more than draw); an upload php itself refused (`upload_max_filesize`, `post_max_size`) says that the server is the limit (`media.errors.server_limit`), a folder that is gone is a 422 keyed by `folder`. A guest gets 401; the answer is never stored by a cache.

@@ -87,6 +87,23 @@ return [
             'saving' => 'Saving the alt texts…',
             'alts_saved' => 'The alt texts are saved.',
             'alt_failed' => 'Saving did not work. Check your connection and try again.',
+            'not_image' => 'This field only takes photos.',
+        ],
+        // The field of an image in a strip takes one photo and says so in the singular; what is not here comes from above.
+        'single' => [
+            'label' => 'Upload a photo',
+            'title' => 'Drag your photo here',
+            'choose' => 'choose it on your computer',
+            'rules' => ':kinds · up to :max · goes into :folder',
+            'list' => 'Photo in this field',
+            'save_alts' => 'Save alt text',
+            'later_hint' => 'Later is fine: it then shows with an amber dot in Media.',
+            'texts' => [
+                'drag_many' => 'One photo at a time: the first goes into :folder',
+                'drag_unknown' => 'It goes into :folder',
+                'alts_saved' => 'The alt text has been saved.',
+                'saving' => 'Saving the alt text…',
+            ],
         ],
     ],
 ];

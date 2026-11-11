@@ -2,13 +2,15 @@
  * Made CMS: the upload field. One field with five moments (at rest, dragging, busy, done, an error per file), the
  * same in the media library, the picker and the edit shell.
  *
- * Every [data-upload] is a field of its own. Its fixed texts are in the markup (cms/partials/upload.blade.php), the
- * ones filled in here come as JSON on the field itself (data-config), like where a file goes and the largest file.
- * Files go to the server one at a time, so it never scales three photos down at once. An error belongs to its file:
- * the others go on, and it stays until the editor leaves the file out or tries again.
+ * Every [data-upload] is a field of its own, also one a script puts on the page later (the side panel clones it from a
+ * template). Its fixed texts are in the markup (cms/partials/upload.blade.php), the ones filled in here come as JSON
+ * on the field itself (data-config), like where a file goes and the largest file. Files go to the server one at a
+ * time, so it never scales three photos down at once. An error belongs to its file: the others go on, and it stays
+ * until the editor leaves the file out or tries again. The field of an image (one_image) takes one photo at a time.
  *
  * What a host hears on the field (the events bubble):
- * - made-cms:upload {busy, done, total, failed} after every change, for a status line outside the field;
+ * - made-cms:upload {busy, done, total, failed, percent} after every change and while a file travels, for a status
+ *   line outside the field (percent of the file on its way, null when none is);
  * - made-cms:uploaded {file} for every file the library took, as the server answered it;
  * - made-cms:upload-closed {files} when the editor leaves the moment "done", with the alt texts as they are stored.
  */
@@ -20,6 +22,9 @@ const ESTIMATE_AFTER = 800;
 
 /** The fields of this page that still upload or wait: leaving the page would drop their files. */
 const working = new Set();
+
+/** The fields that run already: a field that leaves the page and comes back keeps its files and is not started twice. */
+const started = new WeakSet();
 
 let serial = 0;
 
@@ -40,6 +45,10 @@ function refusal(data) {
 }
 
 function start(field) {
+    if (started.has(field)) {
+        return;
+    }
+
     let config;
 
     try {
@@ -80,6 +89,8 @@ function start(field) {
     if (! template || Object.values(ui).some((element) => element === null)) {
         return;
     }
+
+    started.add(field);
 
     /** Every file of the field, in the order the editor gave them. */
     const rows = [];
@@ -223,7 +234,7 @@ function start(field) {
         wasBusy = busy;
         busy ? working.add(field) : working.delete(field);
 
-        tell('made-cms:upload', { busy, done: done.length, total, failed: failed.length });
+        tell('made-cms:upload', { busy, done: done.length, total, failed: failed.length, percent: active?.percent ?? null });
     }
 
     function fail(row, message, retry) {
@@ -279,6 +290,7 @@ function start(field) {
                 row.percent = Math.min(100, Math.floor((event.loaded / event.total) * 100));
                 row.loaded = Math.round(row.file.size * (event.loaded / event.total));
                 paint(row);
+                refresh();
             }
         });
         xhr.upload.addEventListener('load', () => {
@@ -376,7 +388,10 @@ function start(field) {
         ui.list.append(element);
 
         // A file the server refuses anyway never travels: the largest file is known here. The server checks again.
-        if (file.size > (config.limits?.max_bytes ?? Infinity)) {
+        // The field of an image takes no document or video, also not one that was dropped past the file chooser.
+        if (config.one_image && ! file.type.startsWith('image/')) {
+            fail(row, texts.not_image, false);
+        } else if (file.size > (config.limits?.max_bytes ?? Infinity)) {
             fail(row, file.type.startsWith('video/') ? texts.too_large_video : texts.too_large, false);
         } else {
             paint(row);
@@ -388,7 +403,7 @@ function start(field) {
             return;
         }
 
-        files.forEach(add);
+        (config.one_image ? files.slice(0, 1) : files).forEach(add);
         pump();
     }
 
@@ -570,6 +585,17 @@ function start(field) {
 }
 
 document.querySelectorAll('[data-upload]').forEach(start);
+
+// A field a script puts on the page later starts once it is there.
+new MutationObserver((records) => {
+    for (const record of records) {
+        for (const node of record.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                (node.matches('[data-upload]') ? [node] : [...node.querySelectorAll('[data-upload]')]).forEach(start);
+            }
+        }
+    }
+}).observe(document.documentElement, { childList: true, subtree: true });
 
 window.addEventListener('beforeunload', (event) => {
     if (working.size > 0) {

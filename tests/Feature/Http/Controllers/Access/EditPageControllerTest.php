@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Dom\Element;
 use Dom\HTMLDocument;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
@@ -244,8 +245,13 @@ it('gives the media element of the side panel the upload field for one photo, in
         ->and($upload['one_image'] ?? null)->toBeTrue()
         ->and($upload['folder'] ?? null)->toBe(['id' => null, 'label' => 'Alle bestanden'])
         ->and($upload['urls'] ?? null)->toBe(['upload' => '/made-cms/media', 'alt' => '/made-cms/media/:media/alt'])
-        ->and($document->querySelector('[data-upload]'))->toBeNull()
+        // The only field on the page is the one of the picker.
+        ->and(array_map(
+            static fn (Element $field): bool => $field->closest('dialog[data-media-picker]') !== null,
+            iterator_to_array($document->querySelectorAll('[data-upload]')),
+        ))->toBe([true])
         ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-upload"]')?->textContent)->toBe('Uploaden')
+        ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-pick"]')?->textContent)->toBe('Kiezen uit media')
         ->and($document->querySelector('[data-slot="upload-status"] [role="status"][data-slot="upload-status-text"]'))->not->toBeNull()
         ->and($document->querySelector('[data-slot="upload-status-close"]')?->getAttribute('aria-label'))->toBe('Melding sluiten')
         ->and(editShellConfig($html)['texts']['panel'])->toMatchArray([
@@ -257,6 +263,23 @@ it('gives the media element of the side panel the upload field for one photo, in
     $response->assertSee(LauncherAssetController::url('upload.js'), false);
 });
 
+it('puts the picker of an image in the shell, after the side panel, with its script', function (): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $document = HTMLDocument::createFromString((string) $response->getContent(), LIBXML_NOERROR);
+    $dialog = $document->querySelector('[data-edit-shell] > dialog[data-media-picker]');
+    $browser = json_decode((string) $dialog?->querySelector('[data-media]')?->getAttribute('data-config'), true);
+
+    expect($dialog?->getAttribute('aria-modal'))->toBe('true')
+        ->and($dialog?->previousElementSibling?->getAttribute('class'))->toBe('bewerkromp')
+        ->and($browser['kind'] ?? null)->toBe('image')
+        ->and($browser)->toHaveKey('folder', null)
+        ->and($browser['urls']['files'] ?? null)->toBe('/made-cms/media/files');
+
+    $response->assertSee(LauncherAssetController::url('media.js'), false);
+});
+
 it('gives the side panel the folder the editor chose last in the picker', function (): void {
     $teams = MediaFolder::factory()->create(['name' => 'Teams']);
     $page = Page::factory()->at('/over-ons')->create();
@@ -266,7 +289,10 @@ it('gives the side panel the folder the editor chose last in the picker', functi
 
     $html = (string) $this->get('made-cms/pages/'.$page->id.'/edit')->getContent();
 
-    expect(editShellConfig($html)['folder'])->toBe(['id' => $teams->id, 'name' => 'Teams']);
+    $browser = HTMLDocument::createFromString($html, LIBXML_NOERROR)->querySelector('dialog[data-media-picker] [data-media]');
+
+    expect(editShellConfig($html)['folder'])->toBe(['id' => $teams->id, 'name' => 'Teams'])
+        ->and(json_decode((string) $browser?->getAttribute('data-config'), true)['folder'] ?? null)->toBe(['id' => $teams->id, 'name' => 'Teams']);
 });
 
 it('tells the side panel whether the editor chooses the level of a heading: whoever opens Meta-overzicht', function (Role $role, bool $chooses): void {

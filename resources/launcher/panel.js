@@ -566,6 +566,11 @@ function control(state, field, owner, path, follow = null) {
 
     describedBy(element, input);
     element.addEventListener('focusout', (event) => {
+        // The picker of an image is part of the field while it is open: its choice saves the field.
+        if (event.relatedTarget?.closest?.('[data-media-picker]')) {
+            return;
+        }
+
         if (! element.contains(event.relatedTarget) && field.type !== 'items' && field.type !== 'button' && field.type !== 'heading') {
             leave(state, path);
         }
@@ -590,8 +595,12 @@ function choice(select, field, value, set) {
 /* ---------------------------------------------------------------------------------------------------------------
  * Images: the media element (design 13.2, 13.3). The field holds the id of a file of the media library; the panel
  * shows the photo with its name, size, folder and alt text, that the field holds none, or that its file left Media.
- * "Uploaden" opens the upload field below it, and the photo it takes is the value of the field at once; its alt text
- * follows once the editor saved it. Choosing from Media (#53) and cropping (#54) follow.
+ * "Kiezen uit media" opens the picker (media.js, the dialog [data-media-picker] in the shell) and the photo chosen
+ * there is the value of the field. "Uploaden" opens the upload field below it, and the photo it takes is the value of
+ * the field at once; its alt text follows once the editor saved it. Cropping (#54) follows.
+ *
+ * A photo goes into the folder the editor opened last in the picker (config.folder, then made-cms:media-folder), also
+ * the photo of an upload field that is open already.
  *
  * An upload runs on while the editor works elsewhere. The panel keeps the field of every upload and hangs it in again
  * when it draws the field anew, so coming back shows how far it is. A photo that comes in goes to its field where it
@@ -609,8 +618,16 @@ let arrived = null;
 // The upload whose failure the line shows, for "Open dat veld" and its cross.
 let shown = null;
 
-/* Where an image is, as the line at the foot of the panel names it: "Hero › Foto", "Kaarten › Kaart 2 › Icoon". */
-function placeOf(state, field, path) {
+// The folder an upload of the panel goes into: {id, name}, or null for "Alle bestanden".
+let folder = config.folder ?? null;
+
+/* Sends an upload field of the panel into the folder of the moment. */
+function follow(upload) {
+    upload.element.querySelector('[data-upload]')?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
+}
+
+/* The strip or item a field is in, as the panel names it: "Hero", "Kaarten › Kaart 2". */
+function stripPlace(state, path) {
     const [list, index] = path.split('.');
     const parts = [state.label];
 
@@ -620,7 +637,12 @@ function placeOf(state, field, path) {
         parts.push(format(texts.item, { item: items?.item_label ?? '', n: Number(index) + 1 }));
     }
 
-    return [...parts, field.label].join(' › ');
+    return parts.join(' › ');
+}
+
+/* Where an image is, as the line at the foot of the panel names it: "Hero › Foto", "Kaarten › Kaart 2 › Icoon". */
+function placeOf(state, field, path) {
+    return stripPlace(state, path) + ' › ' + field.label;
 }
 
 /*
@@ -729,6 +751,8 @@ function openUpload(state, field, owner, path) {
         busy: false,
         failed: false,
         seen: false,
+        // A photo the editor chose in the picker while this one travelled: this one lands in Media only.
+        superseded: false,
         percent: null,
         place: placeOf(state, field, path),
         waiting: [],
@@ -755,6 +779,7 @@ function openUpload(state, field, owner, path) {
 
             upload.place = spot ? placeOf(upload.state, upload.field, spot.path) : upload.place;
             upload.seen = false;
+            upload.superseded = false;
         }
 
         upload.busy = busy;
@@ -778,7 +803,7 @@ function openUpload(state, field, owner, path) {
 
         media.set(file.id, file);
 
-        if (spot) {
+        if (spot && ! upload.superseded) {
             spot.owner[upload.key] = file.id;
             liveInput(upload.state, spot.path, upload.field, file.id);
             changed(upload.state);
@@ -827,6 +852,7 @@ function image(state, element, field, owner, path, set) {
     const focal = slot('image-focal', element);
     const alt = slot('image-alt', element);
     const button = slot('image-upload', element);
+    const pick = slot('image-pick', element);
     const remove = slot('image-remove', element);
     const area = slot('image-upload-area', element);
 
@@ -915,12 +941,53 @@ function image(state, element, field, owner, path, set) {
         if (! upload) {
             upload = openUpload(state, field, owner, path);
             area.append(upload.element);
+            follow(upload);
         }
 
         upload.draw = draw;
         upload.button = button;
         draw();
         slot('upload-choose', upload.element)?.focus();
+    });
+
+    // The picker opens with the photo of the field chosen; "Deze gebruiken" makes its choice the value of the field,
+    // wherever the field is now, and a photo of this field that still travels no longer overwrites it.
+    pick.addEventListener('click', () => {
+        const value = owner[key] ?? null;
+        const file = value === null ? null : (media.get(value) ?? null);
+        const list = path.includes('.') ? path.split('.')[0] : null;
+        const spot = { state, list, item: list === null ? null : owner, key };
+
+        document.querySelector('[data-media-picker]')?.dispatchEvent(new CustomEvent('made-cms:pick', {
+            detail: {
+                field: field.label,
+                place: stripPlace(state, path),
+                hint: field.hint ?? null,
+                file: file?.image ? file : null,
+                opener: pick,
+                choose: (chosen) => {
+                    const now = where(spot);
+
+                    media.set(chosen.id, chosen);
+
+                    if (! now) {
+                        return;
+                    }
+
+                    const travelling = uploadOf(state, now.owner, key);
+
+                    if (travelling?.busy) {
+                        travelling.superseded = true;
+                    }
+
+                    now.owner[key] = chosen.id;
+                    liveInput(state, now.path, field, chosen.id);
+                    changed(state);
+                    leave(state, now.path);
+                    draw();
+                },
+            },
+        }));
     });
 
     remove.addEventListener('click', () => {
@@ -2092,6 +2159,11 @@ if (shell && ui.form) {
     shell.addEventListener('made-cms:strips', (event) => forgetGone(event.detail.strips ?? []));
     shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush()));
     shell.addEventListener('made-cms:discarding', (event) => event.detail.wait(discarding(event.detail.done)));
+    // The editor opened another folder in the picker: the uploads of the panel go there from now on.
+    shell.addEventListener('made-cms:media-folder', (event) => {
+        folder = event.detail?.folder ?? null;
+        uploads.forEach(follow);
+    });
 
     ui.form.addEventListener('submit', (event) => {
         event.preventDefault();

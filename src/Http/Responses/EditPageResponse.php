@@ -15,6 +15,7 @@ use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\Shell;
 use Made\CmsPackage\Http\Cms\UploadField;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
@@ -59,6 +60,8 @@ final class EditPageResponse
             'structureScript' => LauncherAssetController::url('structure.js'),
             'upload' => $upload,
             'uploadScript' => $upload['script'],
+            // "Kiezen uit media" opens the picker in the folder the editor chose last.
+            'picker' => MediaBrowser::picker($folder),
             // The tab Koppen is only UI, for whoever chooses the level of a heading.
             'headingLevels' => $headingLevels,
             'headingsScript' => $headingLevels ? LauncherAssetController::url('headings.js') : null,

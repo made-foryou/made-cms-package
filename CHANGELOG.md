@@ -4,6 +4,15 @@
 
 ### Added
 
+- The picker of an image (design 13.4, 14.4): "Kiezen uit media" in the media element of the side panel opens the images of the media library in a modal dialog above the edit shell, never in the frame of the site. Its parts:
+  - **left:** the folders with the number of their images, "Alle bestanden" on top, and the upload field of one photo, which puts a photo into the open folder;
+  - **right:** a search in the name and the alt text, "Afbeeldingen" as a fixed label, "Nieuwste eerst" (on; off sorts by name), "Zonder alt-tekst", and the images as tiles with their extension, a check on the choice and the amber dot without an alt text, 40 at a time with "Meer tonen";
+  - **foot:** the choice with its alt text, "Annuleren" and "Deze gebruiken" ("Kies eerst een afbeelding" while nothing is chosen).
+
+  A field with a photo opens with it chosen, and a photo uploaded in the picker is the choice at once. "Deze gebruiken" makes it the value of the field, also in an item of a list: it is saved to the draft and the frame shows it. Documents and videos are not shown. The dialog keeps the focus inside, closes with Escape, "Annuleren", its cross or a click beside it, and gives the focus back to "Kiezen uit media". It follows light and dark and takes the screen on a phone.
+- The folder an editor opens in the picker is where the next upload of the side panel goes, and where the picker opens next, also in the next edit shell.
+- `MediaBrowser::make($folder, $kind, $upload)` and `MediaBrowser::picker($folder)` (`Http\Cms`) with the partials `made-cms-package-launcher::cms.partials.media-browser` (the list with its folders and the templates of a folder and a tile, shared with the media library to come) and `cms.partials.media-picker`, and the script `media.js`. The list tells its page `made-cms:media-chosen {file}` and `made-cms:media-folder {folder}`; the side panel opens the picker with `made-cms:pick` on the dialog. Dutch and English texts `cms.edit.image_pick`, `media.browser.*` and `media.picker.*`.
+
 - `MediaBuilder` reads the library for the picker and the media library: `ofKind(MediaKind $kind)`, `newestFirst()` (the files the library got last first), `byName()` (a to z) and `countPerFolder()` (the number of files in each folder by its id, in one query).
 - `ListMediaFolders::run(?MediaKind $kind)` gives every folder of the media library from a to z with the number of its files, and the number of all files ("Alle bestanden"), as `MediaFolders`; with a kind only the files of that kind count. `FindMediaFolder::run(?int $id)` finds a folder, or null once it is gone.
 - `ListMedia::run(MediaFilter $filter)` gives one page of the library as `MediaList` (40 files, the total and whether more follow): the files of a folder or all of them, whose name or alt text holds a search, of a kind, only the images without an alt text, newest first or by name (`MediaSort`), each with the url a visitor opens it at. A folder that is gone throws `MediaFolderNotFound`.
@@ -175,6 +184,8 @@
 
 ### Changed
 
+- The media element of the side panel offers "Kiezen uit media" next to "Uploaden", and the text for a file that left Media points to both. A photo uploaded from the side panel goes into the folder the editor opened last in the picker instead of always into "Alle bestanden".
+- `EditPageResponse::make()` takes the folder the editor chose last as its last argument (`?MediaFolder $folder`, null for "Alle bestanden").
 - `Field::render($value, ?MediaFiles $media = null)` and `StripType::render($values, ?MediaFiles $media = null)` take the files of the media library the strip uses; an `Image` renders as `null` without them. Use `RenderStrips::run($page)`, which hands them over. A field class of the host that overrides `render()` adds the parameter.
 - The package requires the PHP extension `dom` (`ext-dom`), which `symfony/html-sanitizer` already needed.
 - Uploading through the CMS needs a `upload_max_filesize` and a `post_max_size` in PHP of at least `media.max_upload_kb` (25 MB by default); PHP itself stops at 2 MB when nothing is set, and the upload field then says that the server is the limit.

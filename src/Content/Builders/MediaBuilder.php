@@ -16,7 +16,12 @@ final class MediaBuilder extends Builder
 {
     public function images(): self
     {
-        return $this->where('kind', MediaKind::Image);
+        return $this->ofKind(MediaKind::Image);
+    }
+
+    public function ofKind(MediaKind $kind): self
+    {
+        return $this->where('kind', $kind);
     }
 
     public function inFolder(MediaFolder $folder): self
@@ -47,6 +52,45 @@ final class MediaBuilder extends Builder
     public function withUsage(): self
     {
         return $this->with('usages.page');
+    }
+
+    /**
+     * The files the library got last first. Files stored within the same second follow the order they were stored in.
+     */
+    public function newestFirst(): self
+    {
+        return $this->orderByDesc('created_at')->orderByDesc('id');
+    }
+
+    /**
+     * The files by their name, from a to z; files with the same name in the order they were stored in.
+     */
+    public function byName(): self
+    {
+        return $this->orderBy('name')->orderBy('id');
+    }
+
+    /**
+     * The number of these files in each folder, by the id of the folder, in one query. A file without a folder counts
+     * in no folder, so "Alle bestanden" is the count() of the same query.
+     *
+     * @return array<int, int>
+     */
+    public function countPerFolder(): array
+    {
+        $counts = [];
+        $rows = $this->clone()->reorder()->whereNotNull('folder_id')->toBase()
+            ->select('folder_id')
+            ->selectRaw('count(*) as aggregate')
+            ->groupBy('folder_id')
+            ->orderBy('folder_id')
+            ->get();
+
+        foreach ($rows as $row) {
+            $counts[(int) $row->folder_id] = (int) $row->aggregate;
+        }
+
+        return $counts;
     }
 
     /**

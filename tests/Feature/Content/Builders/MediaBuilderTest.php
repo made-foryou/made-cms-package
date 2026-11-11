@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Builders\MediaBuilder;
+use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\MediaUsage;
@@ -95,4 +96,53 @@ it('loads the places of the files with their pages, deleted pages too', function
     expect($loaded->relationLoaded('usages'))->toBeTrue()
         ->and($loaded->usages->map(static fn (MediaUsage $usage): ?string => $usage->page?->title)->sort()->values()->all())
         ->toBe(['Onze teams', 'Oud nieuws']);
+});
+
+it('only returns the files of a kind', function (MediaKind $kind): void {
+    $files = [
+        MediaKind::Image->value => Media::factory()->create()->id,
+        MediaKind::Document->value => Media::factory()->document()->create()->id,
+        MediaKind::Video->value => Media::factory()->video()->create()->id,
+    ];
+
+    expect(Media::query()->ofKind($kind)->pluck('id')->all())->toBe([$files[$kind->value]]);
+})->with(MediaKind::cases());
+
+it('puts the newest files first, the last one stored first within a second', function (): void {
+    $old = Media::factory()->create(['created_at' => now()->subDay()]);
+    $first = Media::factory()->create(['created_at' => now()]);
+    $second = Media::factory()->create(['created_at' => now()]);
+
+    expect(Media::query()->newestFirst()->pluck('id')->all())->toBe([$second->id, $first->id, $old->id]);
+});
+
+it('orders the files by their name, the first one stored first for the same name', function (): void {
+    $veld = Media::factory()->create(['name' => 'veld']);
+    $teamfoto = Media::factory()->create(['name' => 'teamfoto']);
+    $clubavond = Media::factory()->create(['name' => 'clubavond']);
+    $tweede = Media::factory()->create(['name' => 'teamfoto']);
+
+    expect(Media::query()->byName()->pluck('id')->all())->toBe([$clubavond->id, $teamfoto->id, $tweede->id, $veld->id]);
+});
+
+it('counts the files per folder by its id, never the files without a folder', function (): void {
+    $teams = MediaFolder::factory()->create();
+    $nieuws = MediaFolder::factory()->create();
+    Media::factory()->in($teams)->count(2)->create();
+    Media::factory()->in($nieuws)->document()->create();
+    Media::factory()->create();
+
+    expect(Media::query()->countPerFolder())->toBe([$teams->id => 2, $nieuws->id => 1])
+        ->and(Media::query()->images()->countPerFolder())->toBe([$teams->id => 2]);
+});
+
+it('counts per folder whatever order the query has', function (): void {
+    $teams = MediaFolder::factory()->create();
+    Media::factory()->in($teams)->count(2)->create();
+
+    expect(Media::query()->newestFirst()->countPerFolder())->toBe([$teams->id => 2]);
+});
+
+it('counts nothing in an empty library', function (): void {
+    expect(Media::query()->countPerFolder())->toBe([]);
 });

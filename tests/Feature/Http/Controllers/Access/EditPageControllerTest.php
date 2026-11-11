@@ -245,7 +245,8 @@ it('gives the media element of the side panel the upload field for one photo, in
         ->and($upload['urls'] ?? null)->toBe(['upload' => '/made-cms/media', 'alt' => '/made-cms/media/:media/alt'])
         ->and($document->querySelector('[data-upload]'))->toBeNull()
         ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-upload"]')?->textContent)->toBe('Uploaden')
-        ->and($document->querySelector('[role="status"][data-slot="upload-status"]'))->not->toBeNull()
+        ->and($document->querySelector('[data-slot="upload-status"] [role="status"][data-slot="upload-status-text"]'))->not->toBeNull()
+        ->and($document->querySelector('[data-slot="upload-status-close"]')?->getAttribute('aria-label'))->toBe('Melding sluiten')
         ->and(editShellConfig($html)['texts']['panel'])->toMatchArray([
             'image_alt' => 'Alt: :alt',
             'upload_done' => 'De foto staat in :place.',

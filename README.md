@@ -331,7 +331,7 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - A field marked with [`data-cms-field`](#the-data-cms-attributes) changes on the site while the editor types; anything else shows once the draft is saved and the frame reloads at the same scroll position, with the same strip chosen.
 - Clicking a field on the site opens it in the side panel with the focus in it, inside its item when it lies in a list. The tab with the name of the strip only chooses the strip.
 - An `Image` field is a media element: the photo with its extension, focal point and an amber dot when it has no alt text, its name, "1920 × 1080 · 412 kB · uit map Teams" and its alt text; "Nog geen afbeelding" without one, or that its file is no longer in Media. "Uploaden" opens the upload field below it for one photo, which goes into "Alle bestanden" and is the value of the field as soon as it is in; the editor gives it its alt text right there. "×" takes the photo out of the field, the file stays in Media. Choosing from Media and cropping follow.
-- An upload runs on while the editor works on another strip; a line at the foot of the side panel says how it goes, and that it failed until the editor opens that field again. "Publiceren" waits for a photo that is still on its way.
+- While a photo travels, "Annuleren" stops it. An upload runs on while the editor works on another strip; a line at the foot of the side panel says how it goes, that the photo is in, or that it failed with a button to that field. "Publiceren" waits for a photo that is still on its way.
 
 The bar shows whether the page is live and what its draft changes:
 
@@ -596,7 +596,7 @@ Editors upload through one upload field, the same in the media library, the pick
 
 The field sends files one at a time, refuses a file larger than `media.max_upload_kb` before it travels (the server checks every file again) and keeps an error with its file while the others go on. PHP must let the upload through: with an `upload_max_filesize` or `post_max_size` below `media.max_upload_kb` the field tells the editor that the server is the limit.
 
-A screen of the CMS includes the field with the partial `made-cms-package-launcher::cms.partials.upload` and `['upload' => UploadField::make($folder)]`, and loads `$upload['script']`. `UploadField::image($folder)` gives the field of an image: one photo at a time, only the image types of `media.allowed_mimes`, in the singular. The script also starts a field a screen puts on the page later. A screen hears what happens through events that bubble from the field: `made-cms:upload` `{busy, done, total, failed, percent}`, `made-cms:uploaded` `{file}` and `made-cms:upload-closed` `{files}`.
+A screen of the CMS includes the field with the partial `made-cms-package-launcher::cms.partials.upload` and `['upload' => UploadField::make($folder)]`, and loads `$upload['script']`. `UploadField::image($folder)` gives the field of an image: one photo at a time, only the image types of `media.allowed_mimes`, in the singular. The script also starts a field a screen puts on the page later. A screen hears what happens through events that bubble from the field: `made-cms:upload` `{busy, done, total, failed, percent, sending}`, `made-cms:uploaded` `{file}` and `made-cms:upload-closed` `{files}`; it stops what is still on its way with `made-cms:upload-stop` on the field (a file the server is storing already lands in the library).
 
 ### Where a file is used
 

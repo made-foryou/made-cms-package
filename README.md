@@ -330,7 +330,7 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
 - A field marked with [`data-cms-field`](#the-data-cms-attributes) changes on the site while the editor types; anything else shows once the draft is saved and the frame reloads at the same scroll position, with the same strip chosen.
 - Clicking a field on the site opens it in the side panel with the focus in it, inside its item when it lies in a list. The tab with the name of the strip only chooses the strip.
-- An `Image` field is a media element: the photo with its extension, focal point and an amber dot when it has no alt text, its name, "1920 × 1080 · 412 kB · uit map Teams" and its alt text; "Nog geen afbeelding" without one, or that its file is no longer in Media. "Uploaden" opens the upload field below it for one photo, which goes into "Alle bestanden" and is the value of the field as soon as it is in; the editor gives it its alt text right there. "×" takes the photo out of the field, the file stays in Media. Choosing from Media and cropping follow.
+- An `Image` field is a media element: the photo with its extension, focal point and an amber dot when it has no alt text, its name, "1920 × 1080 · 412 kB · uit map Teams" and its alt text; "Nog geen afbeelding" without one, or that its file is no longer in Media. "Kiezen uit media" opens the picker with the images of the media library (see [Choosing from the library](#choosing-from-the-library)); "Uploaden" opens the upload field below it for one photo, which goes into the folder the editor opened last in the picker ("Alle bestanden" until then) and is the value of the field as soon as it is in; the editor gives it its alt text right there. "×" takes the photo out of the field, the file stays in Media. Cropping follows.
 - While a photo travels, "Annuleren" stops it. An upload runs on while the editor works on another strip; a line at the foot of the side panel says how it goes, that the photo is in, or that it failed with a button to that field. "Publiceren" waits for a photo that is still on its way.
 
 The bar shows whether the page is live and what its draft changes:
@@ -581,11 +581,11 @@ $media = UploadMedia::run(new UploadedMedia(
 UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 ```
 
-A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->inFolder($folder)`, `->withoutAlt()` and `->search('merwestad')`, and the folders with `MediaFolder::query()->alphabetical()`. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
+A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->ofKind(MediaKind::Document)`, `->inFolder($folder)`, `->withoutAlt()`, `->search('merwestad')`, `->newestFirst()`, `->byName()` and `->countPerFolder()`, and the folders with `MediaFolder::query()->alphabetical()`. `ListMedia::run(new MediaFilter(...))` gives one page of the library (40 files, with the url a visitor opens each at) and `ListMediaFolders::run($kind)` the folders with the number of their files. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
 
 ### Uploading in the CMS
 
-Editors upload through one upload field, the same in the media library, the picker and the edit shell. The media element of the side panel is the first screen that shows it; the field, its script and its two endpoints are there for the screens that follow:
+Editors upload through one upload field, the same in the media library, the picker and the edit shell. The media element of the side panel and the picker show it; the field, its script and its two endpoints are there for the screens that follow:
 
 | Request | Does | Answers |
 |---|---|---|
@@ -596,7 +596,21 @@ Editors upload through one upload field, the same in the media library, the pick
 
 The field sends files one at a time, refuses a file larger than `media.max_upload_kb` before it travels (the server checks every file again) and keeps an error with its file while the others go on. PHP must let the upload through: with an `upload_max_filesize` or `post_max_size` below `media.max_upload_kb` the field tells the editor that the server is the limit.
 
-A screen of the CMS includes the field with the partial `made-cms-package-launcher::cms.partials.upload` and `['upload' => UploadField::make($folder)]`, and loads `$upload['script']`. `UploadField::image($folder)` gives the field of an image: one photo at a time, only the image types of `media.allowed_mimes`, in the singular. The script also starts a field a screen puts on the page later. A screen hears what happens through events that bubble from the field: `made-cms:upload` `{busy, done, total, failed, percent, sending}`, `made-cms:uploaded` `{file}` and `made-cms:upload-closed` `{files}`; it stops what is still on its way with `made-cms:upload-stop` on the field (a file the server is storing already lands in the library).
+A screen of the CMS includes the field with the partial `made-cms-package-launcher::cms.partials.upload` and `['upload' => UploadField::make($folder)]`, and loads `$upload['script']`. `UploadField::image($folder)` gives the field of an image: one photo at a time, only the image types of `media.allowed_mimes`, in the singular. The script also starts a field a screen puts on the page later. A screen hears what happens through events that bubble from the field: `made-cms:upload` `{busy, done, total, failed, percent, sending}`, `made-cms:uploaded` `{file}` and `made-cms:upload-closed` `{files}`; it stops what is still on its way with `made-cms:upload-stop` on the field (a file the server is storing already lands in the library), and sends it into another folder with `made-cms:upload-folder` `{folder: {id, name}}` (`{folder: null}` for "Alle bestanden"): the files that come in from then on go there, a file in the field already keeps its folder.
+
+### Choosing from the library
+
+"Kiezen uit media" in the media element opens the picker: the images of the library in a dialog above the edit shell, with the folders and the number of their images on the left, the upload field of one photo below them, a search in the name and the alt text, "Nieuwste eerst" (off sorts by name), "Zonder alt-tekst" and the images as tiles, 40 at a time. "Deze gebruiken" makes the chosen photo the value of the field, saved to the draft; a photo uploaded in the picker is the choice at once. Documents and videos are not shown. The folder the editor opens is remembered for the session: the next picker opens there and the side panel uploads into it, also in the next edit shell.
+
+The picker reads the library over JSON, through endpoints the media library will use too:
+
+| Request | Does | Answers |
+|---|---|---|
+| `GET /made-cms/media/files` | One page of the library through `ListMedia`: `folder`, `q` (name or alt text), `kind` (`image`, `document`, `video`), `without_alt` (`1`), `sort` (`newest`, the default, or `name`) and `page`. | 200 with `{"files": […], "page", "total", "more", "summary"}`, every file as `file` of the upload answer and `summary` as "12 afbeeldingen"; 422 keyed by `folder` (gone) or the filter. |
+| `GET /made-cms/media/folders` | The folders from a to z through `ListMediaFolders`, counting one kind with `kind`. | 200 with `{"all", "folders": [{"id", "name", "count"}]}`. |
+| `PUT /made-cms/media/chosen-folder` | Remembers the folder an editor opened for the session (`{"folder": id}`, `null` for "Alle bestanden"). | 204; 422 keyed by `folder`. |
+
+They open for an editor who opens the pages or the media library, like uploading; `made-cms/media` itself is the address of the screen Media. A screen shows the list with the partial `made-cms-package-launcher::cms.partials.media-browser` and `['browser' => MediaBrowser::make($folder, $kind, $upload), 'empty' => '…']` and loads `$browser['script']`; it hears `made-cms:media-chosen` `{file}` and `made-cms:media-folder` `{folder}` from the list. The session is written back as a whole after every request, so a request that overlaps the one that remembers a folder can bring back the former folder; the open shell keeps the folder in its script.
 
 ### Where a file is used
 

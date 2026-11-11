@@ -163,6 +163,8 @@
                     <button type="button" class="tekstlink klein alarm" data-slot="structure-remove-strip">{{ $t('cms.edit.remove_strip') }}</button>
                 </div>
             </form>
+            {{-- The uploads of the side panel, also while the editor works on another strip; panel.js fills it in. --}}
+            <p class="paneel-upload" role="status" data-slot="upload-status"><span data-slot="upload-status-text"></span><span aria-hidden="true" data-slot="upload-status-percent"></span></p>
             <p class="sr-only" aria-live="polite" data-slot="announce"></p>
             <p id="paneel-sleephint" hidden>{{ $t('cms.edit.drag_hint') }}</p>
         </aside>
@@ -275,17 +277,51 @@
     <li class="niveauoptie" role="option" aria-selected="false"><span class="niveauoptie-naam" data-slot="level-label"></span><span class="niveauoptie-uitleg" data-slot="level-description"></span><span class="vink" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span></li>
 </template>
 {{--
-    An image of the media library: which file the field holds, by its name and size, or that it holds none. Choosing,
-    uploading and cropping come with the media element of the side panel (#52).
+    An image of the media library, the media element (design 13.2, 13.3): the photo the field holds with its name, size,
+    folder and alt text, that it holds none, or that its file left Media. "Uploaden" opens the upload field below it
+    (the part "upload"); the photo the editor uploads is the value of the field at once. Choosing from Media (#53) and
+    cropping (#54) follow.
 --}}
 <template data-field="image">
-    <div class="veld beeldveld">
-        <span class="veld-label" data-slot="label"></span>
-        <p class="beeldveld-bestand" data-slot="image-file" hidden><span class="beeldveld-naam" data-slot="image-name"></span> <span class="veld-hint" data-slot="image-meta"></span></p>
-        <p class="veld-hint" data-slot="image-empty" hidden>{{ $t('cms.edit.image_empty') }}</p>
-        <p class="veld-hint" data-slot="image-gone" hidden>{{ $t('cms.edit.image_gone') }}</p>
-        <p class="veld-hint" data-slot="hint" hidden></p>
+    <div class="veld beeldveld" role="group">
+        <div class="beeldveld-kop">
+            <span class="veld-label" data-slot="label"></span>
+            <span class="veld-hint" data-slot="hint" hidden></span>
+        </div>
+        <div class="beeldkaart" data-slot="image-card">
+            <div class="beeldkaart-voorbeeld" data-slot="image-preview" hidden>
+                <svg class="beeldkaart-icoon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
+                <img alt="" data-slot="image-thumb">
+                <span class="beeldkaart-ext" data-slot="image-extension"></span>
+                <span class="beeldkaart-brandpunt" role="img" aria-label="{{ $t('cms.edit.image_focal') }}" data-slot="image-focal"></span>
+                <span class="beeldkaart-stip" role="img" aria-label="{{ $t('cms.edit.image_no_alt') }}" data-slot="image-no-alt" hidden></span>
+            </div>
+            <div class="beeldkaart-tekst" data-slot="image-file" hidden>
+                <span class="beeldkaart-naam" data-slot="image-name"></span>
+                <span class="veld-hint" data-slot="image-meta"></span>
+                <span class="veld-hint beeldkaart-alt" data-slot="image-alt"></span>
+            </div>
+            <span class="beeldkaart-leegicoon" aria-hidden="true" data-slot="image-none" hidden><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg></span>
+            <span class="beeldkaart-leegtitel" data-slot="image-empty" hidden>{{ $t('cms.edit.image_empty') }}</span>
+            <span class="veld-hint" data-slot="image-empty-text" hidden>{{ $t('cms.edit.image_empty_text') }}</span>
+            <span class="beeldkaart-leegtitel" data-slot="image-gone" hidden>{{ $t('cms.edit.image_gone') }}</span>
+            <div class="beeldkaart-acties">
+                <button type="button" class="actie klein" aria-expanded="false" data-slot="image-upload">{{ $t('cms.edit.image_upload') }}</button>
+                <button type="button" class="actie klein beeldkaart-weg" title="{{ $t('cms.edit.image_remove') }}" data-slot="image-remove" hidden><span aria-hidden="true">×</span></button>
+            </div>
+        </div>
+        <div class="beeldveld-upload" data-slot="image-upload-area"></div>
         <p class="veld-fout" data-slot="error" hidden></p>
+    </div>
+</template>
+{{--
+    The upload field of an image (UploadField::image()), cloned once per field that uploads. upload.js starts it when it
+    is on the page; "Annuleren" closes it while no photo is on its way.
+--}}
+<template data-part="upload">
+    <div class="beeldveld-uploadveld">
+        @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $upload])
+        <button type="button" class="tekstlink klein" data-slot="image-upload-cancel">{{ $t('cms.edit.image_upload_cancel') }}</button>
     </div>
 </template>
 <template data-field="choice">
@@ -382,6 +418,7 @@
 <script type="module" src="{{ $panelScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $barScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $structureScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+<script type="module" src="{{ $uploadScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 @if ($headingsScript !== null)
     <script type="module" src="{{ $headingsScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 @endif

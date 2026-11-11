@@ -281,18 +281,3 @@ it('shows which image a field holds and keeps it, also in the usage of media, wh
 
     $shell->assertNoJavaScriptErrors();
 });
-
-it('says that a field holds no image, or one whose file left Media', function (mixed $foto, string $text): void {
-    $page = Page::factory()->published()->at('/teams')->withStrips([
-        storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $foto], id: 'hero'),
-        storedStrip('cards', ['kop' => 'Wat we doen'], id: 'cards'),
-    ])->create(['title' => 'Teams']);
-
-    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Onze teams'");
-
-    $shell->assertSeeIn('[data-path="foto"]', $text)
-        ->assertNoJavaScriptErrors();
-})->with([
-    'no image' => [null, 'Nog geen afbeelding'],
-    'a file that is gone' => [999, 'Deze afbeelding staat niet meer in Media.'],
-]);

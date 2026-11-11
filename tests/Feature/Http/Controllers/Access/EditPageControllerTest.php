@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Dom\HTMLDocument;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
@@ -225,6 +226,32 @@ it('hands the side panel the address of a strip, the csrf token and its texts', 
         ->assertSee('Opslaan als concept')
         ->assertSee('<template data-field="rich_text">', false)
         ->assertSee(LauncherAssetController::url('panel.js'), false);
+});
+
+it('gives the media element of the side panel the upload field for one photo, into no folder, and its script', function (): void {
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $html = (string) $response->getContent();
+    $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
+    // The panel clones the field from a template, so the shell holds none until an editor uploads.
+    $template = static fn (string $selector): HTMLDocument => HTMLDocument::createFromString('<!doctype html><body>'.$document->querySelector($selector)?->innerHTML, LIBXML_NOERROR);
+    $field = $template('template[data-part="upload"]')->querySelector('[data-upload]');
+    $upload = json_decode((string) $field?->getAttribute('data-config'), true);
+
+    expect($field?->getAttribute('aria-label'))->toBe('Foto uploaden')
+        ->and($upload['one_image'] ?? null)->toBeTrue()
+        ->and($upload['folder'] ?? null)->toBe(['id' => null, 'label' => 'Alle bestanden'])
+        ->and($upload['urls'] ?? null)->toBe(['upload' => '/made-cms/media', 'alt' => '/made-cms/media/:media/alt'])
+        ->and($document->querySelector('[data-upload]'))->toBeNull()
+        ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-upload"]')?->textContent)->toBe('Uploaden')
+        ->and($document->querySelector('[role="status"][data-slot="upload-status"]'))->not->toBeNull()
+        ->and(editShellConfig($html)['texts']['panel'])->toMatchArray([
+            'image_alt' => 'Alt: :alt',
+            'upload_done' => 'De foto staat in :place.',
+        ]);
+
+    $response->assertSee(LauncherAssetController::url('upload.js'), false);
 });
 
 it('tells the side panel whether the editor chooses the level of a heading: whoever opens Meta-overzicht', function (Role $role, bool $chooses): void {

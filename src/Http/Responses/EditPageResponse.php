@@ -15,6 +15,7 @@ use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\Shell;
+use Made\CmsPackage\Http\Cms\UploadField;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Middleware\ResolvePage;
 use Made\CmsPackage\Support\Locale;
@@ -36,6 +37,8 @@ final class EditPageResponse
         $path = $page->route?->path;
         $base = request()->getBaseUrl();
         $draft = DraftResponse::data($changes);
+        // The media element uploads a photo into the library: into no folder yet, until an editor chooses one (#53).
+        $upload = UploadField::image();
 
         return Shell::respond('made-cms-package-launcher::cms.edit', $editor, $screens, Screen::Pages, [
             'page' => [
@@ -52,6 +55,8 @@ final class EditPageResponse
             'panelScript' => LauncherAssetController::url('panel.js'),
             'barScript' => LauncherAssetController::url('bar.js'),
             'structureScript' => LauncherAssetController::url('structure.js'),
+            'upload' => $upload,
+            'uploadScript' => $upload['script'],
             // The tab Koppen is only UI, for whoever chooses the level of a heading.
             'headingLevels' => $headingLevels,
             'headingsScript' => $headingLevels ? LauncherAssetController::url('headings.js') : null,

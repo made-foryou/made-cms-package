@@ -10,6 +10,7 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Data\DraftChanges;
 use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -29,16 +30,17 @@ final class EditPageResponse
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
      * @param  StripTypes  $types  the catalogue an editor adds strips from
      * @param  bool  $headingLevels  whether the editor chooses the level of a heading (Visitor::choosesHeadingLevels)
+     * @param  MediaFolder|null  $folder  the folder the editor chose last in the picker (MediaFolderMemory); null for "Alle bestanden"
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, StripTypes $types, bool $headingLevels): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, StripTypes $types, bool $headingLevels, ?MediaFolder $folder = null): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
         $path = $page->route?->path;
         $base = request()->getBaseUrl();
         $draft = DraftResponse::data($changes);
-        // The media element uploads a photo into the library: into no folder yet, until an editor chooses one (#53).
-        $upload = UploadField::image();
+        // The media element uploads a photo into the folder the editor chose last in the picker.
+        $upload = UploadField::image($folder);
 
         return Shell::respond('made-cms-package-launcher::cms.edit', $editor, $screens, Screen::Pages, [
             'page' => [
@@ -80,6 +82,8 @@ final class EditPageResponse
                     'fields' => trans_choice('made-cms-package::cms.edit.fields', count($type->fields()), [], $locale),
                 ], $types->all()),
                 'page' => ['title' => $page->title],
+                // The folder the picker opens in and the uploads of the panel go into, until the editor opens another.
+                'folder' => $folder === null ? null : ['id' => $folder->id, 'name' => $folder->name],
                 // Only UI: the strip Actions keep the level of a heading for an editor who does not choose it.
                 'heading_levels' => $headingLevels,
                 'texts' => [

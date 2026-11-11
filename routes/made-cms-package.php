@@ -32,6 +32,7 @@ use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
 use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
+use Made\CmsPackage\Http\Controllers\Content\RememberMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
@@ -167,6 +168,7 @@ Route::prefix($prefix)
             Route::middleware(EnsureScreenAccess::using(Screen::Pages, Screen::Media))->group(function (): void {
                 Route::get('media/files', ListMediaController::class)->name('media.files');
                 Route::get('media/folders', ListMediaFoldersController::class)->name('media.folders');
+                Route::put('media/chosen-folder', RememberMediaFolderController::class)->name('media.chosen-folder.update');
                 Route::post('media', UploadMediaController::class)->name('media.store');
                 Route::put('media/{media}/alt', UpdateAltTextController::class)->whereNumber('media')->name('media.alt.update');
             });

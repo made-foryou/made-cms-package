@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Dom\HTMLDocument;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
@@ -250,9 +251,22 @@ it('gives the media element of the side panel the upload field for one photo, in
         ->and(editShellConfig($html)['texts']['panel'])->toMatchArray([
             'image_alt' => 'Alt: :alt',
             'upload_done' => 'De foto staat in :place.',
-        ]);
+        ])
+        ->and(editShellConfig($html)['folder'])->toBeNull();
 
     $response->assertSee(LauncherAssetController::url('upload.js'), false);
+});
+
+it('gives the side panel the folder the editor chose last in the picker', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    $page = Page::factory()->at('/over-ons')->create();
+    $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->putJson('made-cms/media/chosen-folder', ['folder' => $teams->id])
+        ->assertNoContent();
+
+    $html = (string) $this->get('made-cms/pages/'.$page->id.'/edit')->getContent();
+
+    expect(editShellConfig($html)['folder'])->toBe(['id' => $teams->id, 'name' => 'Teams']);
 });
 
 it('tells the side panel whether the editor chooses the level of a heading: whoever opens Meta-overzicht', function (Role $role, bool $chooses): void {

@@ -8,11 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Actions\ListScreens;
 use Made\CmsPackage\Content\Actions\CompareDraft;
+use Made\CmsPackage\Content\Actions\FindMediaFolder;
 use Made\CmsPackage\Content\Actions\ListEditableStrips;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Responses\EditPageResponse;
+use Made\CmsPackage\Http\Session\MediaFolderMemory;
 
 /**
  * The edit shell of a page, where an editor chooses a strip on the site to edit and builds the page from the strip
@@ -32,6 +34,7 @@ final class EditPageController
             CompareDraft::run($page),
             $types,
             Visitor::choosesHeadingLevels($request),
+            FindMediaFolder::run(MediaFolderMemory::of($request)->id()),
         );
     }
 }

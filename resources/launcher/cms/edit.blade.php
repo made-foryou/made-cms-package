@@ -164,7 +164,14 @@
                 </div>
             </form>
             {{-- The uploads of the side panel, also while the editor works on another strip; panel.js fills it in. --}}
-            <p class="paneel-upload" role="status" data-slot="upload-status"><span data-slot="upload-status-text"></span><span aria-hidden="true" data-slot="upload-status-percent"></span></p>
+            <div class="paneel-upload" data-slot="upload-status">
+                <span class="paneel-upload-lijn" aria-hidden="true"><span data-slot="upload-status-line"></span></span>
+                <span class="paneel-upload-ring" aria-hidden="true"></span>
+                <span class="paneel-upload-teken goed" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span>
+                <span class="paneel-upload-teken fout" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+                <span class="paneel-upload-tekst"><span role="status" data-slot="upload-status-text"></span><span aria-hidden="true" data-slot="upload-status-percent"></span> <button type="button" class="tekstlink" data-slot="upload-status-open" hidden>{{ $t('cms.edit.upload_status_open') }}</button></span>
+                <button type="button" class="paneel-upload-sluit" aria-label="{{ $t('cms.edit.upload_status_close') }}" data-slot="upload-status-close" hidden><span aria-hidden="true">×</span></button>
+            </div>
             <p class="sr-only" aria-live="polite" data-slot="announce"></p>
             <p id="paneel-sleephint" hidden>{{ $t('cms.edit.drag_hint') }}</p>
         </aside>
@@ -304,7 +311,11 @@
             <span class="beeldkaart-leegicoon" aria-hidden="true" data-slot="image-none" hidden><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg></span>
             <span class="beeldkaart-leegtitel" data-slot="image-empty" hidden>{{ $t('cms.edit.image_empty') }}</span>
             <span class="veld-hint" data-slot="image-empty-text" hidden>{{ $t('cms.edit.image_empty_text') }}</span>
-            <span class="beeldkaart-leegtitel" data-slot="image-gone" hidden>{{ $t('cms.edit.image_gone') }}</span>
+            <span class="beeldkaart-weg-icoon" aria-hidden="true" data-slot="image-gone-icon" hidden><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4 6l16 12"/></svg></span>
+            <span class="beeldkaart-weg-tekst" data-slot="image-gone" hidden>
+                <span class="beeldkaart-leegtitel">{{ $t('cms.edit.image_gone') }}</span>
+                <span class="veld-hint">{{ $t('cms.edit.image_gone_text') }}</span>
+            </span>
             <div class="beeldkaart-acties">
                 <button type="button" class="actie klein" aria-expanded="false" data-slot="image-upload">{{ $t('cms.edit.image_upload') }}</button>
                 <button type="button" class="actie klein beeldkaart-weg" title="{{ $t('cms.edit.image_remove') }}" data-slot="image-remove" hidden><span aria-hidden="true">×</span></button>
@@ -321,7 +332,10 @@
 <template data-part="upload">
     <div class="beeldveld-uploadveld">
         @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $upload])
-        <button type="button" class="tekstlink klein" data-slot="image-upload-cancel">{{ $t('cms.edit.image_upload_cancel') }}</button>
+        <div class="beeldveld-uploadvoet">
+            <span class="veld-hint" data-slot="image-upload-busy" hidden>{{ $t('cms.edit.image_upload_busy') }}</span>
+            <button type="button" class="tekstlink klein" data-slot="image-upload-cancel">{{ $t('cms.edit.image_upload_cancel') }}</button>
+        </div>
     </div>
 </template>
 <template data-field="choice">

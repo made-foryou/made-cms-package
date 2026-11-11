@@ -87,7 +87,7 @@ return [
             'saving' => 'Saving the alt texts…',
             'alts_saved' => 'The alt texts are saved.',
             'alt_failed' => 'Saving did not work. Check your connection and try again.',
-            'not_image' => 'This field only takes photos.',
+            'not_image' => 'This field only takes photos. This file was not uploaded; drag a photo here, or choose one on your computer.',
         ],
         // The field of an image in a strip takes one photo and says so in the singular; what is not here comes from above.
         'single' => [
@@ -97,7 +97,8 @@ return [
             'rules' => ':kinds · up to :max · goes into :folder',
             'list' => 'Photo in this field',
             'save_alts' => 'Save alt text',
-            'later_hint' => 'Later is fine: it then shows with an amber dot in Media.',
+            'alt_hint' => 'For whoever does not see the photo, and for Google. It applies wherever this photo is.',
+            'later_hint' => 'Later is fine: the photo then keeps an amber dot, here and in Media.',
             'texts' => [
                 'drag_many' => 'One photo at a time: the first goes into :folder',
                 'drag_unknown' => 'It goes into :folder',

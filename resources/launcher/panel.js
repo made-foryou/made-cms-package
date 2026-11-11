@@ -51,6 +51,9 @@ const ui = {
     uploadStatus: slot('upload-status'),
     uploadText: slot('upload-status-text'),
     uploadPercent: slot('upload-status-percent'),
+    uploadLine: slot('upload-status-line'),
+    uploadOpen: slot('upload-status-open'),
+    uploadClose: slot('upload-status-close'),
 };
 
 // Every strip the editor opened keeps its state, so going back to it loses nothing that was not saved yet.
@@ -599,8 +602,12 @@ function choice(select, field, value, set) {
 // Every upload field the panel opened, until the editor closes it.
 const uploads = new Set();
 
-// The place of the photo that came in last, for the line at the foot of the panel until the editor chooses a strip.
+// The place of the photo that came in out of sight, for the line at the foot of the panel until the editor chooses a
+// strip or closes the line.
 let arrived = null;
+
+// The upload whose failure the line shows, for "Open dat veld" and its cross.
+let shown = null;
 
 /* Where an image is, as the line at the foot of the panel names it: "Hero › Foto", "Kaarten › Kaart 2 › Icoon". */
 function placeOf(state, field, path) {
@@ -651,20 +658,21 @@ function uploadOf(state, owner, key) {
     return [...uploads].find((upload) => upload.state === state && upload.key === key && where(upload)?.owner === owner) ?? null;
 }
 
-/* The line at the foot of the panel: the uploads on their way, else one that failed out of sight, else the last photo. */
+/*
+ * The line at the foot of the panel: the uploads on their way, with how far they are as a line along its top; else an
+ * upload that failed out of sight, with a way to its field; else the photo that came in out of sight. The editor
+ * closes a result with its cross; a photo still on its way stays.
+ */
 function showUploads() {
     const busy = [...uploads].filter((upload) => upload.busy);
-    const failed = [...uploads].find((upload) => upload.failed && ! upload.seen);
+    const failed = [...uploads].find((upload) => upload.failed && ! upload.seen) ?? null;
     let text = '';
-    let percent = '';
     let state = '';
+    let percent = null;
 
-    if (busy.length === 1) {
-        text = format(texts.upload_busy, { place: busy[0].place });
-        percent = busy[0].percent === null ? '' : format(texts.upload_percent, { percent: busy[0].percent });
-        state = 'busy';
-    } else if (busy.length > 1) {
-        text = format(texts.upload_busy_many, { count: busy.length });
+    if (busy.length > 0) {
+        percent = Math.round(busy.reduce((sum, upload) => sum + (upload.percent ?? 0), 0) / busy.length);
+        text = busy.length === 1 ? format(texts.upload_busy, { place: busy[0].place }) : format(texts.upload_busy_many, { count: busy.length });
         state = 'busy';
     } else if (failed) {
         text = format(texts.upload_failed, { place: failed.place });
@@ -679,8 +687,12 @@ function showUploads() {
         ui.uploadText.textContent = text;
     }
 
-    ui.uploadPercent.textContent = percent;
+    ui.uploadPercent.textContent = percent === null ? '' : format(texts.upload_percent, { percent });
+    ui.uploadLine.style.width = (percent ?? 0) + '%';
+    ui.uploadOpen.hidden = state !== 'failed' || where(failed) === null;
+    ui.uploadClose.hidden = state !== 'failed' && state !== 'done';
     ui.uploadStatus.dataset.state = state;
+    shown = failed;
 }
 
 /* Closes the upload field of an image once no photo is on its way; the files it took stay in Media. */
@@ -724,11 +736,19 @@ function openUpload(state, field, owner, path) {
         button: null,
     };
     const input = element.querySelector('[data-upload]');
+    const busyHint = slot('image-upload-busy', element);
 
-    cancel.addEventListener('click', () => closeUpload(upload));
+    // "Annuleren" stops a photo whose bytes still travel; one the server is storing lands in Media and stays open.
+    cancel.addEventListener('click', () => {
+        if (upload.busy) {
+            input.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
+        }
+
+        closeUpload(upload);
+    });
 
     input.addEventListener('made-cms:upload', (event) => {
-        const { busy, done, failed, percent } = event.detail;
+        const { busy, done, failed, percent, sending } = event.detail;
 
         if (busy && ! upload.busy) {
             const spot = where(upload);
@@ -742,7 +762,8 @@ function openUpload(state, field, owner, path) {
         upload.failed = ! busy && failed > 0;
         // An error the editor sees in the field needs no line at the foot of the panel.
         upload.seen ||= upload.failed && element.isConnected;
-        cancel.hidden = busy || done > 0;
+        cancel.hidden = busy ? ! sending : done > 0;
+        busyHint.hidden = ! busy;
 
         if (! busy) {
             upload.waiting.splice(0).forEach((resolve) => resolve());
@@ -762,7 +783,8 @@ function openUpload(state, field, owner, path) {
             liveInput(upload.state, spot.path, upload.field, file.id);
             changed(upload.state);
             leave(upload.state, spot.path);
-            arrived = placeOf(upload.state, upload.field, spot.path);
+            // Next to the field the photo shows itself; the line tells only an editor who is elsewhere.
+            arrived = element.isConnected ? null : placeOf(upload.state, upload.field, spot.path);
         }
 
         upload.draw?.();
@@ -837,10 +859,11 @@ function image(state, element, field, owner, path, set) {
         card.dataset.state = shown ? 'filled' : (gone ? 'gone' : 'empty');
         slot('image-preview', element).hidden = shown === null;
         slot('image-file', element).hidden = shown === null;
-        slot('image-none', element).hidden = shown !== null;
+        slot('image-none', element).hidden = value !== null;
         slot('image-empty', element).hidden = value !== null;
         slot('image-empty-text', element).hidden = value !== null;
         slot('image-gone', element).hidden = ! gone;
+        slot('image-gone-icon', element).hidden = ! gone;
         remove.hidden = value === null;
         button.setAttribute('aria-expanded', String(uploadOf(state, owner, key) !== null));
 
@@ -2094,6 +2117,26 @@ if (shell && ui.form) {
     ui.remove.addEventListener('click', () => current?.item && removeItem(current));
 
     ui.visible.addEventListener('change', () => current && setVisibility(current, ui.visible.checked));
+
+    // The line at the foot of the panel: its cross puts a result away, "Open dat veld" goes to a failed upload.
+    ui.uploadClose.addEventListener('click', () => {
+        if (shown) {
+            shown.seen = true;
+        } else {
+            arrived = null;
+        }
+
+        showUploads();
+    });
+    ui.uploadOpen.addEventListener('click', () => {
+        const spot = shown ? where(shown) : null;
+
+        if (spot) {
+            const count = shown.list === null ? null : shown.state.values[shown.list].length;
+
+            shell.dispatchEvent(new CustomEvent('made-cms:choose', { detail: { id: shown.state.id, field: spot.path, count } }));
+        }
+    });
     ui.undo.addEventListener('click', () => current && undo(current));
 
     window.addEventListener('beforeunload', (event) => {

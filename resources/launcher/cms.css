@@ -1990,8 +1990,7 @@ ul.lijst {
     gap: 6px;
 }
 
-.beeldkaart[data-state="empty"] .beeldkaart-acties,
-.beeldkaart[data-state="gone"] .beeldkaart-acties {
+.beeldkaart[data-state="empty"] .beeldkaart-acties {
     justify-content: center;
     margin-top: 4px;
 }
@@ -2013,8 +2012,33 @@ ul.lijst {
     color: var(--made-alarm);
 }
 
-.beeldkaart[data-state="gone"] .beeldkaart-weg {
-    margin-left: 0;
+.beeldkaart[data-state="gone"] {
+    flex-flow: row wrap;
+    align-items: flex-start;
+    padding: 12px;
+    border-color: var(--made-alarm);
+    text-align: left;
+}
+
+.beeldkaart-weg-icoon {
+    display: flex;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--made-alarm);
+}
+
+.beeldkaart-weg-tekst {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.beeldkaart[data-state="gone"] .beeldkaart-acties {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-top: 0;
 }
 
 /* The upload field of an image opens below its card, as wide as the side panel. */
@@ -2042,31 +2066,76 @@ ul.lijst {
     font-size: 15px;
 }
 
-/* The uploads of the side panel, at its foot also while the editor works on another strip. */
+/*
+ * One photo in the panel (13.2b): the field folds down to what matters at each moment. While the photo travels only its
+ * row shows; once it is in, the card above shows it and the field asks its alt text; a file that is no photo stands
+ * above the zone as a notice.
+ */
+
+.beeldveld-uploadvoet {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    align-self: stretch;
+}
+
+.upload[data-one-image] [data-slot="upload-summary"],
+.upload[data-one-image] .upload-kop,
+.upload[data-one-image][data-moment="busy"] .upload-vlak,
+.upload[data-one-image][data-moment="done"] .upload-vlak {
+    display: none;
+}
+
+.upload[data-one-image][data-moment="error"] .upload-vlak {
+    border-color: var(--made-alarm);
+}
+
+.upload[data-one-image][data-moment="error"] .upload-lijst {
+    order: -1;
+}
+
+/* In the narrow panel the buttons of a row go below its text. */
+.upload[data-one-image] .upload-rij-kop {
+    flex-wrap: wrap;
+}
+
+.upload[data-one-image] .upload-rij-tekst {
+    flex: 1 1 180px;
+}
+
+.upload[data-one-image] .upload-rij[data-state="done"] {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.upload[data-one-image] .upload-rij[data-state="done"] .upload-mini,
+.upload[data-one-image] .upload-rij[data-state="done"] .upload-naam,
+.upload[data-one-image] .upload-rij[data-state="done"] [data-slot="upload-row-note"] {
+    display: none;
+}
+
+/*
+ * The uploads of the side panel (13.2c), stuck to its foot in every view, also while the editor works on another strip:
+ * a turning ring and a line along the top while photos travel, a check or a cross for a result.
+ */
 
 .paneel-upload {
     position: sticky;
     /* Down to the edge of the panel, past its padding. */
     bottom: -34px;
+    z-index: 2;
     display: flex;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 10px;
     margin: auto -24px -34px;
-    padding: 12px 24px 16px;
-    border-top: 1px solid var(--made-rand);
-    background: var(--made-oppervlak);
-    font-size: 13px;
+    padding: 13px 24px 14px;
+    border-top: 1.5px solid var(--made-rand);
+    background: var(--made-oppervlak-verhoogd);
+    font-size: 13.5px;
     line-height: 1.45;
-    color: var(--made-inhoud-zwak);
-}
-
-.paneel-upload::before {
-    content: "";
-    flex-shrink: 0;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--made-accent);
+    color: var(--made-inhoud);
 }
 
 .paneel-upload:not([data-state]),
@@ -2074,16 +2143,101 @@ ul.lijst {
     display: none;
 }
 
-.paneel-upload[data-state="done"]::before {
+.paneel-upload-lijn {
+    position: absolute;
+    top: -1.5px;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: var(--made-rand);
+}
+
+.paneel-upload-lijn span {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--made-amber);
+    transition: width 400ms ease;
+}
+
+.paneel-upload-ring {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    box-sizing: border-box;
+    margin-top: 2px;
+    border: 2px solid var(--made-rand-sterk);
+    border-top-color: var(--made-amber);
+    border-radius: 50%;
+    animation: paneel-upload-draai 900ms linear infinite;
+}
+
+@keyframes paneel-upload-draai {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.paneel-upload-teken {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    border-radius: 50%;
+    color: var(--made-krijt);
+}
+
+.paneel-upload-teken.goed {
     background: var(--made-status);
 }
 
-.paneel-upload[data-state="failed"] {
-    color: var(--made-alarm);
+.paneel-upload-teken.fout {
+    background: var(--made-alarm);
 }
 
-.paneel-upload[data-state="failed"]::before {
-    background: var(--made-alarm);
+.paneel-upload:not([data-state="busy"]) .paneel-upload-lijn,
+.paneel-upload:not([data-state="busy"]) .paneel-upload-ring,
+.paneel-upload:not([data-state="done"]) .paneel-upload-teken.goed,
+.paneel-upload:not([data-state="failed"]) .paneel-upload-teken.fout {
+    display: none;
+}
+
+.paneel-upload-tekst {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.paneel-upload-sluit {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    margin: -2px -6px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--made-inhoud-zwak);
+    font-size: 16px;
+    line-height: 1;
+}
+
+.paneel-upload-sluit:hover {
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .paneel-upload-ring {
+        animation: none;
+    }
+
+    .paneel-upload-lijn span {
+        transition: none;
+    }
 }
 
 @media (prefers-color-scheme: dark) {

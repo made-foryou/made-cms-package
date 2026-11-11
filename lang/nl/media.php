@@ -87,7 +87,7 @@ return [
             'saving' => 'Alt-teksten worden opgeslagen…',
             'alts_saved' => 'De alt-teksten zijn opgeslagen.',
             'alt_failed' => 'Opslaan lukte niet. Controleer je verbinding en probeer het opnieuw.',
-            'not_image' => 'Dit veld neemt alleen foto’s.',
+            'not_image' => 'Dit veld neemt alleen foto’s. Dit bestand is niet geüpload; sleep een foto hierheen, of kies er een op je computer.',
         ],
         // The field of an image in a strip takes one photo and says so in the singular; what is not here comes from above.
         'single' => [
@@ -97,7 +97,8 @@ return [
             'rules' => ':kinds · tot :max · komt in :folder',
             'list' => 'Foto in dit veld',
             'save_alts' => 'Alt-tekst opslaan',
-            'later_hint' => 'Later doen kan: hij staat dan met een amber stip in Media.',
+            'alt_hint' => 'Voor wie de foto niet ziet, en voor Google. Geldt overal waar deze foto staat.',
+            'later_hint' => 'Later doen kan: de foto houdt dan een amber stip, hier en in Media.',
             'texts' => [
                 'drag_many' => 'Eén foto tegelijk: de eerste komt in :folder',
                 'drag_unknown' => 'Hij komt in :folder',

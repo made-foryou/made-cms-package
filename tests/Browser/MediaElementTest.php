@@ -124,10 +124,11 @@ it('uploads a photo into an empty media element, makes it the value of the field
             ['media_id' => $media->id, 'version' => 'draft', 'field' => 'foto'],
         ]);
 
+    // Next to the field the photo showed itself, so the line at the foot of the panel says nothing.
     $shell->assertSeeIn('[data-path="foto"] [data-slot="image-alt"]', 'Alt: Het eerste team voor de tafels')
         ->assertMissing('[data-path="foto"] [data-slot="image-no-alt"]')
         ->assertAttribute('[data-path="foto"] [data-slot="image-upload"]', 'aria-expanded', 'false')
-        ->assertSeeIn('[data-slot="upload-status-text"]', 'De foto staat in Hero › Foto.')
+        ->assertMissing('[data-slot="upload-status"]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -175,6 +176,9 @@ it('says that the file of a field left Media and lets the editor take it away', 
     $shell = openStrip($this->page, 'hero', mediaState('foto', 'gone'));
 
     $shell->assertSeeIn('[data-path="foto"] [data-slot="image-gone"]', 'Deze afbeelding staat niet meer in Media.')
+        ->assertSeeIn('[data-path="foto"] [data-slot="image-gone"]', 'De site laat hier nu zijn eigen standaard zien.')
+        ->assertVisible('[data-path="foto"] [data-slot="image-gone-icon"]')
+        ->assertMissing('[data-path="foto"] [data-slot="image-empty"]')
         ->assertVisible('[data-path="foto"] [data-slot="image-upload"]')
         ->click('[data-path="foto"] [data-slot="image-remove"]');
 
@@ -253,6 +257,12 @@ it('keeps uploading while the editor works on another strip, says so at the foot
 
     expect($shell->script(waitUntil(uploadStatus('Foto uploaden voor Hero › Foto'))))->toBeTrue();
 
+    // While the photo travels the field shows its row, says the editor can go on, and can still stop it.
+    $shell->assertVisible('[data-path="foto"] [data-slot="image-upload-busy"]')
+        ->assertVisible('[data-path="foto"] [data-slot="image-upload-cancel"]')
+        ->assertMissing('[data-path="foto"] [data-slot="upload-zone"]')
+        ->assertSeeIn('[data-slot="upload-status-percent"]', '%');
+
     // The editor goes on with the cards; the line stays.
     $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="cards"] .tab'));
 
@@ -265,14 +275,18 @@ it('keeps uploading while the editor works on another strip, says so at the foot
 
     $media = Media::query()->sole();
 
+    // The editor puts the result away with its cross.
+    $shell->assertAttribute('[data-slot="upload-status-close"]', 'aria-label', 'Melding sluiten')
+        ->assertMissing('[data-slot="upload-status-open"]')
+        ->click('[data-slot="upload-status-close"]')
+        ->assertMissing('[data-slot="upload-status"]');
+
     // Coming back shows the photo, saved as the draft, and the moment "done" of its field.
     $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="hero"] .tab'));
 
     expect($shell->script(waitUntil(mediaState('foto', 'filled').' && '.savedAsDraft())))->toBeTrue()
         ->and(draftOf($this->page, 'hero')['values']['foto'] ?? null)->toBe($media->id)
-        ->and($shell->script("() => document.querySelector('[data-path=\"foto\"] [data-upload]')?.dataset.moment"))->toBe('done')
-        // Choosing a strip moved on from the photo that came in.
-        ->and($shell->script("() => document.querySelector('[data-slot=\"upload-status\"]').checkVisibility()"))->toBeFalse();
+        ->and($shell->script("() => document.querySelector('[data-path=\"foto\"] [data-upload]')?.dataset.moment"))->toBe('done');
 
     $shell->assertNoJavaScriptErrors();
 });
@@ -295,13 +309,34 @@ it('says at the foot of the panel when an upload out of sight failed, until the 
     expect($shell->script(waitUntil(uploadStatus('Uploaden voor Hero › Foto lukte niet. Open dat veld om het opnieuw te proberen.'))))->toBeTrue()
         ->and($shell->script("() => document.querySelector('[data-slot=\"upload-status\"]').dataset.state"))->toBe('failed');
 
-    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="hero"] .tab'));
+    $shell->click('[data-slot="upload-status-open"]');
 
     expect($shell->script(waitUntil("document.querySelector('[data-path=\"foto\"] [data-upload]')?.dataset.moment === 'error'")))->toBeTrue()
+        ->and($shell->script(waitUntil("document.activeElement?.dataset.slot === 'image-upload'")))->toBeTrue()
         ->and($shell->script(waitUntil("! document.querySelector('[data-slot=\"upload-status\"]').checkVisibility()")))->toBeTrue()
         ->and(Media::query()->count())->toBe(0);
 
     $shell->assertVisible('[data-path="foto"] [data-slot="upload-row-retry"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('stops a photo that is still on its way when the editor cancels, and keeps the field as it was', function (): void {
+    $shell = openStrip($this->page, 'hero', mediaState('foto', 'empty'));
+
+    $shell->script(holdUpload());
+    $shell->click('[data-path="foto"] [data-slot="image-upload"]')
+        ->attach('[data-path="foto"] [data-slot="upload-input"]', photo(1200, 800, 'jpg', 'Clubavond.jpg'));
+
+    expect($shell->script(waitUntil(uploadStatus('Foto uploaden voor Hero › Foto'))))->toBeTrue();
+
+    $shell->click('[data-path="foto"] [data-slot="image-upload-cancel"]');
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-path=\"foto\"] [data-upload]')")))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('[data-slot=\"upload-status\"]').checkVisibility()"))->toBeFalse()
+        ->and($shell->script('() => document.activeElement?.dataset.slot'))->toBe('image-upload')
+        ->and(Media::query()->count())->toBe(0);
+
+    $shell->assertAttribute('[data-path="foto"] [data-slot="image-upload"]', 'aria-expanded', 'false')
         ->assertNoJavaScriptErrors();
 });
 

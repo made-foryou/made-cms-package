@@ -5,7 +5,7 @@
     fixed texts are here; upload.js fills in the rest from data-config.
 --}}
 @php($t = $upload['t'])
-<section class="upload" data-upload data-moment="rest" data-config="{{ json_encode($upload['config'], JSON_THROW_ON_ERROR) }}" aria-label="{{ $t('label') }}">
+<section class="upload" data-upload data-moment="rest"@if ($upload['one_image']) data-one-image @endif data-config="{{ json_encode($upload['config'], JSON_THROW_ON_ERROR) }}" aria-label="{{ $t('label') }}">
     <div class="upload-vlak" data-slot="upload-zone">
         <span class="upload-icoon" aria-hidden="true">
             <svg data-slot="upload-icon-rest" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M6 10l6-6 6 6"></path><path d="M4 20h16"></path></svg>
@@ -55,6 +55,9 @@
                     <span class="veld upload-alt" data-slot="upload-row-alt" hidden>
                         <label data-slot="upload-row-alt-label">{{ $t('alt') }}</label>
                         <input type="text" maxlength="255" autocomplete="off" placeholder="{{ $t('alt_placeholder') }}" data-slot="upload-row-alt-input">
+                        @if ($upload['one_image'])
+                            <span class="upload-klein" data-slot="upload-row-alt-hint">{{ $t('alt_hint') }}</span>
+                        @endif
                         <span class="veld-fout" data-slot="upload-row-alt-error" hidden></span>
                     </span>
                 </span>

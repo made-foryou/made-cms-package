@@ -9,10 +9,14 @@
  * until the editor leaves the file out or tries again. The field of an image (one_image) takes one photo at a time.
  *
  * What a host hears on the field (the events bubble):
- * - made-cms:upload {busy, done, total, failed, percent} after every change and while a file travels, for a status
- *   line outside the field (percent of the file on its way, null when none is);
+ * - made-cms:upload {busy, done, total, failed, percent, sending} after every change and while a file travels, for a
+ *   status line outside the field (percent of the file on its way, null when none is; sending while its bytes still
+ *   travel, so it can still be stopped);
  * - made-cms:uploaded {file} for every file the library took, as the server answered it;
  * - made-cms:upload-closed {files} when the editor leaves the moment "done", with the alt texts as they are stored.
+ *
+ * A host stops what is still on its way with made-cms:upload-stop on the field: the file that travels and the files
+ * that wait leave the field. A file the server is storing already cannot be stopped; it lands in the library.
  */
 
 const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
@@ -234,7 +238,14 @@ function start(field) {
         wasBusy = busy;
         busy ? working.add(field) : working.delete(field);
 
-        tell('made-cms:upload', { busy, done: done.length, total, failed: failed.length, percent: active?.percent ?? null });
+        tell('made-cms:upload', {
+            busy,
+            done: done.length,
+            total,
+            failed: failed.length,
+            percent: active?.percent ?? null,
+            sending: active?.state === 'uploading',
+        });
     }
 
     function fail(row, message, retry) {
@@ -275,6 +286,7 @@ function start(field) {
         }
 
         active = row;
+        row.xhr = xhr;
         row.state = 'uploading';
         row.percent = 0;
         row.loaded = 0;
@@ -344,7 +356,7 @@ function start(field) {
     function add(file) {
         const element = template.content.firstElementChild.cloneNode(true);
         const part = (name) => slot('row-' + name, element);
-        const row = { file, element, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false };
+        const row = { file, element, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false, xhr: null };
         const id = 'made-cms-upload-' + (++serial);
         const name = part('name');
         const input = part('alt-input');
@@ -355,6 +367,14 @@ function start(field) {
         input.id = id + '-alt';
         part('alt-label').setAttribute('for', input.id);
         part('alt-error').id = id + '-alt-error';
+
+        // The field of an image says what an alt text is for, below the input.
+        const hint = slot('row-alt-hint', element);
+
+        if (hint) {
+            hint.id = id + '-alt-hint';
+            input.setAttribute('aria-describedby', hint.id);
+        }
         part('bar').setAttribute('aria-label', format(texts.uploading, { name: file.name }));
 
         part('cancel').addEventListener('click', () => {
@@ -407,13 +427,32 @@ function start(field) {
         pump();
     }
 
+    /**
+     * Stops what is still on its way: the file whose bytes travel and the files that wait leave the field. A file the
+     * server is storing already goes on. The abort of a request that never left gives no event, so the row goes here.
+     */
+    function stop() {
+        rows.filter((row) => row.state === 'waiting').forEach(remove);
+
+        const row = active;
+
+        if (row?.state === 'uploading') {
+            active = null;
+            row.xhr.abort();
+            remove(row);
+        }
+
+        pump();
+    }
+
     /** Leaves the moment "done": the files stay in the library, the field is at rest again. Errors stay. */
     function close() {
         const files = rows.filter((row) => row.state === 'done').map((row) => row.result);
 
         rows.filter((row) => row.state === 'done').forEach(remove);
-        ui.choose.focus();
+        // At rest first: the field of an image hides its zone in the moment "done", and a hidden button takes no focus.
         refresh();
+        ui.choose.focus();
         tell('made-cms:upload-closed', { files });
     }
 
@@ -451,8 +490,10 @@ function start(field) {
         part('alt').classList.toggle('fout', message !== null);
         error.hidden = message === null;
         error.textContent = message ?? '';
+        const described = [slot('row-alt-hint', row.element)?.id, message === null ? null : error.id].filter(Boolean).join(' ');
+
         input.toggleAttribute('aria-invalid', message !== null);
-        message === null ? input.removeAttribute('aria-describedby') : input.setAttribute('aria-describedby', error.id);
+        described === '' ? input.removeAttribute('aria-describedby') : input.setAttribute('aria-describedby', described);
     }
 
     /** "Alt-teksten opslaan": every text the editor typed, one request per file. Without a text it is "later". */
@@ -577,6 +618,7 @@ function start(field) {
         ui.input.value = '';
     });
 
+    field.addEventListener('made-cms:upload-stop', stop);
     ui.save.addEventListener('click', save);
     ui.later.addEventListener('click', close);
     ui.close.addEventListener('click', close);

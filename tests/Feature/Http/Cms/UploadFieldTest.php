@@ -87,6 +87,7 @@ it('renders the field with its fixed texts, a file chooser a keyboard reaches an
         ->and($document->querySelector('button[data-slot="upload-choose"]')?->textContent)->toBe('kies ze op je computer')
         ->and($document->querySelector('[data-slot="upload-rules"]')?->textContent)->toBe('Foto’s, documenten en video’s · tot 25 MB per bestand · komen in de map Teams & <b>meer</b>')
         ->and($document->querySelector('input[type="file"][data-slot="upload-input"]')?->hasAttribute('multiple'))->toBeTrue()
+        ->and($field?->hasAttribute('data-one-image'))->toBeFalse()
         ->and($document->querySelector('[data-slot="upload-announce"]')?->getAttribute('aria-live'))->toBe('polite')
         ->and($document->querySelector('[data-slot="upload-summary"]')?->getAttribute('role'))->toBe('status')
         ->and($html)->toContain('role="progressbar"')
@@ -113,7 +114,7 @@ it('takes one photo for an image field, and says so in the singular', function (
         ->and($upload['config']['one_image'])->toBeTrue()
         ->and($upload['config']['folder'])->toBe(['id' => null, 'label' => 'Alle bestanden'])
         ->and($upload['config']['texts'])->toMatchArray([
-            'not_image' => 'Dit veld neemt alleen foto’s.',
+            'not_image' => 'Dit veld neemt alleen foto’s. Dit bestand is niet geüpload; sleep een foto hierheen, of kies er een op je computer.',
             'drag_many' => 'Eén foto tegelijk: de eerste komt in :folder',
             'drag_unknown' => 'Hij komt in :folder',
             'done_one' => '1 bestand toegevoegd aan :folder',
@@ -133,7 +134,8 @@ it('renders the field for one photo without a choice of several files', function
         ->and($document->querySelector('button[data-slot="upload-choose"]')?->textContent)->toBe('kies hem op je computer')
         ->and($document->querySelector('[data-slot="upload-rules"]')?->textContent)->toBe('Foto’s · tot 25 MB · komt in de map Teams')
         ->and($document->querySelector('[data-slot="upload-save"]')?->textContent)->toBe('Alt-tekst opslaan')
-        ->and($document->querySelector('[data-slot="upload-later-hint"]')?->textContent)->toBe('Later doen kan: hij staat dan met een amber stip in Media.')
+        ->and($document->querySelector('[data-slot="upload-later-hint"]')?->textContent)->toBe('Later doen kan: de foto houdt dan een amber stip, hier en in Media.')
+        ->and($document->querySelector('[data-upload]')?->hasAttribute('data-one-image'))->toBeTrue()
         ->and($document->querySelector('input[type="file"][data-slot="upload-input"]')?->hasAttribute('multiple'))->toBeFalse()
         ->and($document->querySelector('input[type="file"][data-slot="upload-input"]')?->getAttribute('accept'))->toBe($upload['accept']);
 });
@@ -144,6 +146,6 @@ it('takes one photo in the language of the launcher too', function (): void {
     $upload = UploadField::image();
 
     expect($upload['rules'])->toBe('Photos · up to 25 MB · goes into All files')
-        ->and($upload['config']['texts']['not_image'])->toBe('This field only takes photos.')
+        ->and($upload['config']['texts']['not_image'])->toStartWith('This field only takes photos.')
         ->and(uploadFieldHtml($upload))->toContain('Drag your photo here');
 });

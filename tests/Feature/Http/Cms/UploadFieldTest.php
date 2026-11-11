@@ -103,6 +103,14 @@ it('follows the language of the launcher', function (): void {
         ->and(uploadFieldHtml($upload))->toContain('Drag your files here');
 });
 
+it('gives the script the line of rules and the names of a folder, so the field can follow another folder', function (): void {
+    expect(UploadField::make()['config']['texts'])->toMatchArray([
+        'rules' => 'Foto’s, documenten en video’s · tot 25 MB per bestand · komen in :folder',
+        'folder' => 'de map :name',
+        'all_files' => 'Alle bestanden',
+    ])->and(UploadField::image()['config']['texts']['rules'])->toBe('Foto’s · tot 25 MB · komt in :folder');
+});
+
 it('takes one photo for an image field, and says so in the singular', function (): void {
     config(['made-cms-package.media.allowed_mimes' => ['image/jpeg', 'image/svg+xml', 'application/pdf', 'video/mp4']]);
 

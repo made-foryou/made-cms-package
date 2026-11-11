@@ -17,6 +17,10 @@
  *
  * A host stops what is still on its way with made-cms:upload-stop on the field: the file that travels and the files
  * that wait leave the field. A file the server is storing already cannot be stopped; it lands in the library.
+ *
+ * A host sends the field into another folder with made-cms:upload-folder {folder: {id, name} | null} on the field
+ * (null for "Alle bestanden"), also one that has not started yet. A file keeps the folder it was given with, so a file
+ * that waits or is tried again never moves into a folder chosen later.
  */
 
 const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
@@ -104,6 +108,8 @@ function start(field) {
     let wasBusy = false;
 
     const folder = () => config.folder?.label ?? '';
+    // The folder a file went into: the one of the field when the file came in.
+    const folderOf = (row) => row.folder?.label ?? folder();
     const open = (row) => row.state === 'waiting' || row.state === 'uploading' || row.state === 'processing';
     const describes = (row) => row.state === 'done' && row.result.kind === 'image';
 
@@ -223,7 +229,7 @@ function start(field) {
 
         ui.done.hidden = ! finished;
         ui.doneText.textContent = finished
-            ? format(done.length === 1 ? texts.done_one : texts.done_many, { count: done.length, folder: folder() })
+            ? format(done.length === 1 ? texts.done_one : texts.done_many, { count: done.length, folder: folderOf(done[done.length - 1]) })
             : '';
         ui.actions.hidden = ! finished;
         ui.save.hidden = ! describing;
@@ -281,8 +287,8 @@ function start(field) {
 
         body.append('file', row.file, row.file.name);
 
-        if (config.folder?.id !== null && config.folder?.id !== undefined) {
-            body.append('folder', String(config.folder.id));
+        if (row.folder?.id !== null && row.folder?.id !== undefined) {
+            body.append('folder', String(row.folder.id));
         }
 
         active = row;
@@ -356,7 +362,7 @@ function start(field) {
     function add(file) {
         const element = template.content.firstElementChild.cloneNode(true);
         const part = (name) => slot('row-' + name, element);
-        const row = { file, element, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false, xhr: null };
+        const row = { file, element, folder: config.folder ?? null, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false, xhr: null };
         const id = 'made-cms-upload-' + (++serial);
         const name = part('name');
         const input = part('alt-input');
@@ -543,6 +549,20 @@ function start(field) {
         close();
     }
 
+    /**
+     * Sends the field into another folder ("Alle bestanden" for null): the files that come in from now on go there,
+     * and the line of rules says so. A file that is in the field already keeps its folder.
+     */
+    function follow(next) {
+        const id = Number.isInteger(next?.id) ? next.id : null;
+
+        config.folder = { id, label: id === null ? (texts.all_files ?? '') : format(texts.folder, { name: next.name ?? '' }) };
+
+        if (texts.rules) {
+            ui.rules.textContent = format(texts.rules, { folder: config.folder.label });
+        }
+    }
+
     /** The files of a drop; a folder is no file. */
     function dropped(transfer) {
         const items = [...(transfer.items ?? [])].filter((item) => item.kind === 'file');
@@ -619,6 +639,7 @@ function start(field) {
     });
 
     field.addEventListener('made-cms:upload-stop', stop);
+    field.addEventListener('made-cms:upload-folder', (event) => follow(event.detail?.folder ?? null));
     ui.save.addEventListener('click', save);
     ui.later.addEventListener('click', close);
     ui.close.addEventListener('click', close);
@@ -627,6 +648,15 @@ function start(field) {
 }
 
 document.querySelectorAll('[data-upload]').forEach(start);
+
+// A host may send a field into a folder the moment it puts the field on the page, before the observer below started it:
+// the field starts here first. The listener start() adds to the field still hears this event, because a node's
+// listeners are read when the event reaches it.
+document.addEventListener('made-cms:upload-folder', (event) => {
+    if (event.target instanceof Element && event.target.matches('[data-upload]')) {
+        start(event.target);
+    }
+}, true);
 
 // A field a script puts on the page later starts once it is there.
 new MutationObserver((records) => {

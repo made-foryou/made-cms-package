@@ -21,6 +21,7 @@ return [
         'folder' => 'Kies de map waar het bestand in komt.',
         'folder_gone' => 'Deze map bestaat niet meer. Herlaad de pagina en kies een andere map.',
         'server_limit' => 'De server neemt dit bestand niet aan: hij staat op hoogstens :max per upload. Vraag je webbouwer om die grens te verhogen.',
+        'filter' => 'Deze lijst kan zo niet gefilterd worden. Herlaad de pagina en probeer het opnieuw.',
     ],
 
     'or' => 'of',
@@ -31,6 +32,16 @@ return [
         'kb' => ':size kB',
         'mb' => ':size MB',
         'decimal' => ',',
+    ],
+
+    // The picker and the media library: one list of files, with its folders.
+    'browser' => [
+        'count' => [
+            'all' => '{0} Geen bestanden|{1} 1 bestand|[2,*] :count bestanden',
+            'image' => '{0} Geen afbeeldingen|{1} 1 afbeelding|[2,*] :count afbeeldingen',
+            'document' => '{0} Geen documenten|{1} 1 document|[2,*] :count documenten',
+            'video' => '{0} Geen video’s|{1} 1 video|[2,*] :count video’s',
+        ],
     ],
 
     // The upload field: one field for the library, the picker and the edit shell. The fixed texts are in its markup,

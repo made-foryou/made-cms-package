@@ -61,6 +61,17 @@ final class MediaResponse
     }
 
     /**
+     * The folder an editor chose is remembered; there is nothing to answer.
+     */
+    public static function remembered(): Response
+    {
+        $response = new Response('', Response::HTTP_NO_CONTENT);
+        $response->headers->set('Cache-Control', 'no-store, private');
+
+        return $response;
+    }
+
+    /**
      * The file as the CMS shows it (MediaDetails), with its kind, the name of the file a visitor opens and its size
      * in bytes, so the field can say how much smaller a photo became. Never its place on the disk or its original.
      *

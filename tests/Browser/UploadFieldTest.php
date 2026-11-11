@@ -203,11 +203,16 @@ it('works with the keyboard and the file chooser, and saves the alt text the edi
     $events = $page->script('() => window.uploadEvents');
     $uploaded = array_values(array_filter($events, static fn (array $event): bool => $event['name'] === 'made-cms:uploaded'));
     $closed = array_values(array_filter($events, static fn (array $event): bool => $event['name'] === 'made-cms:upload-closed'));
+    $changes = array_values(array_filter($events, static fn (array $event): bool => $event['name'] === 'made-cms:upload'));
+    $travelling = array_filter($changes, static fn (array $event): bool => $event['detail']['busy'] && is_int($event['detail']['percent']));
 
     expect($uploaded)->toHaveCount(1)
         ->and($uploaded[0]['detail']['file']['id'])->toBe($media->id)
         ->and($closed)->toHaveCount(1)
         ->and($closed[0]['detail']['files'][0]['alt'])->toBe('Leden aan de bar na de clubavond in oktober')
+        // While the file travels the field tells how far it is; at rest no file is on its way.
+        ->and($travelling)->not->toBeEmpty()
+        ->and(end($changes)['detail'])->toBe(['busy' => false, 'done' => 0, 'total' => 0, 'failed' => 0, 'percent' => null])
         ->and($page->script('() => document.activeElement?.dataset.slot'))->toBe('upload-choose');
 
     $page->assertSeeIn('[data-slot="upload-announce"]', 'De alt-teksten zijn opgeslagen.')

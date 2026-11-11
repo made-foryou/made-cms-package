@@ -101,3 +101,49 @@ it('follows the language of the launcher', function (): void {
     expect($upload['rules'])->toBe('Photos, documents and videos · up to 25 MB per file · go into All files')
         ->and(uploadFieldHtml($upload))->toContain('Drag your files here');
 });
+
+it('takes one photo for an image field, and says so in the singular', function (): void {
+    config(['made-cms-package.media.allowed_mimes' => ['image/jpeg', 'image/svg+xml', 'application/pdf', 'video/mp4']]);
+
+    $upload = UploadField::image();
+
+    expect($upload['one_image'])->toBeTrue()
+        ->and($upload['accept'])->toBe('image/jpeg,image/svg+xml')
+        ->and($upload['rules'])->toBe('Foto’s · tot 25 MB · komt in Alle bestanden')
+        ->and($upload['config']['one_image'])->toBeTrue()
+        ->and($upload['config']['folder'])->toBe(['id' => null, 'label' => 'Alle bestanden'])
+        ->and($upload['config']['texts'])->toMatchArray([
+            'not_image' => 'Dit veld neemt alleen foto’s.',
+            'drag_many' => 'Eén foto tegelijk: de eerste komt in :folder',
+            'drag_unknown' => 'Hij komt in :folder',
+            'done_one' => '1 bestand toegevoegd aan :folder',
+        ])
+        ->and(UploadField::make()['one_image'])->toBeFalse()
+        ->and(UploadField::make()['config']['one_image'])->toBeFalse();
+});
+
+it('renders the field for one photo without a choice of several files', function (): void {
+    $upload = UploadField::image(MediaFolder::factory()->create(['name' => 'Teams']));
+
+    $html = uploadFieldHtml($upload);
+    $document = HTMLDocument::createFromString('<!doctype html><body>'.$html, LIBXML_NOERROR);
+
+    expect($document->querySelector('[data-upload]')?->getAttribute('aria-label'))->toBe('Foto uploaden')
+        ->and($document->querySelector('[data-slot="upload-title"]')?->textContent)->toBe('Sleep je foto hierheen')
+        ->and($document->querySelector('button[data-slot="upload-choose"]')?->textContent)->toBe('kies hem op je computer')
+        ->and($document->querySelector('[data-slot="upload-rules"]')?->textContent)->toBe('Foto’s · tot 25 MB · komt in de map Teams')
+        ->and($document->querySelector('[data-slot="upload-save"]')?->textContent)->toBe('Alt-tekst opslaan')
+        ->and($document->querySelector('[data-slot="upload-later-hint"]')?->textContent)->toBe('Later doen kan: hij staat dan met een amber stip in Media.')
+        ->and($document->querySelector('input[type="file"][data-slot="upload-input"]')?->hasAttribute('multiple'))->toBeFalse()
+        ->and($document->querySelector('input[type="file"][data-slot="upload-input"]')?->getAttribute('accept'))->toBe($upload['accept']);
+});
+
+it('takes one photo in the language of the launcher too', function (): void {
+    config(['made-cms-package.launcher.locale' => 'en']);
+
+    $upload = UploadField::image();
+
+    expect($upload['rules'])->toBe('Photos · up to 25 MB · goes into All files')
+        ->and($upload['config']['texts']['not_image'])->toBe('This field only takes photos.')
+        ->and(uploadFieldHtml($upload))->toContain('Drag your photo here');
+});

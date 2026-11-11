@@ -26,6 +26,8 @@ use Made\CmsPackage\Http\Controllers\Content\AddStripController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
+use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
+use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
@@ -159,9 +161,12 @@ Route::prefix($prefix)
                 Route::post('pages/{page}/publish', PublishPageController::class)->whereNumber('page')->name('pages.publish');
             });
 
-            // The upload field talks JSON, one file per request. It stands in the edit shell (the pages) and in the
-            // media library, so it opens for an editor who opens one of the two.
+            // The upload field and the picker talk JSON. They stand in the edit shell (the pages) and in the media
+            // library, so they open for an editor who opens one of the two. The list has an address of its own:
+            // made-cms/media is the screen of the library.
             Route::middleware(EnsureScreenAccess::using(Screen::Pages, Screen::Media))->group(function (): void {
+                Route::get('media/files', ListMediaController::class)->name('media.files');
+                Route::get('media/folders', ListMediaFoldersController::class)->name('media.folders');
                 Route::post('media', UploadMediaController::class)->name('media.store');
                 Route::put('media/{media}/alt', UpdateAltTextController::class)->whereNumber('media')->name('media.alt.update');
             });

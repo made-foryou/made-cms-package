@@ -21,6 +21,7 @@ return [
         'folder' => 'Choose the folder the file goes into.',
         'folder_gone' => 'This folder is gone. Reload the page and choose another folder.',
         'server_limit' => 'The server does not take this file: it is set to at most :max per upload. Ask your web developer to raise that limit.',
+        'filter' => 'This list cannot be filtered this way. Reload the page and try again.',
     ],
 
     'or' => 'or',
@@ -31,6 +32,16 @@ return [
         'kb' => ':size kB',
         'mb' => ':size MB',
         'decimal' => '.',
+    ],
+
+    // The picker and the media library: one list of files, with its folders.
+    'browser' => [
+        'count' => [
+            'all' => '{0} No files|{1} 1 file|[2,*] :count files',
+            'image' => '{0} No images|{1} 1 image|[2,*] :count images',
+            'document' => '{0} No documents|{1} 1 document|[2,*] :count documents',
+            'video' => '{0} No videos|{1} 1 video|[2,*] :count videos',
+        ],
     ],
 
     // The upload field: one field for the library, the picker and the edit shell. The fixed texts are in its markup,

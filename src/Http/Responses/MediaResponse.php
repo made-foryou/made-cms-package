@@ -6,12 +6,16 @@ namespace Made\CmsPackage\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Data\MediaFile;
+use Made\CmsPackage\Content\Data\MediaFolders;
+use Made\CmsPackage\Content\Data\MediaList;
+use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Http\Cms\MediaDetails;
+use Made\CmsPackage\Support\Locale;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * A file of the media library for the upload field, as JSON. The page around the field stays loaded, so the field
- * talks to the server without reloading it; the answer is never stored by a cache.
+ * The media library for the upload field and the picker, as JSON: a file, a page of files or the folders. The page
+ * around them stays loaded, so they talk to the server without reloading it; an answer is never stored by a cache.
  */
 final class MediaResponse
 {
@@ -20,7 +24,7 @@ final class MediaResponse
      */
     public static function uploaded(MediaFile $file): JsonResponse
     {
-        return self::json($file, Response::HTTP_CREATED);
+        return self::json(['file' => self::file($file)], Response::HTTP_CREATED);
     }
 
     /**
@@ -28,23 +32,56 @@ final class MediaResponse
      */
     public static function saved(MediaFile $file): JsonResponse
     {
-        return self::json($file, Response::HTTP_OK);
+        return self::json(['file' => self::file($file)]);
+    }
+
+    /**
+     * One page of a list, each file as the upload field gets it, with the number of files the list holds in words
+     * ("12 afbeeldingen"), so the script never builds a plural itself.
+     *
+     * @param  MediaKind|null  $kind  the kind the list shows, which names its files; null for every kind
+     */
+    public static function listed(MediaList $list, ?MediaKind $kind): JsonResponse
+    {
+        return self::json([
+            'files' => array_map(self::file(...), $list->files),
+            'page' => $list->page,
+            'total' => $list->total,
+            'more' => $list->more,
+            'summary' => trans_choice('made-cms-package::media.browser.count.'.($kind->value ?? 'all'), $list->total, ['count' => $list->total], Locale::launcher()),
+        ]);
+    }
+
+    /**
+     * The folders from a to z with the number of their files, and the number of all files.
+     */
+    public static function folders(MediaFolders $folders): JsonResponse
+    {
+        return self::json($folders->toArray());
     }
 
     /**
      * The file as the CMS shows it (MediaDetails), with its kind, the name of the file a visitor opens and its size
      * in bytes, so the field can say how much smaller a photo became. Never its place on the disk or its original.
+     *
+     * @return array<string, mixed>
      */
-    private static function json(MediaFile $file, int $status): JsonResponse
+    private static function file(MediaFile $file): array
     {
-        $response = new JsonResponse([
-            'file' => [
-                ...MediaDetails::of($file),
-                'kind' => $file->kind->value,
-                'file' => basename((string) parse_url($file->url, PHP_URL_PATH)),
-                'size' => $file->size,
-            ],
-        ], $status);
+        return [
+            ...MediaDetails::of($file),
+            'kind' => $file->kind->value,
+            'file' => basename((string) parse_url($file->url, PHP_URL_PATH)),
+            'size' => $file->size,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private static function json(array $data, int $status = Response::HTTP_OK): JsonResponse
+    {
+        $response = new JsonResponse($data, $status);
         $response->headers->set('Cache-Control', 'no-store, private');
 
         return $response;

@@ -5,6 +5,8 @@
 ### Added
 
 - `MediaBuilder` reads the library for the picker and the media library: `ofKind(MediaKind $kind)`, `newestFirst()` (the files the library got last first), `byName()` (a to z) and `countPerFolder()` (the number of files in each folder by its id, in one query).
+- `ListMediaFolders::run(?MediaKind $kind)` gives every folder of the media library from a to z with the number of its files, and the number of all files ("Alle bestanden"), as `MediaFolders`; with a kind only the files of that kind count. `FindMediaFolder::run(?int $id)` finds a folder, or null once it is gone.
+- `ListMedia::run(MediaFilter $filter)` gives one page of the library as `MediaList` (40 files, the total and whether more follow): the files of a folder or all of them, whose name or alt text holds a search, of a kind, only the images without an alt text, newest first or by name (`MediaSort`), each with the url a visitor opens it at. A folder that is gone throws `MediaFolderNotFound`.
 
 - A file of the media library as the CMS shows it (`strip.media` of `GET /made-cms/pages/{page}/strips/{strip}` and `file` of the media endpoints) holds its `extension`: the type of the file a visitor gets, in small letters (`webp` for a photo that was scaled down, `svg`, `pdf`).
 

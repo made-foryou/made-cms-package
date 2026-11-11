@@ -80,17 +80,18 @@ final class UploadField
         $kinds = $oneImage ? [MediaKind::Image] : $limits->kinds;
         $base = request()->getBaseUrl();
         $label = $folder === null ? $t('all_files') : $t('folder', ['name' => $folder->name]);
+        // The line of rules with the folder left open, so the script can name another folder in it (upload-folder).
+        $rules = $t('rules', [
+            'kinds' => Str::ucfirst(self::list(
+                array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $kinds),
+                (string) __('made-cms-package::media.and', [], $locale),
+            )),
+            'max' => $limits->max,
+        ]);
 
         return [
             't' => static fn (string $key): string => $t($key),
-            'rules' => $t('rules', [
-                'kinds' => Str::ucfirst(self::list(
-                    array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $kinds),
-                    (string) __('made-cms-package::media.and', [], $locale),
-                )),
-                'max' => $limits->max,
-                'folder' => $label,
-            ]),
+            'rules' => str_replace(':folder', $label, $rules),
             'accept' => implode(',', $mimes),
             'one_image' => $oneImage,
             'script' => LauncherAssetController::url('upload.js'),
@@ -114,6 +115,9 @@ final class UploadField
                     'too_large' => (string) __('made-cms-package::media.errors.too_large', ['max' => $limits->max], $locale),
                     'too_large_video' => (string) __('made-cms-package::media.errors.too_large_video', ['max' => $limits->max], $locale),
                     'server_limit' => (string) __('made-cms-package::media.errors.server_limit', ['max' => self::serverLimit()], $locale),
+                    'rules' => $rules,
+                    'folder' => $t('folder'),
+                    'all_files' => $t('all_files'),
                     'kb' => (string) __('made-cms-package::media.details.kb', [], $locale),
                     'mb' => (string) __('made-cms-package::media.details.mb', [], $locale),
                     'decimal' => (string) __('made-cms-package::media.details.decimal', [], $locale),

@@ -273,6 +273,66 @@ it('uploads one file at a time, shows its progress and lets a waiting file be ca
     $page->assertNoJavaScriptErrors();
 });
 
+it('follows another folder a host sends it into, while a file that waits keeps its own', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    $nieuws = MediaFolder::factory()->create(['name' => 'Nieuws']);
+    $page = visit('/werkbank/uploadveld?folder='.$teams->id);
+
+    $page->assertSeeIn('[data-slot="upload-rules"]', 'komen in de map Teams');
+
+    // A field a host puts on the page and sends into a folder at once starts on the command: here "Alle bestanden".
+    $page->script(<<<'JS'
+        () => {
+            const field = document.querySelector('[data-upload]').cloneNode(true);
+
+            document.body.append(field);
+            field.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder: null } }));
+        }
+        JS);
+
+    expect($page->script("() => document.querySelectorAll('[data-upload]')[1].querySelector('[data-slot=\"upload-rules\"]').textContent"))
+        ->toBe('Foto’s, documenten en video’s · tot 25 MB per bestand · komen in Alle bestanden');
+
+    $page->script("() => document.querySelectorAll('[data-upload]')[1].remove()");
+
+    // The first file is held on its way, so the second still waits when the field goes to another folder.
+    $page->script(<<<'JS'
+        () => {
+            const send = XMLHttpRequest.prototype.send;
+
+            XMLHttpRequest.prototype.send = function (...body) {
+                window.release = () => {
+                    XMLHttpRequest.prototype.send = send;
+                    send.apply(this, body);
+                };
+            };
+        }
+        JS);
+    $page->script(dragFiles([
+        ['name' => 'teamfoto.jpg', 'type' => 'image/jpeg', 'path' => photo(60, 40)],
+        ['name' => 'schema.pdf', 'type' => 'application/pdf', 'path' => mediaFixture('wedstrijdschema.pdf')],
+    ], drop: true));
+
+    expect($page->script(waitUntil(uploadMoment('busy'))))->toBeTrue();
+
+    $page->script("() => document.querySelector('[data-upload]').dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder: { id: {$nieuws->id}, name: 'Nieuws' } } }))");
+    $page->assertSeeIn('[data-slot="upload-rules"]', 'komen in de map Nieuws');
+    $page->script('() => window.release()');
+
+    expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue()
+        ->and(Media::query()->orderBy('id')->pluck('folder_id')->all())->toBe([$teams->id, $teams->id]);
+
+    $page->click('[data-slot="upload-later"]');
+    $page->attach('[data-slot="upload-input"]', photo(60, 40, 'jpg', 'Nieuwsfoto.jpg'));
+
+    expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue()
+        ->and(Media::query()->where('name', 'nieuwsfoto')->sole()->folder_id)->toBe($nieuws->id);
+
+    $page->assertSeeIn('[data-slot="upload-done-text"]', '1 bestand toegevoegd aan de map Nieuws');
+
+    $page->assertNoJavaScriptErrors();
+});
+
 it('shows what the server refuses with the file and reads it out', function (): void {
     $page = visit('/werkbank/uploadveld');
 

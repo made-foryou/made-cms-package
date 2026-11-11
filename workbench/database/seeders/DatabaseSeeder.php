@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Actions\UpdateAltText;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 use Workbench\Database\Factories\UserFactory;
 
@@ -50,6 +51,7 @@ class DatabaseSeeder extends Seeder
         // The home page shows every kind of value: rich text, buttons to a page and an address, a photo from the media
         // library (served from the public disk after `php artisan storage:link`), cards and a hidden strip.
         $photo = $this->samplePhoto();
+        $this->teamsFolder();
 
         Page::factory()->published()->atPosition(0)->at('/')->withStrips([
             $this->strip('hero', [
@@ -102,21 +104,54 @@ class DatabaseSeeder extends Seeder
         // The build wipes the database, so the files of the library from an earlier build belong to no row any more.
         Storage::disk(config()->string('made-cms-package.media.disk'))->deleteDirectory('media');
 
-        $image = imagecreatetruecolor(2400, 1350);
+        return $this->drawnPhoto('Voorbeeldfoto workbench.jpg', [[14, 43, 38], [28, 61, 90], [190, 138, 28], [243, 241, 232]], null, 'Vier vlakken in de kleuren van Made CMS');
+    }
 
-        foreach ([[14, 43, 38], [28, 61, 90], [190, 138, 28], [243, 241, 232]] as $band => [$red, $green, $blue]) {
-            imagefilledrectangle($image, $band * 600, 0, $band * 600 + 599, 1349, (int) imagecolorallocate($image, $red, $green, $blue));
+    /**
+     * A folder Teams for the picker: two photos, one without an alt text (its amber dot), and a document the picker of
+     * an image never shows.
+     */
+    private function teamsFolder(): void
+    {
+        $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+
+        $this->drawnPhoto('Teamfoto Merwestad 1.jpg', [[28, 61, 90], [243, 241, 232]], $teams, 'Het eerste team voor de tafels');
+        $this->drawnPhoto('Training dinsdag.jpg', [[190, 138, 28], [14, 43, 38], [190, 138, 28]], $teams, null);
+
+        $path = sys_get_temp_dir().'/made-cms-document-'.Str::random(16).'.pdf';
+        file_put_contents($path, "%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n");
+
+        try {
+            UploadMedia::run(new UploadedMedia($path, 'Wedstrijdschema najaar.pdf', $teams->id, null));
+        } finally {
+            unlink($path);
+        }
+    }
+
+    /**
+     * A photo uploaded as an editor would, so it is scaled down to WebP with its original next to it: upright bands of
+     * colour, drawn here so the workbench needs no image of its own.
+     *
+     * @param  list<array{int, int, int}>  $bands
+     */
+    private function drawnPhoto(string $name, array $bands, ?MediaFolder $folder, ?string $alt): Media
+    {
+        $image = imagecreatetruecolor(2400, 1350);
+        $width = intdiv(2400, count($bands));
+
+        foreach ($bands as $band => [$red, $green, $blue]) {
+            imagefilledrectangle($image, $band * $width, 0, ($band + 1) * $width - 1, 1349, (int) imagecolorallocate($image, $red, $green, $blue));
         }
 
         $path = sys_get_temp_dir().'/made-cms-photo-'.Str::random(16).'.jpg';
         imagejpeg($image, $path, 85);
 
         try {
-            $media = UploadMedia::run(new UploadedMedia($path, 'Voorbeeldfoto workbench.jpg', null, null));
+            $media = UploadMedia::run(new UploadedMedia($path, $name, $folder?->id, null));
         } finally {
             unlink($path);
         }
 
-        return UpdateAltText::run($media, 'Vier vlakken in de kleuren van Made CMS');
+        return $alt === null ? $media : UpdateAltText::run($media, $alt);
     }
 }

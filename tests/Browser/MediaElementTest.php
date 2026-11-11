@@ -84,8 +84,11 @@ it('uploads a photo into an empty media element, makes it the value of the field
         ->assertMissing('[data-path="foto"] [data-upload]')
         ->click('[data-path="foto"] [data-slot="image-upload"]');
 
-    // The upload field opens below the element for one photo, with the focus on choosing it.
-    expect($shell->script(waitUntil("document.activeElement?.dataset.slot === 'upload-choose'")))->toBeTrue();
+    // The upload field opens below the element for one photo, with the focus on choosing it. Its file input stays
+    // out of sight, also among the styles of the fields of the panel, so the shell never grows wider than the window.
+    expect($shell->script(waitUntil("document.activeElement?.dataset.slot === 'upload-choose'")))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('[data-path=\"foto\"] [data-slot=\"upload-input\"]').getBoundingClientRect().width"))->toBe(1)
+        ->and($shell->script('() => document.documentElement.scrollWidth <= document.documentElement.clientWidth'))->toBeTrue();
 
     $shell->assertAttribute('[data-path="foto"] [data-slot="image-upload"]', 'aria-expanded', 'true')
         ->assertSeeIn('[data-path="foto"] [data-slot="upload-title"]', 'Sleep je foto hierheen')

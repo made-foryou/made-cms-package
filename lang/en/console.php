@@ -21,4 +21,11 @@ return [
         'pages' => '{0} no pages|{1} 1 page|[2,*] :count pages',
         'places' => '{0} no files in use|{1} 1 place with a file|[2,*] :count places with a file',
     ],
+    'media_thumbnails' => [
+        'made' => ':made; :had.',
+        'count' => '{0} Made no thumbnails|{1} Made 1 thumbnail|[2,*] Made :count thumbnails',
+        'had' => '{0} no photo had one already|{1} 1 photo had one already|[2,*] :count photos had one already',
+        'missing' => 'No thumbnail for :name (#:id): the file is not on the media disk.',
+        'unreadable' => 'No thumbnail for :name (#:id): the file is no photo that can be read.',
+    ],
 ];

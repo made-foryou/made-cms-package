@@ -28,6 +28,7 @@ beforeEach(function (): void {
     $this->teamfoto = Media::factory()->in($this->teams)->withAlt('Het eerste team voor de tafels')->create([
         'name' => 'teamfoto-merwestad',
         'path' => 'media/01k9/teamfoto-merwestad.webp',
+        'thumb_path' => 'media/01k9/thumb-klein.webp',
         'width' => 1600,
         'height' => 1067,
         'size' => 412_000,
@@ -37,9 +38,10 @@ beforeEach(function (): void {
     $this->clubavond = Media::factory()->in($this->nieuws)->create(['name' => 'clubavond', 'created_at' => now()]);
     $this->schema = Media::factory()->in($this->teams)->document()->create(['name' => 'wedstrijdschema']);
 
-    // The photos are on the disk, so their tiles show them.
+    // The photos and their thumbnails are on the disk, so their tiles show them.
     foreach ([$this->teamfoto, $this->training, $this->clubavond] as $media) {
-        Storage::disk('public')->put($media->path, (string) file_get_contents(photo(400, 300)));
+        Storage::disk('public')->put($media->path, (string) file_get_contents(photo(1600, 1067, 'webp')));
+        Storage::disk('public')->put((string) $media->thumb_path, (string) file_get_contents(photo(540, 360, 'webp')));
     }
 
     $this->page = Page::factory()->published()->at('/teams')->withStrips([
@@ -91,6 +93,25 @@ function pickedState(string $path, string $state): string
 {
     return "document.querySelector('[data-path=\"{$path}\"] [data-slot=\"image-card\"]')?.dataset.state === '{$state}'";
 }
+
+it('loads the thumbnails in the tiles and the foot, never the photos the site shows', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    $tiles = "[...document.querySelectorAll('[data-media-picker] .tegel [data-slot=\"media-tile-thumb\"]')]";
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(waitUntil("{$tiles}.every((thumb) => thumb.complete && thumb.naturalWidth === 540)")))->toBeTrue()
+        ->and($shell->script("() => {$tiles}.map((thumb) => new URL(thumb.src).pathname)"))->toBe(array_map(
+            static fn (Media $media): string => '/storage/'.$media->thumb_path,
+            [$this->clubavond, $this->training, $this->teamfoto],
+        ));
+
+    $shell->click(pickerTile($this->teamfoto));
+
+    expect($shell->script(waitUntil("document.querySelector('[data-slot=\"media-picker-thumb\"]').naturalWidth === 540")))->toBeTrue()
+        ->and($shell->script("() => new URL(document.querySelector('[data-slot=\"media-picker-thumb\"]').src).pathname"))->toBe('/storage/media/01k9/thumb-klein.webp');
+});
 
 it('opens from the media element as a modal dialog with the images of the library, newest first', function (): void {
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));

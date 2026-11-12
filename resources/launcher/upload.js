@@ -193,8 +193,10 @@ function start(field) {
         part('cross').hidden = ! failed;
         thumb.hidden = ! (done && result.image && ! row.broken);
 
-        if (! thumb.hidden && thumb.getAttribute('src') !== result.url) {
-            thumb.src = result.url;
+        const small = done ? (result.thumb ?? result.url) : null;
+
+        if (! thumb.hidden && thumb.getAttribute('src') !== small) {
+            thumb.src = small;
         }
 
         hide(part('icon-image'), ! image || ! thumb.hidden);

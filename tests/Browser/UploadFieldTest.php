@@ -182,8 +182,9 @@ it('works with the keyboard and the file chooser, and saves the alt text the edi
 
     $media = Media::query()->sole();
 
-    // A thumbnail that does not load makes way for the icon.
-    expect($page->script(waitUntil("document.querySelector('[data-slot=\"upload-row-thumb\"]').naturalWidth > 0")))->toBeTrue();
+    // The row shows the thumbnail of the photo, not the photo the site shows; one that does not load makes way for the icon.
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"upload-row-thumb\"]').naturalWidth > 0")))->toBeTrue()
+        ->and($page->script("() => new URL(document.querySelector('[data-slot=\"upload-row-thumb\"]').src).pathname"))->toBe('/storage/'.$media->thumb_path);
     $page->script("() => { document.querySelector('[data-slot=\"upload-row-thumb\"]').src = '/storage/media/weg.webp'; }");
 
     expect($page->script(waitUntil("document.querySelector('[data-slot=\"upload-row-icon-image\"]').checkVisibility() && ! document.querySelector('[data-slot=\"upload-row-thumb\"]').checkVisibility()")))->toBeTrue();

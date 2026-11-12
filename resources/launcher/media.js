@@ -181,28 +181,30 @@ function browse(root) {
         pressFolders();
         upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
         tell('made-cms:media-folder', { folder });
-        load().then((loaded) => {
-            const dialog = root.closest('dialog');
-
-            if (loaded && (dialog === null || dialog.open)) {
-                remember();
-            }
-        });
+        load().then(remember);
     }
 
-    function remember() {
+    /**
+     * Remembers the open folder for the session once its files are in, and only while the list is in sight. A folder
+     * the session did not take is sent again the next time the list loads.
+     */
+    function remember(loaded = true) {
+        const dialog = root.closest('dialog');
         const id = state.folder?.id ?? null;
 
-        if (id === state.remembered) {
+        if (! loaded || id === state.remembered || (dialog !== null && ! dialog.open)) {
             return;
         }
 
-        state.remembered = id;
         fetch(settings.urls.chosen_folder, {
             method: 'PUT',
             credentials: 'same-origin',
             headers: { ...HEADERS, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': settings.csrf_token ?? '' },
             body: JSON.stringify({ folder: id }),
+        }).then((response) => {
+            if (response.ok) {
+                state.remembered = id;
+            }
         }).catch(() => {});
     }
 
@@ -393,7 +395,7 @@ function browse(root) {
         ui.more.hidden = true;
         ui.empty.hidden = true;
         folders();
-        load();
+        load().then(remember);
     });
 
     if (root.closest('dialog') === null) {

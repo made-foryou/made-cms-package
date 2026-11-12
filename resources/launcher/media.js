@@ -17,6 +17,8 @@
  * The picker ([data-media-picker]) is a modal <dialog> around a list. The side panel opens it with made-cms:pick on the
  * dialog, {field, place, hint, file, opener, choose(file)}; "Deze gebruiken" closes it and calls choose with the chosen
  * file. Escape, "Annuleren", the cross and a click beside it close it without a choice; the focus goes back to opener.
+ * Both finish the upload field first, so an alt text the editor typed for a new photo is stored and goes with the
+ * choice, and the field is at rest the next time the picker opens.
  */
 
 const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
@@ -37,6 +39,22 @@ function configOf(element) {
 }
 
 const pressed = (button) => button.getAttribute('aria-pressed') === 'true';
+
+/**
+ * Finishes the upload field of a list before the list is left (made-cms:upload-finish): a typed alt text is stored,
+ * without one it is "later". True unless the field kept an alt text the server refused.
+ */
+async function finished(upload) {
+    if (! upload) {
+        return true;
+    }
+
+    const waits = [];
+
+    upload.dispatchEvent(new CustomEvent('made-cms:upload-finish', { detail: { wait: (promise) => waits.push(promise) } }));
+
+    return (await Promise.all(waits)).every((result) => result !== false);
+}
 
 function browse(root) {
     const settings = configOf(root);
@@ -366,6 +384,8 @@ function browse(root) {
     });
 
     root.addEventListener('made-cms:media-load', (event) => {
+        // A photo the server was still storing when the list was left asks no alt text any more: it is "later".
+        finished(upload);
         state.chosen = event.detail?.file ?? null;
         state.files = [];
         reset();
@@ -412,6 +432,8 @@ function pick(dialog) {
     let chosen = null;
     let sending = false;
     let downOutside = false;
+    // Waiting for the upload field to finish, so a second click does nothing.
+    let finishing = false;
 
     function draw() {
         const alt = chosen?.alt ?? '';
@@ -480,8 +502,22 @@ function pick(dialog) {
         sending = event.detail?.sending === true;
     });
 
-    ui.use.addEventListener('click', () => {
-        if (! chosen || ! request) {
+    async function finish() {
+        finishing = true;
+
+        try {
+            return await finished(upload);
+        } finally {
+            finishing = false;
+        }
+    }
+
+    /**
+     * "Deze gebruiken": the upload field finishes first, so the choice holds the alt text the editor typed for a new
+     * photo (made-cms:media-chosen follows made-cms:upload-closed). An alt text the server refused keeps the dialog open.
+     */
+    async function use() {
+        if (! chosen || ! request || finishing || ! await finish() || ! chosen || ! request) {
             return;
         }
 
@@ -490,9 +526,32 @@ function pick(dialog) {
 
         dialog.close();
         choose?.(file);
+    }
+
+    /** Leaves without a choice: a photo whose bytes still travel stops, a typed alt text is stored, then it closes. */
+    async function leave() {
+        if (finishing) {
+            return;
+        }
+
+        if (sending) {
+            upload?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
+        }
+
+        if (await finish() && dialog.open) {
+            dialog.close();
+        }
+    }
+
+    ui.use.addEventListener('click', use);
+    ui.cancel.addEventListener('click', leave);
+    ui.close.addEventListener('click', leave);
+
+    // Escape leaves like "Annuleren", after the upload field finished.
+    dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        leave();
     });
-    ui.cancel.addEventListener('click', () => dialog.close());
-    ui.close.addEventListener('click', () => dialog.close());
 
     // A click on the dimmed page beside the dialog closes it, like "Annuleren".
     dialog.addEventListener('pointerdown', (event) => {
@@ -500,7 +559,7 @@ function pick(dialog) {
     });
     dialog.addEventListener('click', (event) => {
         if (downOutside && outside(event)) {
-            dialog.close();
+            leave();
         }
 
         downOutside = false;
@@ -512,11 +571,14 @@ function pick(dialog) {
         }
     });
 
-    // A photo whose bytes still travel stops; one the server is storing lands in Media.
+    // However it closed (the browser may close it on a second Escape without asking): a photo whose bytes still travel
+    // stops, one the server is storing lands in Media, and a typed alt text is stored.
     dialog.addEventListener('close', () => {
         if (sending) {
             upload?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
         }
+
+        finished(upload);
 
         const opener = request?.opener ?? null;
 

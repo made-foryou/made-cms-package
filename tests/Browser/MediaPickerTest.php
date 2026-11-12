@@ -317,6 +317,100 @@ it('takes a photo uploaded in the picker as the choice, in the folder it remembe
     $again->assertNoJavaScriptErrors();
 });
 
+/**
+ * A JavaScript condition: the upload field of the picker is in this moment (rest, busy, done or error).
+ */
+function pickerUploadMoment(string $moment): string
+{
+    return "document.querySelector('[data-media-picker] [data-upload]').dataset.moment === '{$moment}'";
+}
+
+/**
+ * Opens the picker for the photo of the hero and uploads a photo in it, up to the moment the field asks its alt text.
+ */
+function uploadInPicker(mixed $shell, string $name): void
+{
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
+
+    $shell->attach('[data-media-picker] [data-slot="upload-input"]', photo(1600, 1200, 'jpg', $name));
+
+    expect($shell->script(waitUntil(pickerUploadMoment('done'))))->toBeTrue();
+}
+
+it('stores the alt text typed for a photo uploaded in the picker when it is used at once', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    uploadInPicker($shell, 'Kampioenen 2026.jpg');
+
+    // No "Alt-tekst opslaan": "Deze gebruiken" stores the text first.
+    $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
+        ->click('[data-slot="media-picker-use"]');
+
+    expect($shell->script(waitUntil(pickedState('foto', 'filled'))))->toBeTrue()
+        ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue();
+
+    $upload = Media::query()->where('name', 'kampioenen-2026')->sole();
+
+    expect($upload->alt)->toBe('De kampioenen van 2026')
+        ->and(draftOf($this->page, 'hero')['values']['foto'] ?? null)->toBe($upload->id)
+        ->and($shell->script(waitUntil(siteInFrame()."?.querySelector('[data-cms-field=\"foto\"]')?.getAttribute('alt') === 'De kampioenen van 2026'")))->toBeTrue();
+
+    $shell->assertSeeIn('[data-path="foto"] [data-slot="image-alt"]', 'Alt: De kampioenen van 2026')
+        ->assertMissing('[data-path="foto"] [data-slot="image-no-alt"]');
+
+    // The next time the picker opens, its upload field is at rest: it no longer asks about the former photo.
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['kampioenen-2026', 'clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(pickerUploadMoment('rest')))->toBeTrue();
+
+    $shell->assertMissing('[data-media-picker] [data-slot="upload-row-alt-input"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('stores the alt text typed for a photo uploaded in the picker when the picker closes with Escape', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    uploadInPicker($shell, 'Kampioenen 2026.jpg');
+
+    $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
+        ->keys('[data-media-picker] [data-slot="upload-row-alt-input"]', 'Escape');
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-picker]').open")))->toBeTrue()
+        ->and($shell->script(waitUntil("document.activeElement?.dataset.slot === 'image-pick'")))->toBeTrue()
+        ->and(Media::query()->where('name', 'kampioenen-2026')->sole()->alt)->toBe('De kampioenen van 2026')
+        ->and($shell->script(pickedState('foto', 'empty')))->toBeTrue();
+
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['kampioenen-2026', 'clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(pickerUploadMoment('rest')))->toBeTrue();
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('leaves the alt text of a photo uploaded in the picker for later when none was typed', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    uploadInPicker($shell, 'Kampioenen 2026.jpg');
+
+    $shell->click('[data-slot="media-picker-use"]');
+
+    expect($shell->script(waitUntil(pickedState('foto', 'filled'))))->toBeTrue()
+        ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and(Media::query()->where('name', 'kampioenen-2026')->sole()->alt)->toBeNull();
+
+    $shell->assertVisible('[data-path="foto"] [data-slot="image-no-alt"]')
+        ->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['kampioenen-2026', 'clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(pickerUploadMoment('rest')))->toBeTrue();
+
+    $shell->assertNoJavaScriptErrors();
+});
+
 it('shows more images a page at a time', function (): void {
     Media::factory()->count(ListMedia::PER_PAGE + 2)->create(['created_at' => now()->subWeek()]);
 

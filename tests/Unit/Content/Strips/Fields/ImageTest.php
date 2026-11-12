@@ -16,6 +16,7 @@ function mediaFile(int $id, MediaKind $kind = MediaKind::Image, ?string $alt = n
         id: $id,
         kind: $kind,
         url: "https://example.com/storage/media/{$id}/teamfoto.webp",
+        thumb: "https://example.com/storage/media/{$id}/thumb.webp",
         name: 'teamfoto',
         mime: 'image/webp',
         size: 412_000,

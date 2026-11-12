@@ -39,6 +39,7 @@ it('stores a photo scaled down and answers with the file as the field shows it',
         ->and($response->json('file'))->toBe([
             'id' => $media->id,
             'url' => Storage::disk('public')->url($media->path),
+            'thumb' => Storage::disk('public')->url((string) $media->thumb_path),
             'name' => 'teamfoto-merwestad-4',
             'extension' => 'webp',
             'meta' => '1920 × 1280 · '.max(1, (int) round($media->size / 1000)).' kB',
@@ -55,6 +56,7 @@ it('stores a photo scaled down and answers with the file as the field shows it',
             'file' => 'teamfoto-merwestad-4.webp',
             'size' => $media->size,
         ])
+        ->and($response->json('file.thumb'))->toMatch('#/media/[0-9a-z]{26}/thumb-[0-9A-Za-z]{40}\.webp$#')
         ->and((string) $response->getContent())->not->toContain('original');
 });
 
@@ -70,7 +72,16 @@ it('stores a document as it came in, outside a folder and without an image', fun
         ->and($response->json('file.extension'))->toBe('pdf')
         ->and($response->json('file.meta'))->toBe('1 kB')
         ->and($response->json('file.size'))->toBe(142)
-        ->and($response->json('file.image'))->toBeNull();
+        ->and($response->json('file.image'))->toBeNull()
+        ->and($response->json('file.thumb'))->toBeNull();
+});
+
+it('shows an svg small as itself', function (): void {
+    $response = $this->postJson('made-cms/media', ['file' => sent(mediaFixture('logo.svg'))])
+        ->assertCreated();
+
+    expect($response->json('file.thumb'))->toBe($response->json('file.url'))
+        ->and($response->json('file.thumb'))->toEndWith('/logo.svg');
 });
 
 it('refuses a file the library does not take, in the words of the check', function (Closure $file, string $message): void {

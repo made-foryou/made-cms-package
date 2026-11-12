@@ -5,6 +5,7 @@
 ### Added
 
 - A photo gets a thumbnail when it is uploaded, for the tiles of the CMS: the photo as the site shows it, scaled down until it just covers 480 × 360 (never up, never cropped), stored as `thumb-{random}.webp` in the folder of the file and in the column `thumb_path` of `cms_media`. An svg, an animated gif, a pdf and an mp4 get none. `MakeThumbnail::run($photo)` makes one from the contents of a photo; `MediaBuilder::scaled()` gives the photos that were scaled down and `withoutThumbnail()` those of them without a thumbnail. The choice of `media.image.driver` is the enum `ImageDriver` (`gd`, `imagick`).
+- A file of the media library as the CMS shows it (`file` of the media endpoints and `strip.media` of `GET /made-cms/pages/{page}/strips/{strip}`) holds its `thumb`: the url to show it small at, the thumbnail of a photo, an image without one (an svg, an animated gif) itself and `null` for a document or a video; never the original. `MediaFile::$thumb` gives the same; a strip still renders the photo itself.
 
 - The picker of an image (design 13.4, 14.4): "Kiezen uit media" in the media element of the side panel opens the images of the media library in a modal dialog above the edit shell, never in the frame of the site. Its parts:
   - **left:** the folders with the number of their images, "Alle bestanden" on top, and the upload field of one photo, which puts a photo into the open folder;

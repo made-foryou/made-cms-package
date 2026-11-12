@@ -48,6 +48,7 @@ it('hands the side panel the files of the images of the strip, by their url and 
         'name' => 'teamfoto',
         'path' => 'media/01k9/teamfoto.webp',
         'original_path' => 'media/01k9/original-geheim123.jpg',
+        'thumb_path' => 'media/01k9/thumb-klein.webp',
         'size' => 412_000,
         'width' => 1600,
         'height' => 1067,
@@ -72,6 +73,7 @@ it('hands the side panel the files of the images of the strip, by their url and 
     expect($response->json('strip.media'))->toBe([[
         'id' => $photo->id,
         'url' => $url,
+        'thumb' => Storage::disk('public')->url('media/01k9/thumb-klein.webp'),
         'name' => 'teamfoto',
         'extension' => 'webp',
         'meta' => '1600 × 1067 · 412 kB',

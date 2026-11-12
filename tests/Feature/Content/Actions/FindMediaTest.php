@@ -23,6 +23,7 @@ it('finds the files by id with the url of the media disk, never their place on t
         'name' => 'teamfoto',
         'path' => 'media/01k9/teamfoto.webp',
         'original_path' => 'media/01k9/original-abc.jpg',
+        'thumb_path' => 'media/01k9/thumb-def.webp',
         'size' => 412_000,
         'width' => 1600,
         'height' => 1067,
@@ -34,6 +35,7 @@ it('finds the files by id with the url of the media disk, never their place on t
         id: $media->id,
         kind: MediaKind::Image,
         url: 'https://cdn.example.com/media/01k9/teamfoto.webp',
+        thumb: 'https://cdn.example.com/media/01k9/thumb-def.webp',
         name: 'teamfoto',
         mime: 'image/webp',
         size: 412_000,
@@ -45,6 +47,17 @@ it('finds the files by id with the url of the media disk, never their place on t
         folder: 'Teams',
     ));
 });
+
+it('gives a file without a thumbnail its own url to show small, and a document or a video none', function (Closure $media, ?string $thumb): void {
+    $file = $media();
+
+    expect(FindMedia::run([$file->id])->find($file->id)?->thumb)->toBe($thumb);
+})->with([
+    'a photo from before the thumbnails' => [fn (): Media => Media::factory()->withoutThumbnail()->create(['path' => 'media/01k9/teamfoto.webp']), 'https://cdn.example.com/media/01k9/teamfoto.webp'],
+    'an svg' => [fn (): Media => Media::factory()->create(['path' => 'media/01k9/logo.svg', 'original_path' => null, 'thumb_path' => null, 'mime' => 'image/svg+xml']), 'https://cdn.example.com/media/01k9/logo.svg'],
+    'a document' => [fn (): Media => Media::factory()->document()->create(), null],
+    'a video' => [fn (): Media => Media::factory()->video()->create(), null],
+]);
 
 it('finds documents and videos too, which are no image', function (): void {
     $document = Media::factory()->document()->create();

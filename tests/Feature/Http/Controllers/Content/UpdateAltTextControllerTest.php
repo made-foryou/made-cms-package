@@ -22,7 +22,8 @@ it('gives a file its alt text and answers with the file', function (): void {
     expect($media->refresh()->alt)->toBe('Leden aan de bar na de clubavond in oktober')
         ->and($response->json('file.id'))->toBe($media->id)
         ->and($response->json('file.alt'))->toBe('Leden aan de bar na de clubavond in oktober')
-        ->and($response->json('file.image.alt'))->toBe('Leden aan de bar na de clubavond in oktober');
+        ->and($response->json('file.image.alt'))->toBe('Leden aan de bar na de clubavond in oktober')
+        ->and($response->json('file.thumb'))->toBe(Storage::disk('public')->url((string) $media->thumb_path));
 });
 
 it('takes the alt text away with a blank one', function (mixed $alt): void {

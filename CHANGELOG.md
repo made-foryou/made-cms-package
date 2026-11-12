@@ -189,6 +189,7 @@
 
 ### Changed
 
+- The tiles of the picker, the choice at its foot and the row of a photo in the upload field load the thumbnail of a photo (`thumb`) instead of the photo the site shows, so a page of 40 tiles loads a few dozen kB per photo. The media element of the side panel still shows the photo itself.
 - The media element of the side panel offers "Kiezen uit media" next to "Uploaden", and the text for a file that left Media points to both. A photo uploaded from the side panel goes into the folder the editor opened last in the picker instead of always into "Alle bestanden".
 - `EditPageResponse::make()` takes the folder the editor chose last as its last argument (`?MediaFolder $folder`, null for "Alle bestanden").
 - `Field::render($value, ?MediaFiles $media = null)` and `StripType::render($values, ?MediaFiles $media = null)` take the files of the media library the strip uses; an `Image` renders as `null` without them. Use `RenderStrips::run($page)`, which hands them over. A field class of the host that overrides `render()` adds the parameter.

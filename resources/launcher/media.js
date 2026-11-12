@@ -227,7 +227,8 @@ function browse(root) {
             const focal = file.image.focal ?? { x: 0.5, y: 0.5 };
 
             thumb.hidden = false;
-            thumb.src = file.url;
+            // The thumbnail, a few dozen kB, never the photo the site shows.
+            thumb.src = file.thumb ?? file.url;
             thumb.style.objectPosition = (focal.x * 100) + '% ' + (focal.y * 100) + '%';
             // A thumbnail that does not load makes way for the icon.
             thumb.addEventListener('error', () => {
@@ -445,8 +446,10 @@ function pick(dialog) {
         ui.alt.dataset.alt = chosen ? (alt === '' ? 'missing' : 'set') : '';
         ui.thumb.hidden = ! chosen?.image;
 
-        if (chosen?.image && ui.thumb.getAttribute('src') !== chosen.url) {
-            ui.thumb.src = chosen.url;
+        const small = chosen?.thumb ?? chosen?.url;
+
+        if (chosen?.image && ui.thumb.getAttribute('src') !== small) {
+            ui.thumb.src = small;
         }
 
         ui.use.textContent = chosen ? texts.use : texts.choose_first;

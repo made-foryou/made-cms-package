@@ -8,7 +8,7 @@ use Made\CmsPackage\Content\Enums\MediaKind;
 
 /**
  * A file of the media library as a strip renders it and the side panel shows it: by its url, never by where it is on
- * the disk, and without the original of a photo.
+ * the disk, and without the original of a photo. The thumbnail is for the CMS only; a strip renders the photo.
  *
  * @phpstan-type RenderedImage array{url: string, alt: string, width: int|null, height: int|null, focal: array{x: float, y: float}}
  */
@@ -16,6 +16,8 @@ final readonly class MediaFile
 {
     /**
      * @param  string  $url  the address a visitor opens the file at
+     * @param  string|null  $thumb  the address of the file shown small in the CMS: the thumbnail of a photo, an image
+     *                              without one itself (an svg, an animation), null for a document or a video
      * @param  string  $name  the slug of the file name without extension
      * @param  int  $size  in bytes
      * @param  int|null  $width  in pixels; null when the size is unknown (an svg)
@@ -27,6 +29,7 @@ final readonly class MediaFile
         public int $id,
         public MediaKind $kind,
         public string $url,
+        public ?string $thumb,
         public string $name,
         public string $mime,
         public int $size,

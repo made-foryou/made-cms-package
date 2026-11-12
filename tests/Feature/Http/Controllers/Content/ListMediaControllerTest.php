@@ -28,6 +28,7 @@ it('lists the files as the upload field gets one, newest first, with the count i
     $media = Media::factory()->in($folder)->withAlt('Het eerste team')->create([
         'name' => 'teamfoto',
         'path' => 'media/01k9/teamfoto.webp',
+        'thumb_path' => 'media/01k9/thumb-klein.webp',
         'size' => 412_000,
         'width' => 1600,
         'height' => 1067,
@@ -43,6 +44,7 @@ it('lists the files as the upload field gets one, newest first, with the count i
     expect($response->json('files.0'))->toBe([
         'id' => $media->id,
         'url' => $url,
+        'thumb' => Storage::disk('public')->url('media/01k9/thumb-klein.webp'),
         'name' => 'teamfoto',
         'extension' => 'webp',
         'meta' => '1600 × 1067 · 412 kB',

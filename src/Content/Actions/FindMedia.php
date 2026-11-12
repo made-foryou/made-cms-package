@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Content\Actions;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Data\MediaFiles;
+use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Exceptions\MediaDiskNotUsable;
 use Made\CmsPackage\Content\Models\Media;
 
@@ -15,8 +16,9 @@ final class FindMedia
     use AsAction;
 
     /**
-     * The files of the media library with these ids, in one query, each with the url a visitor opens it at; never
-     * the place on the disk or the original of a photo. A file that is gone is left out. Without ids it asks nothing
+     * The files of the media library with these ids, in one query, each with the url a visitor opens it at and the
+     * url the CMS shows it small at (the thumbnail of a photo, an image without one itself); never the place on the
+     * disk or the original of a photo. A file that is gone is left out. Without ids it asks nothing
      * of the database or the disk, so a site without images never needs the media disk.
      *
      * @param  list<int>  $ids
@@ -33,10 +35,17 @@ final class FindMedia
         $files = [];
 
         foreach (Media::query()->with('folder')->whereKey(array_values(array_unique($ids)))->get() as $media) {
+            $url = $disk->url($media->path);
+
             $files[$media->id] = new MediaFile(
                 id: $media->id,
                 kind: $media->kind,
-                url: $disk->url($media->path),
+                url: $url,
+                thumb: match (true) {
+                    $media->thumb_path !== null => $disk->url($media->thumb_path),
+                    $media->kind === MediaKind::Image => $url,
+                    default => null,
+                },
                 name: $media->name,
                 mime: $media->mime,
                 size: $media->size,

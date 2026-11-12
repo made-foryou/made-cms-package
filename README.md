@@ -50,7 +50,7 @@ php artisan vendor:publish --tag="made-cms-package-migrations"
 php artisan migrate
 ```
 
-A site that already had pages before it got the table `cms_media_usages` runs `php artisan made-cms:media-usage` once after migrating, so the media library knows where its files are used (see [Where a file is used](#where-a-file-is-used)).
+A site that already had pages before it got the table `cms_media_usages` runs `php artisan made-cms:media-usage` once after migrating, so the media library knows where its files are used (see [Where a file is used](#where-a-file-is-used)). A site that already had photos before the library made thumbnails runs `php artisan made-cms:media-thumbnails` once (see [Thumbnails](#thumbnails)).
 
 ### Publishing the Views
 
@@ -558,7 +558,7 @@ Files go to the disk in `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public
 
 An upload is checked before anything is stored. The type is read from the contents, never from the name; a file larger than `media.max_upload_kb` (default 25 MB) or of a type outside `media.allowed_mimes` (jpg, png, webp, gif, svg, pdf and mp4) is refused with a message for the editor. Each file gets a folder of its own, `media/{ulid}/`:
 
-- A photo (jpg, png, webp or a gif that does not move) is turned upright by its EXIF orientation, scaled down to at most `media.image.max_width` (1920 px, never up) and stored as `media.image.format` (webp) at `media.image.quality` (82), without the metadata of the camera. The upload is kept next to it under a name nobody can guess from the url of the photo, because it still holds the full size and that metadata; a later crop starts from it.
+- A photo (jpg, png, webp or a gif that does not move) is turned upright by its EXIF orientation, scaled down to at most `media.image.max_width` (1920 px, never up) and stored as `media.image.format` (webp) at `media.image.quality` (82), without the metadata of the camera. The upload is kept next to it under a name nobody can guess from the url of the photo, because it still holds the full size and that metadata; a later crop starts from it. A thumbnail for the tiles of the CMS goes next to them (see [Thumbnails](#thumbnails)).
 - An svg is stored exactly as it came in, but only when it does nothing but draw. One with a script, an event attribute, html, an entity, a reference outside the drawing or a style that loads something is refused, because whoever opens its url would run it on the domain of your site.
 - An animated gif, a pdf and an mp4 are stored exactly as they came in.
 
@@ -592,7 +592,7 @@ Editors upload through one upload field, the same in the media library, the pick
 | `POST /made-cms/media` | Takes one file (`file`, multipart) into the library, in the folder `folder` when given, through `UploadMedia`. | 201 with `{"file": …}`; 422 keyed by `file` (the message of the check) or `folder`. |
 | `PUT /made-cms/media/{media}/alt` | Gives a file its alt text (`{"alt": "…"}`, blank takes it away) through `UpdateAltText`. | 200 with `{"file": …}`; 422 keyed by `alt`; 404. |
 
-`file` is the file as the CMS shows it: `{id, url, name, extension, meta, folder, alt, image, kind, file, size}`, with `extension` as the type of the file a visitor gets ("webp" for a photo that was scaled down), `meta` as "1920 × 1280 · 388 kB" and `image` as the site renders it; never its place on the disk. Both endpoints open for an editor who opens the pages or the media library, so every role uploads a photo while editing a page. A guest gets 401.
+`file` is the file as the CMS shows it: `{id, url, thumb, name, extension, meta, folder, alt, image, kind, file, size}`, with `thumb` as the url to show it small at (see [Thumbnails](#thumbnails)), `extension` as the type of the file a visitor gets ("webp" for a photo that was scaled down), `meta` as "1920 × 1280 · 388 kB" and `image` as the site renders it; never its place on the disk. Both endpoints open for an editor who opens the pages or the media library, so every role uploads a photo while editing a page. A guest gets 401.
 
 The field sends files one at a time, refuses a file larger than `media.max_upload_kb` before it travels (the server checks every file again) and keeps an error with its file while the others go on. PHP must let the upload through: with an `upload_max_filesize` or `post_max_size` below `media.max_upload_kb` the field tells the editor that the server is the limit.
 
@@ -611,6 +611,20 @@ The picker reads the library over JSON, through endpoints the media library will
 | `PUT /made-cms/media/chosen-folder` | Remembers the folder an editor opened for the session (`{"folder": id}`, `null` for "Alle bestanden"). | 204; 422 keyed by `folder`. |
 
 They open for an editor who opens the pages or the media library, like uploading; `made-cms/media` itself is the address of the screen Media. A screen shows the list with the partial `made-cms-package-launcher::cms.partials.media-browser` and `['browser' => MediaBrowser::make($folder, $kind, $upload), 'empty' => '…']` and loads `$browser['script']`; it hears `made-cms:media-chosen` `{file}` and `made-cms:media-folder` `{folder}` from the list. The session is written back as a whole after every request, so a request that overlaps the one that remembers a folder can bring back the former folder; the open shell keeps the folder in its script.
+
+### Thumbnails
+
+A photo that was scaled down gets a thumbnail when it is uploaded: the photo as the site shows it, scaled down until it just covers 480 × 360 (a tile of the library on a sharp screen; never up, never cropped), as `thumb-{random}.webp` in its folder (`media.image.format` at `media.image.quality`). It is made from the photo the site shows, not from the original. The tiles of the picker, the choice at its foot and the row of a photo in the upload field load it, so a page of 40 tiles loads a few dozen kB per photo instead of the full photo; the media element of the side panel shows the photo itself. A strip never renders the thumbnail, so the site keeps the photo.
+
+The CMS gets it as `thumb` of a file: the url of the thumbnail, of the file itself for an image without one (an svg, an animated gif) and `null` for a document or a video. An svg, an animated gif, a pdf and an mp4 get no thumbnail.
+
+Photos uploaded before the library made thumbnails have none yet; their tiles load the photo itself until they get one. Give them one with:
+
+```bash
+php artisan made-cms:media-thumbnails
+```
+
+It reads each photo from the media disk, skips a photo that has a thumbnail, and names a photo whose file is not on the disk or cannot be read, while the others go on; the command then fails. `MakeMissingThumbnails::run()` does the same in code and `MakeThumbnail::run($contents)` makes the thumbnail of one photo without storing it.
 
 ### Where a file is used
 

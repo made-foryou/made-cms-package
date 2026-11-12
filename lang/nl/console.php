@@ -21,4 +21,11 @@ return [
         'pages' => '{0} geen pagina’s|{1} 1 pagina|[2,*] :count pagina’s',
         'places' => '{0} geen bestanden in gebruik|{1} 1 plek met een bestand|[2,*] :count plekken met een bestand',
     ],
+    'media_thumbnails' => [
+        'made' => ':made; :had.',
+        'count' => '{0} Geen miniaturen gemaakt|{1} 1 miniatuur gemaakt|[2,*] :count miniaturen gemaakt',
+        'had' => '{0} geen foto had er al een|{1} 1 foto had er al een|[2,*] :count foto’s hadden er al een',
+        'missing' => 'Geen miniatuur voor :name (#:id): het bestand staat niet op de media-disk.',
+        'unreadable' => 'Geen miniatuur voor :name (#:id): het bestand is geen foto die te lezen is.',
+    ],
 ];

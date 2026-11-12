@@ -29,9 +29,10 @@ final class UploadMedia
      * Adds a file to the media library. Each file gets a folder of its own on the media disk, media/{ulid}, so a
      * name never clashes and renaming it later moves nothing. A photo is scaled down (ScaleImage) to
      * {name}.{format}, with the upload next to it under a name nobody guesses from the url of the photo, because it
-     * still holds the full size and the metadata of the camera. Anything else (an svg, an animation, a document, a
-     * video) is stored as {name}.{extension} exactly as it came in. The file is checked before anything is stored,
-     * and a row that cannot be stored takes its files off the disk again.
+     * still holds the full size and the metadata of the camera, and its thumbnail (MakeThumbnail) as
+     * thumb-{random}.{format} for the tiles of the CMS. Anything else (an svg, an animation, a document, a video) is
+     * stored as {name}.{extension} exactly as it came in. The file is checked before anything is stored, and a row
+     * that cannot be stored takes its files off the disk again.
      *
      * @throws ValidationException keyed by "file" for a file the library does not take
      * @throws MediaFolderNotFound
@@ -87,7 +88,7 @@ final class UploadMedia
     /**
      * Writes the files and gives the columns that describe them.
      *
-     * @return array{path: string, original_path: string|null, mime: string, size: int, width: int|null, height: int|null}
+     * @return array{path: string, original_path: string|null, thumb_path: string|null, mime: string, size: int, width: int|null, height: int|null}
      *
      * @throws MediaNotStored
      */
@@ -97,6 +98,7 @@ final class UploadMedia
             return [
                 'path' => $this->put($disk, $directory, $file, "{$name}.{$checked->extension}"),
                 'original_path' => null,
+                'thumb_path' => null,
                 'mime' => $checked->mime,
                 'size' => $checked->size,
                 'width' => $image?->width,
@@ -104,21 +106,32 @@ final class UploadMedia
             ];
         }
 
+        $thumbnail = MakeThumbnail::run($image->contents);
         $original = $this->put($disk, $directory, $file, 'original-'.Str::random(40).".{$checked->extension}");
-        $path = "{$directory}/{$name}.{$image->extension}";
-
-        if (! $disk->put($path, $image->contents)) {
-            throw MediaNotStored::at($path);
-        }
+        $path = $this->write($disk, "{$directory}/{$name}.{$image->extension}", $image->contents);
+        $thumb = $this->write($disk, "{$directory}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
 
         return [
             'path' => $path,
             'original_path' => $original,
+            'thumb_path' => $thumb,
             'mime' => $image->mime,
             'size' => strlen($image->contents),
             'width' => $image->width,
             'height' => $image->height,
         ];
+    }
+
+    /**
+     * @throws MediaNotStored
+     */
+    private function write(Cloud $disk, string $path, string $contents): string
+    {
+        if (! $disk->put($path, $contents)) {
+            throw MediaNotStored::at($path);
+        }
+
+        return $path;
     }
 
     /**

@@ -38,6 +38,17 @@ it('returns the images without an alt text, never a document', function (): void
     expect(Media::query()->withoutAlt()->pluck('id')->all())->toBe([$without->id]);
 });
 
+it('returns the photos that were scaled down, and those of them without a thumbnail', function (): void {
+    $withThumbnail = Media::factory()->create();
+    $withoutThumbnail = Media::factory()->withoutThumbnail()->create();
+    Media::factory()->create(['mime' => 'image/svg+xml', 'original_path' => null, 'thumb_path' => null]);
+    Media::factory()->document()->create();
+    Media::factory()->video()->create();
+
+    expect(Media::query()->scaled()->orderBy('id')->pluck('id')->all())->toBe([$withThumbnail->id, $withoutThumbnail->id])
+        ->and(Media::query()->withoutThumbnail()->pluck('id')->all())->toBe([$withoutThumbnail->id]);
+});
+
 it('finds files by their name or alt text, whatever the capitals', function (): void {
     $byName = Media::factory()->create(['name' => 'teamfoto-merwestad-4']);
     $byAlt = Media::factory()->withAlt('Het Merwestad-team op het veld')->create(['name' => 'veld']);

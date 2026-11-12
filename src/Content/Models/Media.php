@@ -24,6 +24,7 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * @property string $name the slug of the file name without extension
  * @property string $path the file the site shows, on the media disk
  * @property string|null $original_path the upload as it came in, next to a photo that was scaled down
+ * @property string|null $thumb_path the small picture of a photo that was scaled down, for the tiles of the CMS
  * @property string $mime the type of the file at path
  * @property int $size the bytes of the file at path
  * @property int|null $width in pixels, for an image whose size is known
@@ -52,6 +53,7 @@ class Media extends Model
         'name',
         'path',
         'original_path',
+        'thumb_path',
         'mime',
         'size',
         'width',

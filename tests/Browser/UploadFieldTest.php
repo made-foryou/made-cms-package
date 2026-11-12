@@ -406,6 +406,69 @@ it('shows an alt text the server refuses with its file', function (): void {
         ->assertNoJavaScriptErrors();
 });
 
+/**
+ * A script for $page->script(): asks the upload field to finish, as a host that leaves it does, and gives what it
+ * answers.
+ */
+function finishUploadField(): string
+{
+    return <<<'JS'
+        async () => {
+            const waits = [];
+
+            document.querySelector('[data-upload]').dispatchEvent(new CustomEvent('made-cms:upload-finish', { detail: { wait: (promise) => waits.push(promise) } }));
+
+            return Promise.all(waits);
+        }
+        JS;
+}
+
+it('finishes for a host that leaves it: a typed alt text is stored, without one it is later', function (): void {
+    $page = visit('/werkbank/uploadveld');
+
+    $page->attach('[data-slot="upload-input"]', photo(600, 400, 'jpg', 'Teamfoto.jpg'));
+
+    expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue();
+
+    $page->type('[data-slot="upload-row-alt-input"]', 'Het eerste team voor de tafels')
+        ->click('[data-slot="upload-zone"]');
+
+    expect($page->script(finishUploadField()))->toBe([true])
+        ->and($page->script(waitUntil(uploadMoment('rest'))))->toBeTrue()
+        ->and(Media::query()->sole()->alt)->toBe('Het eerste team voor de tafels')
+        // The host keeps the focus where it is.
+        ->and($page->script('() => document.activeElement?.dataset.slot ?? document.activeElement?.tagName'))->not->toBe('upload-choose');
+
+    $page->attach('[data-slot="upload-input"]', photo(600, 400, 'jpg', 'Training.jpg'));
+
+    expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue()
+        ->and($page->script(finishUploadField()))->toBe([true])
+        ->and($page->script(waitUntil(uploadMoment('rest'))))->toBeTrue()
+        ->and(Media::query()->where('name', 'training')->sole()->alt)->toBeNull()
+        // A field at rest has nothing to finish.
+        ->and($page->script(finishUploadField()))->toBe([true]);
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('tells a host that leaves it when the server refuses an alt text, which stays with its file', function (): void {
+    $page = visit('/werkbank/uploadveld');
+
+    $page->attach('[data-slot="upload-input"]', photo(600, 400));
+
+    expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue();
+
+    $page->script("() => { const input = document.querySelector('[data-slot=\"upload-row-alt-input\"]'); input.removeAttribute('maxlength'); input.value = 'a'.repeat(256); }");
+
+    expect($page->script(finishUploadField()))->toBe([false])
+        ->and($page->script(uploadMoment('done')))->toBeTrue()
+        ->and($page->script('() => document.activeElement?.dataset.slot'))->toBe('upload-row-alt-input')
+        ->and(Media::query()->sole()->alt)->toBeNull();
+
+    $page->assertSeeIn('[data-slot="upload-row-alt-error"]', 'Een alt-tekst mag hoogstens 255 tekens zijn.')
+        ->assertNoJavaScriptErrors();
+});
+
 it('follows the dark colours of the system', function (): void {
     $page = visit('/werkbank/uploadveld')->inDarkMode();
 

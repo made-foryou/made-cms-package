@@ -21,6 +21,11 @@
  * A host sends the field into another folder with made-cms:upload-folder {folder: {id, name} | null} on the field
  * (null for "Alle bestanden"), also one that has not started yet. A file keeps the folder it was given with, so a file
  * that waits or is tried again never moves into a folder chosen later.
+ *
+ * A host that leaves the field (a dialog that closes, a choice that is used) finishes it first with
+ * made-cms:upload-finish {wait} on the field: the moment "done" is left as with "Alt-tekst opslaan", a typed alt text
+ * is stored and without one it is "later". wait gets a promise of true once nothing of "done" is left, and of false
+ * when the server refused an alt text, which then stays with its file.
  */
 
 const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
@@ -104,7 +109,8 @@ function start(field) {
     const rows = [];
     let active = null;
     let dragging = false;
-    let saving = false;
+    // The alt texts on their way to the server, so a second save waits for the first.
+    let saving = null;
     let wasBusy = false;
 
     const folder = () => config.folder?.label ?? '';
@@ -451,14 +457,21 @@ function start(field) {
         pump();
     }
 
-    /** Leaves the moment "done": the files stay in the library, the field is at rest again. Errors stay. */
-    function close() {
+    /**
+     * Leaves the moment "done": the files stay in the library, the field is at rest again. Errors stay. The focus goes
+     * to the file chooser, unless a host finishes the field and keeps the focus where it is.
+     */
+    function close({ focus = true } = {}) {
         const files = rows.filter((row) => row.state === 'done').map((row) => row.result);
 
         rows.filter((row) => row.state === 'done').forEach(remove);
         // At rest first: the field of an image hides its zone in the moment "done", and a hidden button takes no focus.
         refresh();
-        ui.choose.focus();
+
+        if (focus) {
+            ui.choose.focus();
+        }
+
         tell('made-cms:upload-closed', { files });
     }
 
@@ -503,17 +516,24 @@ function start(field) {
     }
 
     /** "Alt-teksten opslaan": every text the editor typed, one request per file. Without a text it is "later". */
-    async function save() {
-        if (saving || rows.some(open)) {
-            return;
+    function save(options = {}) {
+        if (rows.some(open)) {
+            return Promise.resolve();
         }
 
+        saving ??= storeAlts(options).finally(() => {
+            saving = null;
+        });
+
+        return saving;
+    }
+
+    async function storeAlts({ focus = true } = {}) {
         const typed = rows.filter(describes)
             .map((row) => ({ row, alt: slot('row-alt-input', row.element).value.trim() }))
             .filter(({ row, alt }) => alt !== (row.result.alt ?? ''));
         const refused = [];
 
-        saving = true;
         [ui.save, ui.later].forEach((button) => button.disabled = true);
         ui.saveStatus.hidden = typed.length === 0;
         ui.saveStatus.textContent = typed.length === 0 ? '' : texts.saving;
@@ -528,7 +548,6 @@ function start(field) {
             }
         }
 
-        saving = false;
         [ui.save, ui.later].forEach((button) => button.disabled = false);
         ui.saveStatus.hidden = true;
         ui.saveStatus.textContent = '';
@@ -546,7 +565,22 @@ function start(field) {
             announce(texts.alts_saved);
         }
 
-        close();
+        close({ focus });
+    }
+
+    /**
+     * For a host that leaves the field (made-cms:upload-finish): the moment "done" ends as with "Alt-tekst opslaan".
+     * True once nothing of it is left, also while files are still on their way; false when the server refused an alt
+     * text, which stays with its file and has the focus.
+     */
+    async function finish() {
+        if (rows.some(open) || ! rows.some((row) => row.state === 'done')) {
+            return true;
+        }
+
+        await save({ focus: false });
+
+        return ! rows.some((row) => row.state === 'done');
     }
 
     /**
@@ -640,9 +674,10 @@ function start(field) {
 
     field.addEventListener('made-cms:upload-stop', stop);
     field.addEventListener('made-cms:upload-folder', (event) => follow(event.detail?.folder ?? null));
-    ui.save.addEventListener('click', save);
-    ui.later.addEventListener('click', close);
-    ui.close.addEventListener('click', close);
+    field.addEventListener('made-cms:upload-finish', (event) => event.detail?.wait?.(finish()));
+    ui.save.addEventListener('click', () => save());
+    ui.later.addEventListener('click', () => close());
+    ui.close.addEventListener('click', () => close());
 
     refresh();
 }

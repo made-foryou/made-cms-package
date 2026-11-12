@@ -411,6 +411,56 @@ it('leaves the alt text of a photo uploaded in the picker for later when none wa
     $shell->assertNoJavaScriptErrors();
 });
 
+it('sends the folder it opened again when the session did not take it', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    // The first time the folder goes to the server the request fails.
+    $shell->script(<<<'JS'
+        () => {
+            const original = window.fetch;
+
+            window.folderPuts = 0;
+            window.folderStored = null;
+            window.fetch = (input, init = {}) => {
+                if (! String(input).includes('chosen-folder')) {
+                    return original(input, init);
+                }
+
+                window.folderPuts++;
+
+                return window.folderPuts === 1
+                    ? Promise.reject(new TypeError('Failed to fetch'))
+                    : original(input, init).then((response) => {
+                        window.folderStored = response.status;
+
+                        return response;
+                    });
+            };
+        }
+        JS);
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
+
+    $shell->click('[data-media-picker] .kmap[data-folder="'.$this->teams->id.'"]');
+
+    expect($shell->script(waitUntil('window.folderPuts === 1')))->toBeTrue();
+
+    $shell->click('[data-slot="media-picker-cancel"]')
+        ->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    // Opened again in the same folder, the picker sends it once more.
+    expect($shell->script(waitUntil(pickerShows(['training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(waitUntil('window.folderStored === 204')))->toBeTrue()
+        ->and($shell->script('() => window.folderPuts'))->toBe(2);
+
+    $again = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    expect($again->script("() => JSON.parse(document.querySelector('script[data-config]').textContent).folder?.name"))->toBe('Teams');
+
+    $again->assertNoJavaScriptErrors();
+});
+
 it('shows more images a page at a time', function (): void {
     Media::factory()->count(ListMedia::PER_PAGE + 2)->create(['created_at' => now()->subWeek()]);
 

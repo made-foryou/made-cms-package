@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Actions;
 
 use Illuminate\Validation\ValidationException;
-use Intervention\Image\Drivers\Gd\Driver as GdDriver;
-use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Intervention\Image\Exceptions\DecoderException;
 use Intervention\Image\Format;
-use Intervention\Image\ImageManager;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CheckedMedia;
 use Made\CmsPackage\Content\Data\ScaledImage;
+use Made\CmsPackage\Content\Enums\ImageDriver;
 use Made\CmsPackage\Content\Exceptions\ImageDriverNotSupported;
 
 final class ScaleImage
@@ -30,13 +28,7 @@ final class ScaleImage
      */
     public function handle(string $path, CheckedMedia $media): ScaledImage
     {
-        $driver = config()->string('made-cms-package.media.image.driver');
-
-        $manager = ImageManager::usingDriver(match ($driver) {
-            'gd' => GdDriver::class,
-            'imagick' => ImagickDriver::class,
-            default => throw ImageDriverNotSupported::named($driver),
-        }, strip: true);
+        $manager = ImageDriver::configured()->manager();
 
         try {
             $image = $manager->decodePath($path);

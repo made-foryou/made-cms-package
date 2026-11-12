@@ -38,6 +38,23 @@ final class MediaBuilder extends Builder
     }
 
     /**
+     * The photos that were scaled down when they came in, with their original next to them: the photos that have a
+     * thumbnail. An svg, an animation, a document and a video are shown as they came in.
+     */
+    public function scaled(): self
+    {
+        return $this->images()->whereNotNull('original_path');
+    }
+
+    /**
+     * The photos that were scaled down but have no thumbnail yet.
+     */
+    public function withoutThumbnail(): self
+    {
+        return $this->scaled()->whereNull('thumb_path');
+    }
+
+    /**
      * The files a page uses: in its draft or its published version, also on a deleted page that can still be
      * restored. Such a file cannot be deleted.
      */

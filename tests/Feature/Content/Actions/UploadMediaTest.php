@@ -48,7 +48,7 @@ function mediaOnDisk(): array
     return Storage::disk('public')->allFiles();
 }
 
-it('scales a jpg of 4000 px down to a WebP of 1920 px with the original next to it', function (): void {
+it('scales a jpg of 4000 px down to a WebP of 1920 px with the original and a thumbnail next to it', function (): void {
     $path = photo(4000, 2667, 'jpg', 'teamfoto-merwestad-4.jpg');
 
     $media = upload($path);
@@ -68,17 +68,35 @@ it('scales a jpg of 4000 px down to a WebP of 1920 px with the original next to 
         ->and($stored->folder_id)->toBeNull()
         ->and(getimagesizefromstring((string) $disk->get($stored->path)))->toMatchArray([0 => 1920, 1 => 1280, 'mime' => 'image/webp'])
         ->and($disk->get((string) $stored->original_path))->toBe(file_get_contents($path))
-        ->and(mediaOnDisk())->toHaveCount(2);
+        ->and($stored->thumb_path)->toMatch('#^media/[0-9a-z]{26}/thumb-[0-9A-Za-z]{40}\.webp$#')
+        ->and(dirname((string) $stored->thumb_path))->toBe(dirname($stored->path))
+        ->and(getimagesizefromstring((string) $disk->get((string) $stored->thumb_path)))->toMatchArray([0 => 540, 1 => 360, 'mime' => 'image/webp'])
+        ->and(mediaOnDisk())->toHaveCount(3);
 });
 
-it('writes every photo as WebP and keeps its original', function (string $format): void {
+it('writes every photo as WebP, keeps its original and gives it a thumbnail', function (string $format): void {
     $media = upload(photo(800, 600, $format));
 
     expect($media->mime)->toBe('image/webp')
         ->and($media->path)->toEndWith('/foto.webp')
         ->and($media->original_path)->toEndWith(".{$format}")
-        ->and([$media->width, $media->height])->toBe([800, 600]);
+        ->and([$media->width, $media->height])->toBe([800, 600])
+        ->and($media->thumb_path)->toEndWith('.webp')
+        ->and(getimagesizefromstring((string) Storage::disk('public')->get((string) $media->thumb_path)))->toMatchArray([0 => 480, 1 => 360, 'mime' => 'image/webp']);
 })->with(['jpg', 'png', 'webp', 'gif']);
+
+it('gives a small photo a thumbnail of its own size', function (): void {
+    $media = upload(photo(400, 300));
+
+    expect(getimagesizefromstring((string) Storage::disk('public')->get((string) $media->thumb_path)))->toMatchArray([0 => 400, 1 => 300, 'mime' => 'image/webp']);
+});
+
+it('makes the thumbnail from the photo the site shows, upright', function (): void {
+    $media = upload(photo(3000, 2000, orientation: 6));
+
+    expect([$media->width, $media->height])->toBe([1920, 2880])
+        ->and(getimagesizefromstring((string) Storage::disk('public')->get((string) $media->thumb_path)))->toMatchArray([0 => 480, 1 => 720]);
+})->skip(! extension_loaded('exif'), 'Reading the orientation needs ext-exif.');
 
 it('keeps a file that is no photo exactly as it came in', function (Closure $file, string $name, MediaKind $kind, string $mime, ?array $size): void {
     $path = $file();
@@ -89,6 +107,7 @@ it('keeps a file that is no photo exactly as it came in', function (Closure $fil
         ->and($media->mime)->toBe($mime)
         ->and($media->path)->toMatch("#^media/[0-9a-z]{26}/{$name}\$#")
         ->and($media->original_path)->toBeNull()
+        ->and($media->thumb_path)->toBeNull()
         ->and($media->size)->toBe(filesize($path))
         ->and($media->width === null ? null : [$media->width, $media->height])->toBe($size)
         ->and(Storage::disk('public')->get($media->path))->toBe(file_get_contents($path))

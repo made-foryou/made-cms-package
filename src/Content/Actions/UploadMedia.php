@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CheckedMedia;
+use Made\CmsPackage\Content\Data\MediaName;
 use Made\CmsPackage\Content\Data\ScaledImage;
 use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Enums\MediaKind;
@@ -51,7 +52,7 @@ final class UploadMedia
             ? ScaleImage::run($upload->path, $checked)
             : null;
 
-        $name = $this->name($upload->filename, $checked->kind);
+        $name = MediaName::fromFilename($upload->filename, $checked->kind)->value;
         $directory = 'media/'.Str::lower((string) Str::ulid());
 
         try {
@@ -71,18 +72,6 @@ final class UploadMedia
         MediaUploaded::dispatch($media);
 
         return $media;
-    }
-
-    /**
-     * The name in the library and on the disk: the slug of the file name without its extension, at most 100
-     * characters; the kind for a name without letters or digits.
-     */
-    private function name(string $filename, MediaKind $kind): string
-    {
-        $base = pathinfo(basename(str_replace('\\', '/', $filename)), PATHINFO_FILENAME);
-        $slug = rtrim(Str::substr(Str::slug(str_replace('.', ' ', $base)), 0, 100), '-');
-
-        return $slug === '' ? $kind->value : $slug;
     }
 
     /**

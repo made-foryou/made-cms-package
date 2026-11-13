@@ -15,6 +15,7 @@ use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\Shell;
 use Made\CmsPackage\Http\Cms\UploadField;
@@ -62,6 +63,8 @@ final class EditPageResponse
             'uploadScript' => $upload['script'],
             // "Kiezen uit media" opens the picker in the folder the editor chose last.
             'picker' => MediaBrowser::picker($folder),
+            // "Bijsnijden" and an upload in the picker open the crop step; moving a file is for the library's editors.
+            'crop' => CropStep::make(in_array(Screen::Media, $screens, true)),
             // The tab Koppen is only UI, for whoever chooses the level of a heading.
             'headingLevels' => $headingLevels,
             'headingsScript' => $headingLevels ? LauncherAssetController::url('headings.js') : null,

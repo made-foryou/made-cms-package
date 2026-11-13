@@ -280,6 +280,33 @@ it('puts the picker of an image in the shell, after the side panel, with its scr
     $response->assertSee(LauncherAssetController::url('media.js'), false);
 });
 
+it('puts the crop step in the shell, after the picker, with its script', function (): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $document = HTMLDocument::createFromString((string) $response->getContent(), LIBXML_NOERROR);
+    $dialog = $document->querySelector('[data-edit-shell] > dialog[data-media-crop]');
+
+    expect($dialog?->getAttribute('aria-modal'))->toBe('true')
+        ->and($dialog?->previousElementSibling?->hasAttribute('data-media-picker'))->toBeTrue();
+
+    $response->assertSee(LauncherAssetController::url('crop.js'), false);
+});
+
+it('lets only an editor who opens the media library move a file in the crop step', function (Role $role, bool $moves): void {
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $html = (string) $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit')->getContent();
+    $dialog = HTMLDocument::createFromString($html, LIBXML_NOERROR)->querySelector('dialog[data-media-crop]');
+
+    expect(json_decode((string) $dialog?->getAttribute('data-config'), true)['moves'] ?? null)->toBe($moves)
+        ->and($dialog?->querySelector('[data-slot="crop-folder"]') !== null)->toBe($moves);
+})->with([
+    'content manager' => [Role::ContentManager, true],
+    'owner' => [Role::Owner, false],
+    'seo specialist' => [Role::SeoSpecialist, false],
+]);
+
 it('gives the side panel the folder the editor chose last in the picker', function (): void {
     $teams = MediaFolder::factory()->create(['name' => 'Teams']);
     $page = Page::factory()->at('/over-ons')->create();

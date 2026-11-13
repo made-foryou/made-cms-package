@@ -307,13 +307,18 @@ it('takes a photo uploaded in the picker as the choice, in the folder it remembe
 
     expect($upload->folder_id)->toBe($this->teams->id);
 
-    $shell->assertAttribute(pickerTile($upload), 'aria-pressed', 'true')
-        ->assertSeeIn('[data-slot="media-picker-name"]', 'kampioenen-2026')
-        ->assertSeeIn('[data-slot="media-picker-alt"]', 'Nog geen alt-tekst')
-        ->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
-        ->click('[data-media-picker] [data-slot="upload-save"]');
+    // The photo goes to the crop step, which asks its alt text; the field does not.
+    expect($shell->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
 
-    expect($shell->script(waitUntil("document.querySelector('[data-slot=\"media-picker-alt\"]').textContent === 'Alt: De kampioenen van 2026'")))->toBeTrue()
+    $shell->assertSeeIn('[data-slot="crop-eyebrow"]', 'Uploaden')
+        ->assertMissing('[data-media-picker] [data-slot="upload-row-alt-input"]')
+        ->type('[data-slot="crop-alt"]', 'De kampioenen van 2026')
+        ->click('[data-slot="crop-keep"]');
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-crop]').open")))->toBeTrue()
+        ->and($shell->script(waitUntil("document.querySelector('[data-slot=\"media-picker-alt\"]').textContent === 'Alt: De kampioenen van 2026'")))->toBeTrue()
+        ->and($shell->script(pickerUploadMoment('rest')))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('".pickerTile($upload)."') !== null"))->toBeTrue()
         ->and($shell->script(pickerFolders())[2])->toBe(['Teams', '3', 'true']);
 
     $shell->click('[data-slot="media-picker-use"]');
@@ -347,7 +352,8 @@ function pickerUploadMoment(string $moment): string
 }
 
 /**
- * Opens the picker for the photo of the hero and uploads a photo in it, up to the moment the field asks its alt text.
+ * Opens the picker for the photo of the hero and uploads an svg in it, up to the moment the field asks its alt text. A
+ * photo would go to the crop step, which asks it there; an svg has no original to crop.
  */
 function uploadInPicker(mixed $shell, string $name): void
 {
@@ -355,15 +361,54 @@ function uploadInPicker(mixed $shell, string $name): void
 
     expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
-    $shell->attach('[data-media-picker] [data-slot="upload-input"]', photo(1600, 1200, 'jpg', $name));
+    $shell->attach('[data-media-picker] [data-slot="upload-input"]', mediaFixture('logo.svg', $name));
 
     expect($shell->script(waitUntil(pickerUploadMoment('done'))))->toBeTrue();
 }
 
+it('crops a photo uploaded in the picker to 16:9 in the crop step, and the media element shows its new size', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
+
+    $shell->attach('[data-media-picker] [data-slot="upload-input"]', quadrants(2400, 1600, 'jpg', 'Kampioenen 2026.jpg'));
+
+    expect($shell->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
+
+    $shell->assertSeeIn('[data-slot="crop-area"]', 'Uitsnede origineel · 2400 × 1600')
+        ->assertSeeIn('[data-slot="crop-save"]', 'Opslaan')
+        ->click('[data-ratio="16:9"]')
+        ->assertSeeIn('[data-slot="crop-area"]', 'Uitsnede 16:9 · 2400 × 1350')
+        ->type('[data-slot="crop-alt"]', 'De kampioenen van 2026')
+        ->click('[data-slot="crop-save"]');
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-crop]').open")))->toBeTrue()
+        ->and($shell->script(waitUntil("document.querySelector('[data-slot=\"media-picker-alt\"]').textContent === 'Alt: De kampioenen van 2026'")))->toBeTrue();
+
+    $upload = Media::query()->where('name', 'kampioenen-2026')->sole();
+
+    expect([$upload->width, $upload->height])->toBe([1920, 1080])
+        ->and($upload->crop)->toBe(['x' => 0, 'y' => 125, 'width' => 2400, 'height' => 1350, 'rotation' => 0, 'flip' => false, 'scale_down' => true])
+        // The tile shows the new thumbnail, never one that left the disk.
+        ->and($shell->script(waitUntil("document.querySelector('".pickerTile($upload)." [data-slot=\"media-tile-thumb\"]')?.src.endsWith('".$upload->thumb_path."')")))->toBeTrue();
+
+    $shell->click('[data-slot="media-picker-use"]');
+
+    expect($shell->script(waitUntil(pickedState('foto', 'filled'))))->toBeTrue()
+        ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and(draftOf($this->page, 'hero')['values']['foto'] ?? null)->toBe($upload->id);
+
+    $shell->assertSeeIn('[data-path="foto"] [data-slot="image-meta"]', '1920 × 1080')
+        ->assertSeeIn('[data-path="foto"] [data-slot="image-alt"]', 'Alt: De kampioenen van 2026')
+        ->assertNoJavaScriptErrors();
+});
+
 it('stores the alt text typed for a photo uploaded in the picker when it is used at once', function (): void {
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
 
-    uploadInPicker($shell, 'Kampioenen 2026.jpg');
+    uploadInPicker($shell, 'Kampioenen 2026.svg');
 
     // No "Alt-tekst opslaan": "Deze gebruiken" stores the text first.
     $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
@@ -394,7 +439,7 @@ it('stores the alt text typed for a photo uploaded in the picker when it is used
 it('stores the alt text typed for a photo uploaded in the picker when the picker closes with Escape', function (): void {
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
 
-    uploadInPicker($shell, 'Kampioenen 2026.jpg');
+    uploadInPicker($shell, 'Kampioenen 2026.svg');
 
     $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
         ->keys('[data-media-picker] [data-slot="upload-row-alt-input"]', 'Escape');
@@ -415,7 +460,7 @@ it('stores the alt text typed for a photo uploaded in the picker when the picker
 it('leaves the alt text of a photo uploaded in the picker for later when none was typed', function (): void {
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
 
-    uploadInPicker($shell, 'Kampioenen 2026.jpg');
+    uploadInPicker($shell, 'Kampioenen 2026.svg');
 
     $shell->click('[data-slot="media-picker-use"]');
 

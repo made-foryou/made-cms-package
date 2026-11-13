@@ -26,6 +26,13 @@ it('tells the script where to send a file and its alt text, and what the library
         ->and($config['limits'])->toBe(['max_bytes' => 25600 * 1024]);
 });
 
+it('hands photos to the crop step only when the host asks for it', function (): void {
+    expect(UploadField::make()['config']['crop'])->toBeFalse()
+        ->and(UploadField::image()['config']['crop'])->toBeFalse()
+        ->and(UploadField::make(crop: true)['config']['crop'])->toBeTrue()
+        ->and(UploadField::image(crop: true)['config']['crop'])->toBeTrue();
+});
+
 it('sends files into the folder the host gives', function (): void {
     $folder = MediaFolder::factory()->create(['name' => 'Teams']);
 

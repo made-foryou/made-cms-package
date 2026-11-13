@@ -22,6 +22,8 @@ return [
         'folder_gone' => 'Deze map bestaat niet meer. Herlaad de pagina en kies een andere map.',
         'server_limit' => 'De server neemt dit bestand niet aan: hij staat op hoogstens :max per upload. Vraag je webbouwer om die grens te verhogen.',
         'filter' => 'Deze lijst kan zo niet gefilterd worden. Herlaad de pagina en probeer het opnieuw.',
+        'crop_outside' => 'De uitsnede valt buiten de foto. Herlaad de pagina en probeer het opnieuw.',
+        'original_missing' => 'Het origineel van deze foto is niet meer te lezen, dus hij kan niet opnieuw bijgesneden worden.',
     ],
 
     'or' => 'of',

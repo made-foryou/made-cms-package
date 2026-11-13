@@ -16,13 +16,14 @@ beforeEach(function (): void {
 /**
  * A photo the library scaled down before it made thumbnails: its WebP on the disk, without a thumbnail.
  */
-function photoWithoutThumbnail(string $directory, int $width = 1920, int $height = 1280): Media
+function photoWithoutThumbnail(string $directory, int $width = 1920, int $height = 1280, ?string $path = null): Media
 {
-    Storage::disk('public')->put("{$directory}/teamfoto.webp", (string) file_get_contents(photo($width, $height, 'webp')));
+    $path ??= "{$directory}/teamfoto.webp";
+    Storage::disk('public')->put($path, (string) file_get_contents(photo($width, $height, 'webp')));
 
     return Media::factory()->withoutThumbnail()->create([
         'name' => basename($directory),
-        'path' => "{$directory}/teamfoto.webp",
+        'path' => $path,
         'original_path' => "{$directory}/original-abc.jpg",
         'width' => $width,
         'height' => $height,
@@ -39,6 +40,14 @@ it('gives a photo without a thumbnail one, made from the photo the site shows', 
     expect($made)->toEqual(new MadeThumbnails(made: 1, had: 0, failed: []))
         ->and($thumb)->toMatch('#^media/01k9/thumb-[0-9A-Za-z]{40}\.webp$#')
         ->and(getimagesizefromstring((string) Storage::disk('public')->get($thumb)))->toMatchArray([0 => 540, 1 => 360, 'mime' => 'image/webp']);
+});
+
+it('puts the thumbnail next to the original, not in the folder of a cropped photo', function (): void {
+    $media = photoWithoutThumbnail('media/01k9', path: 'media/01k9/x7k2m9qa/teamfoto.webp');
+
+    MakeMissingThumbnails::run();
+
+    expect((string) $media->refresh()->thumb_path)->toMatch('#^media/01k9/thumb-[0-9A-Za-z]{40}\.webp$#');
 });
 
 it('leaves a photo that has a thumbnail alone', function (): void {

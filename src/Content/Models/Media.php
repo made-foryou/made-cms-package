@@ -34,6 +34,7 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * @property string|null $alt the alt text of an image, the description of the download link of a document
  * @property float|null $focal_x the point a crop keeps in view, from 0 (left) to 1 (right)
  * @property float|null $focal_y the point a crop keeps in view, from 0 (top) to 1 (bottom)
+ * @property array<string, mixed>|null $crop how the photo was cut from its original (CropArea with scale_down); null for the whole original
  * @property int|null $uploaded_by the id of the editor who uploaded the file
  * @property-read MediaFolder|null $folder
  * @property-read Collection<int, MediaUsage> $usages
@@ -65,6 +66,7 @@ class Media extends Model
         'alt',
         'focal_x',
         'focal_y',
+        'crop',
         'uploaded_by',
     ];
 
@@ -83,6 +85,7 @@ class Media extends Model
             'original_height' => 'integer',
             'focal_x' => 'float',
             'focal_y' => 'float',
+            'crop' => 'array',
             'uploaded_by' => 'integer',
         ];
     }

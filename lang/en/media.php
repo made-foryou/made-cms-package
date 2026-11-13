@@ -22,6 +22,8 @@ return [
         'folder_gone' => 'This folder is gone. Reload the page and choose another folder.',
         'server_limit' => 'The server does not take this file: it is set to at most :max per upload. Ask your web developer to raise that limit.',
         'filter' => 'This list cannot be filtered this way. Reload the page and try again.',
+        'crop_outside' => 'The crop lies outside the photo. Reload the page and try again.',
+        'original_missing' => 'The original of this photo can no longer be read, so it cannot be cropped again.',
     ],
 
     'or' => 'or',

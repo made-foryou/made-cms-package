@@ -37,6 +37,9 @@ return new class extends Migration
             // The point a crop keeps in view, from 0 to 1 from the left and the top.
             $table->decimal('focal_x', 5, 4)->nullable();
             $table->decimal('focal_y', 5, 4)->nullable();
+            // How the photo was cut from its original: {x, y, width, height, rotation, flip, scale_down}, as the editor
+            // saw it (CropArea); null for the whole original, not turned and scaled down.
+            $table->json('crop')->nullable();
             // The editor who uploaded the file; the file stays when the editor is removed.
             $table->foreignId('uploaded_by')->nullable()->constrained('cms_editors')->nullOnDelete();
             $table->timestamps();

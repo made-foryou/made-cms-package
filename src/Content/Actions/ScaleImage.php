@@ -40,6 +40,8 @@ final class ScaleImage
             return new ScaledImage($image->width(), $image->height(), null, $media->mime, $media->extension);
         }
 
+        $sourceWidth = $image->width();
+        $sourceHeight = $image->height();
         $format = Format::create(config()->string('made-cms-package.media.image.format'));
         $image = $image->scaleDown(width: config()->integer('made-cms-package.media.image.max_width'));
         $encoded = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'));
@@ -50,6 +52,8 @@ final class ScaleImage
             $encoded->toString(),
             $format->mediaType()->value,
             $format->fileExtension()->value,
+            $sourceWidth,
+            $sourceHeight,
         );
     }
 }

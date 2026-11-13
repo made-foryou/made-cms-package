@@ -39,6 +39,8 @@ final class MediaFactory extends Factory
             'size' => fake()->numberBetween(80_000, 600_000),
             'width' => 1920,
             'height' => 1280,
+            'original_width' => 1920,
+            'original_height' => 1280,
             'alt' => null,
             'focal_x' => null,
             'focal_y' => null,
@@ -90,6 +92,8 @@ final class MediaFactory extends Factory
             'mime' => $mime,
             'width' => null,
             'height' => null,
+            'original_width' => null,
+            'original_height' => null,
         ]);
     }
 }

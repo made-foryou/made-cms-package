@@ -194,6 +194,7 @@
 
 ### Changed
 
+- A file as the CMS shows it (`file` of the media endpoints, `strip.media` of the side panel, `MediaDetails`) has `croppable`: whether it is a photo with an original to cut it from again. `MediaFile` has it too, from `FindMedia`.
 - The hint under "Staat in het menu" on the screen of one page counts only the pages the site shows in its menu (`ListMenuPages`): "Plek 2 van 3 in het menu." no longer counts drafts. A draft says the place it takes once published ("Komt op plek 3 van 4 in het menu zodra je hem publiceert."), and a page under a page the menu of the site leaves out names that page ("Komt in het menu zodra Over ons erin staat."). Dutch and English texts `pages.show.in_menu.publish` and `pages.show.in_menu.parent`; `ShowPageResponse::make()` takes the menu of the site as its last argument.
 - The tiles of the picker, the choice at its foot and the row of a photo in the upload field load the thumbnail of a photo (`thumb`) instead of the photo the site shows, so a page of 40 tiles loads a few dozen kB per photo. The media element of the side panel still shows the photo itself.
 - The media element of the side panel offers "Kiezen uit media" next to "Uploaden", and the text for a file that left Media points to both. A photo uploaded from the side panel goes into the folder the editor opened last in the picker instead of always into "Alle bestanden".

@@ -24,6 +24,7 @@ final readonly class MediaFile
      * @param  string|null  $alt  the alt text of the file, the same on every page
      * @param  float|null  $focalX  the point a crop keeps in view, from 0 (left) to 1 (right); null for none
      * @param  string|null  $folder  the name of the folder the file is in; null for none
+     * @param  bool  $croppable  whether the file is a photo with an original to cut it from again (CropImage)
      */
     public function __construct(
         public int $id,
@@ -39,6 +40,7 @@ final readonly class MediaFile
         public ?float $focalX,
         public ?float $focalY,
         public ?string $folder,
+        public bool $croppable = false,
     ) {}
 
     /**

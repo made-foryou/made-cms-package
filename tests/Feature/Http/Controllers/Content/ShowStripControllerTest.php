@@ -80,6 +80,7 @@ it('hands the side panel the files of the images of the strip, by their url and 
         'folder' => 'Teams',
         'alt' => 'Het eerste team',
         'image' => ['url' => $url, 'alt' => 'Het eerste team', 'width' => 1600, 'height' => 1067, 'focal' => ['x' => 0.5, 'y' => 0.5]],
+        'croppable' => true,
     ]])->and($response->getContent())->not->toContain('original-geheim123');
 });
 

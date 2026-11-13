@@ -57,6 +57,7 @@ it('lists the files as the upload field gets one, newest first, with the count i
             'height' => 1067,
             'focal' => ['x' => 0.5, 'y' => 0.5],
         ],
+        'croppable' => true,
         'kind' => 'image',
         'file' => 'teamfoto.webp',
         'size' => 412_000,

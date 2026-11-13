@@ -53,7 +53,7 @@
                 </div>
                 @include('made-cms-package-launcher::cms.pages.partials.in-menu', [
                     'label' => $t('pages.show.in_menu.label'),
-                    'hint' => $menuPlace === null ? $t('pages.show.in_menu.hidden') : $t('pages.show.in_menu.position', $menuPlace),
+                    'hint' => $menuPlace === null ? $t('pages.show.in_menu.hidden') : $t('pages.show.in_menu.'.$menuPlace['hint'], $menuPlace['replace']),
                     'checked' => $page['inMenu'],
                 ])
                 <div class="knoppen">

@@ -25,8 +25,9 @@ final class ShowPageResponse
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
      * @param  PageTree  $pages  every page of the site
      * @param  PageTree  $parents  the pages this page may lie under
+     * @param  PageTree  $menu  the menu of the site (ListMenuPages)
      */
-    public static function make(Editor $editor, array $screens, Page $page, PageTree $pages, PageTree $parents): Response
+    public static function make(Editor $editor, array $screens, Page $page, PageTree $pages, PageTree $parents, PageTree $menu): Response
     {
         $node = $pages->find($page->id);
         $path = $page->route?->path;
@@ -61,26 +62,40 @@ final class ShowPageResponse
                 'live' => $child->status === PageStatus::Published,
                 'showUrl' => PageLinks::show($child->id),
             ], $node->children ?? []),
-            'menuPlace' => self::menuPlace($pages, $node),
+            'menuPlace' => self::menuPlace($pages, $menu, $node),
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
         ], $pages, $page);
     }
 
     /**
-     * The place of the page among its siblings in the menu; null for a page outside the menu.
+     * What the menu switch says about the place of the page in the menu of the site; null for a page outside the menu.
+     * Only the pages the site shows in its menu count: a draft gets the place it takes once published, and a page under
+     * a page the menu of the site leaves out names that page.
      *
-     * @return array{position: int, total: int}|null
+     * @return array{hint: 'position'|'publish'|'parent', replace: array<string, int|string>}|null
      */
-    private static function menuPlace(PageTree $pages, ?PageNode $node): ?array
+    private static function menuPlace(PageTree $pages, PageTree $menu, ?PageNode $node): ?array
     {
         if ($node === null || ! $node->inMenu) {
             return null;
         }
 
-        $siblings = $node->parentId === null ? $pages->roots : ($pages->find($node->parentId)->children ?? []);
-        $inMenu = array_values(array_filter($siblings, static fn (PageNode $sibling): bool => $sibling->inMenu));
-        $ids = array_map(static fn (PageNode $sibling): int => $sibling->id, $inMenu);
+        $shown = array_fill_keys(array_map(static fn (PageNode $item): int => $item->id, $menu->flatten()), true);
+        $parent = $node->parentId === null ? null : $pages->find($node->parentId);
 
-        return ['position' => (int) array_search($node->id, $ids, true) + 1, 'total' => count($ids)];
+        if ($parent !== null && ! isset($shown[$parent->id])) {
+            return ['hint' => 'parent', 'replace' => ['parent' => $parent->title]];
+        }
+
+        $siblings = array_filter(
+            $parent === null ? $pages->roots : $parent->children,
+            static fn (PageNode $sibling): bool => $sibling->id === $node->id || isset($shown[$sibling->id]),
+        );
+        $ids = array_values(array_map(static fn (PageNode $sibling): int => $sibling->id, $siblings));
+
+        return [
+            'hint' => isset($shown[$node->id]) ? 'position' : 'publish',
+            'replace' => ['position' => (int) array_search($node->id, $ids, true) + 1, 'total' => count($ids)],
+        ];
     }
 }

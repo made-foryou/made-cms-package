@@ -61,6 +61,8 @@ return [
         'in_menu' => [
             'label' => 'In the menu',
             'position' => 'Place :position of :total in the menu.',
+            'publish' => 'Place :position of :total in the menu once you publish it.',
+            'parent' => 'In the menu once :parent is in it.',
             'hidden' => 'Off means: only found through its address, not in the menu.',
         ],
         'children' => [

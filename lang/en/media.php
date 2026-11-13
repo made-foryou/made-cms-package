@@ -24,6 +24,7 @@ return [
         'filter' => 'This list cannot be filtered this way. Reload the page and try again.',
         'crop_outside' => 'The crop lies outside the photo. Reload the page and try again.',
         'original_missing' => 'The original of this photo can no longer be read, so it cannot be cropped again.',
+        'name' => 'Give the file a name with letters or digits.',
     ],
 
     'or' => 'or',

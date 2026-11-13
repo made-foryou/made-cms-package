@@ -100,7 +100,7 @@ final class MediaResponse
             'file' => self::file($crop->file),
             'folder' => $crop->folderId,
             'original' => [
-                'url' => route('made-cms-package.media.original', ['media' => $crop->file->id]),
+                'url' => request()->getBaseUrl().route('made-cms-package.media.original', ['media' => $crop->file->id], false),
                 'width' => $crop->originalWidth,
                 'height' => $crop->originalHeight,
                 'size' => $crop->originalSize,

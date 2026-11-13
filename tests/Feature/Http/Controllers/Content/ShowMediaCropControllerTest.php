@@ -35,7 +35,7 @@ it('describes a photo for the crop step, never the place of its files', function
     expect($response->json())->toMatchArray([
         'folder' => $folder->id,
         'original' => [
-            'url' => url('made-cms/media/'.$media->id.'/original'),
+            'url' => '/made-cms/media/'.$media->id.'/original',
             'width' => 1200,
             'height' => 800,
             'size' => $size,

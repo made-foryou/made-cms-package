@@ -25,10 +25,17 @@ return [
         'crop_outside' => 'The crop lies outside the photo. Reload the page and try again.',
         'original_missing' => 'The original of this photo can no longer be read, so it cannot be cropped again.',
         'name' => 'Give the file a name with letters or digits.',
+        'crop' => 'This crop cannot be stored like this. Reload the page and try again.',
+        'not_croppable' => 'This file cannot be cropped.',
     ],
 
     'or' => 'or',
     'and' => 'and',
+
+    'crop' => [
+        'uploaded' => 'uploaded :date',
+        'used' => '{1} On :count page. Cropping changes it there at once, on the published site too.|[2,*] On :count pages. Cropping changes it there at once, on the published site too.',
+    ],
 
     'details' => [
         'dimensions' => ':width × :height',

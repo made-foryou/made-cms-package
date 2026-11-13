@@ -605,6 +605,9 @@ Editors upload through one upload field, the same in the media library, the pick
 |---|---|---|
 | `POST /made-cms/media` | Takes one file (`file`, multipart) into the library, in the folder `folder` when given, through `UploadMedia`. | 201 with `{"file": …}`; 422 keyed by `file` (the message of the check) or `folder`. |
 | `PUT /made-cms/media/{media}/alt` | Gives a file its alt text (`{"alt": "…"}`, blank takes it away) through `UpdateAltText`. | 200 with `{"file": …}`; 422 keyed by `alt`; 404. |
+| `GET /made-cms/media/{media}/crop` | A photo as the crop step shows it, through `DescribeMediaCrop`. | 200 with `{"file", "folder", "original": {"url", "width", "height", "size", "extension"}, "crop", "scale_down", "pages", "line", "used"}`; 404 for a file without an original. |
+| `GET /made-cms/media/{media}/original` | The whole original of a photo, upright, scaled down and without metadata, through `MakeOriginalPreview`; never stored by a cache. | 200 with the image; 422 keyed by `crop` when the original cannot be read; 404. |
+| `POST /made-cms/media/{media}/crop` | Cuts a photo from its original (`{"crop": {"x", "y", "width", "height", "rotation", "flip"}, "focal": {"x", "y"}, "scale_down": true}`) through `CropImage`. | 200 with `{"file": …}`; 422 keyed by `crop`, `crop.*`, `focal.*` or `scale_down`; 404. |
 
 `file` is the file as the CMS shows it: `{id, url, thumb, name, extension, meta, folder, alt, image, kind, file, size}`, with `thumb` as the url to show it small at (see [Thumbnails](#thumbnails)), `extension` as the type of the file a visitor gets ("webp" for a photo that was scaled down), `meta` as "1920 × 1280 · 388 kB" and `image` as the site renders it; never its place on the disk. Both endpoints open for an editor who opens the pages or the media library, so every role uploads a photo while editing a page. A guest gets 401.
 

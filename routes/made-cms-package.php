@@ -23,6 +23,7 @@ use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
 use Made\CmsPackage\Http\Controllers\Content\AddStripController;
+use Made\CmsPackage\Http\Controllers\Content\CropMediaController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
@@ -37,6 +38,8 @@ use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
+use Made\CmsPackage\Http\Controllers\Content\ShowMediaCropController;
+use Made\CmsPackage\Http\Controllers\Content\ShowMediaOriginalController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripsController;
@@ -162,8 +165,8 @@ Route::prefix($prefix)
                 Route::post('pages/{page}/publish', PublishPageController::class)->whereNumber('page')->name('pages.publish');
             });
 
-            // The upload field and the picker talk JSON. They stand in the edit shell (the pages) and in the media
-            // library, so they open for an editor who opens one of the two. The list has an address of its own:
+            // The upload field, the picker and the crop step talk JSON. They stand in the edit shell (the pages) and in
+            // the media library, so they open for an editor who opens one of the two. The list has an address of its own:
             // made-cms/media is the screen of the library.
             Route::middleware(EnsureScreenAccess::using(Screen::Pages, Screen::Media))->group(function (): void {
                 Route::get('media/files', ListMediaController::class)->name('media.files');
@@ -171,6 +174,9 @@ Route::prefix($prefix)
                 Route::put('media/chosen-folder', RememberMediaFolderController::class)->name('media.chosen-folder.update');
                 Route::post('media', UploadMediaController::class)->name('media.store');
                 Route::put('media/{media}/alt', UpdateAltTextController::class)->whereNumber('media')->name('media.alt.update');
+                Route::get('media/{media}/crop', ShowMediaCropController::class)->whereNumber('media')->name('media.crop.show');
+                Route::get('media/{media}/original', ShowMediaOriginalController::class)->whereNumber('media')->name('media.original');
+                Route::post('media/{media}/crop', CropMediaController::class)->whereNumber('media')->name('media.crop.store');
             });
 
             // The scan of the site writes code into it: only for an admin at APP_ENV=local, whatever its panel shows.

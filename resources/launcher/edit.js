@@ -661,6 +661,8 @@ if (shell) {
     });
     shell.addEventListener('made-cms:saved', (event) => saved(event.detail.id, event.detail.seq ?? Infinity));
     shell.addEventListener('made-cms:published', reloadFrame);
+    // A file changed in the crop step: its former address is gone, and a focal point is no attribute to patch.
+    shell.addEventListener('made-cms:media-changed', () => reloadFrame());
     // The overview of the headings chooses a strip with the field of the heading (field, with count in a list).
     shell.addEventListener('made-cms:choose', (event) => {
         const field = event.detail.field ? { path: event.detail.field, count: event.detail.count ?? null } : null;

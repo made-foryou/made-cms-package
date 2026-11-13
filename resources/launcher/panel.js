@@ -61,6 +61,8 @@ const states = new Map();
 let pages = [];
 // The files of the media library the panel knows, by id: what it shows of an image and how the site renders it.
 const media = new Map();
+// The media elements on screen draw themselves again when a file they may show changed (the crop step).
+const drawings = new Set();
 let current = null;
 let opening = 0;
 let uid = 0;
@@ -462,6 +464,8 @@ function forgetErrorsOf(state, key) {
 function render() {
     const state = current;
 
+    drawings.clear();
+
     ui.form.hidden = false;
     ui.visible.checked = state.visible;
 
@@ -853,6 +857,7 @@ function image(state, element, field, owner, path, set) {
     const alt = slot('image-alt', element);
     const button = slot('image-upload', element);
     const pick = slot('image-pick', element);
+    const crop = slot('image-crop', element);
     const remove = slot('image-remove', element);
     const area = slot('image-upload-area', element);
 
@@ -891,6 +896,8 @@ function image(state, element, field, owner, path, set) {
         slot('image-gone', element).hidden = ! gone;
         slot('image-gone-icon', element).hidden = ! gone;
         remove.hidden = value === null;
+        // Only a photo with an original to cut from can be cropped: not an svg, not an animated gif.
+        crop.hidden = shown?.croppable !== true;
         button.setAttribute('aria-expanded', String(uploadOf(state, owner, key) !== null));
 
         if (shown === null) {
@@ -990,6 +997,18 @@ function image(state, element, field, owner, path, set) {
         }));
     });
 
+    // The crop step changes the file itself, on every page: the value of the field stays its id.
+    crop.addEventListener('click', () => {
+        const value = owner[key] ?? null;
+        const file = value === null ? null : (media.get(value) ?? null);
+
+        if (file?.croppable) {
+            document.querySelector('[data-media-crop]')?.dispatchEvent(new CustomEvent('made-cms:crop', {
+                detail: { files: [file], opener: crop },
+            }));
+        }
+    });
+
     remove.addEventListener('click', () => {
         set(null);
         leave(state, path);
@@ -997,7 +1016,36 @@ function image(state, element, field, owner, path, set) {
         button.focus();
     });
 
+    drawings.add(draw);
     draw();
+}
+
+/*
+ * A file changed in the crop step (made-cms:media-changed): its new address, size, focal point, name or alt text. The
+ * media elements show it at once. The frame reloads to show it (edit.js); a field of a strip that still holds a change
+ * of its own goes to the frame again, so the reloaded page does not get the former address of the file patched in.
+ */
+function mediaChanged(file) {
+    media.set(file.id, file);
+    drawings.forEach((draw) => draw());
+
+    for (const state of states.values()) {
+        for (const field of state.fields) {
+            if (field.type === 'image' && state.values[field.key] === file.id) {
+                liveInput(state, field.key, field, file.id);
+            }
+
+            if (field.type === 'items' && Array.isArray(state.values[field.key])) {
+                state.values[field.key].forEach((item, index) => {
+                    for (const sub of field.fields ?? []) {
+                        if (sub.type === 'image' && item?.[sub.key] === file.id) {
+                            liveInput(state, field.key + '.' + index + '.' + sub.key, sub, file.id);
+                        }
+                    }
+                });
+            }
+        }
+    }
 }
 
 /* A button is a text and a link: two parts of one value, {text, link}, or nothing when both are empty. */
@@ -2159,6 +2207,11 @@ if (shell && ui.form) {
     shell.addEventListener('made-cms:strips', (event) => forgetGone(event.detail.strips ?? []));
     shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush()));
     shell.addEventListener('made-cms:discarding', (event) => event.detail.wait(discarding(event.detail.done)));
+    shell.addEventListener('made-cms:media-changed', (event) => {
+        if (event.detail?.file) {
+            mediaChanged(event.detail.file);
+        }
+    });
     // The editor opened another folder in the picker: the uploads of the panel go there from now on.
     shell.addEventListener('made-cms:media-folder', (event) => {
         folder = event.detail?.folder ?? null;

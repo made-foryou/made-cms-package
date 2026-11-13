@@ -116,6 +116,7 @@ return [
         'image_empty_text' => 'Zonder afbeelding laat de site zijn eigen standaard zien.',
         'image_pick' => 'Kiezen uit media',
         'image_upload' => 'Uploaden',
+        'image_crop' => 'Bijsnijden',
         'image_upload_cancel' => 'Annuleren',
         'image_remove' => 'Weghalen',
         'image_focal' => 'Brandpunt',

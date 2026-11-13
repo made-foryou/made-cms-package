@@ -5,6 +5,9 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\SyncMediaUsage;
+use Made\CmsPackage\Content\Actions\UploadMedia;
+use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\MediaUsage;
@@ -168,6 +171,54 @@ it('shows the photo a field holds with its folder, focal point and alt text, and
         ->and($shell->script(waitUntil('! '.siteInFrame()."?.querySelector('[data-cms-field=\"foto\"]')")))->toBeTrue();
 
     $shell->assertNoJavaScriptErrors();
+});
+
+it('crops the photo of a field in the crop step, and the site shows the new crop', function (): void {
+    $photo = UploadMedia::run(new UploadedMedia(quadrants(2400, 1600), 'teamfoto.jpg'));
+    $this->page->update(['strips' => [storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $photo->id], id: 'hero'), $this->page->strips[1]]]);
+    SyncMediaUsage::run($this->page);
+
+    $shell = openStrip($this->page, 'hero', mediaState('foto', 'filled'));
+
+    $shell->assertSeeIn('[data-path="foto"] [data-slot="image-crop"]', 'Bijsnijden')
+        ->assertAttribute('[data-path="foto"] [data-slot="image-crop"]', 'aria-haspopup', 'dialog')
+        ->assertSeeIn('[data-path="foto"] [data-slot="image-meta"]', '1920 × 1280')
+        ->click('[data-path="foto"] [data-slot="image-crop"]');
+
+    expect($shell->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
+
+    $shell->assertSeeIn('[data-slot="crop-eyebrow"]', 'Media / bijsnijden')
+        ->assertSeeIn('[data-slot="crop-used"]', 'Staat op 1 pagina. Bijsnijden verandert hem daar meteen, ook op de gepubliceerde site.')
+        ->script(markFrame());
+
+    $shell->click('[data-ratio="16:9"]')
+        ->keys('[data-slot="crop-focal"]', 'Shift+ArrowLeft')
+        ->click('[data-slot="crop-save"]');
+
+    $photo->refresh();
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-crop]').open")))->toBeTrue()
+        ->and($shell->script(waitUntil(mediaSlot('foto', 'image-meta').".textContent.startsWith('1920 × 1080')")))->toBeTrue()
+        ->and($shell->script('() => document.activeElement?.dataset.slot'))->toBe('image-crop')
+        ->and($shell->script('() => '.mediaSlot('foto', 'image-focal').'.style.left'))->toBe('40%')
+        ->and($shell->script(waitUntil(frameReloaded())))->toBeTrue()
+        ->and($shell->script(waitUntil(siteInFrame()."?.querySelector('[data-cms-field=\"foto\"]')?.getAttribute('src')?.endsWith('".$photo->path."')")))->toBeTrue()
+        ->and($shell->script('() => '.siteInFrame().".querySelector('[data-cms-field=\"foto\"]').style.objectPosition"))->toBe('40% 50%')
+        // The field still holds the file: a crop changes the file, not the draft.
+        ->and(draftOf($this->page, 'hero')['values']['foto'] ?? null)->toBe($photo->id)
+        ->and($this->page->refresh()->draft_strips)->toBeNull();
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('offers no crop for an image without an original to cut from', function (): void {
+    $logo = UploadMedia::run(new UploadedMedia(mediaFixture('logo.svg'), 'logo.svg'));
+    $this->page->update(['strips' => [storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $logo->id], id: 'hero'), $this->page->strips[1]]]);
+
+    $shell = openStrip($this->page, 'hero', mediaState('foto', 'filled'));
+
+    $shell->assertMissing('[data-path="foto"] [data-slot="image-crop"]')
+        ->assertVisible('[data-path="foto"] [data-slot="image-pick"]');
 });
 
 it('says that the file of a field left Media and lets the editor take it away', function (): void {

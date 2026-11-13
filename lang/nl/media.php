@@ -24,6 +24,7 @@ return [
         'filter' => 'Deze lijst kan zo niet gefilterd worden. Herlaad de pagina en probeer het opnieuw.',
         'crop_outside' => 'De uitsnede valt buiten de foto. Herlaad de pagina en probeer het opnieuw.',
         'original_missing' => 'Het origineel van deze foto is niet meer te lezen, dus hij kan niet opnieuw bijgesneden worden.',
+        'name' => 'Geef het bestand een naam met letters of cijfers.',
     ],
 
     'or' => 'of',

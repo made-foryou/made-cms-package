@@ -28,6 +28,10 @@ return new class extends Migration
             $table->unsignedBigInteger('size');
             $table->unsignedInteger('width')->nullable();
             $table->unsignedInteger('height')->nullable();
+            // The upright size of the original of a photo that was scaled down, the image a crop is cut from; null for
+            // a file kept as it came in.
+            $table->unsignedInteger('original_width')->nullable();
+            $table->unsignedInteger('original_height')->nullable();
             // One alt text for every place the file is used; for a document the description of its download link.
             $table->string('alt')->nullable();
             // The point a crop keeps in view, from 0 to 1 from the left and the top.

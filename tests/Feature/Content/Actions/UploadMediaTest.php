@@ -74,6 +74,29 @@ it('scales a jpg of 4000 px down to a WebP of 1920 px with the original and a th
         ->and(mediaOnDisk())->toHaveCount(3);
 });
 
+it('keeps the upright size of the original of a photo', function (): void {
+    $media = upload(photo(4000, 2667));
+
+    expect([$media->original_width, $media->original_height])->toBe([4000, 2667])
+        ->and([$media->fresh()?->original_width, $media->fresh()?->original_height])->toBe([4000, 2667]);
+});
+
+it('keeps the upright size of the original of a turned photo', function (): void {
+    $media = upload(photo(3000, 2000, orientation: 6));
+
+    expect([$media->original_width, $media->original_height])->toBe([2000, 3000]);
+})->skip(! extension_loaded('exif'), 'Reading the orientation needs ext-exif.');
+
+it('has no original size for a file kept as it came in', function (Closure $file): void {
+    $media = upload($file());
+
+    expect([$media->original_width, $media->original_height])->toBe([null, null]);
+})->with([
+    'an svg' => [fn (): string => mediaFixture('logo.svg')],
+    'a pdf' => [fn (): string => mediaFixture('wedstrijdschema.pdf')],
+    'an animated gif' => [fn (): string => animatedGif()],
+]);
+
 it('writes every photo as WebP, keeps its original and gives it a thumbnail', function (string $format): void {
     $media = upload(photo(800, 600, $format));
 

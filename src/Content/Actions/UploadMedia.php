@@ -77,7 +77,7 @@ final class UploadMedia
     /**
      * Writes the files and gives the columns that describe them.
      *
-     * @return array{path: string, original_path: string|null, thumb_path: string|null, mime: string, size: int, width: int|null, height: int|null}
+     * @return array{path: string, original_path: string|null, thumb_path: string|null, mime: string, size: int, width: int|null, height: int|null, original_width: int|null, original_height: int|null}
      *
      * @throws MediaNotStored
      */
@@ -92,6 +92,8 @@ final class UploadMedia
                 'size' => $checked->size,
                 'width' => $image?->width,
                 'height' => $image?->height,
+                'original_width' => null,
+                'original_height' => null,
             ];
         }
 
@@ -108,6 +110,8 @@ final class UploadMedia
             'size' => strlen($image->contents),
             'width' => $image->width,
             'height' => $image->height,
+            'original_width' => $image->sourceWidth,
+            'original_height' => $image->sourceHeight,
         ];
     }
 

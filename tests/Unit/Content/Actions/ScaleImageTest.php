@@ -42,6 +42,18 @@ it('never makes a small photo larger, but still writes it as WebP', function (st
     expect(imageSize($image->contents))->toBe([800, 600, 'mime' => 'image/webp']);
 })->with(['jpg', 'png', 'webp', 'gif']);
 
+it('tells the upright size of the photo before it was scaled down', function (): void {
+    $image = scaled(photo(4000, 2667));
+
+    expect([$image->sourceWidth, $image->sourceHeight])->toBe([4000, 2667]);
+});
+
+it('tells the upright size of a turned photo before it was scaled down', function (): void {
+    $image = scaled(photo(3000, 2000, orientation: 6));
+
+    expect([$image->sourceWidth, $image->sourceHeight])->toBe([2000, 3000]);
+})->skip(! extension_loaded('exif'), 'Reading the orientation needs ext-exif.');
+
 it('turns a photo upright by its EXIF orientation', function (): void {
     $image = scaled(photo(300, 200, orientation: 6));
 

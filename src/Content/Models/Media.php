@@ -29,6 +29,8 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * @property int $size the bytes of the file at path
  * @property int|null $width in pixels, for an image whose size is known
  * @property int|null $height in pixels, for an image whose size is known
+ * @property int|null $original_width the upright width of the original of a photo that was scaled down
+ * @property int|null $original_height the upright height of the original of a photo that was scaled down
  * @property string|null $alt the alt text of an image, the description of the download link of a document
  * @property float|null $focal_x the point a crop keeps in view, from 0 (left) to 1 (right)
  * @property float|null $focal_y the point a crop keeps in view, from 0 (top) to 1 (bottom)
@@ -58,6 +60,8 @@ class Media extends Model
         'size',
         'width',
         'height',
+        'original_width',
+        'original_height',
         'alt',
         'focal_x',
         'focal_y',
@@ -75,6 +79,8 @@ class Media extends Model
             'size' => 'integer',
             'width' => 'integer',
             'height' => 'integer',
+            'original_width' => 'integer',
+            'original_height' => 'integer',
             'focal_x' => 'float',
             'focal_y' => 'float',
             'uploaded_by' => 'integer',

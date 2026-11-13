@@ -52,6 +52,7 @@ it('stores a photo scaled down and answers with the file as the field shows it',
                 'height' => 1280,
                 'focal' => ['x' => 0.5, 'y' => 0.5],
             ],
+            'croppable' => true,
             'kind' => 'image',
             'file' => 'teamfoto-merwestad-4.webp',
             'size' => $media->size,
@@ -70,6 +71,7 @@ it('stores a document as it came in, outside a folder and without an image', fun
         ->and($response->json('file.kind'))->toBe('document')
         ->and($response->json('file.file'))->toBe('wedstrijdschema-najaar.pdf')
         ->and($response->json('file.extension'))->toBe('pdf')
+        ->and($response->json('file.croppable'))->toBeFalse()
         ->and($response->json('file.meta'))->toBe('1 kB')
         ->and($response->json('file.size'))->toBe(142)
         ->and($response->json('file.image'))->toBeNull()
@@ -81,6 +83,7 @@ it('shows an svg small as itself', function (): void {
         ->assertCreated();
 
     expect($response->json('file.thumb'))->toBe($response->json('file.url'))
+        ->and($response->json('file.croppable'))->toBeFalse()
         ->and($response->json('file.thumb'))->toEndWith('/logo.svg');
 });
 

@@ -15,12 +15,13 @@ use Made\CmsPackage\Content\Enums\MediaKind;
  *
  * @phpstan-import-type RenderedImage from MediaFile
  *
- * @phpstan-type Details array{id: int, url: string, thumb: string|null, name: string, extension: string, meta: string, folder: string|null, alt: string|null, image: RenderedImage|null}
+ * @phpstan-type Details array{id: int, url: string, thumb: string|null, name: string, extension: string, meta: string, folder: string|null, alt: string|null, image: RenderedImage|null, croppable: bool}
  */
 final class MediaDetails
 {
     /**
-     * @return Details `image` is the file as the site renders it, for watching along; null for a document or a video
+     * @return Details `image` is the file as the site renders it, for watching along; null for a document or a video;
+     *                 `croppable` whether the editor can cut it from its original again
      */
     public static function of(MediaFile $file): array
     {
@@ -38,6 +39,7 @@ final class MediaDetails
             'folder' => $file->folder,
             'alt' => $file->alt,
             'image' => $file->kind === MediaKind::Image ? $file->image() : null,
+            'croppable' => $file->croppable,
         ];
     }
 

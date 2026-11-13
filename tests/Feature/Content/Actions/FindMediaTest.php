@@ -58,6 +58,7 @@ it('tells which files can be cropped: only a photo with an original to cut from'
     'an svg' => [fn (): Media => Media::factory()->create(['path' => 'media/01k9/logo.svg', 'original_path' => null, 'thumb_path' => null, 'mime' => 'image/svg+xml']), false],
     'a document' => [fn (): Media => Media::factory()->document()->create(), false],
     'a video' => [fn (): Media => Media::factory()->video()->create(), false],
+    'a photo without the size of its original' => [fn (): Media => Media::factory()->create(['original_width' => null]), false],
 ]);
 
 it('gives a file without a thumbnail its own url to show small, and a document or a video none', function (Closure $media, ?string $thumb): void {

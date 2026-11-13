@@ -25,10 +25,17 @@ return [
         'crop_outside' => 'De uitsnede valt buiten de foto. Herlaad de pagina en probeer het opnieuw.',
         'original_missing' => 'Het origineel van deze foto is niet meer te lezen, dus hij kan niet opnieuw bijgesneden worden.',
         'name' => 'Geef het bestand een naam met letters of cijfers.',
+        'crop' => 'Deze uitsnede kan zo niet opgeslagen worden. Herlaad de pagina en probeer het opnieuw.',
+        'not_croppable' => 'Dit bestand kan niet bijgesneden worden.',
     ],
 
     'or' => 'of',
     'and' => 'en',
+
+    'crop' => [
+        'uploaded' => 'geüpload :date',
+        'used' => '{1} Staat op :count pagina. Bijsnijden verandert hem daar meteen, ook op de gepubliceerde site.|[2,*] Staat op :count pagina\'s. Bijsnijden verandert hem daar meteen, ook op de gepubliceerde site.',
+    ],
 
     'details' => [
         'dimensions' => ':width × :height',

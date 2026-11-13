@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
+use Made\CmsPackage\Content\Data\MediaCrop;
 use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Data\MediaFolders;
 use Made\CmsPackage\Content\Data\MediaList;
+use Made\CmsPackage\Content\Data\ScaledImage;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Support\Locale;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * The media library for the upload field and the picker, as JSON: a file, a page of files or the folders. The page
+ * The media library for the upload field, the picker and the crop step, as JSON: a file, a page of files, the folders
+ * or a photo to crop, and the original a crop is drawn on. The page
  * around them stays loaded, so they talk to the server without reloading it; an answer is never stored by a cache.
  */
 final class MediaResponse
@@ -69,6 +72,62 @@ final class MediaResponse
         $response->headers->set('Cache-Control', 'no-store, private');
 
         return $response;
+    }
+
+    /**
+     * A photo as the crop step shows it: the file, its original (the address of its preview, its upright size, bytes
+     * and extension), how it was cut from it, and the line under the title ("teamfoto.jpg · 4000 × 2667 · 4,2 MB ·
+     * geüpload 9 oktober 2026") with the pages a crop changes ("Staat op 2 pagina's …"; null for none), in words,
+     * so the script never builds a plural or a date itself. Never the place of a file on the disk.
+     */
+    public static function crop(MediaCrop $crop): JsonResponse
+    {
+        $locale = Locale::launcher();
+        $line = [
+            "{$crop->file->name}.{$crop->originalExtension}",
+            (string) __('made-cms-package::media.details.dimensions', ['width' => $crop->originalWidth, 'height' => $crop->originalHeight], $locale),
+        ];
+
+        if ($crop->originalSize !== null) {
+            $line[] = MediaDetails::size($crop->originalSize);
+        }
+
+        if ($crop->uploadedAt !== null) {
+            $line[] = (string) __('made-cms-package::media.crop.uploaded', ['date' => $crop->uploadedAt->settings(['locale' => $locale])->isoFormat('D MMMM YYYY')], $locale);
+        }
+
+        return self::json([
+            'file' => self::file($crop->file),
+            'folder' => $crop->folderId,
+            'original' => [
+                'url' => route('made-cms-package.media.original', ['media' => $crop->file->id]),
+                'width' => $crop->originalWidth,
+                'height' => $crop->originalHeight,
+                'size' => $crop->originalSize,
+                'extension' => $crop->originalExtension,
+            ],
+            'crop' => $crop->area->toArray(),
+            'scale_down' => $crop->scaleDown,
+            'pages' => $crop->pages,
+            'line' => implode(' · ', $line),
+            'used' => $crop->pages === 0 ? null : trans_choice('made-cms-package::media.crop.used', $crop->pages, ['count' => $crop->pages], $locale),
+        ]);
+    }
+
+    /**
+     * The whole original of a photo for the crop step, as the image itself; never stored by a cache, because it shows
+     * what a crop left out.
+     */
+    public static function original(ScaledImage $preview): Response
+    {
+        $contents = (string) $preview->contents;
+
+        return new Response($contents, Response::HTTP_OK, [
+            'Content-Type' => $preview->mime,
+            'Content-Length' => (string) strlen($contents),
+            'Cache-Control' => 'no-store, private',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

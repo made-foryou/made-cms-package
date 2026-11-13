@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Data;
 
+use Made\CmsPackage\Content\Enums\PageStatus;
+
 /**
  * The pages of the site as a tree, in menu order.
  *
@@ -59,11 +61,20 @@ final readonly class PageTree
     }
 
     /**
-     * Only the pages in the menu; a page outside the menu takes the pages under it along.
+     * Only the pages with the menu switch on, drafts included: the tree of the CMS. A page outside the menu
+     * takes the pages under it along. The menu of the site is ListMenuPages.
      */
     public function inMenu(): self
     {
         return new self(self::filter($this->roots, static fn (PageNode $node): bool => $node->inMenu));
+    }
+
+    /**
+     * Only the published pages; a draft takes the pages under it along.
+     */
+    public function published(): self
+    {
+        return new self(self::filter($this->roots, static fn (PageNode $node): bool => $node->status === PageStatus::Published));
     }
 
     /**

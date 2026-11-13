@@ -11,14 +11,14 @@ use Made\CmsPackage\Content\Enums\PageStatus;
 /**
  * @param  list<PageNode>  $children
  */
-function pageNode(int $id, string $path, array $children = [], bool $inMenu = true, ?int $parentId = null, int $depth = 0): PageNode
+function pageNode(int $id, string $path, array $children = [], bool $inMenu = true, ?int $parentId = null, int $depth = 0, PageStatus $status = PageStatus::Draft): PageNode
 {
     return new PageNode(
         id: $id,
         title: 'Pagina '.$id,
         slug: 'pagina-'.$id,
         path: PagePath::fromString($path),
-        status: PageStatus::Draft,
+        status: $status,
         inMenu: $inMenu,
         position: 0,
         parentId: $parentId,
@@ -61,6 +61,33 @@ it('keeps the tree when the page is not in it', function (): void {
 
 it('keeps only the pages in the menu and drops the subtree of a hidden page', function (): void {
     expect(array_map(fn (PageNode $node): int => $node->id, sampleTree()->inMenu()->flatten()))->toBe([1, 2, 3, 4]);
+});
+
+it('keeps only the published pages and drops the subtree of a draft, in menu order', function (): void {
+    $published = PageStatus::Published;
+    $tree = new PageTree([
+        pageNode(1, '/', status: $published),
+        pageNode(2, '/over-ons', [
+            pageNode(3, '/over-ons/team', [pageNode(4, '/over-ons/team/jeugd', parentId: 3, depth: 2, status: $published)], parentId: 2, depth: 1),
+            pageNode(5, '/over-ons/geschiedenis', parentId: 2, depth: 1, status: $published),
+        ], status: $published),
+        pageNode(6, '/blog', [pageNode(7, '/blog/nieuws', parentId: 6, depth: 1, status: $published)]),
+        pageNode(8, '/contact', status: $published),
+    ]);
+
+    expect(array_map(fn (PageNode $node): int => $node->id, $tree->published()->flatten()))->toBe([1, 2, 5, 8]);
+});
+
+it('keeps the published pages in the menu when both filters are combined', function (): void {
+    $published = PageStatus::Published;
+    $tree = new PageTree([
+        pageNode(1, '/', status: $published),
+        pageNode(2, '/over-ons', [pageNode(3, '/over-ons/team', parentId: 2, depth: 1, status: $published)]),
+        pageNode(4, '/contact', [pageNode(5, '/contact/route', parentId: 4, depth: 1, status: $published)], inMenu: false, status: $published),
+        pageNode(6, '/locatie', status: $published),
+    ]);
+
+    expect(array_map(fn (PageNode $node): int => $node->id, $tree->inMenu()->published()->flatten()))->toBe([1, 6]);
 });
 
 it('knows whether it has pages', function (): void {

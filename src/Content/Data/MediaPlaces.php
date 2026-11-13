@@ -28,10 +28,14 @@ final readonly class MediaPlaces
     }
 
     /**
-     * The pages the file is on, a deleted page too.
+     * The pages the file is on, a deleted page too unless $withDeleted is off.
      */
-    public function pageCount(): int
+    public function pageCount(bool $withDeleted = true): int
     {
-        return count(array_unique(array_map(static fn (MediaPlace $place): int => $place->page, $this->places)));
+        $places = $withDeleted
+            ? $this->places
+            : array_filter($this->places, static fn (MediaPlace $place): bool => ! $place->pageDeleted);
+
+        return count(array_unique(array_map(static fn (MediaPlace $place): int => $place->page, $places)));
     }
 }

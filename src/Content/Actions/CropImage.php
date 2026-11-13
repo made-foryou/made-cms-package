@@ -9,13 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Direction;
-use Intervention\Image\Exceptions\DecoderException;
 use Intervention\Image\Format;
-use League\Flysystem\UnableToReadFile;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
-use Made\CmsPackage\Content\Enums\ImageDriver;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Events\MediaCropped;
 use Made\CmsPackage\Content\Exceptions\ImageDriverNotSupported;
@@ -62,12 +59,7 @@ final class CropImage
             return $this->store($media, $focal);
         }
 
-        try {
-            $image = ImageDriver::configured()->manager()->decodeBinary($this->original($disk, $media->original_path));
-        } catch (DecoderException) {
-            throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.original_missing')]);
-        }
-
+        $image = DecodeOriginal::run($media);
         $width = $image->width();
         $height = $image->height();
 
@@ -182,26 +174,6 @@ final class CropImage
         if ($thumb !== null && $thumb !== $media->thumb_path) {
             $disk->delete($thumb);
         }
-    }
-
-    /**
-     * The contents of the original.
-     *
-     * @throws ValidationException keyed by "crop" when it is not on the disk
-     */
-    private function original(Cloud $disk, string $path): string
-    {
-        try {
-            $contents = $disk->get($path);
-        } catch (UnableToReadFile) {
-            $contents = null;
-        }
-
-        if ($contents === null) {
-            throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.original_missing')]);
-        }
-
-        return $contents;
     }
 
     /**

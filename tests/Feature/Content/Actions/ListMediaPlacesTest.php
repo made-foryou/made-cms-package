@@ -110,6 +110,7 @@ it('marks a place on a deleted page and counts the pages', function (): void {
     expect(array_map(static fn (MediaPlace $place): bool => $place->pageDeleted, $places->places))->toBe([false, true, true])
         ->and($places->count())->toBe(3)
         ->and($places->pageCount())->toBe(2)
+        ->and($places->pageCount(withDeleted: false))->toBe(1)
         ->and($places->isEmpty())->toBeFalse();
 });
 

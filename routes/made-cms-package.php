@@ -29,12 +29,14 @@ use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
+use Made\CmsPackage\Http\Controllers\Content\MoveMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
 use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
 use Made\CmsPackage\Http\Controllers\Content\RememberMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
+use Made\CmsPackage\Http\Controllers\Content\RenameMediaController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
@@ -177,6 +179,12 @@ Route::prefix($prefix)
                 Route::get('media/{media}/crop', ShowMediaCropController::class)->whereNumber('media')->name('media.crop.show');
                 Route::get('media/{media}/original', ShowMediaOriginalController::class)->whereNumber('media')->name('media.original');
                 Route::post('media/{media}/crop', CropMediaController::class)->whereNumber('media')->name('media.crop.store');
+                Route::put('media/{media}/name', RenameMediaController::class)->whereNumber('media')->name('media.name.update');
+            });
+
+            // Putting a file into another folder is managing the library, also from the crop step.
+            Route::middleware(EnsureScreenAccess::using(Screen::Media))->group(function (): void {
+                Route::put('media/{media}/move', MoveMediaController::class)->whereNumber('media')->name('media.move');
             });
 
             // The scan of the site writes code into it: only for an admin at APP_ENV=local, whatever its panel shows.

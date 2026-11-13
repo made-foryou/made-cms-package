@@ -190,7 +190,7 @@ The blocks still show the static examples of the design for the editor's role (a
 The pages screen at `/made-cms/pages` lists every page of the site in the order of the menu, the pages under a page indented below it, with its address, its status and what still needs doing. Every editor who opens `Screen::Pages` uses it; the menu lists the same pages under "Je site".
 
 - **New page** (`/made-cms/pages/new`) asks one question per step: the name, from which the address follows, and the place: at the top or under another page. The page starts as an empty draft, last in the menu, and opens on the site to be filled.
-- **One page** (`/made-cms/pages/{page}`) changes the name, the address, the parent and whether the page is in the menu. The pages under it move along, and their addresses follow.
+- **One page** (`/made-cms/pages/{page}`) changes the name, the address, the parent and whether the page is in the menu. The pages under it move along, and their addresses follow. The switch says the place of the page in the menu of the site, counting only what the site shows there: a draft says where it comes once published.
 - **Deleting** hides the page from visitors and editors and frees its address. It stays under "Verwijderde pagina’s" for 30 days (`pages.keep_deleted_days`) and comes back with "Terugzetten". The package schedules `made-cms:prune` daily to remove older deleted pages for good, so the host only needs the scheduler (`php artisan schedule:run` every minute).
 
 The address of a page is the address of its parent plus its slug; a page at the top or under the home page gets `/` plus its slug. The home page keeps `/`, stays at the top and cannot be deleted. A page with pages under it is deleted after they are moved or deleted.
@@ -207,6 +207,20 @@ MovePage::run($team, parentId: null, position: 0); // /team, first in the menu
 ```
 
 `UpdatePage`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageMoved`, `PageDeleted` and `PageRestored`.
+
+### The menu of the site
+
+Build the menu of the site from `ListMenuPages`: the published pages with "Staat in het menu" on, in the order of the pages screen. A draft is left out with the pages under it, like a page outside the menu, and a deleted page never shows.
+
+```php
+use Made\CmsPackage\Content\Actions\ListMenuPages;
+
+foreach (ListMenuPages::run()->roots as $item) { // ->roots for one level, $item->children for a submenu
+    echo $item->title, ' ', $item->path?->value;
+}
+```
+
+`ListPages::run()->inMenu()` follows only the switch and keeps drafts: it is the tree of the CMS, not the menu of the site.
 
 ## Strip types
 

@@ -178,6 +178,8 @@
     </div>
     {{-- In the shell, so its events reach it, and after the side panel, so the panel finds its own slots first. --}}
     @include('made-cms-package-launcher::cms.partials.media-picker', ['picker' => $picker])
+    {{-- After the picker, so it opens above it after an upload there. --}}
+    @include('made-cms-package-launcher::cms.partials.crop', ['crop' => $crop])
 </div>
 {{-- Cloned into a shadow root in the frame, so the site's css and the outlines never touch each other. --}}
 <template data-overlay>
@@ -437,6 +439,7 @@
 <script type="module" src="{{ $structureScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $uploadScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 <script type="module" src="{{ $picker['browser']['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+<script type="module" src="{{ $crop['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 @if ($headingsScript !== null)
     <script type="module" src="{{ $headingsScript }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
 @endif

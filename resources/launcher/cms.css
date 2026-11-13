@@ -4171,3 +4171,389 @@ button.tekstlink.alarm {
         transition: none;
     }
 }
+
+/*
+ * The crop step of a photo (design 13.6, 14.6): a modal dialog like the picker, with the whole original on a dark
+ * stage, the frame of the crop with its rule of thirds and corners, the focal point, and on the right what the photo
+ * becomes. The frame dims what it leaves out with a shadow the stage cuts off.
+ */
+
+.bijsnijden {
+    width: min(1080px, calc(100vw - 64px));
+    max-width: none;
+    max-height: calc(100vh - 64px);
+    margin: auto;
+    padding: 0;
+    overflow: hidden;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+    font-family: var(--font-tekst);
+}
+
+.bijsnijden[open] {
+    display: flex;
+    flex-direction: column;
+    animation: kiezer-in 280ms var(--ease-uit) backwards;
+}
+
+.bijsnijden::backdrop {
+    background: rgb(14 43 38 / .55);
+}
+
+.bijsnijden-gebruik {
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--made-link);
+}
+
+.bijsnijden-romp {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 26px;
+    min-height: 0;
+    padding: 22px 26px;
+    overflow-y: auto;
+}
+
+.bijsnijden-werk {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+}
+
+.bijsnijden-zij {
+    display: flex;
+    flex: 0 0 320px;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.bijsnijden-doek {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: clamp(220px, calc(100vh - 400px), 460px);
+    overflow: hidden;
+    border-radius: var(--made-radius-s);
+    background: var(--made-nachtgroen);
+    color: var(--made-krijt);
+}
+
+.bijsnijden-beeld {
+    position: relative;
+    flex: none;
+}
+
+.bijsnijden-beeld canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* The frame of the crop: what lies outside it is dimmed, the lines divide it in thirds. */
+.bijsnijden-kader {
+    position: absolute;
+    border: 2px solid var(--made-amber);
+    background:
+        linear-gradient(to right, transparent calc(33.333% - .5px), rgb(243 241 232 / .4) 0, rgb(243 241 232 / .4) calc(33.333% + .5px), transparent 0, transparent calc(66.666% - .5px), rgb(243 241 232 / .4) 0, rgb(243 241 232 / .4) calc(66.666% + .5px), transparent 0),
+        linear-gradient(to bottom, transparent calc(33.333% - .5px), rgb(243 241 232 / .4) 0, rgb(243 241 232 / .4) calc(33.333% + .5px), transparent 0, transparent calc(66.666% - .5px), rgb(243 241 232 / .4) 0, rgb(243 241 232 / .4) calc(66.666% + .5px), transparent 0);
+    box-shadow: 0 0 0 100vmax rgb(14 43 38 / .62);
+    cursor: move;
+    touch-action: none;
+}
+
+.bijsnijden-hoek {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    touch-action: none;
+}
+
+.bijsnijden-hoek::before {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 3px solid var(--made-krijt);
+}
+
+.bijsnijden-hoek[data-corner="nw"] {
+    top: -9px;
+    left: -9px;
+    cursor: nwse-resize;
+}
+
+.bijsnijden-hoek[data-corner="ne"] {
+    top: -9px;
+    right: -9px;
+    cursor: nesw-resize;
+}
+
+.bijsnijden-hoek[data-corner="sw"] {
+    bottom: -9px;
+    left: -9px;
+    cursor: nesw-resize;
+}
+
+.bijsnijden-hoek[data-corner="se"] {
+    right: -9px;
+    bottom: -9px;
+    cursor: nwse-resize;
+}
+
+.bijsnijden-hoek[data-corner="nw"]::before {
+    top: 6px;
+    left: 6px;
+    border-right: 0;
+    border-bottom: 0;
+}
+
+.bijsnijden-hoek[data-corner="ne"]::before {
+    top: 6px;
+    right: 6px;
+    border-bottom: 0;
+    border-left: 0;
+}
+
+.bijsnijden-hoek[data-corner="sw"]::before {
+    bottom: 6px;
+    left: 6px;
+    border-top: 0;
+    border-right: 0;
+}
+
+.bijsnijden-hoek[data-corner="se"]::before {
+    right: 6px;
+    bottom: 6px;
+    border-top: 0;
+    border-left: 0;
+}
+
+/* The focal point: an amber dot with a chalk ring, the place the site keeps in view. */
+.bijsnijden-brandpunt {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 3px solid var(--made-krijt);
+    border-radius: 50%;
+    background: var(--made-amber);
+    box-shadow: 0 0 0 3px rgb(14 43 38 / .5);
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    touch-action: none;
+}
+
+.bijsnijden-brandpunt::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--made-nachtgroen);
+    transform: translate(-50%, -50%);
+}
+
+/* On the dark stage the ring of the focus is chalk, so it shows against the amber of the frame. */
+.bijsnijden-doek :focus-visible {
+    outline: 3px solid var(--made-krijt);
+    outline-offset: 3px;
+}
+
+.bijsnijden-maat {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--made-krijt);
+    text-shadow: 0 1px 2px rgb(14 43 38 / .8);
+    pointer-events: none;
+}
+
+.bijsnijden-laden {
+    font-size: 14px;
+    color: var(--made-krijt);
+}
+
+.bijsnijden-gereedschap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.bijsnijden-verhoudingen,
+.bijsnijden-draaien {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.bijsnijden-draaien .actie {
+    margin-left: 6px;
+}
+
+.bijsnijden-rond {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--made-inhoud);
+    cursor: pointer;
+}
+
+.bijsnijden-rond:hover {
+    border-color: var(--made-accent);
+}
+
+.bijsnijden-rond[aria-pressed="true"] {
+    border-color: var(--made-inhoud);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.bijsnijden button:disabled,
+.bijsnijden input:disabled,
+.bijsnijden select:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.bijsnijden-verklein {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.bijsnijden-verklein .schakelrij {
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.bijsnijden .veld {
+    gap: 6px;
+}
+
+.bijsnijden .veld label,
+.bijsnijden .schakel-label {
+    font: 700 13px/1.3 var(--font-kop);
+}
+
+.bijsnijden .veld input,
+.bijsnijden .veld select {
+    padding: 11px 14px;
+    border-width: 1.5px;
+    font-size: 15px;
+}
+
+.bijsnijden .veld.fout input,
+.bijsnijden .veld.fout select {
+    border-color: var(--made-alarm);
+}
+
+.bijsnijden-gewicht {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.bijsnijden-gewicht s {
+    color: var(--made-inhoud-zwak);
+}
+
+.bijsnijden-gewicht [data-slot="crop-weight-to"] {
+    font-weight: 600;
+}
+
+.bijsnijden-slash {
+    font: 700 16px/1 var(--font-kop);
+    color: var(--made-slash);
+}
+
+.bijsnijden-stappen {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* The buttons stay on the right, also without the steps of a queue beside them. */
+.bijsnijden .kiezer-knoppen {
+    margin-left: auto;
+}
+
+.bijsnijden .kiezer-knoppen [role="status"]:empty {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    /* Night green is the surface here: the stage takes the deeper green, so the photo stands out from the dialog. */
+    .bijsnijden-doek {
+        background: #0a211c;
+    }
+}
+
+/* On a phone the step takes the screen and the fields go below the photo. */
+@media (max-width: 720px) {
+    .bijsnijden {
+        width: 100vw;
+        max-height: 100dvh;
+        height: 100dvh;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .bijsnijden .kiezer-kop,
+    .bijsnijden .kiezer-voet {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    .bijsnijden-romp {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .bijsnijden-zij {
+        flex: none;
+    }
+
+    .bijsnijden-doek {
+        height: min(52vh, calc(100vw - 32px));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bijsnijden[open] {
+        animation: none;
+    }
+}

@@ -116,6 +116,7 @@ return [
         'image_empty_text' => 'Without an image the site shows its own default.',
         'image_pick' => 'Choose from media',
         'image_upload' => 'Upload',
+        'image_crop' => 'Crop',
         'image_upload_cancel' => 'Cancel',
         'image_remove' => 'Remove',
         'image_focal' => 'Focal point',

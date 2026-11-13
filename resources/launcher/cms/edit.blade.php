@@ -291,7 +291,8 @@
     An image of the media library, the media element (design 13.2, 13.3): the photo the field holds with its name, size,
     folder and alt text, that it holds none, or that its file left Media. "Kiezen uit media" opens the picker (the
     dialog media-picker in the shell), "Uploaden" the upload field below it (the part "upload"); the photo the editor
-    chooses or uploads is the value of the field at once. Cropping (#54) follows.
+    chooses or uploads is the value of the field at once. "Bijsnijden" opens the crop step (the dialog media-crop) for a
+    photo that has an original to cut from.
 --}}
 <template data-field="image">
     <div class="veld beeldveld" role="group">
@@ -323,6 +324,7 @@
             <div class="beeldkaart-acties">
                 <button type="button" class="actie klein" aria-haspopup="dialog" data-slot="image-pick">{{ $t('cms.edit.image_pick') }}</button>
                 <button type="button" class="actie klein" aria-expanded="false" data-slot="image-upload">{{ $t('cms.edit.image_upload') }}</button>
+                <button type="button" class="actie klein" aria-haspopup="dialog" data-slot="image-crop" hidden>{{ $t('cms.edit.image_crop') }}</button>
                 <button type="button" class="actie klein beeldkaart-weg" title="{{ $t('cms.edit.image_remove') }}" data-slot="image-remove" hidden><span aria-hidden="true">×</span></button>
             </div>
         </div>

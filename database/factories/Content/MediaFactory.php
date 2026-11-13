@@ -44,6 +44,7 @@ final class MediaFactory extends Factory
             'alt' => null,
             'focal_x' => null,
             'focal_y' => null,
+            'crop' => null,
             'uploaded_by' => null,
         ];
     }

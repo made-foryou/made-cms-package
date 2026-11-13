@@ -21,8 +21,9 @@ final class MakeMissingThumbnails
 
     /**
      * Gives every photo that was scaled down but has no thumbnail one (MakeThumbnail), made from the photo the site
-     * shows: once on a site that had photos before the library made thumbnails. Each photo is read, made and written
-     * on its own, so a photo whose file is gone or cannot be read is named and the others go on; a disk that does not
+     * shows: once on a site that had photos before the library made thumbnails. It goes next to the original, because
+     * a cropped photo lies in a folder of its own that the next crop removes. Each photo is read, made and written on
+     * its own, so a photo whose file is gone or cannot be read is named and the others go on; a disk that does not
      * take a thumbnail stops it, because it would refuse the others too. A photo that got a thumbnail meanwhile keeps
      * it, and the one made here goes off the disk again.
      *
@@ -54,7 +55,7 @@ final class MakeMissingThumbnails
                 continue;
             }
 
-            $path = dirname($media->path).'/thumb-'.Str::random(40).".{$thumbnail->extension}";
+            $path = dirname((string) $media->original_path).'/thumb-'.Str::random(40).".{$thumbnail->extension}";
 
             if (! $disk->put($path, (string) $thumbnail->contents)) {
                 throw MediaNotStored::at($path);

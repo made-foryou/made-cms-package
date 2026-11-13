@@ -601,6 +601,70 @@ function photo(int $width, int $height, string $format = 'jpg', ?string $name = 
     $image = imagecreatetruecolor($width, $height);
     imagefilledrectangle($image, 0, 0, intdiv($width, 2), $height, (int) imagecolorallocate($image, 28, 61, 90));
 
+    return photoFile($image, $format, $name, $orientation);
+}
+
+/** The colours of the quarters of quadrants(), by name. */
+const QUADRANT_COLOURS = ['red' => [200, 40, 40], 'green' => [40, 160, 60], 'blue' => [40, 60, 200], 'yellow' => [230, 200, 40]];
+
+/**
+ * A photo in four coloured quarters, to upload: red at the top left, green at the top right, blue at the bottom left
+ * and yellow at the bottom right, so a test sees how it was turned and mirrored (quadrantsOf()).
+ */
+function quadrants(int $width, int $height, string $format = 'jpg', ?string $name = null, ?int $orientation = null): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    $halfWidth = intdiv($width, 2);
+    $halfHeight = intdiv($height, 2);
+
+    foreach ([[0, 0, 'red'], [$halfWidth, 0, 'green'], [0, $halfHeight, 'blue'], [$halfWidth, $halfHeight, 'yellow']] as [$x, $y, $colour]) {
+        [$red, $green, $blue] = QUADRANT_COLOURS[$colour];
+        imagefilledrectangle($image, $x, $y, $x === 0 ? $halfWidth - 1 : $width - 1, $y === 0 ? $halfHeight - 1 : $height - 1, (int) imagecolorallocate($image, $red, $green, $blue));
+    }
+
+    return photoFile($image, $format, $name, $orientation);
+}
+
+/**
+ * The colour names in the middle of the four quarters of an image, top left, top right, bottom left, bottom right;
+ * "black" or "other" for a colour that is none of quadrants().
+ *
+ * @return list<string>
+ */
+function quadrantsOf(string $contents): array
+{
+    $image = imagecreatefromstring($contents);
+
+    expect($image)->not->toBeFalse();
+    assert($image instanceof GdImage);
+
+    $width = imagesx($image);
+    $height = imagesy($image);
+
+    return array_map(static function (array $point) use ($image): string {
+        $colour = imagecolorat($image, $point[0], $point[1]);
+        $rgb = [($colour >> 16) & 0xFF, ($colour >> 8) & 0xFF, $colour & 0xFF];
+
+        foreach ([...QUADRANT_COLOURS, 'black' => [0, 0, 0], 'photo' => [28, 61, 90]] as $name => $expected) {
+            if (max(array_map(static fn (int $a, int $b): int => abs($a - $b), $rgb, $expected)) <= 40) {
+                return $name;
+            }
+        }
+
+        return 'other';
+    }, [
+        [intdiv($width, 4), intdiv($height, 4)],
+        [intdiv($width * 3, 4), intdiv($height, 4)],
+        [intdiv($width, 4), intdiv($height * 3, 4)],
+        [intdiv($width * 3, 4), intdiv($height * 3, 4)],
+    ]);
+}
+
+/**
+ * An image of GD as a file to upload, with an EXIF orientation when given.
+ */
+function photoFile(GdImage $image, string $format, ?string $name, ?int $orientation): string
+{
     ob_start();
     match ($format) {
         'jpg' => imagejpeg($image, null, 80),

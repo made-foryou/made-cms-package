@@ -47,9 +47,9 @@ it('only links to the site for a live page', function (): void {
 });
 
 it('shows the basics in a form with the other pages as a parent', function (): void {
-    $home = Page::factory()->atPosition(0)->at('/')->create(['title' => 'Home']);
-    $about = Page::factory()->atPosition(1)->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
-    $contact = Page::factory()->atPosition(2)->at('/contact')->create(['title' => 'Contact']);
+    $home = Page::factory()->published()->atPosition(0)->at('/')->create(['title' => 'Home']);
+    $about = Page::factory()->published()->atPosition(1)->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+    $contact = Page::factory()->published()->atPosition(2)->at('/contact')->create(['title' => 'Contact']);
     $team = Page::factory()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);
 
     expect(pageScreen($about))
@@ -62,6 +62,44 @@ it('shows the basics in a form with the other pages as a parent', function (): v
         ->not->toContain('<option value="'.$home->id.'"')
         ->not->toContain('<option value="'.$team->id.'"')
         ->toContain('Plek 2 van 3 in het menu.');
+});
+
+it('counts the place in the menu among the pages the site shows there', function (): void {
+    Page::factory()->published()->atPosition(0)->at('/')->create(['title' => 'Home']);
+    Page::factory()->atPosition(1)->at('/jeugd')->create(['title' => 'Jeugd']);
+    $about = Page::factory()->published()->atPosition(2)->at('/over-ons')->create(['title' => 'Over ons']);
+    Page::factory()->published()->inMenu(false)->atPosition(3)->at('/privacy')->create(['title' => 'Privacy']);
+
+    expect(pageScreen($about))->toContain('Plek 2 van 2 in het menu.');
+});
+
+it('says where a draft comes in the menu once it is published', function (): void {
+    Page::factory()->published()->atPosition(0)->at('/')->create(['title' => 'Home']);
+    $youth = Page::factory()->atPosition(1)->at('/jeugd')->create(['title' => 'Jeugd']);
+    Page::factory()->atPosition(2)->at('/blog')->create(['title' => 'Blog']);
+    Page::factory()->published()->atPosition(3)->at('/over-ons')->create(['title' => 'Over ons']);
+
+    expect(pageScreen($youth))->toContain('Komt op plek 2 van 3 in het menu zodra je hem publiceert.');
+});
+
+it('names the page above that keeps a page out of the menu of the site', function (): void {
+    $about = Page::factory()->at('/over-ons')->create(['title' => 'Over ons']);
+    $team = Page::factory()->published()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);
+    $privacy = Page::factory()->published()->inMenu(false)->at('/privacy')->create(['title' => 'Privacy']);
+    $cookies = Page::factory()->published()->under($privacy)->at('/privacy/cookies')->create(['title' => 'Cookies']);
+    $youth = Page::factory()->under($privacy)->at('/privacy/jeugd')->create(['title' => 'Jeugd']);
+
+    expect(pageScreen($team))->toContain('Komt in het menu zodra Over ons erin staat.')
+        ->and(pageScreen($cookies))->toContain('Komt in het menu zodra Privacy erin staat.')
+        ->and(pageScreen($youth))->toContain('Komt in het menu zodra Privacy erin staat.');
+});
+
+it('explains the switch for a page outside the menu', function (): void {
+    $page = Page::factory()->published()->inMenu(false)->at('/privacy')->create(['title' => 'Privacy']);
+
+    expect(pageScreen($page))
+        ->toContain('Uit betekent: alleen te vinden via het adres, niet in het menu.')
+        ->not->toContain('Plek ');
 });
 
 it('chooses the current parent', function (): void {

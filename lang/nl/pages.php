@@ -61,6 +61,8 @@ return [
         'in_menu' => [
             'label' => 'Staat in het menu',
             'position' => 'Plek :position van :total in het menu.',
+            'publish' => 'Komt op plek :position van :total in het menu zodra je hem publiceert.',
+            'parent' => 'Komt in het menu zodra :parent erin staat.',
             'hidden' => 'Uit betekent: alleen te vinden via het adres, niet in het menu.',
         ],
         'children' => [

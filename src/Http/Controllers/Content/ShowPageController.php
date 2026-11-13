@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Http\Controllers\Content;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Actions\ListScreens;
+use Made\CmsPackage\Content\Actions\ListMenuPages;
 use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\ListParentOptions;
 use Made\CmsPackage\Content\Models\Page;
@@ -30,6 +31,6 @@ final class ShowPageController
             return PageCreatedResponse::make($editor, $screens, $page, $pages);
         }
 
-        return ShowPageResponse::make($editor, $screens, $page, $pages, ListParentOptions::run($page));
+        return ShowPageResponse::make($editor, $screens, $page, $pages, ListParentOptions::run($page), ListMenuPages::run());
     }
 }

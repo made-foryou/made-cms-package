@@ -43,6 +43,7 @@ it('gives the picker of an image only images and the upload field of one photo, 
 
     expect($picker['browser']['config']['kind'])->toBe('image')
         ->and($picker['browser']['upload']['one_image'] ?? null)->toBeTrue()
+        ->and($picker['browser']['upload']['config']['crop'] ?? null)->toBeTrue()
         ->and($picker['browser']['upload']['config']['folder'] ?? null)->toBe(['id' => $teams->id, 'label' => 'de map Teams'])
         ->and($picker['config']['texts'])->toMatchArray([
             'for' => 'voor :field in :place',

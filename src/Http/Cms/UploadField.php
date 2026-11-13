@@ -30,6 +30,7 @@ use Made\CmsPackage\Support\Locale;
  *         folder: array{id: int|null, label: string},
  *         limits: array{max_bytes: int},
  *         one_image: bool,
+ *         crop: bool,
  *         texts: array<string, string>,
  *     },
  * }
@@ -42,11 +43,13 @@ final class UploadField
      * files go into, the largest file (the server checks it again) and the texts it fills in.
      *
      * @param  MediaFolder|null  $folder  the folder the files go into; null for none ("Alle bestanden")
+     * @param  bool  $crop  whether the photos of a batch go to the crop step on the page (made-cms:crop), which then
+     *                      asks their alt text instead of the field
      * @return Field
      */
-    public static function make(?MediaFolder $folder = null): array
+    public static function make(?MediaFolder $folder = null, bool $crop = false): array
     {
-        return self::field($folder, oneImage: false);
+        return self::field($folder, oneImage: false, crop: $crop);
     }
 
     /**
@@ -54,17 +57,18 @@ final class UploadField
      * document or video, and says so in the singular. The library still checks every file it gets.
      *
      * @param  MediaFolder|null  $folder  the folder the photo goes into; null for none ("Alle bestanden")
+     * @param  bool  $crop  whether the photo goes to the crop step on the page (made-cms:crop) once it is in
      * @return Field
      */
-    public static function image(?MediaFolder $folder = null): array
+    public static function image(?MediaFolder $folder = null, bool $crop = false): array
     {
-        return self::field($folder, oneImage: true);
+        return self::field($folder, oneImage: true, crop: $crop);
     }
 
     /**
      * @return Field
      */
-    private static function field(?MediaFolder $folder, bool $oneImage): array
+    private static function field(?MediaFolder $folder, bool $oneImage, bool $crop): array
     {
         $locale = Locale::launcher();
         // The field for one photo speaks in the singular where its texts differ (upload.single).
@@ -105,6 +109,7 @@ final class UploadField
                 // Only to spare an editor an upload the server refuses anyway; CheckUploadedMedia decides.
                 'limits' => ['max_bytes' => $limits->maxBytes],
                 'one_image' => $oneImage,
+                'crop' => $crop,
                 'texts' => [
                     ...self::texts('upload.texts', $locale),
                     ...($oneImage ? self::texts('upload.single.texts', $locale) : []),

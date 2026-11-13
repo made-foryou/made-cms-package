@@ -373,10 +373,11 @@ function browse(root) {
         folders();
     });
 
-    // The alt text the editor gave the new file, as it is stored.
+    // The alt text the editor gave the new file, and its name and crop from the crop step, as they are stored.
     upload?.addEventListener('made-cms:upload-closed', (event) => {
         for (const file of event.detail?.files ?? []) {
             state.files = state.files.map((candidate) => (candidate.id === file.id ? file : candidate));
+            ui.grid.querySelector('.tegel[data-id="' + file.id + '"]')?.replaceWith(tileOf(file));
 
             if (state.chosen?.id === file.id) {
                 choose(file);

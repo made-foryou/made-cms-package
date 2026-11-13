@@ -71,7 +71,8 @@ final class MediaBrowser
 
     /**
      * The picker of an image: the list of the images in a dialog, with the upload field of one photo below the
-     * folders. It opens in the folder the editor chose last, and the upload field puts a photo there.
+     * folders. It opens in the folder the editor chose last, and the upload field puts a photo there; a photo goes to
+     * the crop step once it is in.
      *
      * @return Picker
      */
@@ -81,7 +82,7 @@ final class MediaBrowser
 
         return [
             't' => self::translator('picker', $locale),
-            'browser' => self::make($folder, MediaKind::Image, UploadField::image($folder)),
+            'browser' => self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true)),
             'config' => ['texts' => self::texts('picker.texts', $locale)],
         ];
     }

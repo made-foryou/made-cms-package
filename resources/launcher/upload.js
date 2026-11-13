@@ -22,6 +22,11 @@
  * (null for "Alle bestanden"), also one that has not started yet. A file keeps the folder it was given with, so a file
  * that waits or is tried again never moves into a folder chosen later.
  *
+ * A field with config.crop (UploadField::image($folder, crop: true)) hands the photos of a batch that can be cropped to
+ * the crop step on the page ([data-media-crop], made-cms:crop) once the batch is in. The step asks their name and alt
+ * text, so the field does not; it closes when the step gives them back, or asks the alt text of the photos the editor
+ * did not get to there. An svg, an animated gif and a document never go to the step.
+ *
  * A host that leaves the field (a dialog that closes, a choice that is used) finishes it first with
  * made-cms:upload-finish {wait} on the field: the moment "done" is left as with "Alt-tekst opslaan", a typed alt text
  * is stored and without one it is "later". wait gets a promise of true once nothing of "done" is left, and of false
@@ -112,12 +117,15 @@ function start(field) {
     // The alt texts on their way to the server, so a second save waits for the first.
     let saving = null;
     let wasBusy = false;
+    // The photos of a batch in the crop step, until it gives them back.
+    let stepping = null;
 
     const folder = () => config.folder?.label ?? '';
     // The folder a file went into: the one of the field when the file came in.
     const folderOf = (row) => row.folder?.label ?? folder();
     const open = (row) => row.state === 'waiting' || row.state === 'uploading' || row.state === 'processing';
-    const describes = (row) => row.state === 'done' && row.result.kind === 'image';
+    // A photo the crop step has or had asks its alt text there, not here.
+    const describes = (row) => row.state === 'done' && row.result.kind === 'image' && row.step !== 'waiting' && row.step !== 'handled';
 
     function announce(text) {
         ui.announce.textContent = '';
@@ -354,6 +362,64 @@ function start(field) {
         }
 
         refresh();
+        handOver();
+    }
+
+    /**
+     * Once a batch is in, a field with config.crop hands its photos that can be cropped to the crop step on the page
+     * (made-cms:crop), which asks their name and alt text too. When it gives them back the field closes, or asks the
+     * alt text of the photos the editor did not get to (the step closed halfway).
+     */
+    function handOver() {
+        const step = config.crop ? document.querySelector('[data-media-crop]') : null;
+        const photos = rows.filter((row) => row.state === 'done' && row.result.croppable === true && row.step === undefined);
+
+        if (! step || photos.length === 0 || rows.some(open) || stepping !== null) {
+            return;
+        }
+
+        photos.forEach((row) => {
+            row.step = 'waiting';
+            paint(row);
+        });
+        refresh();
+
+        stepping = new Promise((resolve) => {
+            step.dispatchEvent(new CustomEvent('made-cms:crop', {
+                detail: {
+                    files: photos.map((row) => row.result),
+                    upload: true,
+                    done: (results) => {
+                        takeBack(photos, results);
+                        resolve();
+                    },
+                },
+            }));
+        });
+    }
+
+    function takeBack(photos, results) {
+        stepping = null;
+
+        for (const row of photos) {
+            const result = results.find((candidate) => candidate.file?.id === row.result.id);
+
+            row.result = result?.file ?? row.result;
+            row.step = result?.handled ? 'handled' : 'left';
+
+            if (rows.includes(row)) {
+                paint(row);
+            }
+        }
+
+        const asking = rows.find(describes);
+
+        if (asking) {
+            refresh();
+            slot('row-alt-input', asking.element).focus();
+        } else if (rows.some((row) => row.state === 'done')) {
+            close();
+        }
     }
 
     function remove(row) {
@@ -576,6 +642,9 @@ function start(field) {
      * text, which stays with its file and has the focus.
      */
     async function finish() {
+        // The photos in the crop step come back first, with what the editor stored there.
+        await stepping;
+
         if (rows.some(open) || ! rows.some((row) => row.state === 'done')) {
             return true;
         }

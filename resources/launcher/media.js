@@ -5,10 +5,18 @@
  * at a time as tiles (made-cms/media/files), a search, the filters and "Meer tonen". Its fixed texts and the templates
  * of a folder and a tile are in its markup (cms/partials/media-browser.blade.php), shared with the media library; its
  * config is JSON on itself (data-config). A tile is a button with aria-pressed: the file it chooses. Opening a folder
- * sends the upload field below the folders into it and remembers it for the session once its files are in. A file
- * uploaded in the list is the choice at once.
+ * sends the upload field into it; the picker remembers it for the session once its files are in, and a file uploaded
+ * in the picker is the choice at once.
+ *
+ * The list of the media library (config.library, design 13.1) shows every kind: one group of filters with the numbers
+ * of the whole library (every kind, a kind, or the images without an alt text), the folders as chips counting what
+ * the filter and the search show, a trail, tiles or rows of a list (remembered by the browser), and what an empty list
+ * offers. Its first page and folders come with the page (config.initial), so it shows them without a request, and its
+ * address follows what it lists and the chosen file. A new file goes to the top without being chosen, and a file that
+ * changed elsewhere on the page (made-cms:media-changed) shows it in its tile.
  *
  * What a host hears on the list (the events bubble):
+ * - made-cms:media-choosing {file} before the choice changes, cancelable: a host that cancels it keeps the choice;
  * - made-cms:media-chosen {file} when the choice changes, the file as the upload field gets one;
  * - made-cms:media-folder {folder} when the editor opens a folder: {id, name}, or null for "Alle bestanden".
  * A host loads the list with made-cms:media-load {file} on it: the folder it was in, no search, newest first, with
@@ -63,6 +71,7 @@ function browse(root) {
         return;
     }
 
+    const library = settings.library === true;
     const texts = settings.texts ?? {};
     const slot = (name, scope = root) => scope.querySelector('[data-slot="media-' + name + '"]');
     const ui = {
@@ -76,6 +85,23 @@ function browse(root) {
         failed: slot('failed'),
         more: slot('more'),
     };
+    // The parts only the library has: its filters with their numbers, the trail, the views, the note and its start.
+    const shelf = library ? {
+        kinds: slot('kinds'),
+        withoutAltCount: slot('without-alt-count'),
+        trailAll: slot('trail-all'),
+        trailSeparator: slot('trail-separator'),
+        trailHere: slot('trail-here'),
+        tiles: slot('view-tiles'),
+        list: slot('view-list'),
+        note: slot('note'),
+        start: slot('start'),
+        upload: slot('upload'),
+        emptyTitle: slot('empty-title'),
+        emptyText: slot('empty-text'),
+        emptyUpload: slot('empty-upload'),
+        emptyLink: slot('empty-link'),
+    } : null;
     const folderTemplate = root.querySelector('template[data-media-folder]');
     const tileTemplate = root.querySelector('template[data-media-tile]');
     const all = ui.folders?.querySelector('button[data-folder=""]');
@@ -85,17 +111,28 @@ function browse(root) {
         return;
     }
 
+    if (shelf && Object.values(shelf).some((element) => element === null)) {
+        return;
+    }
+
+    const filter = settings.filter ?? {};
     const state = {
         // The open folder, {id, name}; null for "Alle bestanden".
         folder: settings.folder ?? null,
         // The folder the session holds, so it is only sent when it changes.
         remembered: settings.folder?.id ?? null,
+        // The kind the library lists, null for every kind; the picker has a fixed kind of its own (settings.kind).
+        kind: filter.kind ?? null,
         page: 1,
         files: [],
+        total: 0,
         chosen: null,
         loading: null,
+        uploading: false,
+        empty: false,
     };
     let typing = null;
+    let refreshing = null;
 
     function tell(name, detail) {
         root.dispatchEvent(new CustomEvent(name, { bubbles: true, detail }));
@@ -113,6 +150,10 @@ function browse(root) {
         return target;
     }
 
+    const kind = () => settings.kind ?? state.kind;
+    const search = () => ui.search.value.trim();
+    const withoutAlt = () => pressed(ui.withoutAlt);
+
     function pressFolders() {
         const open = String(state.folder?.id ?? '');
 
@@ -121,22 +162,36 @@ function browse(root) {
         });
     }
 
-    /** The folders with their numbers. A folder that left the library (someone removed it) takes the list back to all. */
-    async function folders() {
-        let data;
-
-        try {
-            const response = await fetch(url(settings.urls.folders, { kind: settings.kind }), { credentials: 'same-origin', headers: HEADERS });
-
-            data = response.ok ? await response.json() : null;
-        } catch {
-            data = null;
-        }
-
-        if (! Array.isArray(data?.folders)) {
+    /** The filters of the library are one group: every kind, a kind, or the images without an alt text. */
+    function pressKinds() {
+        if (! shelf) {
             return;
         }
 
+        shelf.kinds.querySelectorAll('button[data-kind]').forEach((button) => {
+            button.setAttribute('aria-pressed', String(! withoutAlt() && button.dataset.kind === (state.kind ?? '')));
+        });
+    }
+
+    /** The numbers of the filters of the library, those of the whole library. */
+    function count(counts) {
+        if (! shelf || ! counts) {
+            return;
+        }
+
+        shelf.kinds.querySelectorAll('button[data-kind]').forEach((button) => {
+            const number = slot('kind-count', button);
+
+            if (number) {
+                number.textContent = String(counts[button.dataset.kind === '' ? 'all' : button.dataset.kind] ?? 0);
+            }
+        });
+        shelf.withoutAltCount.textContent = String(counts.without_alt ?? 0);
+        state.empty = (counts.all ?? 0) === 0;
+        show();
+    }
+
+    function drawFolders(data) {
         slot('folder-count', all).textContent = String(data.all ?? '');
         ui.folders.querySelectorAll('li[data-folder-item]').forEach((item) => item.remove());
 
@@ -148,9 +203,34 @@ function browse(root) {
             button.dataset.folder = String(folder.id);
             slot('folder-name', item).textContent = folder.name;
             slot('folder-count', item).textContent = String(folder.count);
-            button.addEventListener('click', () => open({ id: folder.id, name: folder.name }));
+            // A chip of the library opens its folder, and once more all files again.
+            button.addEventListener('click', () => open(library && state.folder?.id === folder.id ? null : { id: folder.id, name: folder.name }));
             ui.folders.append(item);
         }
+
+        count(data.counts);
+    }
+
+    /** The folders with their numbers. A folder that left the library (someone removed it) takes the list back to all. */
+    async function folders() {
+        let data;
+
+        try {
+            const query = library
+                ? { kind: kind(), without_alt: withoutAlt() ? 1 : null, q: search() }
+                : { kind: settings.kind };
+            const response = await fetch(url(settings.urls.folders, query), { credentials: 'same-origin', headers: HEADERS });
+
+            data = response.ok ? await response.json() : null;
+        } catch {
+            data = null;
+        }
+
+        if (! Array.isArray(data?.folders)) {
+            return;
+        }
+
+        drawFolders(data);
 
         const current = state.folder === null ? null : data.folders.find((folder) => folder.id === state.folder.id);
 
@@ -165,12 +245,13 @@ function browse(root) {
         }
 
         pressFolders();
+        trail();
     }
 
     /**
-     * Opens a folder: the upload field below the folders follows it, the page hears it, and once its files are in the
-     * session remembers it. Only while the list is in sight, so in the picker no save of the side panel runs alongside
-     * and writes the session back.
+     * Opens a folder: the upload field follows it, the page hears it, and in the picker the session remembers it once
+     * its files are in. Only while the list is in sight, so in the picker no save of the side panel runs alongside and
+     * writes the session back.
      */
     function open(folder) {
         if ((folder?.id ?? null) === (state.folder?.id ?? null)) {
@@ -179,20 +260,34 @@ function browse(root) {
 
         state.folder = folder;
         pressFolders();
+        trail();
         upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
         tell('made-cms:media-folder', { folder });
+
+        if (library) {
+            refresh();
+
+            return;
+        }
+
         load().then(remember);
     }
 
+    /** The list and its folders again, for the library whose folders count what it lists. */
+    function refresh() {
+        return Promise.all([load(), folders()]);
+    }
+
     /**
-     * Remembers the open folder for the session once its files are in, and only while the list is in sight. A folder
-     * the session did not take is sent again the next time the list loads.
+     * Remembers the open folder of the picker for the session once its files are in, and only while it is open. A
+     * folder the session did not take is sent again the next time the list loads. The library keeps its folder in
+     * its address instead.
      */
     function remember(loaded = true) {
         const dialog = root.closest('dialog');
         const id = state.folder?.id ?? null;
 
-        if (! loaded || id === state.remembered || (dialog !== null && ! dialog.open)) {
+        if (! loaded || dialog === null || id === state.remembered || ! dialog.open) {
             return;
         }
 
@@ -208,20 +303,87 @@ function browse(root) {
         }).catch(() => {});
     }
 
+    /** What the library shows: its start when it holds no file at all (unless files are on their way), else the list. */
+    function show() {
+        if (! shelf) {
+            return;
+        }
+
+        const start = state.empty && ! state.uploading;
+
+        root.toggleAttribute('data-empty-library', start);
+        shelf.start.hidden = ! start;
+    }
+
+    /** The trail of the library: "Alle bestanden / Teams", and the folder the list of a file is in. */
+    function trail() {
+        if (! shelf) {
+            return;
+        }
+
+        const inFolder = state.folder !== null;
+
+        shelf.trailAll.hidden = ! inFolder;
+        shelf.trailSeparator.hidden = ! inFolder;
+        shelf.trailHere.textContent = inFolder ? state.folder.name : (texts.all_files ?? shelf.trailAll.textContent);
+        root.toggleAttribute('data-in-folder', inFolder);
+    }
+
+    /** The address of the library follows what it lists, so a reload or a link opens it the same. */
+    function address() {
+        if (! library) {
+            return;
+        }
+
+        const target = new URL(window.location.pathname, window.location.href);
+        const query = {
+            folder: state.folder?.id,
+            kind: withoutAlt() ? null : state.kind,
+            without_alt: withoutAlt() ? 1 : null,
+            q: search(),
+            sort: pressed(ui.newest) ? null : 'name',
+            file: state.chosen?.id,
+        };
+
+        for (const [key, value] of Object.entries(query)) {
+            if (value !== null && value !== undefined && value !== '') {
+                target.searchParams.set(key, String(value));
+            }
+        }
+
+        try {
+            window.history.replaceState(window.history.state, '', target);
+        } catch {
+            // A page that may not change its address keeps it.
+        }
+    }
+
+    function view(name) {
+        if (! shelf) {
+            return;
+        }
+
+        root.dataset.view = name;
+        shelf.tiles.setAttribute('aria-pressed', String(name === 'tiles'));
+        shelf.list.setAttribute('aria-pressed', String(name === 'list'));
+    }
+
     function paint(tile, file) {
         const chosen = state.chosen?.id === file.id;
 
         tile.setAttribute('aria-pressed', String(chosen));
         tile.classList.toggle('gekozen', chosen);
-        // The check of the choice takes the place of the dot.
-        slot('tile-no-alt', tile).hidden = chosen || file.kind !== 'image' || (file.alt ?? '') !== '';
+        // In the picker the check of the choice takes the place of the dot; the library keeps it.
+        slot('tile-no-alt', tile).hidden = (chosen && ! library) || file.kind !== 'image' || (file.alt ?? '') !== '';
     }
 
     function tileOf(file) {
         const tile = tileTemplate.content.firstElementChild.cloneNode(true);
         const thumb = slot('tile-thumb', tile);
+        const noAlt = file.kind === 'image' && (file.alt ?? '') === '';
 
         tile.dataset.id = String(file.id);
+        tile.dataset.kind = file.kind ?? 'image';
 
         if (file.image) {
             const focal = file.image.focal ?? { x: 0.5, y: 0.5 };
@@ -239,6 +401,42 @@ function browse(root) {
         slot('tile-extension', tile).textContent = file.extension ?? '';
         slot('tile-name', tile).textContent = file.name;
         slot('tile-meta', tile).textContent = file.meta ?? '';
+
+        if (library) {
+            const kindName = settings.kinds?.[file.kind] ?? '';
+            const sizeOf = String(file.meta ?? '').split(' · ').pop();
+            const alt = slot('tile-alt', tile);
+
+            slot('tile-short', tile).textContent = [file.extension, sizeOf].filter(Boolean).join(' · ');
+            slot('tile-kind', tile).textContent = kindName;
+            slot('tile-size', tile).textContent = file.meta ?? '';
+            slot('tile-folder', tile).textContent = file.folder ?? '—';
+
+            if ((file.alt ?? '') !== '') {
+                const text = document.createElement('span');
+
+                text.className = 'tegel-alt-tekst';
+                text.textContent = file.alt;
+                alt.append(text);
+            } else if (noAlt) {
+                const dot = document.createElement('span');
+                const word = document.createElement('span');
+
+                dot.className = 'tegel-alt-stip';
+                dot.setAttribute('aria-hidden', 'true');
+                word.className = 'tegel-alt-leeg';
+                word.textContent = texts.alt_empty ?? '';
+                alt.append(dot, word);
+            } else {
+                alt.textContent = '—';
+            }
+
+            tile.setAttribute('aria-label', format(noAlt ? texts.tile_no_alt : texts.tile, {
+                name: file.file ?? file.name,
+                kind: kindName.toLocaleLowerCase(),
+            }));
+        }
+
         tile.addEventListener('click', () => choose(state.files.find((candidate) => candidate.id === file.id) ?? file));
         paint(tile, file);
 
@@ -256,8 +454,15 @@ function browse(root) {
     }
 
     function choose(file) {
+        // A host may hold the choice back (made-cms:media-choosing), as the side column of the library does while it
+        // holds an alt text the server would refuse.
+        if (state.chosen?.id !== file.id && ! root.dispatchEvent(new CustomEvent('made-cms:media-choosing', { bubbles: true, cancelable: true, detail: { file } }))) {
+            return;
+        }
+
         state.chosen = file;
         repaint();
+        address();
         tell('made-cms:media-chosen', { file });
     }
 
@@ -265,6 +470,80 @@ function browse(root) {
         ui.failed.textContent = message;
         ui.failed.hidden = false;
         ui.status.textContent = message;
+    }
+
+    /** What an empty list of the library says, and the way on it offers. */
+    function empty() {
+        if (! shelf) {
+            ui.empty.hidden = state.files.length > 0;
+
+            return;
+        }
+
+        const none = state.files.length === 0;
+        const folder = state.folder?.name ?? null;
+        const words = (key, values = {}) => format(texts[folder !== null && texts[key + '_folder'] ? key + '_folder' : key], { folder, ...values });
+        let upload = false;
+        let link = null;
+        let title = '';
+        let text = '';
+
+        if (search() !== '') {
+            title = format(texts.nothing_found, { search: search() });
+            text = words('searched');
+            link = folder !== null
+                ? [texts.search_all, () => open(null)]
+                : [texts.clear_search, () => {
+                    ui.search.value = '';
+                    refresh();
+                    ui.search.focus();
+                }];
+        } else if (withoutAlt()) {
+            title = words('all_described');
+            text = texts.nothing_to_do;
+            link = [words('show_all'), () => kindTo(null)];
+        } else if (state.kind !== null) {
+            // The name of the filter, "Documenten", as "Geen documenten".
+            const button = shelf.kinds.querySelector('button[data-kind="' + state.kind + '"]');
+            const kinds = (button?.firstChild?.textContent ?? '').trim().toLocaleLowerCase();
+
+            title = words('none_of_kind', { kinds });
+            text = words('others');
+            link = [words('show_all'), () => kindTo(null)];
+        } else if (folder !== null) {
+            title = texts.empty_folder;
+            text = format(texts.empty_folder_text, { folder });
+            upload = true;
+        } else {
+            title = texts.uploading;
+        }
+
+        ui.empty.hidden = ! none;
+        shelf.emptyTitle.textContent = title;
+        shelf.emptyText.textContent = text;
+        shelf.emptyText.hidden = text === '';
+        shelf.emptyUpload.hidden = ! upload;
+        shelf.emptyLink.hidden = link === null;
+        shelf.emptyLink.textContent = link?.[0] ?? '';
+        shelf.emptyLink.onclick = link?.[1] ?? null;
+        shelf.note.hidden = none;
+        shelf.note.textContent = folder !== null ? texts.note_folder : texts.note_all;
+    }
+
+    /** Draws a page of the list as its endpoint answers it. */
+    function draw(data, more = false) {
+        const tiles = data.files.map(tileOf);
+
+        state.page = data.page;
+        state.total = data.total ?? 0;
+        state.files = more ? [...state.files, ...data.files] : data.files;
+        more ? ui.grid.append(...tiles) : ui.grid.replaceChildren(...tiles);
+        ui.more.hidden = ! data.more;
+        ui.status.textContent = data.summary ?? '';
+        empty();
+        address();
+
+        return tiles;
     }
 
     /** The first page of the list, or with more the next one below it. A newer request drops an older answer. */
@@ -281,9 +560,9 @@ function browse(root) {
         try {
             const response = await fetch(url(settings.urls.files, {
                 folder: state.folder?.id,
-                q: ui.search.value.trim(),
-                kind: settings.kind,
-                without_alt: pressed(ui.withoutAlt) ? 1 : null,
+                q: search(),
+                kind: kind(),
+                without_alt: withoutAlt() ? 1 : null,
                 sort: pressed(ui.newest) ? 'newest' : 'name',
                 page,
             }), { credentials: 'same-origin', headers: HEADERS, signal: controller.signal });
@@ -300,14 +579,7 @@ function browse(root) {
                 return false;
             }
 
-            const tiles = data.files.map(tileOf);
-
-            state.page = data.page;
-            state.files = more ? [...state.files, ...data.files] : data.files;
-            more ? ui.grid.append(...tiles) : ui.grid.replaceChildren(...tiles);
-            ui.more.hidden = ! data.more;
-            ui.empty.hidden = state.files.length > 0;
-            ui.status.textContent = data.summary ?? '';
+            const tiles = draw(data, more);
 
             // "Meer tonen" leads on to the first file it brought.
             if (more) {
@@ -329,37 +601,81 @@ function browse(root) {
         }
     }
 
-    /** Back to the start of the list: no search, newest first, every image. */
+    /** A filter of the library: every kind (null), a kind, or with withoutAlt the images without an alt text. */
+    function kindTo(next, without = false) {
+        if (next === state.kind && without === withoutAlt()) {
+            return;
+        }
+
+        state.kind = without ? null : next;
+        ui.withoutAlt.setAttribute('aria-pressed', String(without));
+        pressKinds();
+        refresh();
+    }
+
+    /** Back to the start of the list: no search, newest first, every file the list shows. */
     function reset() {
         window.clearTimeout(typing);
         ui.search.value = '';
         ui.newest.setAttribute('aria-pressed', 'true');
         ui.withoutAlt.setAttribute('aria-pressed', 'false');
+        state.kind = null;
+        pressKinds();
     }
 
     all.addEventListener('click', () => open(null));
     ui.search.addEventListener('input', () => {
         window.clearTimeout(typing);
-        typing = window.setTimeout(() => load(), SEARCH_AFTER);
+        typing = window.setTimeout(() => (library ? refresh() : load()), SEARCH_AFTER);
     });
     ui.search.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
             window.clearTimeout(typing);
-            load();
+            library ? refresh() : load();
         }
     });
 
-    for (const toggle of [ui.newest, ui.withoutAlt]) {
-        toggle.addEventListener('click', () => {
-            toggle.setAttribute('aria-pressed', String(! pressed(toggle)));
+    ui.newest.addEventListener('click', () => {
+        ui.newest.setAttribute('aria-pressed', String(! pressed(ui.newest)));
+        load();
+    });
+
+    if (shelf) {
+        // One filter of the group is pressed; pressing it again keeps it.
+        shelf.kinds.querySelectorAll('button[data-kind]').forEach((button) => {
+            button.addEventListener('click', () => kindTo(button.dataset.kind === '' ? null : button.dataset.kind));
+        });
+        ui.withoutAlt.addEventListener('click', () => kindTo(null, true));
+        shelf.trailAll.addEventListener('click', () => open(null));
+
+        for (const [button, name] of [[shelf.tiles, 'tiles'], [shelf.list, 'list']]) {
+            button.addEventListener('click', () => {
+                view(name);
+
+                try {
+                    window.localStorage.setItem('made-cms-media-view', name);
+                } catch {
+                    // Without storage the view holds until the page is left.
+                }
+            });
+        }
+    } else {
+        ui.withoutAlt.addEventListener('click', () => {
+            ui.withoutAlt.setAttribute('aria-pressed', String(! withoutAlt()));
             load();
         });
     }
 
     ui.more.addEventListener('click', () => load(true));
 
-    // A file uploaded here is the choice, at the top of the list it is in.
+    upload?.addEventListener('made-cms:upload', (event) => {
+        state.uploading = event.detail?.busy === true || (event.detail?.total ?? 0) > 0;
+        show();
+    });
+
+    // A file uploaded in the picker is the choice, at the top of the list it is in. The library shows every new file
+    // at the top of the folder it went into, without choosing it: a batch would make the side column jump.
     upload?.addEventListener('made-cms:uploaded', (event) => {
         const file = event.detail?.file;
 
@@ -368,6 +684,14 @@ function browse(root) {
         }
 
         reset();
+
+        if (library) {
+            window.clearTimeout(refreshing);
+            refreshing = window.setTimeout(refresh, 150);
+
+            return;
+        }
+
         choose(file);
         load();
         folders();
@@ -376,16 +700,55 @@ function browse(root) {
     // The alt text the editor gave the new file, and its name and crop from the crop step, as they are stored.
     upload?.addEventListener('made-cms:upload-closed', (event) => {
         for (const file of event.detail?.files ?? []) {
-            state.files = state.files.map((candidate) => (candidate.id === file.id ? file : candidate));
-            ui.grid.querySelector('.tegel[data-id="' + file.id + '"]')?.replaceWith(tileOf(file));
-
-            if (state.chosen?.id === file.id) {
-                choose(file);
-            }
+            replace(file);
         }
 
         repaint();
+
+        if (library) {
+            folders();
+        }
     });
+
+    /** A file as it is stored now, in place of the one the list holds. */
+    function replace(file) {
+        state.files = state.files.map((candidate) => (candidate.id === file.id ? file : candidate));
+        ui.grid.querySelector('.tegel[data-id="' + file.id + '"]')?.replaceWith(tileOf(file));
+
+        if (state.chosen?.id === file.id) {
+            if (library) {
+                state.chosen = file;
+            } else {
+                choose(file);
+            }
+        }
+    }
+
+    // A file that changed elsewhere on the page (its alt text in the side column of the library, a crop, a name or
+    // a folder in the crop step): its tile shows it at once; the numbers follow, and a file that went into another
+    // folder leaves the one the list is in.
+    if (library) {
+        document.addEventListener('made-cms:media-changed', (event) => {
+            const file = event.detail?.file;
+
+            if (! file || ! state.files.some((candidate) => candidate.id === file.id)) {
+                folders();
+
+                return;
+            }
+
+            const before = state.files.find((candidate) => candidate.id === file.id);
+
+            replace(file);
+            repaint();
+
+            if (state.folder !== null && (before?.folder ?? null) !== (file.folder ?? null)) {
+                refresh();
+            } else {
+                folders();
+            }
+        });
+    }
 
     root.addEventListener('made-cms:media-load', (event) => {
         // A photo the server was still storing when the list was left asks no alt text any more: it is "later".
@@ -400,7 +763,36 @@ function browse(root) {
         load().then(remember);
     });
 
-    if (root.closest('dialog') === null) {
+    if (library) {
+        let stored = null;
+
+        try {
+            stored = window.localStorage.getItem('made-cms-media-view');
+        } catch {
+            stored = null;
+        }
+
+        view(stored === 'list' ? 'list' : 'tiles');
+        pressKinds();
+        trail();
+
+        // The first page and the folders came along with the page: no request before the editor does something.
+        if (settings.initial) {
+            drawFolders(settings.initial.folders);
+            pressFolders();
+            draw(settings.initial.files);
+        } else {
+            refresh();
+        }
+
+        const chosen = settings.chosen === null || settings.chosen === undefined
+            ? null
+            : state.files.find((file) => file.id === settings.chosen);
+
+        if (chosen) {
+            choose(chosen);
+        }
+    } else if (root.closest('dialog') === null) {
         folders();
         load();
     }

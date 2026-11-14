@@ -31,6 +31,7 @@ final class LauncherAssetController
         'upload.js' => ['upload.js', 'text/javascript; charset=utf-8'],
         'media.js' => ['media.js', 'text/javascript; charset=utf-8'],
         'crop.js' => ['crop.js', 'text/javascript; charset=utf-8'],
+        'library.js' => ['library.js', 'text/javascript; charset=utf-8'],
         'nunito-700.woff2' => ['fonts/nunito-700.woff2', 'font/woff2'],
         'instrument-sans.woff2' => ['fonts/instrument-sans.woff2', 'font/woff2'],
     ];

@@ -4088,16 +4088,21 @@ button.tekstlink.alarm {
     padding: 0 2px;
 }
 
-.tegel-naam,
 .tegel-meta {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+/* Two lines for the name, so "teamfoto-merwestad-1" and "-2" read apart. */
 .tegel-naam {
+    display: -webkit-box;
+    overflow: hidden;
     font-size: 12.5px;
     font-weight: 600;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .tegel-meta {
@@ -4169,6 +4174,891 @@ button.tekstlink.alarm {
     .mediabrowser-tegels,
     .tegel-beeld {
         transition: none;
+    }
+}
+
+/*
+ * The media library (design 13.1b–z, 14.1b–z): the list of the picker on a screen of its own. The search, the filters
+ * and the folders as chips run across the top; below them the files with their trail and the sticky side column of
+ * the chosen file. The list itself (.mediabrowser) gives way to the grid of the library, so its parts take the places
+ * of the design while its markup stays the one of the picker.
+ */
+
+.bibliotheek {
+    display: grid;
+    grid-template-areas:
+        "balk balk"
+        "bestanden zij";
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 26px 34px;
+    align-items: start;
+}
+
+.mediabrowser-bibliotheek {
+    display: contents;
+}
+
+.mediabrowser-bibliotheek > .mediabrowser-balk {
+    display: flex;
+    grid-area: balk;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    min-width: 0;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-zoek {
+    flex: none;
+    width: 100%;
+    max-width: 460px;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-zoek .zoek-icoon {
+    left: 16px;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-zoek .zoekveld {
+    padding: 14px 16px 14px 48px;
+    border-width: 2px;
+    font-size: 16px;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-filters {
+    gap: 8px;
+}
+
+.mediabrowser-bibliotheek .filter {
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+.mediabrowser-bibliotheek .filter:hover {
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.mediabrowser-bibliotheek .mediabrowser-mappen ul {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* A folder is a chip here; the trail starts at "Alle bestanden". */
+.mediabrowser-bibliotheek .kmap {
+    gap: 8px;
+    width: auto;
+    padding: 9px 12px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    transition: border-color 120ms ease;
+}
+
+.mediabrowser-bibliotheek .kmap:hover {
+    border-color: var(--made-accent);
+}
+
+.mediabrowser-bibliotheek .kmap[aria-pressed="true"] {
+    border-color: var(--made-inhoud);
+}
+
+.mediabrowser-bibliotheek .kmap-aantal {
+    margin-left: 0;
+    font-weight: 500;
+}
+
+.mediabrowser-bibliotheek > .mediabrowser-bestanden {
+    position: relative;
+    display: flex;
+    grid-area: bestanden;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+}
+
+.mediabrowser-kop {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 18px;
+}
+
+.mediabrowser-kruimel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-kruimel .tekstlink {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--made-inhoud);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.mediabrowser-kruimel-streep {
+    color: var(--made-amber);
+    font: 700 16px/1 var(--font-kop);
+}
+
+.mediabrowser-kruimel-hier {
+    font-weight: 600;
+    color: var(--made-inhoud);
+}
+
+.mediabrowser-weergave,
+.mediabrowser-weergaven {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mediabrowser-weergave {
+    gap: 14px;
+}
+
+.mediabrowser-weergave .actie {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    cursor: pointer;
+}
+
+.mediabrowser-weergave .actie[aria-pressed="true"] {
+    border-color: var(--made-inhoud);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.mediabrowser-weergave .actie[aria-pressed="false"] {
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-weergave .actie[aria-pressed]:hover {
+    border-color: var(--made-accent);
+    background: var(--made-accent);
+    color: var(--made-op-accent);
+}
+
+/* The upload field shows only while it has files to tell about; "Uploaden" and the drop layer take its zone. */
+.mediabrowser-bibliotheek .upload-vlak {
+    display: none;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-tegels {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.mediabrowser-bibliotheek .tegel-vink {
+    display: none !important;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-leeg,
+.mediabrowser-start {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 28px;
+    border: 1.5px dashed var(--made-rand-sterk);
+    border-radius: var(--made-radius-m);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-bibliotheek .mediabrowser-leeg strong,
+.mediabrowser-start strong {
+    color: var(--made-inhoud);
+    font: 700 18px/1.3 var(--font-kop);
+}
+
+.mediabrowser-bibliotheek .mediabrowser-leeg > span,
+.mediabrowser-start > span {
+    max-width: 52ch;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-leeg .knop,
+.mediabrowser-start .knop {
+    margin-top: 6px;
+}
+
+.mediabrowser-bibliotheek .mediabrowser-leeg .tekstlink {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--made-link);
+    cursor: pointer;
+}
+
+.mediabrowser-start {
+    grid-column: 1 / -1;
+    grid-row: 1 / span 2;
+    padding: 56px 28px;
+}
+
+.mediabrowser-start-icoon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 6px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: 50%;
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-klein {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.mediabrowser-noot {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+/* A library without files shows its start only, until the first files are on their way. */
+.mediabrowser-bibliotheek[data-empty-library] > .mediabrowser-balk,
+.mediabrowser-bibliotheek[data-empty-library] > .mediabrowser-bestanden,
+.bibliotheek:has(> [data-empty-library]) > .bibliotheek-zij {
+    display: none;
+}
+
+/* What a file is shows on its tile as an icon: a document as paper, a video on a deeper green. */
+.tegel-icoon-document,
+.tegel-icoon-video {
+    display: none;
+}
+
+.tegel[data-kind="document"] .tegel-icoon-image,
+.tegel[data-kind="video"] .tegel-icoon-image,
+.bibliotheek-mini[data-kind="document"] .tegel-icoon-image,
+.bibliotheek-mini[data-kind="video"] .tegel-icoon-image {
+    display: none;
+}
+
+.tegel[data-kind="document"] .tegel-icoon-document,
+.tegel[data-kind="video"] .tegel-icoon-video,
+.bibliotheek-mini[data-kind="document"] .tegel-icoon-document,
+.bibliotheek-mini[data-kind="video"] .tegel-icoon-video {
+    display: block;
+}
+
+.tegel[data-kind="document"] .tegel-beeld,
+.bibliotheek-mini[data-kind="document"] {
+    border-color: var(--made-rand);
+    background: #fbfaf5;
+    color: #47564f;
+}
+
+.tegel[data-kind="document"]:hover .tegel-beeld,
+.tegel[data-kind="document"][aria-pressed="true"] .tegel-beeld {
+    border-color: var(--made-accent);
+}
+
+.tegel[data-kind="video"] .tegel-beeld,
+.bibliotheek-mini[data-kind="video"] {
+    background: #0a211c;
+}
+
+/* The parts of a row of the list. */
+.tegel-kort,
+.tegel-soort,
+.tegel-maat,
+.tegel-map,
+.tegel-alt,
+.mediabrowser-lijstkop {
+    display: none;
+}
+
+.mediabrowser-lijstkop,
+.mediabrowser-bibliotheek[data-view="list"] .tegel {
+    grid-template-columns: 44px minmax(0, 1.5fr) 68px 124px 88px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+}
+
+.mediabrowser-bibliotheek[data-in-folder] .mediabrowser-lijstkop,
+.mediabrowser-bibliotheek[data-in-folder][data-view="list"] .tegel {
+    grid-template-columns: 44px minmax(0, 1.5fr) 70px 130px minmax(0, 1.3fr);
+}
+
+.mediabrowser-bibliotheek[data-in-folder] .kolom-map,
+.mediabrowser-bibliotheek[data-in-folder] .tegel-map {
+    display: none !important;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .mediabrowser-lijstkop {
+    display: grid;
+    padding: 0 14px 0 9.5px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-lijstkop span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .mediabrowser-tegels {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel {
+    display: grid;
+    width: 100%;
+    padding: 8px 14px 8px 8px;
+    border: 1.5px solid var(--made-rand);
+    background: var(--made-oppervlak-verhoogd);
+    font-size: 13px;
+    line-height: 1.35;
+    transition: border-color 120ms ease;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel:hover {
+    border-color: var(--made-accent);
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel[aria-pressed="true"] {
+    border-color: var(--made-accent);
+    box-shadow: 0 0 0 1px var(--made-accent) inset;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel-beeld,
+.mediabrowser-bibliotheek[data-view="list"] .tegel[aria-pressed="true"] .tegel-beeld {
+    width: 44px;
+    height: 33px;
+    aspect-ratio: auto;
+    border-width: 0;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel[data-kind="document"] .tegel-beeld {
+    border: 1.5px solid var(--made-rand);
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel-icoon {
+    width: 15px;
+    height: 15px;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .beeldkaart-ext {
+    bottom: 1px;
+    left: 3px;
+    padding: 0 2px;
+    font-size: 7.5px;
+    letter-spacing: .06em;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .beeldkaart-stip,
+.mediabrowser-bibliotheek[data-view="list"] .tegel-meta {
+    display: none !important;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel-tekst {
+    padding: 0;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel-naam {
+    font-size: 13px;
+    -webkit-line-clamp: 1;
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel-soort,
+.mediabrowser-bibliotheek[data-view="list"] .tegel-maat,
+.mediabrowser-bibliotheek[data-view="list"] .tegel-map {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--made-inhoud-zwak);
+}
+
+.mediabrowser-bibliotheek[data-view="list"] .tegel-alt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tegel-alt-stip {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--made-amber);
+}
+
+.tegel-alt-leeg {
+    color: var(--made-link);
+}
+
+.tegel-alt-tekst {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Files dropped from the computer land on a layer above the files that says where they go. */
+.bibliotheek-drop {
+    z-index: 3;
+    display: flex;
+    grid-area: bestanden;
+    align-items: flex-start;
+    align-self: stretch;
+    justify-content: center;
+    margin: -12px;
+    padding: 150px 16px 0;
+    border: 2.5px dashed var(--made-accent);
+    border-radius: var(--made-radius-m);
+    background: rgb(243 241 232 / .9);
+    cursor: copy;
+}
+
+.bibliotheek:has(> [data-empty-library]) > .bibliotheek-drop {
+    grid-column: 1 / -1;
+    grid-row: 1 / span 2;
+    padding-top: 90px;
+}
+
+.bibliotheek-drop * {
+    pointer-events: none;
+}
+
+.bibliotheek-drop-kaart {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 22px;
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-nadruk);
+    color: var(--made-inhoud-op-nadruk);
+}
+
+.bibliotheek-drop-icoon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+}
+
+.bibliotheek-drop-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bibliotheek-drop-tekst strong {
+    font: 700 17px/1.3 var(--font-kop);
+}
+
+.bibliotheek-drop-tekst span {
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+/* The side column of the chosen file. */
+.bibliotheek-zij {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    grid-area: zij;
+    flex-direction: column;
+    min-width: 0;
+    padding: 22px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.bibliotheek-keuze,
+.bibliotheek-alt,
+.bibliotheek-gebruik,
+.bibliotheek-titel {
+    display: flex;
+    flex-direction: column;
+}
+
+.bibliotheek-keuze {
+    gap: 18px;
+}
+
+.bibliotheek-alt,
+.bibliotheek-gebruik {
+    gap: 8px;
+}
+
+.bibliotheek-titel {
+    gap: 4px;
+}
+
+.bibliotheek-geenkeuze {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--made-inhoud-zwak);
+}
+
+.bibliotheek-geenkeuze .mediabrowser-start-icoon {
+    background: var(--made-oppervlak);
+}
+
+.bibliotheek-terug {
+    display: none;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--made-accent);
+    text-underline-offset: 3px;
+}
+
+/* On the raised surface of the column a photo lies on night green, also in the dark; a document stays paper. */
+.bibliotheek-mini {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: var(--made-radius-s);
+    background: var(--made-nachtgroen);
+    color: #c7d2ea;
+}
+
+.bibliotheek-mini[data-kind="document"] {
+    border: 1.5px solid var(--made-rand);
+    background: #f3f1e8;
+}
+
+.bibliotheek-mini img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.bibliotheek-mini .beeldkaart-stip {
+    box-shadow: none;
+}
+
+.bibliotheek-titel h2 {
+    margin: 0;
+    font: 700 18px/1.3 var(--font-kop);
+    word-break: break-all;
+}
+
+.bibliotheek-klein {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.veldlabel {
+    color: var(--made-inhoud);
+    font: 700 13px/1.3 var(--font-kop);
+}
+
+.bibliotheek-alt-veld {
+    width: 100%;
+    min-height: 76px;
+    padding: 11px 13px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+    font: 15px/1.5 var(--font-tekst);
+    resize: vertical;
+}
+
+.bibliotheek-alt-veld::placeholder {
+    color: var(--made-inhoud-subtiel);
+}
+
+.bibliotheek-alt-veld:focus {
+    border-color: var(--made-accent);
+    outline: none;
+}
+
+.bibliotheek-alt-veld.fout {
+    border-color: var(--made-alarm);
+}
+
+.bibliotheek-alt-veld:disabled {
+    opacity: .6;
+}
+
+.bibliotheek-klein.leeg {
+    color: var(--made-link);
+}
+
+.bibliotheek-klein.fout {
+    font-weight: 600;
+    color: var(--made-alarm);
+}
+
+.bibliotheek-opslaan {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    min-height: 40px;
+}
+
+.bibliotheek-opslaan .knop {
+    min-height: 40px;
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+.bibliotheek-opgeslagen {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.bibliotheek-opgeslagen.zichtbaar::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--made-status);
+    content: "";
+}
+
+.bibliotheek-nergens {
+    font-size: 14px;
+    color: var(--made-inhoud-zwak);
+}
+
+.bibliotheek-laden {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bibliotheek-skelet {
+    display: block;
+    width: 62%;
+    height: 12px;
+    border-radius: 6px;
+    background: var(--made-rand);
+    animation: bibliotheek-puls 1.1s ease-in-out infinite alternate;
+}
+
+.bibliotheek-skelet.kort {
+    width: 44%;
+}
+
+@keyframes bibliotheek-puls {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: .45;
+    }
+}
+
+.bibliotheek-pagina {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 0 2px;
+    border-top: 1px solid var(--made-rand);
+}
+
+.bibliotheek-paginalink {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--made-accent);
+    text-underline-offset: 3px;
+}
+
+.bibliotheek-paginalink:hover {
+    color: var(--made-link);
+}
+
+.bibliotheek-paginanaam {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--made-inhoud-subtiel);
+}
+
+.bibliotheek-noot {
+    align-self: flex-start;
+    margin: 2px 0;
+    padding: 3px 8px;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-pil);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: var(--made-inhoud-zwak);
+}
+
+.bibliotheek-plek {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.bibliotheek-plek .bibliotheek-noot {
+    display: inline-block;
+}
+
+.bibliotheek-acties {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.bibliotheek-acties .actie {
+    cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+    .bibliotheek-drop {
+        background: rgb(14 43 38 / .9);
+    }
+
+    /* A row of the list lies on the raised green: its photo takes night green, or it falls away. */
+    .mediabrowser-bibliotheek[data-view="list"] .tegel[data-kind="image"] .tegel-beeld {
+        background: var(--made-nachtgroen);
+    }
+
+    .tegel[data-kind="document"] .tegel-beeld,
+    .bibliotheek-mini[data-kind="document"] {
+        background: #f3f1e8;
+        color: #0e2b26;
+    }
+
+    /* The line between the pages: the border of the dark theme is the surface of the column. */
+    .bibliotheek-pagina {
+        border-top-color: rgb(243 241 232 / .16);
+    }
+
+    .bibliotheek-skelet {
+        background: var(--made-rand-sterk);
+    }
+}
+
+@media (max-width: 860px) {
+    .bibliotheek {
+        grid-template-areas:
+            "balk"
+            "bestanden"
+            "zij";
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bibliotheek-zij {
+        position: static;
+    }
+
+    .bibliotheek-mini {
+        width: 100%;
+        max-width: 420px;
+    }
+}
+
+@media (max-width: 600px) {
+    .bibliotheek-terug {
+        display: inline-flex;
+    }
+
+    /* Filters and chips slide sideways instead of wrapping. */
+    .mediabrowser-bibliotheek .mediabrowser-filters,
+    .mediabrowser-bibliotheek .mediabrowser-mappen ul {
+        flex-wrap: nowrap;
+        max-width: calc(100% + 32px);
+        margin: 0 -16px;
+        padding: 2px 16px 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .mediabrowser-bibliotheek .mediabrowser-filters > *,
+    .mediabrowser-bibliotheek .mediabrowser-mappen li {
+        flex-shrink: 0;
+    }
+
+    .mediabrowser-bibliotheek[data-view="list"] .mediabrowser-lijstkop {
+        display: none;
+    }
+
+    .mediabrowser-bibliotheek[data-view="list"] .tegel,
+    .mediabrowser-bibliotheek[data-in-folder][data-view="list"] .tegel {
+        grid-template-columns: 44px minmax(0, 1fr) auto;
+    }
+
+    .mediabrowser-bibliotheek[data-view="list"] .tegel-soort,
+    .mediabrowser-bibliotheek[data-view="list"] .tegel-maat,
+    .mediabrowser-bibliotheek[data-view="list"] .tegel-map {
+        display: none;
+    }
+
+    .mediabrowser-bibliotheek[data-view="list"] .tegel-kort {
+        display: block;
+        font-size: 11.5px;
+        color: var(--made-inhoud-zwak);
+    }
+
+    /* Of the alt text only the dot stays. */
+    .mediabrowser-bibliotheek[data-view="list"] .tegel-alt {
+        font-size: 0;
+    }
+
+    .bibliotheek-drop {
+        padding-top: 90px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bibliotheek-skelet {
+        animation: none;
     }
 }
 

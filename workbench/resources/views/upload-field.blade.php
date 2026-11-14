@@ -1,15 +1,13 @@
 {{--
     The upload field of the CMS as a host includes it: the stylesheet of the CMS, the partial with what
-    UploadField::make() gives, and its script. The library, the picker and the edit shell do the same. With $crop the
-    photos of a batch go to the crop step, which the page includes with its script.
+    UploadField::make() gives, and its script. The library, the picker and the edit shell do the same; the library hands
+    the photos of a batch to the crop step too.
 --}}
 @php
-    use Made\CmsPackage\Http\Cms\CropStep;
     use Made\CmsPackage\Http\Cms\UploadField;
     use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 
-    $upload = UploadField::make($folder, crop: $crop);
-    $step = $crop ? CropStep::make(moves: true) : null;
+    $upload = UploadField::make($folder);
 @endphp
 <!DOCTYPE html>
 <html lang="nl">
@@ -33,16 +31,12 @@
         <header>
             <span class="eyebrow">Media / uploadveld</span>
             <h1>Eén veld, vijf momenten</h1>
-            <p class="intro">Hetzelfde veld staat straks in de bibliotheek, in de kiezer en in de bewerkmodus. Log eerst in als redacteur; met <code>?folder=</code> komen de bestanden in die map.</p>
+            <p class="intro">Hetzelfde veld staat in de bibliotheek, in de kiezer en in de bewerkmodus. Log eerst in als redacteur; met <code>?folder=</code> komen de bestanden in die map.</p>
         </header>
 
         @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $upload])
     </main>
 
-    @if ($step !== null)
-        @include('made-cms-package-launcher::cms.partials.crop', ['crop' => $step])
-        <script type="module" src="{{ $step['script'] }}"></script>
-    @endif
     <script type="module" src="{{ $upload['script'] }}"></script>
 </body>
 </html>

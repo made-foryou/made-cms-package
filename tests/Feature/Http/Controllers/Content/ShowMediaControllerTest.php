@@ -32,18 +32,20 @@ it('describes a file with the pages it is used on, each with its places and a li
 
     expect($response->json('file.id'))->toBe($media->id)
         ->and($response->json('file.folder'))->toBe('Teams')
-        ->and($response->json('used'))->toBe('Gebruikt op 2 pagina’s')
+        ->and($response->json('heading'))->toBe('Gebruikt op 2 pagina’s')
         ->and($response->json('pages'))->toBe([
             [
                 'title' => 'Home',
                 'url' => '/made-cms/pages/'.$home->id.'/edit',
                 'deleted' => false,
+                'note' => null,
                 'places' => [['where' => 'Hero › Foto', 'note' => null]],
             ],
             [
                 'title' => 'Onze teams',
                 'url' => '/made-cms/pages/'.$teams->id.'/edit',
                 'deleted' => false,
+                'note' => null,
                 'places' => [
                     ['where' => 'Hero › Foto', 'note' => null],
                     ['where' => 'Kaarten › Item 2 › Icoon', 'note' => null],
@@ -53,16 +55,33 @@ it('describes a file with the pages it is used on, each with its places and a li
         ->and((string) $response->getContent())->not->toContain($media->path);
 });
 
-it('says of a place that it is only in the draft, or that the draft took it away', function (): void {
+it('says of a page that its places are only in the draft, or that the draft took them away', function (): void {
     $media = Media::factory()->create();
     $added = Page::factory()->published()->withStrips([])->withDraft([storedStrip('hero', ['foto' => $media->id], id: 'h')])->create(['title' => 'A']);
     $removed = Page::factory()->published()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'h')])->withDraft([])->create(['title' => 'B']);
     SyncMediaUsage::run($added);
     SyncMediaUsage::run($removed);
 
-    expect($this->getJson('made-cms/media/'.$media->id)->json('pages.*.places.0.note'))->toBe([
-        'Alleen in het concept',
-        'Nog op de site, niet meer in het concept',
+    $response = $this->getJson('made-cms/media/'.$media->id);
+
+    expect($response->json('pages.*.note'))->toBe(['Alleen in het concept', 'Nog op de site, niet meer in het concept'])
+        ->and($response->json('pages.*.places.0.note'))->toBe([null, null]);
+});
+
+it('says it of a place when the places of a page differ', function (): void {
+    $media = Media::factory()->create();
+    $hero = storedStrip('hero', ['foto' => $media->id], id: 'h');
+    $page = Page::factory()->published()->withStrips([$hero])
+        ->withDraft([$hero, storedStrip('cards', ['kaarten' => [['id' => 'k1', 'icoon' => $media->id]]], id: 'c')])
+        ->create(['title' => 'Onze teams']);
+    SyncMediaUsage::run($page);
+
+    expect($this->getJson('made-cms/media/'.$media->id)->json('pages.0'))->toMatchArray([
+        'note' => null,
+        'places' => [
+            ['where' => 'Hero › Foto', 'note' => null],
+            ['where' => 'Kaarten › Item 1 › Icoon', 'note' => 'Alleen in het concept'],
+        ],
     ]);
 });
 
@@ -74,8 +93,9 @@ it('gives a deleted page without a link and leaves it out of the count', functio
 
     $response = $this->getJson('made-cms/media/'.$media->id)->assertOk();
 
-    expect($response->json('used'))->toBe('Nog nergens gebruikt')
-        ->and($response->json('pages.0'))->toMatchArray(['title' => 'Oud nieuws', 'url' => null, 'deleted' => true]);
+    expect($response->json('heading'))->toBe('Gebruik')
+        ->and($response->json('pages.0'))->toMatchArray(['title' => 'Oud nieuws', 'url' => null, 'deleted' => true, 'note' => 'In de prullenbak, telt niet mee'])
+        ->and($response->json('pages.0.places.0.note'))->toBeNull();
 });
 
 it('says when a file is used nowhere', function (): void {
@@ -83,7 +103,7 @@ it('says when a file is used nowhere', function (): void {
 
     $this->getJson('made-cms/media/'.$media->id)
         ->assertOk()
-        ->assertJsonPath('used', 'Nog nergens gebruikt')
+        ->assertJsonPath('heading', 'Gebruik')
         ->assertJsonPath('pages', []);
 });
 

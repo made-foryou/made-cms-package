@@ -20,12 +20,12 @@ final class ListMediaFolders
      * Every folder of the media library from a to z with the number of its files, and the number of all files
      * ("Alle bestanden"), also those in no folder. With a kind only the files of that kind count: the picker of an
      * image counts the images, an empty folder too; with $withoutAlt only the images without an alt text count, as the
-     * library lists them under "zonder alt-tekst". The numbers per kind and of the images without an alt text are
+     * library lists them under "zonder alt-tekst"; with a search only the files it finds. The numbers per kind and of the images without an alt text are
      * those of the whole library, whatever the kind: the filters of the library show them.
      */
-    public function handle(?MediaKind $kind = null, bool $withoutAlt = false): MediaFolders
+    public function handle(?MediaKind $kind = null, bool $withoutAlt = false, string $search = ''): MediaFolders
     {
-        $files = Media::query();
+        $files = Media::query()->search($search);
 
         if ($kind !== null) {
             $files->ofKind($kind);

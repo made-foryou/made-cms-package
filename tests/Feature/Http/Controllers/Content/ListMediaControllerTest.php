@@ -97,6 +97,14 @@ it('lists the files of a folder, of a kind, without an alt text or by name', fun
         ->and(listedMedia(['folder' => $teams->id, 'without_alt' => 1]))->toBe([$veld->id]);
 });
 
+it('names the search in the count in words', function (): void {
+    Media::factory()->create(['name' => 'teamfoto']);
+    Media::factory()->document()->create(['name' => 'teamschema']);
+
+    expect($this->getJson('made-cms/media/files?q=+team+')->json('summary'))->toBe('2 bestanden voor “team”')
+        ->and($this->getJson('made-cms/media/files?q=kerstdiner&kind=image')->json('summary'))->toBe('Geen afbeeldingen voor “kerstdiner”');
+});
+
 it('finds files by their alt text', function (): void {
     $byAlt = Media::factory()->withAlt('Het Merwestad-team op het veld')->create(['name' => 'veld']);
     Media::factory()->create(['name' => 'clubavond']);

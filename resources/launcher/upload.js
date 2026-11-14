@@ -25,7 +25,9 @@
  * A field with config.crop (UploadField::image($folder, crop: true)) hands the photos of a batch that can be cropped to
  * the crop step on the page ([data-media-crop], made-cms:crop) once the batch is in. The step asks their name and alt
  * text, so the field does not; it closes when the step gives them back, or asks the alt text of the photos the editor
- * did not get to there. An svg, an animated gif and a document never go to the step.
+ * did not get to there. Only a field the editor still sees hands photos over, and only to a step that takes them
+ * (detail.taken); otherwise the field asks their alt text itself. An svg, an animated gif and a document never go to
+ * the step.
  *
  * A host that leaves the field (a dialog that closes, a choice that is used) finishes it first with
  * made-cms:upload-finish {wait} on the field: the moment "done" is left as with "Alt-tekst opslaan", a typed alt text
@@ -369,12 +371,16 @@ function start(field) {
      * Once a batch is in, a field with config.crop hands its photos that can be cropped to the crop step on the page
      * (made-cms:crop), which asks their name and alt text too. When it gives them back the field closes, or asks the
      * alt text of the photos the editor did not get to (the step closed halfway).
+     *
+     * Only a field the editor still sees hands them over: a photo the server was still scaling down when the picker
+     * closed never opens the step above the edit shell. And only a step that says it took them (detail.taken) holds
+     * the field: without its script the field asks their alt text itself, so finishing it never waits for nothing.
      */
     function handOver() {
         const step = config.crop ? document.querySelector('[data-media-crop]') : null;
         const photos = rows.filter((row) => row.state === 'done' && row.result.croppable === true && row.step === undefined);
 
-        if (! step || photos.length === 0 || rows.some(open) || stepping !== null) {
+        if (! step || photos.length === 0 || rows.some(open) || stepping !== null || ! field.checkVisibility()) {
             return;
         }
 
@@ -384,23 +390,36 @@ function start(field) {
         });
         refresh();
 
-        stepping = new Promise((resolve) => {
-            step.dispatchEvent(new CustomEvent('made-cms:crop', {
-                detail: {
-                    files: photos.map((row) => row.result),
-                    upload: true,
-                    done: (results) => {
-                        takeBack(photos, results);
-                        resolve();
-                    },
-                },
-            }));
+        let answered = null;
+        const waiting = new Promise((resolve) => {
+            answered = resolve;
         });
+        const detail = {
+            files: photos.map((row) => row.result),
+            upload: true,
+            taken: false,
+            done: (results) => {
+                if (stepping === waiting) {
+                    stepping = null;
+                    takeBack(photos, results);
+                }
+
+                answered();
+            },
+        };
+
+        stepping = waiting;
+        step.dispatchEvent(new CustomEvent('made-cms:crop', { detail }));
+
+        // Nothing took them, or the step gave them back at once: the field asks their alt text itself.
+        if (! detail.taken && stepping === waiting) {
+            stepping = null;
+            takeBack(photos, photos.map((row) => ({ file: row.result, handled: false })));
+            answered();
+        }
     }
 
     function takeBack(photos, results) {
-        stepping = null;
-
         for (const row of photos) {
             const result = results.find((candidate) => candidate.file?.id === row.result.id);
 

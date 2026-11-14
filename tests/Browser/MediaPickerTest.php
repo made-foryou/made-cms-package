@@ -355,13 +355,13 @@ function pickerUploadMoment(string $moment): string
  * Opens the picker for the photo of the hero and uploads an svg in it, up to the moment the field asks its alt text. A
  * photo would go to the crop step, which asks it there; an svg has no original to crop.
  */
-function uploadInPicker(mixed $shell, string $name): void
+function uploadInPicker(mixed $shell, string $name, ?string $file = null): void
 {
     $shell->click('[data-path="foto"] [data-slot="image-pick"]');
 
     expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
-    $shell->attach('[data-media-picker] [data-slot="upload-input"]', mediaFixture('logo.svg', $name));
+    $shell->attach('[data-media-picker] [data-slot="upload-input"]', $file ?? mediaFixture('logo.svg', $name));
 
     expect($shell->script(waitUntil(pickerUploadMoment('done'))))->toBeTrue();
 }
@@ -403,6 +403,80 @@ it('crops a photo uploaded in the picker to 16:9 in the crop step, and the media
     $shell->assertSeeIn('[data-path="foto"] [data-slot="image-meta"]', '1920 × 1080')
         ->assertSeeIn('[data-path="foto"] [data-slot="image-alt"]', 'Alt: De kampioenen van 2026')
         ->assertNoJavaScriptErrors();
+});
+
+/**
+ * A script for $page->script() that holds the answer to the next upload once its bytes are in, so the server seems to
+ * be scaling the photo down for as long as the test looks: window.answer() lets the field hear it.
+ */
+function holdAnswer(): string
+{
+    return <<<'JS'
+        () => {
+            const listen = XMLHttpRequest.prototype.addEventListener;
+
+            XMLHttpRequest.prototype.addEventListener = function (type, listener, ...rest) {
+                if (type !== 'load') {
+                    return listen.call(this, type, listener, ...rest);
+                }
+
+                XMLHttpRequest.prototype.addEventListener = listen;
+
+                return listen.call(this, type, (event) => {
+                    window.answer = () => listener.call(this, event);
+                }, ...rest);
+            };
+        }
+        JS;
+}
+
+it('leaves a photo the server was still scaling down when the picker closed out of the crop step', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
+
+    $shell->script(holdAnswer());
+    $shell->attach('[data-media-picker] [data-slot="upload-input"]', quadrants(1600, 1200, 'jpg', 'Kampioenen 2026.jpg'));
+
+    // The bytes are in and the answer waits: the field says the photo is being scaled down.
+    expect($shell->script(waitUntil("typeof window.answer === 'function' && document.querySelector('[data-media-picker] [data-upload] li')?.dataset.state === 'processing'")))->toBeTrue();
+
+    $shell->keys('[data-media-picker] [data-slot="media-search"]', 'Escape');
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-picker]').open")))->toBeTrue();
+
+    $shell->script('() => window.answer()');
+
+    expect($shell->script(valueAfter("document.querySelector('[data-media-crop]').open")))->toBeFalse()
+        ->and(Media::query()->where('name', 'kampioenen-2026')->exists())->toBeTrue()
+        ->and($shell->script('() => document.activeElement?.dataset.slot'))->toBe('image-pick');
+
+    // The next picker finishes the field: the photo asks nothing any more.
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['kampioenen-2026', 'clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(waitUntil(pickerUploadMoment('rest'))))->toBeTrue();
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('asks the alt text in the upload field when the crop step does not take the photo', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+
+    // As if crop.js did not load: the dialog is there, but nothing listens to it.
+    $shell->script("() => { const step = document.querySelector('[data-media-crop]'); step.replaceWith(step.cloneNode(true)); }");
+
+    uploadInPicker($shell, 'Kampioenen 2026.jpg', quadrants(1600, 1200, 'jpg', 'Kampioenen 2026.jpg'));
+
+    expect($shell->script("() => document.querySelector('[data-media-crop]').open"))->toBeFalse();
+
+    $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
+        ->keys('[data-media-picker] [data-slot="upload-row-alt-input"]', 'Escape');
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-picker]').open")))->toBeTrue()
+        ->and(Media::query()->where('name', 'kampioenen-2026')->sole()->alt)->toBe('De kampioenen van 2026');
 });
 
 it('stores the alt text typed for a photo uploaded in the picker when it is used at once', function (): void {

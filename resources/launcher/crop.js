@@ -12,7 +12,8 @@
  * in the same pixels while the editor works and sent as 0 to 1 of the crop, the photo that comes out.
  *
  * A host opens it with made-cms:crop on the dialog: {files, opener, upload, done(results)}, the files as the upload
- * field gets one. "Opslaan" stores what changed of the file (its name, alt text, folder and crop, one request each, in
+ * field gets one. The step sets detail.taken when it opens for them; a host that finds it unset (the step is open
+ * already, or this script did not load) gets no done to wait for and goes on without the step. "Opslaan" stores what changed of the file (its name, alt text, folder and crop, one request each, in
  * that order) and goes to the next file; "Zo laten, zonder snijden", the cross and Escape store the fields on the
  * right only and leave the photo as it is; the cross and Escape stop after the file. When it closes, done gets
  * [{file, handled}] for every file in the order it was given: handled when the editor saw it and its texts are stored.
@@ -951,13 +952,15 @@ function step(dialog) {
         const detail = event.detail ?? {};
         const files = (detail.files ?? []).filter((file) => file?.croppable);
 
-        // One step at a time: a second host gets its files back as not handled.
+        // One step at a time: a second host gets its files back as not handled, and taken stays unset.
         if (dialog.open || files.length === 0) {
             detail.done?.((detail.files ?? []).map((file) => ({ file, handled: false })));
 
             return;
         }
 
+        // The host hears that the step took its files: it waits for done.
+        detail.taken = true;
         request = detail;
         queue = files;
         results = [];

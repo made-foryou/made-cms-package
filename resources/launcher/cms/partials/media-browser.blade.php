@@ -1,12 +1,109 @@
 {{--
     The list of the media library with its folders, the same in the picker (6.3) and the media library (7.1): the folders
-    with the number of their files ("Alle bestanden" on top), the upload field when the host gives one, a search, the
-    filters and the tiles. A host includes it with $browser = MediaBrowser::make() (or the browser of
-    MediaBrowser::picker()) and $empty, the text for a list without files, and loads $browser['script']. Its fixed texts
-    are here; media.js fills in the folders and tiles from the templates below and the JSON of the endpoints.
+    with the number of their files, the upload field when the host gives one, a search, the filters and the tiles. A
+    host includes it with $browser = MediaBrowser::make() (the browser of MediaBrowser::picker(), or
+    MediaBrowser::library()) and $empty, the text for a list without files, and loads $browser['script']. The picker
+    has the folders on the left; the library (design 13.1) has the search, its filters with their numbers and the
+    folders as chips across the top, the files below with a trail, "Nieuwste eerst", tiles or a list, and a start for an
+    empty library. Its fixed texts are here; media.js fills in the folders and tiles from the templates below and the
+    JSON of the endpoints. The folder and the tile are one template for both.
 --}}
-@php($t = $browser['t'])
-<div class="mediabrowser" data-media data-config="{{ json_encode($browser['config'], JSON_THROW_ON_ERROR) }}">
+@php
+    $t = $browser['t'];
+    $library = $browser['library'];
+    $l = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::media.library.'.$key, $replace, \Made\CmsPackage\Support\Locale::launcher());
+    // A text with a number in it, the number in a slot of its own so the script can change it.
+    $counted = static fn (string $text, string $slot, int $count): string => str_replace(
+        e(':count'),
+        '<span data-slot="'.$slot.'">'.$count.'</span>',
+        e($text),
+    );
+@endphp
+<div @class(['mediabrowser', 'mediabrowser-bibliotheek' => $library]) data-media data-config="{{ json_encode($browser['config'], JSON_THROW_ON_ERROR) }}"@if ($library) data-view="tiles"@endif>
+@if ($library)
+    @php
+        $counts = $browser['config']['initial']['folders']['counts'];
+        $filter = $browser['config']['filter'];
+        $kinds = ['image', 'document', 'video'];
+    @endphp
+    <div class="mediabrowser-start" data-slot="media-start" hidden>
+        <span class="mediabrowser-start-icoon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg></span>
+        <strong>{{ $l('start_title') }}</strong>
+        <span>{{ $l('start_text') }}</span>
+        <button type="button" class="knop stil" data-library-upload>{{ $l('upload') }}</button>
+        <span class="mediabrowser-klein">{{ $l('start_drop', ['limits' => rtrim($browser['upload']['limits'] ?? '', '.')]) }}</span>
+    </div>
+
+    <section class="mediabrowser-balk" aria-label="{{ $l('search_filter') }}">
+        <div class="zoek mediabrowser-zoek">
+            <label class="sr-only" for="made-cms-media-zoek">{{ $t('search') }}</label>
+            <span class="zoek-icoon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+            <input class="zoekveld" id="made-cms-media-zoek" type="search" autocomplete="off" placeholder="{{ $t('search_placeholder') }}" value="{{ $filter['q'] }}" data-slot="media-search">
+        </div>
+        <div class="mediabrowser-filters" role="group" aria-label="{{ $t('filters') }}" data-slot="media-kinds">
+            <button type="button" class="filter" aria-pressed="{{ $filter['kind'] === null && ! $filter['without_alt'] ? 'true' : 'false' }}" data-kind="">{!! $counted($l('all'), 'media-kind-count', $counts['all']) !!}</button>
+            @foreach ($kinds as $kind)
+                <button type="button" class="filter" aria-pressed="{{ $filter['kind'] === $kind ? 'true' : 'false' }}" data-kind="{{ $kind }}">{{ $t('kinds.'.$kind) }} <span data-slot="media-kind-count">{{ $counts[$kind] }}</span></button>
+            @endforeach
+            <button type="button" class="filter" aria-pressed="{{ $filter['without_alt'] ? 'true' : 'false' }}" data-slot="media-without-alt"><span class="filter-bol" aria-hidden="true"></span>{!! $counted($l('without_alt'), 'media-without-alt-count', $counts['without_alt']) !!}</button>
+        </div>
+        <nav class="mediabrowser-mappen" aria-label="{{ $t('folders') }}">
+            <ul data-slot="media-folders">
+                {{-- "Alle bestanden" is the start of the trail here, not a chip. --}}
+                <li hidden>
+                    <button type="button" class="kmap" aria-pressed="true" data-folder="">
+                        <span class="kmap-naam">{{ $t('all_files') }}</span>
+                        <span class="kmap-aantal" data-slot="media-folder-count"></span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </section>
+
+    <section class="mediabrowser-bestanden" id="made-cms-media-bestanden" aria-label="{{ $t('files') }}" data-slot="media-files">
+        <div class="mediabrowser-kop">
+            <nav class="mediabrowser-kruimel" aria-label="{{ $l('trail') }}">
+                <button type="button" class="tekstlink" data-slot="media-trail-all" hidden>{{ $t('all_files') }}</button>
+                <span class="mediabrowser-kruimel-streep" aria-hidden="true" data-slot="media-trail-separator" hidden>/</span>
+                <span class="mediabrowser-kruimel-hier" data-slot="media-trail-here">{{ $t('all_files') }}</span>
+                <span aria-hidden="true">·</span>
+                <span role="status" data-slot="media-status">{{ $browser['config']['initial']['files']['summary'] }}</span>
+            </nav>
+            <div class="mediabrowser-weergave">
+                <button type="button" class="actie" aria-pressed="{{ $filter['sort'] === 'newest' ? 'true' : 'false' }}" data-slot="media-newest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4v16"/><path d="M3 16l4 4 4-4"/><path d="M13 6h8"/><path d="M13 11h6"/><path d="M13 16h4"/></svg>{{ $l('newest') }}</button>
+                <span class="mediabrowser-weergaven" role="group" aria-label="{{ $l('view') }}">
+                    <button type="button" class="actie" aria-pressed="true" data-slot="media-view-tiles">{{ $l('tiles') }}</button>
+                    <button type="button" class="actie" aria-pressed="false" data-slot="media-view-list">{{ $l('list') }}</button>
+                </span>
+            </div>
+        </div>
+
+        @if ($browser['upload'] !== null)
+            <div class="mediabrowser-upload" data-slot="media-upload" hidden>
+                @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $browser['upload']])
+            </div>
+        @endif
+
+        <div class="mediabrowser-lijstkop" aria-hidden="true">
+            <span></span>
+            <span>{{ $l('head.name') }}</span>
+            <span class="kolom-soort">{{ $l('head.kind') }}</span>
+            <span class="kolom-maat">{{ $l('head.size') }}</span>
+            <span class="kolom-map">{{ $l('head.folder') }}</span>
+            <span class="kolom-alt">{{ $l('head.alt') }}</span>
+        </div>
+        <div class="mediabrowser-tegels" role="group" aria-label="{{ $t('files') }}" data-slot="media-grid"></div>
+        <div class="mediabrowser-leeg" data-slot="media-empty" hidden>
+            <strong data-slot="media-empty-title"></strong>
+            <span data-slot="media-empty-text"></span>
+            <button type="button" class="knop stil" data-slot="media-empty-upload" data-library-upload hidden>{{ $l('upload') }}</button>
+            <button type="button" class="tekstlink" data-slot="media-empty-link" hidden></button>
+        </div>
+        <p class="veld-fout" data-slot="media-failed" hidden></p>
+        <button type="button" class="actie mediabrowser-meer" data-slot="media-more" hidden>{{ $t('more') }}</button>
+        <p class="mediabrowser-noot" data-slot="media-note" hidden></p>
+    </section>
+@else
     <div class="mediabrowser-zij">
         <nav class="mediabrowser-mappen" aria-label="{{ $t('folders') }}">
             <ul data-slot="media-folders">
@@ -48,8 +145,9 @@
         <p class="veld-fout" data-slot="media-failed" hidden></p>
         <button type="button" class="actie mediabrowser-meer" data-slot="media-more" hidden>{{ $t('more') }}</button>
     </div>
+@endif
 
-    {{-- A folder of the list, below "Alle bestanden". --}}
+    {{-- A folder of the list, below "Alle bestanden" in the picker, a chip in the library. --}}
     <template data-media-folder>
         <li>
             <button type="button" class="kmap" aria-pressed="false">
@@ -60,11 +158,17 @@
         </li>
     </template>
 
-    {{-- A file of the list: its thumbnail with the extension, a check on the choice and an amber dot without an alt text. --}}
+    {{--
+        A file of the list: its thumbnail (an icon for a document or a video) with the extension, a check on the choice
+        in the picker and an amber dot without an alt text. The kind, the folder and the alt text show only as a row of
+        the list in the library.
+    --}}
     <template data-media-tile>
         <button type="button" class="tegel" aria-pressed="false">
             <span class="tegel-beeld">
-                <svg class="tegel-icoon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
+                <svg class="tegel-icoon tegel-icoon-image" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
+                <svg class="tegel-icoon tegel-icoon-document" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h5"/><path d="M10 17h5"/></svg>
+                <svg class="tegel-icoon tegel-icoon-video" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>
                 <img alt="" loading="lazy" decoding="async" data-slot="media-tile-thumb" hidden>
                 <span class="beeldkaart-ext" data-slot="media-tile-extension"></span>
                 <span class="tegel-vink" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span>
@@ -73,7 +177,12 @@
             <span class="tegel-tekst">
                 <span class="tegel-naam" data-slot="media-tile-name"></span>
                 <span class="tegel-meta" data-slot="media-tile-meta"></span>
+                <span class="tegel-kort" data-slot="media-tile-short"></span>
             </span>
+            <span class="tegel-soort" data-slot="media-tile-kind"></span>
+            <span class="tegel-maat" data-slot="media-tile-size"></span>
+            <span class="tegel-map" data-slot="media-tile-folder"></span>
+            <span class="tegel-alt" data-slot="media-tile-alt"></span>
         </button>
     </template>
 </div>

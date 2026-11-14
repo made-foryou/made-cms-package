@@ -32,6 +32,7 @@ use Made\CmsPackage\Support\Locale;
  *         folder: array{id: int, name: string}|null,
  *         texts: array<string, string>,
  *         library?: true,
+ *         kinds?: array<string, string>,
  *         filter?: array{kind: string|null, without_alt: bool, q: string, sort: string},
  *         chosen?: int|null,
  *         initial?: array{files: array<string, mixed>, folders: array<string, mixed>},
@@ -107,8 +108,11 @@ final class MediaBrowser
     public static function library(MediaLibrary $library, ?int $chosen = null): array
     {
         $browser = self::make($library->folder, null, UploadField::make($library->folder, crop: true));
+        $locale = Locale::launcher();
         $browser['library'] = true;
         $browser['config']['library'] = true;
+        $browser['config']['texts'] = [...$browser['config']['texts'], ...self::texts('library.texts', $locale)];
+        $browser['config']['kinds'] = self::texts('kinds', $locale);
         $browser['config']['filter'] = [
             'kind' => $library->filter->kind?->value,
             'without_alt' => $library->filter->withoutAlt,

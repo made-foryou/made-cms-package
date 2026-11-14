@@ -21,6 +21,7 @@ use Made\CmsPackage\Support\Locale;
  * @phpstan-type Field array{
  *     t: Closure(string): string,
  *     rules: string,
+ *     limits: string,
  *     accept: string,
  *     one_image: bool,
  *     script: string,
@@ -85,17 +86,17 @@ final class UploadField
         $base = request()->getBaseUrl();
         $label = $folder === null ? $t('all_files') : $t('folder', ['name' => $folder->name]);
         // The line of rules with the folder left open, so the script can name another folder in it (upload-folder).
-        $rules = $t('rules', [
-            'kinds' => Str::ucfirst(self::list(
-                array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $kinds),
-                (string) __('made-cms-package::media.and', [], $locale),
-            )),
-            'max' => $limits->max,
-        ]);
+        $kindList = Str::ucfirst(self::list(
+            array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $kinds),
+            (string) __('made-cms-package::media.and', [], $locale),
+        ));
+        $rules = $t('rules', ['kinds' => $kindList, 'max' => $limits->max]);
 
         return [
             't' => static fn (string $key): string => $t($key),
             'rules' => str_replace(':folder', $label, $rules),
+            // What the field takes without the folder, for a host that tells it beside a drop zone of its own.
+            'limits' => $t('limits', ['kinds' => $kindList, 'max' => $limits->max]),
             'accept' => implode(',', $mimes),
             'one_image' => $oneImage,
             'script' => LauncherAssetController::url('upload.js'),

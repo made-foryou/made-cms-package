@@ -36,8 +36,20 @@ it('lists the folders from a to z with the number of their files', function (): 
         ->assertJsonPath('counts.all', 4);
 });
 
+it('counts only the images without an alt text when asked', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    Media::factory()->in($teams)->count(2)->create();
+    Media::factory()->in($teams)->withAlt('Het eerste team')->create();
+
+    $this->getJson('made-cms/media/folders?without_alt=1')
+        ->assertOk()
+        ->assertJsonPath('all', 2)
+        ->assertJsonPath('folders.0.count', 2);
+});
+
 it('refuses a kind it does not know', function (): void {
     $this->getJson('made-cms/media/folders?kind=foto')->assertUnprocessable()->assertJsonValidationErrors('kind');
+    $this->getJson('made-cms/media/folders?without_alt=soms')->assertUnprocessable()->assertJsonValidationErrors('without_alt');
 });
 
 it('opens for every editor who opens the pages or the media library', function (Role $role): void {

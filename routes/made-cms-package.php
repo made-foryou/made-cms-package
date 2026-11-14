@@ -29,6 +29,7 @@ use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
+use Made\CmsPackage\Http\Controllers\Content\MediaLibraryController;
 use Made\CmsPackage\Http\Controllers\Content\MoveMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
@@ -104,7 +105,7 @@ Route::prefix($prefix)
             // Every screen opens at its own address; until a screen is built, it shows that it is coming. A built screen
             // leaves the loop and keeps the name screens.<screen>, which the menu links to.
             foreach (Screen::cases() as $screen) {
-                if ($screen === Screen::Pages) {
+                if (in_array($screen, [Screen::Pages, Screen::Media], true)) {
                     continue;
                 }
 
@@ -183,9 +184,10 @@ Route::prefix($prefix)
                 Route::put('media/{media}/name', RenameMediaController::class)->whereNumber('media')->name('media.name.update');
             });
 
-            // The media library and managing it: a file with the pages it is used on for its side column, and putting a
-            // file into another folder, also from the crop step.
+            // The media library and managing it: the screen, a file with the pages it is used on for its side column,
+            // and putting a file into another folder, also from the crop step.
             Route::middleware(EnsureScreenAccess::using(Screen::Media))->group(function (): void {
+                Route::get('media', MediaLibraryController::class)->name('screens.media');
                 Route::get('media/{media}', ShowMediaController::class)->whereNumber('media')->name('media.show');
                 Route::put('media/{media}/move', MoveMediaController::class)->whereNumber('media')->name('media.move');
             });

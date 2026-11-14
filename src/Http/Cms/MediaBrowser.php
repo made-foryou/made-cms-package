@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Cms;
 
 use Closure;
+use Made\CmsPackage\Content\Data\MediaLibrary;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
+use Made\CmsPackage\Http\Responses\MediaResponse;
 use Made\CmsPackage\Support\Locale;
 
 /**
  * The list of the media library with its folders, the same in the picker and the media library: the partial
  * `cms.partials.media-browser` with what make() gives as `$browser`, and its script. The picker of an image puts it in
- * a dialog (picker(), the partial `cms.partials.media-picker`).
+ * a dialog (picker(), the partial `cms.partials.media-picker`); the media library on a screen of its own (library()).
  *
  * @phpstan-import-type Field from UploadField
  *
@@ -21,6 +23,7 @@ use Made\CmsPackage\Support\Locale;
  *     t: Closure(string): string,
  *     kind: string|null,
  *     upload: Field|null,
+ *     library: bool,
  *     script: string,
  *     config: array{
  *         urls: array{files: string, folders: string, chosen_folder: string},
@@ -28,6 +31,10 @@ use Made\CmsPackage\Support\Locale;
  *         kind: string|null,
  *         folder: array{id: int, name: string}|null,
  *         texts: array<string, string>,
+ *         library?: true,
+ *         filter?: array{kind: string|null, without_alt: bool, q: string, sort: string},
+ *         chosen?: int|null,
+ *         initial?: array{files: array<string, mixed>, folders: array<string, mixed>},
  *     },
  * }
  * @phpstan-type Picker array{t: Closure(string): string, browser: Browser, config: array{texts: array<string, string>}}
@@ -54,6 +61,7 @@ final class MediaBrowser
             't' => $t,
             'kind' => $kind === null ? null : $t('kinds.'.$kind->value),
             'upload' => $upload,
+            'library' => false,
             'script' => LauncherAssetController::url('media.js'),
             'config' => [
                 'urls' => [
@@ -85,6 +93,35 @@ final class MediaBrowser
             'browser' => self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true)),
             'config' => ['texts' => self::texts('picker.texts', $locale)],
         ];
+    }
+
+    /**
+     * The media library: the list of every kind on a screen of its own, with the upload field of several files that
+     * hands the photos of an upload to the crop step. The script gets the filter it opens with, the file it opens
+     * with chosen and its first page and folders in the shape of their endpoints, so it shows them without loading;
+     * it keeps its address in step with what it lists.
+     *
+     * @param  int|null  $chosen  the file the library opens with chosen; null for none
+     * @return Browser
+     */
+    public static function library(MediaLibrary $library, ?int $chosen = null): array
+    {
+        $browser = self::make($library->folder, null, UploadField::make($library->folder, crop: true));
+        $browser['library'] = true;
+        $browser['config']['library'] = true;
+        $browser['config']['filter'] = [
+            'kind' => $library->filter->kind?->value,
+            'without_alt' => $library->filter->withoutAlt,
+            'q' => $library->filter->search,
+            'sort' => $library->filter->sort->value,
+        ];
+        $browser['config']['chosen'] = $chosen;
+        $browser['config']['initial'] = [
+            'files' => MediaResponse::list($library->list, $library->filter),
+            'folders' => $library->folders->toArray(),
+        ];
+
+        return $browser;
     }
 
     /**

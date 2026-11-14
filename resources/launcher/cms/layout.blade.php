@@ -21,5 +21,7 @@
     </div>
 </div>
 <script type="module" src="{{ $script }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+{{-- The scripts of the parts a screen holds, such as the upload field and the list of the media library. --}}
+@stack('scripts')
 </body>
 </html>

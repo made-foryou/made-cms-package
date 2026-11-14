@@ -416,7 +416,7 @@ it('refuses an alt text that is too long and keeps the choice until it is shorte
     $page->assertNoJavaScriptErrors();
 });
 
-it('uploads from "Uploaden" into the folder it is in, and hands a photo to the crop step', function (): void {
+it('uploads from "Uploaden" into the folder it is in, and the amber dot leaves once the new photo gets its alt text', function (): void {
     $page = visit('/made-cms/media?folder='.$this->teams->id);
 
     $page->script(<<<'JS'
@@ -433,15 +433,30 @@ it('uploads from "Uploaden" into the folder it is in, and hands a photo to the c
 
     expect($page->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
 
+    // The editor crops it without an alt text, chooses it in the list, and gives it one there: the amber dot leaves.
     $page->assertVisible('[data-slot="media-upload"]')
         ->assertSeeIn('[data-slot="crop-eyebrow"]', 'Uploaden')
-        ->type('[data-slot="crop-alt"]', 'Team Merwestad 5 voor de clubvlag')
         ->click('[data-slot="crop-save"]');
 
     expect($page->script(waitUntil("! document.querySelector('[data-media-crop]').open && document.querySelector('[data-slot=\"media-upload\"]').hidden")))->toBeTrue()
         ->and($page->script(waitUntil(libraryShows(['teamfoto-merwestad-5', 'wedstrijdschema', 'training-dinsdag', 'teamfoto-merwestad-1']))))->toBeTrue()
-        ->and(Media::query()->where('name', 'teamfoto-merwestad-5')->sole()->only('alt', 'folder_id'))->toBe(['alt' => 'Team Merwestad 5 voor de clubvlag', 'folder_id' => $this->teams->id])
-        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"media-kinds\"] .filter[data-kind=\"image\"] [data-slot=\"media-kind-count\"]').textContent === '4'")))->toBeTrue();
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"media-kinds\"] .filter[data-kind=\"image\"] [data-slot=\"media-kind-count\"]').textContent === '4'")))->toBeTrue()
+        ->and($page->script("() => document.querySelector('[data-slot=\"media-without-alt-count\"]').textContent"))->toBe('3');
+
+    $photo = Media::query()->where('name', 'teamfoto-merwestad-5')->sole();
+
+    expect($photo->folder_id)->toBe($this->teams->id);
+
+    $page->assertVisible(libraryTile($photo).' [data-slot="media-tile-no-alt"]')
+        ->click(libraryTile($photo));
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-5.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'Team Merwestad 5 voor de clubvlag')
+        ->click('[data-slot="details-save"]');
+
+    expect($page->script(waitUntil("document.querySelector('".libraryTile($photo)." [data-slot=\"media-tile-no-alt\"]').hidden && document.querySelector('[data-slot=\"media-without-alt-count\"]').textContent === '2'")))->toBeTrue()
+        ->and($photo->refresh()->alt)->toBe('Team Merwestad 5 voor de clubvlag');
 
     $page->assertNoJavaScriptErrors();
 });

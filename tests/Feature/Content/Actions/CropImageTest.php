@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -144,6 +145,23 @@ it('crops the file as it is now, under the name it got after the editor opened i
     expect($media->name)->toBe('clubavond')
         ->and($media->path)->toEndWith('/clubavond.webp')
         ->and(Media::query()->findOrFail($media->id)->path)->toBe($media->path)
+        ->and($disk->allFiles())->toEqualCanonicalizing([$media->path, (string) $media->thumb_path, (string) $media->original_path]);
+});
+
+it('keeps the files the row holds when it is cropped and renamed back and forth within one transaction', function (): void {
+    $disk = Storage::disk('public');
+    $media = cropped(quadrants(800, 600));
+
+    $media = DB::transaction(function () use ($media): Media {
+        $media = CropImage::run($media, new CropMedia(new CropArea(0, 0, 400, 300)));
+        $media = RenameMedia::run($media, 'clubavond');
+        $media = RenameMedia::run($media, 'teamfoto');
+
+        return CropImage::run($media, new CropMedia(new CropArea(0, 0, 400, 300), 0.2, 0.2));
+    });
+
+    expect($media->path)->toEndWith('/teamfoto.webp')
+        ->and(storedSize($media->path))->toBe([400, 300, 'mime' => 'image/webp'])
         ->and($disk->allFiles())->toEqualCanonicalizing([$media->path, (string) $media->thumb_path, (string) $media->original_path]);
 });
 

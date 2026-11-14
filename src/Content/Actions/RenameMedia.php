@@ -27,6 +27,7 @@ final class RenameMedia
      *
      * It works from the row as it is now, read again with its row locked, never from the model it is handed: a crop
      * or a new name stored after the editor opened the file is what it renames, and a crop at the same time waits.
+     * The former file leaves through RemoveReplacedMediaFiles, which keeps it when the row holds it again.
      *
      * @throws ValidationException keyed by "name" for a name without letters or digits
      * @throws MediaDiskNotUsable
@@ -53,21 +54,25 @@ final class RenameMedia
                 $path = dirname($former)."/{$name}".($extension === '' ? '' : ".{$extension}");
 
                 if ($path !== $former) {
+                    // A file already at that name (a name given back within one transaction, before its removal) holds
+                    // the same photo; it is written over, but never removed when this fails.
+                    $existed = $disk->exists($path);
+
                     if (! $disk->copy($former, $path)) {
                         throw MediaNotStored::at($path);
                     }
 
-                    $copy = $path;
+                    $copy = $existed ? null : $path;
                 }
 
                 $stored->update(['name' => $name, 'path' => $path]);
                 MediaRenamed::dispatch($stored);
 
-                DB::afterCommit(static function () use ($disk, $former, $path): void {
-                    if ($former !== $path) {
-                        $disk->delete($former);
-                    }
-                });
+                if ($path !== $former) {
+                    DB::afterCommit(static function () use ($stored, $former): void {
+                        RemoveReplacedMediaFiles::run($stored->id, $former);
+                    });
+                }
 
                 return $stored;
             });

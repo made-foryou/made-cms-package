@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -63,6 +64,36 @@ it('renames the file as it is now, so a crop made after the editor opened it sta
         ->and($media->crop)->toBe($cropped->crop)
         ->and([$size[0] ?? null, $size[1] ?? null])->toBe([200, 200])
         ->and($disk->allFiles())->toEqualCanonicalizing([$media->path, (string) $cropped->thumb_path, (string) $cropped->original_path]);
+});
+
+it('keeps the file when it is renamed away and back within one transaction', function (): void {
+    $disk = Storage::disk('public');
+    $media = renamed(photo(400, 300));
+    $contents = $disk->get($media->path);
+
+    $media = DB::transaction(fn (): Media => RenameMedia::run(RenameMedia::run($media, 'clubavond'), 'teamfoto'));
+
+    expect($media->path)->toEndWith('/teamfoto.webp')
+        ->and($disk->get($media->path))->toBe($contents)
+        ->and($disk->allFiles())->toEqualCanonicalizing([$media->path, (string) $media->thumb_path, (string) $media->original_path]);
+});
+
+it('keeps the file the row holds again when renaming it back fails and the transaction rolls back', function (): void {
+    $disk = Storage::disk('public');
+    $media = renamed(photo(400, 300));
+
+    try {
+        DB::transaction(function () use ($media): void {
+            $renamed = RenameMedia::run($media, 'clubavond');
+            Media::updating(static fn (): never => throw new RuntimeException('The row cannot be stored.'));
+            RenameMedia::run($renamed, 'teamfoto');
+        });
+        test()->fail('The transaction was committed.');
+    } catch (RuntimeException) {
+    }
+
+    expect(Media::query()->findOrFail($media->id)->path)->toBe($media->path)
+        ->and($disk->exists($media->path))->toBeTrue();
 });
 
 it('renames a file that was renamed after the editor opened it from the name it has now', function (): void {

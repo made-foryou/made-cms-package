@@ -107,7 +107,7 @@ final class CropImage
                 $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
                 $written[] = static fn (): bool => $disk->delete($thumb);
 
-                return $this->store($stored, [
+                return $this->store($stored, replacesFiles: true, columns: [
                     ...$focal,
                     'path' => $path,
                     'thumb_path' => $thumb,
@@ -120,7 +120,7 @@ final class CropImage
                     'crop' => $crop->scaleDown && $crop->area->isOriginal($width, $height)
                         ? null
                         : [...$crop->area->toArray(), 'scale_down' => $crop->scaleDown],
-                ], $disk);
+                ]);
             });
         } catch (Throwable $exception) {
             foreach ($written as $forget) {
@@ -148,41 +148,24 @@ final class CropImage
 
     /**
      * Stores the columns on the row, which the caller holds locked, and takes the photo and the thumbnail it replaced
-     * off the disk once the change is committed.
+     * off the disk once the change is committed (RemoveReplacedMediaFiles).
      *
      * @param  array<string, mixed>  $columns
      */
-    private function store(Media $stored, array $columns, ?Cloud $disk = null): Media
+    private function store(Media $stored, array $columns, bool $replacesFiles = false): Media
     {
         $former = [$stored->path, $stored->thumb_path];
 
         $stored->update($columns);
         MediaCropped::dispatch($stored);
 
-        if ($disk !== null) {
-            DB::afterCommit(static function () use ($disk, $stored, $former): void {
-                self::forget($disk, $stored, ...$former);
+        if ($replacesFiles) {
+            DB::afterCommit(static function () use ($stored, $former): void {
+                RemoveReplacedMediaFiles::run($stored->id, ...$former);
             });
         }
 
         return $stored;
-    }
-
-    /**
-     * Takes a former photo and its thumbnail off the disk: the folder of its own of a photo that was cropped before,
-     * only the file of a photo as it was uploaded, next to its original.
-     */
-    private static function forget(Cloud $disk, Media $media, string $path, ?string $thumb): void
-    {
-        if ($path !== $media->path) {
-            dirname($path) === dirname((string) $media->original_path)
-                ? $disk->delete($path)
-                : $disk->deleteDirectory(dirname($path));
-        }
-
-        if ($thumb !== null && $thumb !== $media->thumb_path) {
-            $disk->delete($thumb);
-        }
     }
 
     /**

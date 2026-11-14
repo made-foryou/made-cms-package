@@ -1,12 +1,15 @@
 {{--
     The upload field of the CMS as a host includes it: the stylesheet of the CMS, the partial with what
-    UploadField::make() gives, and its script. The library, the picker and the edit shell do the same.
+    UploadField::make() gives, and its script. The library, the picker and the edit shell do the same. With $crop the
+    photos of a batch go to the crop step, which the page includes with its script.
 --}}
 @php
+    use Made\CmsPackage\Http\Cms\CropStep;
     use Made\CmsPackage\Http\Cms\UploadField;
     use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 
-    $upload = UploadField::make($folder);
+    $upload = UploadField::make($folder, crop: $crop);
+    $step = $crop ? CropStep::make(moves: true) : null;
 @endphp
 <!DOCTYPE html>
 <html lang="nl">
@@ -36,6 +39,10 @@
         @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $upload])
     </main>
 
+    @if ($step !== null)
+        @include('made-cms-package-launcher::cms.partials.crop', ['crop' => $step])
+        <script type="module" src="{{ $step['script'] }}"></script>
+    @endif
     <script type="module" src="{{ $upload['script'] }}"></script>
 </body>
 </html>

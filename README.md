@@ -344,7 +344,7 @@ On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who o
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.
 - A field marked with [`data-cms-field`](#the-data-cms-attributes) changes on the site while the editor types; anything else shows once the draft is saved and the frame reloads at the same scroll position, with the same strip chosen.
 - Clicking a field on the site opens it in the side panel with the focus in it, inside its item when it lies in a list. The tab with the name of the strip only chooses the strip.
-- An `Image` field is a media element: the photo with its extension, focal point and an amber dot when it has no alt text, its name, "1920 × 1080 · 412 kB · uit map Teams" and its alt text; "Nog geen afbeelding" without one, or that its file is no longer in Media. "Kiezen uit media" opens the picker with the images of the media library (see [Choosing from the library](#choosing-from-the-library)); "Uploaden" opens the upload field below it for one photo, which goes into the folder the editor opened last in the picker ("Alle bestanden" until then) and is the value of the field as soon as it is in; the editor gives it its alt text right there. "×" takes the photo out of the field, the file stays in Media. Cropping follows.
+- An `Image` field is a media element: the photo with its extension, focal point and an amber dot when it has no alt text, its name, "1920 × 1080 · 412 kB · uit map Teams" and its alt text; "Nog geen afbeelding" without one, or that its file is no longer in Media. "Kiezen uit media" opens the picker with the images of the media library (see [Choosing from the library](#choosing-from-the-library)); "Uploaden" opens the upload field below it for one photo, which goes into the folder the editor opened last in the picker ("Alle bestanden" until then) and is the value of the field as soon as it is in; the editor gives it its alt text right there. "Bijsnijden" opens the crop step for the photo (see [Cropping](#cropping)); it changes the file, so the photo changes on every page and the frame reloads, while the field keeps its value. "×" takes the photo out of the field, the file stays in Media.
 - While a photo travels, "Annuleren" stops it. An upload runs on while the editor works on another strip; a line at the foot of the side panel says how it goes, that the photo is in, or that it failed with a button to that field. "Publiceren" waits for a photo that is still on its way.
 
 The bar shows whether the page is live and what its draft changes:
@@ -595,6 +595,8 @@ $media = UploadMedia::run(new UploadedMedia(
 UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 ```
 
+A photo can be cropped again from its original with `CropImage`, renamed with `RenameMedia` and moved with `MoveMedia` (see [Cropping](#cropping)).
+
 A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->ofKind(MediaKind::Document)`, `->inFolder($folder)`, `->withoutAlt()`, `->search('merwestad')`, `->newestFirst()`, `->byName()` and `->countPerFolder()`, and the folders with `MediaFolder::query()->alphabetical()`. `ListMedia::run(new MediaFilter(...))` gives one page of the library (40 files, with the url a visitor opens each at) and `ListMediaFolders::run($kind)` the folders with the number of their files. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
 
 ### Uploading in the CMS
@@ -630,6 +632,38 @@ The picker reads the library over JSON, through endpoints the media library will
 | `PUT /made-cms/media/chosen-folder` | Remembers the folder an editor opened for the session (`{"folder": id}`, `null` for "Alle bestanden"). | 204; 422 keyed by `folder`. |
 
 They open for an editor who opens the pages or the media library, like uploading; `made-cms/media` itself is the address of the screen Media. A screen shows the list with the partial `made-cms-package-launcher::cms.partials.media-browser` and `['browser' => MediaBrowser::make($folder, $kind, $upload), 'empty' => '…']` and loads `$browser['script']`; it hears `made-cms:media-chosen` `{file}` and `made-cms:media-folder` `{folder}` from the list. The session is written back as a whole after every request, so a request that overlaps the one that remembers a folder can bring back the former folder; the open shell keeps the folder in its script.
+
+### Cropping
+
+A photo that was scaled down keeps its original, so it can be cut again from the original as often as the editor likes. The crop step is a dialog in the CMS: "Bijsnijden" in the media element opens it for the photo of the field, and a photo uploaded in the picker goes there as soon as it is in. It shows the whole original on a stage, with the frame of the crop (drag it, pull a corner, or move it with the arrow keys), the ratios Vrij, 16:9, 4:3, 3:2, 1:1 and Origineel, turning left and right, mirroring, "Herstel" and the focal point. On the right the editor switches "Verkleinen voor het web" (at most `media.image.max_width`; off keeps the size of the crop, still as `media.image.format`), with the size of the original and an estimate of the photo, and gives the file its name, its alt text and, with access to the media library, its folder. "Opslaan" stores it; "Zo laten, zonder snijden" stores only the fields on the right. A photo that is on pages says on how many: a crop changes the file, so it changes on every page at once, the published ones too, without a publication.
+
+In code:
+
+```php
+use Made\CmsPackage\Content\Actions\CropImage;
+use Made\CmsPackage\Content\Actions\MoveMedia;
+use Made\CmsPackage\Content\Actions\RenameMedia;
+use Made\CmsPackage\Content\Data\CropArea;
+use Made\CmsPackage\Content\Data\CropMedia;
+
+$media = CropImage::run($media, new CropMedia(
+    area: new CropArea(x: 240, y: 344, width: 3520, height: 1980, rotation: 90, flip: false),
+    focalX: 0.46,       // from 0 (left) to 1 (right) of the photo that comes out
+    focalY: 0.44,       // from 0 (top) to 1 (bottom)
+    scaleDown: true,
+));
+
+RenameMedia::run($media, 'Teamfoto Merwestad 4');   // becomes teamfoto-merwestad-4
+MoveMedia::run($media, $folder->id);                // null for "Alle bestanden"
+```
+
+The area is in pixels of the original as the editor sees it: upright (by its EXIF orientation), turned clockwise by `rotation` (0, 90, 180 or 270), then mirrored left to right when `flip`; `CropArea::onOriginal()` takes it back onto the original. An area outside the photo is refused with a `ValidationException` keyed by `crop`, and a file without an original (an svg, an animated gif, a document, a video) throws `MediaNotCroppable`. The crop is stored in the column `crop` of `cms_media` (null for the whole original, not turned and scaled down), so the next crop starts where the editor left off, and the upright size of the original in `original_width` and `original_height`. When only the focal point changes no file is written.
+
+Every crop writes the photo at a new address in a folder of its own next to the original (`media/{ulid}/{random}/{name}.webp`) with a new thumbnail, so no browser or CDN keeps the former photo; the former files leave the disk after the commit. A page that a host or CDN cached keeps pointing at the former address until its cache runs out. Renaming moves the photo to the new name in its folder, so its address changes too. `CropImage`, `RenameMedia` and `MoveMedia` dispatch `MediaCropped`, `MediaRenamed` and `MediaMoved` after the commit.
+
+The site uses the focal point as `object-position` (see [Images](#images)), so a photo cut to fit a phone keeps what matters in view.
+
+A screen of the CMS includes the step with the partial `made-cms-package-launcher::cms.partials.crop` and `['crop' => CropStep::make($moves)]` (`$moves` when the editor opens the media library) and loads `$crop['script']`. It opens the step with `made-cms:crop` `{files, opener, upload, done(results)}` on the dialog, the files as the upload field gets them; `done` gets `[{file, handled}]` when the step closes, and every file of which anything was stored bubbles up as `made-cms:media-changed` `{file}`. An upload field given `crop: true` (`UploadField::make($folder, crop: true)`) hands the photos of a batch to the step on the page itself.
 
 ### Thumbnails
 

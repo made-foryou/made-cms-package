@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Made\CmsPackage\Content\Actions\CropImage;
+use Made\CmsPackage\Content\Actions\RenameMedia;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
@@ -131,6 +132,30 @@ it('cuts from the original again, not from the former crop', function (): void {
     $media = CropImage::run($media, new CropMedia(new CropArea(200, 0, 200, 300)));
     expect(array_unique(quadrantsOf((string) Storage::disk('public')->get($media->path))))->toBe(['black'])
         ->and(storedSize($media->path))->toBe([200, 300, 'mime' => 'image/webp']);
+});
+
+it('crops the file as it is now, under the name it got after the editor opened it', function (): void {
+    $disk = Storage::disk('public');
+    $opened = cropped(quadrants(800, 600));
+    RenameMedia::run(Media::query()->findOrFail($opened->id), 'clubavond');
+
+    $media = CropImage::run($opened, new CropMedia(new CropArea(0, 0, 400, 300)));
+
+    expect($media->name)->toBe('clubavond')
+        ->and($media->path)->toEndWith('/clubavond.webp')
+        ->and(Media::query()->findOrFail($media->id)->path)->toBe($media->path)
+        ->and($disk->allFiles())->toEqualCanonicalizing([$media->path, (string) $media->thumb_path, (string) $media->original_path]);
+});
+
+it('cuts the photo again when it was cropped after the editor opened it, even if only the focal point moved', function (): void {
+    $opened = cropped(quadrants(800, 600));
+    CropImage::run(Media::query()->findOrFail($opened->id), new CropMedia(new CropArea(0, 0, 400, 300)));
+
+    $media = CropImage::run($opened, new CropMedia(CropArea::whole(800, 600), 0.3, 0.7));
+
+    expect($media->crop)->toBeNull()
+        ->and(storedSize($media->path))->toBe([800, 600, 'mime' => 'image/webp'])
+        ->and([$media->focal_x, $media->focal_y])->toBe([0.3, 0.7]);
 });
 
 it('refuses an area outside the photo and changes nothing', function (CropArea $area): void {
@@ -265,6 +290,16 @@ it('tells that a photo was cropped, after the commit', function (): void {
 });
 
 it('takes its files off the disk again when the row cannot be stored', function (): void {
+    $media = cropped(quadrants(400, 300));
+    $files = Storage::disk('public')->allFiles();
+    Media::updating(static fn (): never => throw new RuntimeException('The row cannot be stored.'));
+
+    expect(fn (): Media => CropImage::run($media, new CropMedia(new CropArea(0, 0, 100, 100))))->toThrow(RuntimeException::class)
+        ->and(Storage::disk('public')->allFiles())->toBe($files)
+        ->and(Media::query()->findOrFail($media->id)->path)->toBe($media->path);
+});
+
+it('refuses a file that is gone, without writing', function (): void {
     $media = cropped(quadrants(400, 300));
     $files = Storage::disk('public')->allFiles();
     Media::query()->whereKey($media->id)->delete();

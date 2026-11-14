@@ -40,6 +40,10 @@ final class CropImage
      * row is committed. When only the focal point changed, no file is written. The photo changes on every page that
      * shows it, the published version too.
      *
+     * It works from the row as it is now, read again with its row locked, never from the model it is handed: the
+     * original, the name, the crop it compares with and the files it replaces are the ones stored when it starts, and
+     * a crop or a new name at the same time waits until it is committed.
+     *
      * @throws ValidationException keyed by "crop" for an area outside the photo or an original that cannot be read
      * @throws MediaNotCroppable for a file without an original
      * @throws MediaDiskNotUsable
@@ -48,77 +52,80 @@ final class CropImage
      */
     public function handle(Media $media, CropMedia $crop): Media
     {
-        if ($media->kind !== MediaKind::Image || $media->original_path === null) {
-            throw MediaNotCroppable::id($media->id);
-        }
-
         $disk = CheckMediaDisk::run();
-        $focal = ['focal_x' => self::focal($crop->focalX), 'focal_y' => self::focal($crop->focalY)];
-
-        if ($this->keepsPhoto($media, $crop)) {
-            return $this->store($media, $focal);
-        }
-
-        $image = DecodeOriginal::run($media);
-        $width = $image->width();
-        $height = $image->height();
-
-        if (! $crop->area->fits($width, $height)) {
-            throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.crop_outside')]);
-        }
-
-        $cut = $crop->area->onOriginal($width, $height);
-        $image = $image->crop($cut['width'], $cut['height'], $cut['x'], $cut['y']);
-
-        // Scaled down before it turns: a quarter turn only moves pixels, so the photo is the same, and turning a photo
-        // of 1920 px instead of the whole cut spares GD a copy of a hundred MB. Turned a quarter, its height becomes
-        // the width of the photo.
-        $largest = $crop->scaleDown ? config()->integer('made-cms-package.media.image.max_width') : self::LARGEST;
-        $image = $crop->area->rotation === 90 || $crop->area->rotation === 270
-            ? $image->scaleDown(min($image->width(), self::LARGEST), $largest)
-            : $image->scaleDown($largest, min($image->height(), self::LARGEST));
-
-        if ($crop->area->rotation !== 0) {
-            $image = $image->rotate($crop->area->rotation);
-        }
-
-        if ($crop->area->flip) {
-            $image = $image->flip(Direction::HORIZONTAL);
-        }
-
-        $format = Format::create(config()->string('made-cms-package.media.image.format'));
-        $photo = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'))->toString();
-        $thumbnail = MakeThumbnail::run($photo);
-
-        $home = dirname($media->original_path);
-        $path = $this->write($disk, "{$home}/".Str::lower(Str::random(8))."/{$media->name}.{$format->fileExtension()->value}", $photo);
+        $written = [];
 
         try {
-            $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
-        } catch (MediaNotStored $exception) {
-            $disk->deleteDirectory(dirname($path));
+            return DB::transaction(function () use ($media, $crop, $disk, &$written): Media {
+                $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
 
-            throw $exception;
-        }
+                if ($stored->kind !== MediaKind::Image || $stored->original_path === null) {
+                    throw MediaNotCroppable::id($stored->id);
+                }
 
-        try {
-            return $this->store($media, [
-                ...$focal,
-                'path' => $path,
-                'thumb_path' => $thumb,
-                'mime' => $format->mediaType()->value,
-                'size' => strlen($photo),
-                'width' => $image->width(),
-                'height' => $image->height(),
-                'original_width' => $width,
-                'original_height' => $height,
-                'crop' => $crop->scaleDown && $crop->area->isOriginal($width, $height)
-                    ? null
-                    : [...$crop->area->toArray(), 'scale_down' => $crop->scaleDown],
-            ], $disk);
+                $focal = ['focal_x' => self::focal($crop->focalX), 'focal_y' => self::focal($crop->focalY)];
+
+                if ($this->keepsPhoto($stored, $crop)) {
+                    return $this->store($stored, $focal);
+                }
+
+                $image = DecodeOriginal::run($stored);
+                $width = $image->width();
+                $height = $image->height();
+
+                if (! $crop->area->fits($width, $height)) {
+                    throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.crop_outside')]);
+                }
+
+                $cut = $crop->area->onOriginal($width, $height);
+                $image = $image->crop($cut['width'], $cut['height'], $cut['x'], $cut['y']);
+
+                // Scaled down before it turns: a quarter turn only moves pixels, so the photo is the same, and turning
+                // a photo of 1920 px instead of the whole cut spares GD a copy of a hundred MB. Turned a quarter, its
+                // height becomes the width of the photo.
+                $largest = $crop->scaleDown ? config()->integer('made-cms-package.media.image.max_width') : self::LARGEST;
+                $image = $crop->area->rotation === 90 || $crop->area->rotation === 270
+                    ? $image->scaleDown(min($image->width(), self::LARGEST), $largest)
+                    : $image->scaleDown($largest, min($image->height(), self::LARGEST));
+
+                if ($crop->area->rotation !== 0) {
+                    $image = $image->rotate($crop->area->rotation);
+                }
+
+                if ($crop->area->flip) {
+                    $image = $image->flip(Direction::HORIZONTAL);
+                }
+
+                $format = Format::create(config()->string('made-cms-package.media.image.format'));
+                $photo = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'))->toString();
+                $thumbnail = MakeThumbnail::run($photo);
+
+                $home = dirname($stored->original_path);
+                $path = $this->write($disk, "{$home}/".Str::lower(Str::random(8))."/{$stored->name}.{$format->fileExtension()->value}", $photo);
+                $written[] = static fn (): bool => $disk->deleteDirectory(dirname($path));
+
+                $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
+                $written[] = static fn (): bool => $disk->delete($thumb);
+
+                return $this->store($stored, [
+                    ...$focal,
+                    'path' => $path,
+                    'thumb_path' => $thumb,
+                    'mime' => $format->mediaType()->value,
+                    'size' => strlen($photo),
+                    'width' => $image->width(),
+                    'height' => $image->height(),
+                    'original_width' => $width,
+                    'original_height' => $height,
+                    'crop' => $crop->scaleDown && $crop->area->isOriginal($width, $height)
+                        ? null
+                        : [...$crop->area->toArray(), 'scale_down' => $crop->scaleDown],
+                ], $disk);
+            });
         } catch (Throwable $exception) {
-            $disk->deleteDirectory(dirname($path));
-            $disk->delete($thumb);
+            foreach ($written as $forget) {
+                $forget();
+            }
 
             throw $exception;
         }
@@ -140,28 +147,25 @@ final class CropImage
     }
 
     /**
-     * Stores the columns on the row as it is now, locked, and takes the photo and the thumbnail it replaced off the
-     * disk once the change is committed.
+     * Stores the columns on the row, which the caller holds locked, and takes the photo and the thumbnail it replaced
+     * off the disk once the change is committed.
      *
      * @param  array<string, mixed>  $columns
      */
-    private function store(Media $media, array $columns, ?Cloud $disk = null): Media
+    private function store(Media $stored, array $columns, ?Cloud $disk = null): Media
     {
-        return DB::transaction(static function () use ($media, $columns, $disk): Media {
-            $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
-            $former = [$stored->path, $stored->thumb_path];
+        $former = [$stored->path, $stored->thumb_path];
 
-            $stored->update($columns);
-            MediaCropped::dispatch($stored);
+        $stored->update($columns);
+        MediaCropped::dispatch($stored);
 
-            if ($disk !== null) {
-                DB::afterCommit(static function () use ($disk, $stored, $former): void {
-                    self::forget($disk, $stored, ...$former);
-                });
-            }
+        if ($disk !== null) {
+            DB::afterCommit(static function () use ($disk, $stored, $former): void {
+                self::forget($disk, $stored, ...$former);
+            });
+        }
 
-            return $stored;
-        });
+        return $stored;
     }
 
     /**

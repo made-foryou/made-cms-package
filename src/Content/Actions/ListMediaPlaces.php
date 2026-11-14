@@ -91,6 +91,7 @@ final class ListMediaPlaces
                 static fn (UsageVersion $version): bool => in_array($version, $place['versions'], true),
             )),
             pageDeleted: $place['page']->trashed(),
+            pageHasDraft: $place['page']->draft_strips !== null,
         ), $places));
     }
 

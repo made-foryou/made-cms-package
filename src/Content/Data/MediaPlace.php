@@ -19,6 +19,7 @@ final readonly class MediaPlace
      * @param  string  $field  the path of the field in the strip: "foto", or "fotos.{id}.afbeelding" by the id of the item
      * @param  list<UsageVersion>  $versions  the versions of the page the place is in: the draft, the published version or both
      * @param  bool  $pageDeleted  the page is deleted and can still be restored
+     * @param  bool  $pageHasDraft  the page has a draft, so a place only in its published version is one the draft took away
      */
     public function __construct(
         public int $page,
@@ -28,6 +29,7 @@ final readonly class MediaPlace
         public string $field,
         public array $versions,
         public bool $pageDeleted,
+        public bool $pageHasDraft = false,
     ) {}
 
     public function in(UsageVersion $version): bool

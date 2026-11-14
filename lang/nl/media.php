@@ -131,6 +131,13 @@ return [
         ],
     ],
 
+    // The media library: the screen Media with the list of the picker and a side column for the chosen file.
+    'library' => [
+        'used' => '{0} Nog nergens gebruikt|{1} Gebruikt op 1 pagina|[2,*] Gebruikt op :count pagina’s',
+        'draft_only' => 'Alleen in het concept',
+        'removed_in_draft' => 'Nog op de site, niet meer in het concept',
+    ],
+
     // The picker of an image: the list of files in a dialog above the edit shell.
     'picker' => [
         'eyebrow' => 'Media',

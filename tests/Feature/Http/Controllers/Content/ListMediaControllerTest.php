@@ -157,6 +157,6 @@ it('answers 401 to a guest', function (): void {
     $this->getJson('made-cms/media/files')->assertUnauthorized();
 });
 
-it('keeps the screen that is coming at the address of the media library', function (): void {
-    $this->get('made-cms/media')->assertOk()->assertSee('<h1 id="made-cms-titel">Media</h1>', false);
+it('leaves the address made-cms/media to the screen of the media library', function (): void {
+    $this->get('made-cms/media')->assertOk()->assertSee('data-media-library', false)->assertDontSee('wordt nog gebouwd');
 });

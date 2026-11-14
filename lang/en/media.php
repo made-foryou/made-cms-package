@@ -133,6 +133,9 @@ return [
 
     // The media library: the screen Media with the list of the picker and a side column for the chosen file.
     'library' => [
+        'intro' => 'Every photo, document and video of your site in one place. You choose a file from this library everywhere, and what you change about a file here changes everywhere.',
+        'upload' => 'Upload',
+        'empty' => 'No files found.',
         'used' => '{0} Not used anywhere yet|{1} Used on 1 page|[2,*] Used on :count pages',
         'draft_only' => 'Only in the draft',
         'removed_in_draft' => 'Still on the site, no longer in the draft',

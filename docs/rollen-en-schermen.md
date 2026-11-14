@@ -29,7 +29,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 |---|:-:|:-:|:-:|:-:|:-:|---|---|
 | Pagina's (`pages`) | ✓ | ✓ | ✓ | ✓ | ✓ | Je site | gebouwd (#19); verder in #60 |
 | Nieuws (`news`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
-| Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | #49 (#55) |
+| Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | gebouwd (#55); verder in #56 en #57 |
 | Berichten (`messages`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
 | Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#88); het kopniveau in de bewerkschil: gebouwd (#126) |
 | Alt-teksten (`alt-texts`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#95) |
@@ -44,7 +44,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Domein en certificaat (`domain`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
 <!-- matrix:end -->
 
-Alleen Pagina's is gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
+Pagina's en Media zijn gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
 
 ## Altijd open
 

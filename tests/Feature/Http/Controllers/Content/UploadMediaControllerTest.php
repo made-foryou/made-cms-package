@@ -171,6 +171,6 @@ it('answers 401 to a guest', function (): void {
     expect(Media::query()->count())->toBe(0);
 });
 
-it('keeps the screen that is coming at the same address', function (): void {
-    $this->get('made-cms/media')->assertOk()->assertSee('<h1 id="made-cms-titel">Media</h1>', false);
+it('leaves a GET of the same address to the screen of the media library', function (): void {
+    $this->get('made-cms/media')->assertOk()->assertSee('data-media-library', false)->assertDontSee('wordt nog gebouwd');
 });

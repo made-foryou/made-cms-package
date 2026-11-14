@@ -171,7 +171,7 @@ AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [Role::C
 
 In the menu the screens sit in four groups, in this order: your site (pages), collections (news, media, messages), findability (meta tags, alt texts, links, redirects, sitemap, keywords) and management (users and roles, forms, backups, log, domain). `Screen::group()` gives the `ScreenGroup` of a screen.
 
-Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). The pages screen is built; the other screens show that they are coming until they are. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
+Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). The pages screen and the media library are built; the other screens show that they are coming until they are. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
 
 ```php
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;

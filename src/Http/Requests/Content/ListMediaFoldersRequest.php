@@ -10,7 +10,7 @@ use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
  * The folders of the media library, with the files of one kind counted when the list shows one kind (the picker of an
- * image counts images), or only the images without an alt text when it shows those.
+ * image counts images), only the images without an alt text when it shows those, and only the files a search finds.
  */
 final class ListMediaFoldersRequest extends LauncherRequest
 {
@@ -22,6 +22,7 @@ final class ListMediaFoldersRequest extends LauncherRequest
         return [
             'kind' => ['nullable', Rule::enum(MediaKind::class)],
             'without_alt' => ['sometimes', 'boolean'],
+            'q' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -41,6 +42,11 @@ final class ListMediaFoldersRequest extends LauncherRequest
     public function withoutAlt(): bool
     {
         return $this->boolean('without_alt');
+    }
+
+    public function search(): string
+    {
+        return $this->string('q')->trim()->toString();
     }
 
     protected function error(string $key): string

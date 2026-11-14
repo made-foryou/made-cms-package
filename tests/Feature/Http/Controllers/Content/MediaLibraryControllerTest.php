@@ -108,7 +108,7 @@ it('opens with the folder, the filter, the search and the order of its address',
         ->and($config['filter'])->toBe(['kind' => 'document', 'without_alt' => false, 'q' => 'wedstrijd', 'sort' => 'name'])
         ->and($config['chosen'])->toBe($schema->id)
         ->and(array_column($config['initial']['files']['files'], 'id'))->toBe([$schema->id])
-        ->and($config['initial']['files']['summary'])->toBe('1 document')
+        ->and($config['initial']['files']['summary'])->toBe('1 document voor “wedstrijd”')
         ->and($config['initial']['folders']['folders'][0]['count'])->toBe(1);
 });
 

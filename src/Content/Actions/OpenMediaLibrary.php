@@ -34,7 +34,7 @@ final class OpenMediaLibrary
             filter: $filter,
             folder: $folder,
             list: ListMedia::run($filter),
-            folders: ListMediaFolders::run($filter->kind, $filter->withoutAlt),
+            folders: ListMediaFolders::run($filter->kind, $filter->withoutAlt, $filter->search),
         );
     }
 }

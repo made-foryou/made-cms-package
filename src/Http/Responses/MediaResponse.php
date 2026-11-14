@@ -44,7 +44,8 @@ final class MediaResponse
 
     /**
      * One page of a list, each file as the upload field gets it, with the number of files the list holds in words
-     * ("12 afbeeldingen", "3 afbeeldingen zonder alt-tekst"), so the script never builds a plural itself.
+     * ("12 afbeeldingen", "3 afbeeldingen zonder alt-tekst", "2 bestanden voor “team”"), so the script never builds a
+     * plural itself.
      */
     public static function listed(MediaList $list, MediaFilter $filter): JsonResponse
     {
@@ -58,14 +59,17 @@ final class MediaResponse
      */
     public static function list(MediaList $list, MediaFilter $filter): array
     {
+        $locale = Locale::launcher();
         $count = $filter->withoutAlt ? 'without_alt' : ($filter->kind->value ?? 'all');
+        $summary = trans_choice('made-cms-package::media.browser.count.'.$count, $list->total, ['count' => $list->total], $locale);
+        $search = trim($filter->search);
 
         return [
             'files' => array_map(self::file(...), $list->files),
             'page' => $list->page,
             'total' => $list->total,
             'more' => $list->more,
-            'summary' => trans_choice('made-cms-package::media.browser.count.'.$count, $list->total, ['count' => $list->total], Locale::launcher()),
+            'summary' => $search === '' ? $summary : (string) __('made-cms-package::media.browser.found', ['count' => $summary, 'search' => $search], $locale),
         ];
     }
 
@@ -90,10 +94,11 @@ final class MediaResponse
     }
 
     /**
-     * A file as the side column of the media library shows it: the file, the number of pages it is used on in words
-     * ("Gebruikt op 2 pagina's", "Nog nergens gebruikt"; a deleted page does not count), and the pages with the places
-     * on them, each page with the address of its edit shell (null for a deleted page, which has none) and each place
-     * with a note when it is in one version only ("Alleen in het concept", "Nog op de site, niet meer in het concept").
+     * A file as the side column of the media library shows it: the file, the heading of its places in words
+     * ("Gebruikt op 2 pagina's"; "Gebruik" when it is on none, a deleted page does not count), and the pages with the
+     * places on them. Each page has the address of its edit shell (null for a deleted page, which has none) and a note
+     * when it is in the bin or all its places are in one version only ("Alleen in het concept", "Nog op de site, niet
+     * meer in het concept"); when its places differ, each place in one version has that note itself.
      */
     public static function described(MediaDescription $description): JsonResponse
     {
@@ -106,15 +111,36 @@ final class MediaResponse
                 'title' => $place->pageTitle,
                 'url' => $place->pageDeleted ? null : PageLinks::edit($place->page),
                 'deleted' => $place->pageDeleted,
+                'notes' => [],
                 'places' => [],
             ];
+            $pages[$place->page]['notes'][] = self::note($place, $locale);
             $pages[$place->page]['places'][] = ['where' => $place->where, 'note' => self::note($place, $locale)];
         }
 
         return self::json([
             'file' => self::file($description->file),
-            'used' => trans_choice('made-cms-package::media.library.used', $count, ['count' => $count], $locale),
-            'pages' => array_values($pages),
+            'heading' => $count === 0
+                ? (string) __('made-cms-package::media.library.usage', [], $locale)
+                : trans_choice('made-cms-package::media.library.used', $count, ['count' => $count], $locale),
+            'pages' => array_values(array_map(static function (array $page) use ($locale): array {
+                $notes = array_unique($page['notes']);
+                $note = match (true) {
+                    $page['deleted'] => (string) __('made-cms-package::media.library.deleted', [], $locale),
+                    count($notes) === 1 => $notes[0],
+                    default => null,
+                };
+
+                return [
+                    'title' => $page['title'],
+                    'url' => $page['url'],
+                    'deleted' => $page['deleted'],
+                    'note' => $note,
+                    'places' => $page['deleted'] || count($notes) === 1
+                        ? array_map(static fn (array $place): array => ['where' => $place['where'], 'note' => null], $page['places'])
+                        : $page['places'],
+                ];
+            }, $pages)),
         ]);
     }
 

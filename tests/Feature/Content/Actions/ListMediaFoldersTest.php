@@ -53,6 +53,18 @@ it('counts only the images without an alt text when the list shows those', funct
         ->and($folders->counts->all)->toBe(4);
 });
 
+it('counts only the files a search finds', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    Media::factory()->in($teams)->create(['name' => 'teamfoto']);
+    Media::factory()->in($teams)->create(['name' => 'training']);
+
+    $folders = ListMediaFolders::run(search: 'TEAM');
+
+    expect($folders->folders)->toEqual([new MediaFolderCount($teams->id, 'Teams', 1)])
+        ->and($folders->all)->toBe(1)
+        ->and($folders->counts->all)->toBe(2);
+});
+
 it('lists no folders in an empty library', function (): void {
     $folders = ListMediaFolders::run();
 

@@ -70,6 +70,14 @@ final class CropImage
         $cut = $crop->area->onOriginal($width, $height);
         $image = $image->crop($cut['width'], $cut['height'], $cut['x'], $cut['y']);
 
+        // Scaled down before it turns: a quarter turn only moves pixels, so the photo is the same, and turning a photo
+        // of 1920 px instead of the whole cut spares GD a copy of a hundred MB. Turned a quarter, its height becomes
+        // the width of the photo.
+        $largest = $crop->scaleDown ? config()->integer('made-cms-package.media.image.max_width') : self::LARGEST;
+        $image = $crop->area->rotation === 90 || $crop->area->rotation === 270
+            ? $image->scaleDown(min($image->width(), self::LARGEST), $largest)
+            : $image->scaleDown($largest, min($image->height(), self::LARGEST));
+
         if ($crop->area->rotation !== 0) {
             $image = $image->rotate($crop->area->rotation);
         }
@@ -78,9 +86,6 @@ final class CropImage
             $image = $image->flip(Direction::HORIZONTAL);
         }
 
-        $image = $crop->scaleDown
-            ? $image->scaleDown(width: config()->integer('made-cms-package.media.image.max_width'))
-            : $image->scaleDown(self::LARGEST, self::LARGEST);
         $format = Format::create(config()->string('made-cms-package.media.image.format'));
         $photo = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'))->toString();
         $thumbnail = MakeThumbnail::run($photo);

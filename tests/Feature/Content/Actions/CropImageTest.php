@@ -92,6 +92,16 @@ it('turns and mirrors the photo as the editor saw it', function (int $rotation, 
     'a quarter left' => [270, false, [300, 400], ['green', 'yellow', 'red', 'blue']],
 ]);
 
+it('scales a turned photo down to the maximum width it has once it is turned', function (): void {
+    config(['made-cms-package.media.image.max_width' => 200]);
+    $media = cropped(quadrants(800, 600));
+
+    $media = CropImage::run($media, new CropMedia(new CropArea(0, 0, 600, 800, 90, true)));
+
+    expect(storedSize($media->path))->toBe([200, 267, 'mime' => 'image/webp'])
+        ->and(quadrantsOf((string) Storage::disk('public')->get($media->path)))->toBe(['red', 'blue', 'green', 'yellow']);
+});
+
 it('cuts a part of the turned photo', function (): void {
     $media = cropped(quadrants(400, 300));
 

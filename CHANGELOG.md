@@ -203,6 +203,7 @@
 
 ### Changed
 
+- The upload field asks the alt text of every file it took once the batch is in, a document and a video too: for a document it is the description of its download link, for a video a short description of what happens in it, each with a placeholder and a hint of its own (`media.upload.texts.alt_placeholder_*`, `alt_hint_document`, `alt_hint_video`). "Later doen" leaves it, as for a photo. The note "geen afbeelding, dus geen alt-tekst nodig" (`media.upload.texts.no_alt`) is gone.
 - `GET /made-cms/media/folders` also answers `counts`: the numbers of the whole library per kind and of the images without an alt text (`{"all", "image", "document", "video", "without_alt"}`), whatever kind it lists, for the filters of the media library. `ListMediaFolders` gives them as `MediaFolders::$counts` (`MediaCounts`), and `MediaBuilder::countPerKind()` counts the files per kind in one query.
 - The count in words of `GET /made-cms/media/files` says "3 afbeeldingen zonder alt-tekst" for `without_alt=1`, and names a search ("2 bestanden voor “team”"). `MediaResponse::listed()` takes the `MediaFilter` instead of the kind.
 - A search in the media library (`q` of `GET /made-cms/media/files`, `MediaBuilder::search()`, the picker) also finds a file by the title of a page it is used on, in the draft or the published version of the page, never a deleted one. The search field says "Zoek op naam, alt-tekst of pagina".

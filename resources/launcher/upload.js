@@ -131,8 +131,9 @@ function start(field) {
     // The folder a file went into: the one of the field when the file came in.
     const folderOf = (row) => row.folder?.label ?? folder();
     const open = (row) => row.state === 'waiting' || row.state === 'uploading' || row.state === 'processing';
-    // A photo the crop step has or had asks its alt text there, not here.
-    const describes = (row) => row.state === 'done' && row.result.kind === 'image' && row.step !== 'waiting' && row.step !== 'handled';
+    // Every file asks its alt text, a document and a video too (the description of its download link, of what happens
+    // in it); a photo the crop step has or had asks it there, not here.
+    const describes = (row) => row.state === 'done' && row.step !== 'waiting' && row.step !== 'handled';
 
     function announce(text) {
         ui.announce.textContent = '';
@@ -184,7 +185,6 @@ function start(field) {
                 return [
                     result.meta,
                     result.kind === 'image' && result.size < file.size ? format(texts.was, { size: size(file.size) }) : null,
-                    result.kind === 'image' ? null : texts.no_alt,
                 ].filter(Boolean).join(' · ');
             default:
                 return row.error;
@@ -230,6 +230,15 @@ function start(field) {
         part('retry').hidden = ! (failed && row.retry);
         part('dismiss').hidden = ! failed;
         part('alt').hidden = ! describes(row);
+
+        // What the alt text of a document or a video is; the field of one photo keeps its own hint.
+        if (done && ! config.one_image) {
+            const kind = result.kind === 'document' || result.kind === 'video' ? result.kind : 'image';
+
+            part('alt-input').placeholder = texts['alt_placeholder_' + kind] ?? part('alt-input').placeholder;
+            part('alt-hint').textContent = texts['alt_hint_' + kind] ?? '';
+            part('alt-hint').hidden = (texts['alt_hint_' + kind] ?? '') === '';
+        }
     }
 
     /** The field as a whole: which moment it is in, and what a host and a screen reader hear of it. */

@@ -130,13 +130,18 @@ it('takes the good files of a drop and keeps the error of the one that is too la
         ->and($rows[2])->toBe([
             'state' => 'done',
             'name' => 'wedstrijdschema-najaar.pdf',
-            'note' => '1 kB · geen afbeelding, dus geen alt-tekst nodig',
+            'note' => '1 kB',
             'icon' => ['icon-file'],
             'buttons' => [],
-            'alt' => false,
+            'alt' => true,
         ]);
 
-    $page->assertSeeIn('[data-slot="upload-done-text"]', '2 bestanden toegevoegd aan de map Teams')
+    // A document asks its alt text too: the description of its download link.
+    $page->assertAttribute('.upload-rij:nth-child(3) [data-slot="upload-row-alt-input"]', 'placeholder', 'Bijvoorbeeld: Inschrijfformulier (pdf)')
+        ->assertSeeIn('.upload-rij:nth-child(3) [data-slot="upload-row-alt-hint"]', 'Voor een document is dit de omschrijving bij de downloadlink.')
+        ->assertMissing('.upload-rij:nth-child(1) [data-slot="upload-row-alt-hint"]')
+        ->assertAttribute('.upload-rij:nth-child(1) [data-slot="upload-row-alt-input"]', 'placeholder', 'Wat staat erop, in één zin')
+        ->assertSeeIn('[data-slot="upload-done-text"]', '2 bestanden toegevoegd aan de map Teams')
         ->assertSeeIn('[data-slot="upload-errors-note"]', 'De andere bestanden zijn gewoon doorgegaan.')
         ->assertVisible('[data-slot="upload-save"]')
         ->click('[data-slot="upload-later"]');
@@ -415,10 +420,10 @@ it('keeps a file whose connection dropped and uploads it when the editor tries a
         ->and(Media::query()->sole()->name)->toBe('wedstrijdschema')
         ->and($page->script(uploadRows())[0]['state'])->toBe('done');
 
-    // A document needs no alt text: the field closes with one button.
-    $page->assertVisible('[data-slot="upload-close"]')
-        ->assertMissing('[data-slot="upload-save"]')
-        ->click('[data-slot="upload-close"]');
+    // A document asks its alt text too, and can leave it for later.
+    $page->assertVisible('[data-slot="upload-save"]')
+        ->assertVisible('[data-slot="upload-row-alt-input"]')
+        ->click('[data-slot="upload-later"]');
 
     expect($page->script(waitUntil(uploadMoment('rest'))))->toBeTrue();
 
@@ -540,8 +545,8 @@ it('hands the photos of a batch to the crop step one after the other, and closes
     ], drop: true)))->toBe(3);
 
     expect($page->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue()
-        // The field asks no alt text of the photos the step has.
-        ->and($page->script("() => [...document.querySelectorAll('[data-slot=\"upload-row-alt-input\"]')].filter((input) => input.checkVisibility()).length"))->toBe(0);
+        // The field asks no alt text of the photos the step has, only of the document.
+        ->and($page->script("() => [...document.querySelectorAll('[data-slot=\"upload-row-alt-input\"]')].filter((input) => input.checkVisibility()).length"))->toBe(1);
 
     $page->assertSeeIn('[data-slot="crop-eyebrow"]', 'Uploaden / bestand 1 van 2')
         ->assertSeeIn('[data-slot="crop-step"]', 'Bestand 1 van 2 · daarna clubavond')
@@ -558,9 +563,16 @@ it('hands the photos of a batch to the crop step one after the other, and closes
         ->type('[data-slot="crop-alt"]', 'Leden aan de bar')
         ->click('[data-slot="crop-save"]');
 
-    expect($page->script(waitUntil("! document.querySelector('[data-media-crop]').open && ".uploadMoment('rest'))))->toBeTrue()
+    // Back from the step, the field asks the alt text of the document.
+    expect($page->script(waitUntil("! document.querySelector('[data-media-crop]').open && document.activeElement?.dataset.slot === 'upload-row-alt-input'")))->toBeTrue();
+
+    $page->type('.upload-rij:nth-child(2) [data-slot="upload-row-alt-input"]', 'Wedstrijdschema najaar (pdf)')
+        ->keys('.upload-rij:nth-child(2) [data-slot="upload-row-alt-input"]', 'Enter');
+
+    expect($page->script(waitUntil(uploadMoment('rest'))))->toBeTrue()
         ->and(Media::query()->where('name', 'teamfoto')->sole()->only('alt', 'width', 'height'))->toBe(['alt' => 'Het eerste team', 'width' => 800, 'height' => 800])
         ->and(Media::query()->where('name', 'clubavond')->sole()->alt)->toBe('Leden aan de bar')
+        ->and(Media::query()->where('name', 'wedstrijdschema')->sole()->alt)->toBe('Wedstrijdschema najaar (pdf)')
         ->and($page->script('() => document.activeElement?.dataset.slot'))->toBe('upload-choose');
 
     $page->assertNoJavaScriptErrors();

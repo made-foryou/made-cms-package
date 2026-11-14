@@ -55,9 +55,7 @@
                     <span class="veld upload-alt" data-slot="upload-row-alt" hidden>
                         <label data-slot="upload-row-alt-label">{{ $t('alt') }}</label>
                         <input type="text" maxlength="255" autocomplete="off" placeholder="{{ $t('alt_placeholder') }}" data-slot="upload-row-alt-input">
-                        @if ($upload['one_image'])
-                            <span class="upload-klein" data-slot="upload-row-alt-hint">{{ $t('alt_hint') }}</span>
-                        @endif
+                        <span class="upload-klein" data-slot="upload-row-alt-hint"@unless ($upload['one_image']) hidden @endunless>{{ $upload['one_image'] ? $t('alt_hint') : '' }}</span>
                         <span class="veld-fout" data-slot="upload-row-alt-error" hidden></span>
                     </span>
                 </span>

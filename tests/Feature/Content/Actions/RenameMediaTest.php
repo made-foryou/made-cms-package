@@ -155,6 +155,18 @@ it('tells that a file was renamed, after the commit', function (): void {
     Event::assertDispatched(MediaRenamed::class, fn (MediaRenamed $event): bool => $event->media->is($media) && $event->media->name === 'clubavond');
 });
 
+it('keeps the file of a committed name when something after the commit fails', function (): void {
+    $media = renamed(photo(400, 300));
+    Event::listen(MediaRenamed::class, static fn (): never => throw new RuntimeException('A listener failed.'));
+
+    expect(fn (): Media => RenameMedia::run($media, 'clubavond'))->toThrow(RuntimeException::class);
+
+    $stored = Media::query()->findOrFail($media->id);
+
+    expect($stored->path)->toEndWith('/clubavond.webp')
+        ->and(Storage::disk('public')->exists($stored->path))->toBeTrue();
+});
+
 it('keeps the former file when the row cannot be stored', function (): void {
     $media = renamed(photo(400, 300));
     $files = Storage::disk('public')->allFiles();

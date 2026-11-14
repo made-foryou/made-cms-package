@@ -53,60 +53,67 @@ final class CropImage
     public function handle(Media $media, CropMedia $crop): Media
     {
         $disk = CheckMediaDisk::run();
-        $written = [];
 
-        try {
-            return DB::transaction(function () use ($media, $crop, $disk, &$written): Media {
-                $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(function () use ($media, $crop, $disk): Media {
+            $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
 
-                if ($stored->kind !== MediaKind::Image || $stored->original_path === null) {
-                    throw MediaNotCroppable::id($stored->id);
-                }
+            if ($stored->kind !== MediaKind::Image || $stored->original_path === null) {
+                throw MediaNotCroppable::id($stored->id);
+            }
 
-                $focal = ['focal_x' => self::focal($crop->focalX), 'focal_y' => self::focal($crop->focalY)];
+            $focal = ['focal_x' => self::focal($crop->focalX), 'focal_y' => self::focal($crop->focalY)];
 
-                if ($this->keepsPhoto($stored, $crop)) {
-                    return $this->store($stored, $focal);
-                }
+            if ($this->keepsPhoto($stored, $crop)) {
+                return $this->store($stored, $focal);
+            }
 
-                $image = DecodeOriginal::run($stored);
-                $width = $image->width();
-                $height = $image->height();
+            $image = DecodeOriginal::run($stored);
+            $width = $image->width();
+            $height = $image->height();
 
-                if (! $crop->area->fits($width, $height)) {
-                    throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.crop_outside')]);
-                }
+            if (! $crop->area->fits($width, $height)) {
+                throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.crop_outside')]);
+            }
 
-                $cut = $crop->area->onOriginal($width, $height);
-                $image = $image->crop($cut['width'], $cut['height'], $cut['x'], $cut['y']);
+            $cut = $crop->area->onOriginal($width, $height);
+            $image = $image->crop($cut['width'], $cut['height'], $cut['x'], $cut['y']);
 
-                // Scaled down before it turns: a quarter turn only moves pixels, so the photo is the same, and turning
-                // a photo of 1920 px instead of the whole cut spares GD a copy of a hundred MB. Turned a quarter, its
-                // height becomes the width of the photo.
-                $largest = $crop->scaleDown ? config()->integer('made-cms-package.media.image.max_width') : self::LARGEST;
-                $image = $crop->area->rotation === 90 || $crop->area->rotation === 270
-                    ? $image->scaleDown(min($image->width(), self::LARGEST), $largest)
-                    : $image->scaleDown($largest, min($image->height(), self::LARGEST));
+            // Scaled down before it turns: a quarter turn only moves pixels, so the photo is the same, and turning
+            // a photo of 1920 px instead of the whole cut spares GD a copy of a hundred MB. Turned a quarter, its
+            // height becomes the width of the photo.
+            $largest = $crop->scaleDown ? config()->integer('made-cms-package.media.image.max_width') : self::LARGEST;
+            $image = $crop->area->rotation === 90 || $crop->area->rotation === 270
+                ? $image->scaleDown(min($image->width(), self::LARGEST), $largest)
+                : $image->scaleDown($largest, min($image->height(), self::LARGEST));
 
-                if ($crop->area->rotation !== 0) {
-                    $image = $image->rotate($crop->area->rotation);
-                }
+            if ($crop->area->rotation !== 0) {
+                $image = $image->rotate($crop->area->rotation);
+            }
 
-                if ($crop->area->flip) {
-                    $image = $image->flip(Direction::HORIZONTAL);
-                }
+            if ($crop->area->flip) {
+                $image = $image->flip(Direction::HORIZONTAL);
+            }
 
-                $format = Format::create(config()->string('made-cms-package.media.image.format'));
-                $photo = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'))->toString();
-                $thumbnail = MakeThumbnail::run($photo);
+            $format = Format::create(config()->string('made-cms-package.media.image.format'));
+            $photo = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'))->toString();
+            $thumbnail = MakeThumbnail::run($photo);
 
-                $home = dirname($stored->original_path);
-                $path = $this->write($disk, "{$home}/".Str::lower(Str::random(8))."/{$stored->name}.{$format->fileExtension()->value}", $photo);
-                $written[] = static fn (): bool => $disk->deleteDirectory(dirname($path));
+            $home = dirname($stored->original_path);
+            $path = $this->write($disk, "{$home}/".Str::lower(Str::random(8))."/{$stored->name}.{$format->fileExtension()->value}", $photo);
 
+            // The new files leave again only when the row cannot be stored, never once it is committed: whatever
+            // fails after the commit (a listener of MediaCropped, RemoveReplacedMediaFiles) leaves a row that holds
+            // them. A change that is not committed after all (a commit that fails, a transaction of the host that
+            // rolls back) leaves them on the disk, unused.
+            try {
                 $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
-                $written[] = static fn (): bool => $disk->delete($thumb);
+            } catch (MediaNotStored $exception) {
+                $disk->deleteDirectory(dirname($path));
 
+                throw $exception;
+            }
+
+            try {
                 return $this->store($stored, replacesFiles: true, columns: [
                     ...$focal,
                     'path' => $path,
@@ -121,14 +128,13 @@ final class CropImage
                         ? null
                         : [...$crop->area->toArray(), 'scale_down' => $crop->scaleDown],
                 ]);
-            });
-        } catch (Throwable $exception) {
-            foreach ($written as $forget) {
-                $forget();
-            }
+            } catch (Throwable $exception) {
+                $disk->deleteDirectory(dirname($path));
+                $disk->delete($thumb);
 
-            throw $exception;
-        }
+                throw $exception;
+            }
+        });
     }
 
     /**

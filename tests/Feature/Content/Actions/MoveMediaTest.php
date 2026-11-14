@@ -27,6 +27,17 @@ it('moves a file out of its folder, to all files', function (): void {
     expect(Media::query()->findOrFail($media->id)->folder_id)->toBeNull();
 });
 
+it('moves the file from the folder it is in now, not the one the editor opened it in', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    $opened = Media::factory()->in($teams)->create();
+    MoveMedia::run(Media::query()->findOrFail($opened->id), MediaFolder::factory()->create()->id);
+
+    $media = MoveMedia::run($opened, $teams->id);
+
+    expect($media->folder_id)->toBe($teams->id)
+        ->and(Media::query()->findOrFail($opened->id)->folder_id)->toBe($teams->id);
+});
+
 it('refuses a folder that is gone and leaves the file where it was', function (): void {
     $folder = MediaFolder::factory()->create();
     $media = Media::factory()->in($folder)->create();

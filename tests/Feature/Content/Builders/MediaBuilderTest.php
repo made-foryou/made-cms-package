@@ -64,6 +64,41 @@ it('takes wildcards in a search literally', function (string $term): void {
     expect(Media::query()->search($term)->pluck('id')->all())->toBe([$literal->id]);
 })->with(['percent' => ['50%'], 'underscore' => ['%_n'], 'escape character' => ['!']]);
 
+it('finds files by the title of a page they are used on, in its draft or its published version', function (): void {
+    $published = Media::factory()->create(['name' => 'teamfoto']);
+    $draft = Media::factory()->create(['name' => 'training']);
+    Media::factory()->create(['name' => 'clubavond']);
+    MediaUsage::factory()->for($published)->for(Page::factory()->state(['title' => 'Onze teams']))->create();
+    MediaUsage::factory()->draft()->for($draft)->for(Page::factory()->state(['title' => 'Teams en trainingen']))->create();
+
+    expect(Media::query()->search('TEAMS')->orderBy('id')->pluck('id')->all())->toBe([$published->id, $draft->id]);
+});
+
+it('never finds a file by the title of a deleted page', function (): void {
+    $media = Media::factory()->create(['name' => 'teamfoto']);
+    MediaUsage::factory()->for($media)->for(Page::factory()->deletedAt(now())->state(['title' => 'Oud nieuws']))->create();
+
+    expect(Media::query()->search('nieuws')->count())->toBe(0);
+});
+
+it('finds a file once, whatever the number of places on pages with the title', function (): void {
+    $media = Media::factory()->create(['name' => 'teamfoto']);
+    $page = Page::factory()->create(['title' => 'Merwestad 1']);
+    MediaUsage::factory()->for($media)->for($page)->count(2)->create();
+    MediaUsage::factory()->draft()->for($media)->for($page)->create();
+
+    expect(Media::query()->search('merwestad')->pluck('id')->all())->toBe([$media->id]);
+});
+
+it('keeps the search apart from the other filters', function (): void {
+    $teams = MediaFolder::factory()->create();
+    $inTeams = Media::factory()->in($teams)->create(['name' => 'veld']);
+    $elsewhere = Media::factory()->create(['name' => 'veld-2']);
+    MediaUsage::factory()->for($elsewhere)->for(Page::factory()->state(['title' => 'Veld']))->create();
+
+    expect(Media::query()->inFolder($teams)->search('veld')->pluck('id')->all())->toBe([$inTeams->id]);
+});
+
 it('finds every file for a blank search', function (): void {
     Media::factory()->count(2)->create();
 

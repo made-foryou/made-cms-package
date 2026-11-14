@@ -110,7 +110,7 @@ return [
         'all_files' => 'Alle bestanden',
         'folders' => 'Mappen',
         'search' => 'Zoek in media',
-        'search_placeholder' => 'Zoek op naam of alt-tekst',
+        'search_placeholder' => 'Zoek op naam, alt-tekst of pagina',
         'filters' => 'Filters',
         'kinds' => [
             'image' => 'Afbeeldingen',

@@ -111,8 +111,9 @@ final class MediaBuilder extends Builder
     }
 
     /**
-     * The files whose name or alt text holds the term, whatever the capitals; every file for a blank term.
-     * Wildcards in the term are taken literally.
+     * The files whose name or alt text holds the term, or the title of a page they are used on (in its draft or its
+     * published version, never a deleted page), whatever the capitals; every file for a blank term. Wildcards in the
+     * term are taken literally.
      */
     public function search(string $term): self
     {
@@ -126,7 +127,11 @@ final class MediaBuilder extends Builder
 
         return $this->where(function (MediaBuilder $query) use ($pattern): void {
             $query->whereRaw("lower(name) like ? escape '!'", [$pattern])
-                ->orWhereRaw("lower(alt) like ? escape '!'", [$pattern]);
+                ->orWhereRaw("lower(alt) like ? escape '!'", [$pattern])
+                ->orWhereHas('usages.page', function (Builder $page) use ($pattern): void {
+                    $page->whereNull($page->qualifyColumn('deleted_at'))
+                        ->whereRaw("lower(title) like ? escape '!'", [$pattern]);
+                });
         });
     }
 }

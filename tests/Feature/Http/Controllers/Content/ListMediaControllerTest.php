@@ -8,6 +8,8 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\ListMedia;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
+use Made\CmsPackage\Content\Models\MediaUsage;
+use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
     Storage::fake('public');
@@ -93,6 +95,14 @@ it('finds files by their alt text', function (): void {
     Media::factory()->create(['name' => 'clubavond']);
 
     expect(listedMedia(['q' => 'merwestad']))->toBe([$byAlt->id]);
+});
+
+it('finds files by the title of a page they are used on', function (): void {
+    $used = Media::factory()->create(['name' => 'teamfoto']);
+    MediaUsage::factory()->for($used)->for(Page::factory()->state(['title' => 'Onze teams']))->create();
+    Media::factory()->create(['name' => 'clubavond']);
+
+    expect(listedMedia(['q' => 'onze teams']))->toBe([$used->id]);
 });
 
 it('gives the files a page at a time', function (): void {

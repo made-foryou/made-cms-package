@@ -110,7 +110,7 @@ return [
         'all_files' => 'All files',
         'folders' => 'Folders',
         'search' => 'Search media',
-        'search_placeholder' => 'Search by name or alt text',
+        'search_placeholder' => 'Search by name, alt text or page',
         'filters' => 'Filters',
         'kinds' => [
             'image' => 'Images',

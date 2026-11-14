@@ -25,6 +25,9 @@ final class RenameMedia
      * it takes at once; the former address stops working once the change is committed. The name stays when the
      * typed name gives the same slug.
      *
+     * It works from the row as it is now, read again with its row locked, never from the model it is handed: a crop
+     * or a new name stored after the editor opened the file is what it renames, and a crop at the same time waits.
+     *
      * @throws ValidationException keyed by "name" for a name without letters or digits
      * @throws MediaDiskNotUsable
      * @throws MediaNotStored
@@ -34,22 +37,28 @@ final class RenameMedia
         $name = (MediaName::tryFrom($name)
             ?? throw ValidationException::withMessages(['name' => (string) __('made-cms-package::media.errors.name')]))->value;
 
-        if ($media->name === $name) {
-            return $media;
-        }
-
         $disk = CheckMediaDisk::run();
-        $extension = pathinfo($media->path, PATHINFO_EXTENSION);
-        $path = dirname($media->path)."/{$name}".($extension === '' ? '' : ".{$extension}");
-
-        if (! $disk->copy($media->path, $path)) {
-            throw MediaNotStored::at($path);
-        }
+        $copy = null;
 
         try {
-            return DB::transaction(static function () use ($media, $name, $path, $disk): Media {
+            return DB::transaction(static function () use ($media, $name, $disk, &$copy): Media {
                 $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
+
+                if ($stored->name === $name) {
+                    return $stored;
+                }
+
                 $former = $stored->path;
+                $extension = pathinfo($former, PATHINFO_EXTENSION);
+                $path = dirname($former)."/{$name}".($extension === '' ? '' : ".{$extension}");
+
+                if ($path !== $former) {
+                    if (! $disk->copy($former, $path)) {
+                        throw MediaNotStored::at($path);
+                    }
+
+                    $copy = $path;
+                }
 
                 $stored->update(['name' => $name, 'path' => $path]);
                 MediaRenamed::dispatch($stored);
@@ -63,7 +72,9 @@ final class RenameMedia
                 return $stored;
             });
         } catch (Throwable $exception) {
-            $disk->delete($path);
+            if ($copy !== null) {
+                $disk->delete($copy);
+            }
 
             throw $exception;
         }

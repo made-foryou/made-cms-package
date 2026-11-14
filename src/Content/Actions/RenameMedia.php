@@ -39,49 +39,51 @@ final class RenameMedia
             ?? throw ValidationException::withMessages(['name' => (string) __('made-cms-package::media.errors.name')]))->value;
 
         $disk = CheckMediaDisk::run();
-        $copy = null;
 
-        try {
-            return DB::transaction(static function () use ($media, $name, $disk, &$copy): Media {
-                $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
+        return DB::transaction(static function () use ($media, $name, $disk): Media {
+            $stored = Media::query()->whereKey($media->id)->lockForUpdate()->firstOrFail();
 
-                if ($stored->name === $name) {
-                    return $stored;
-                }
-
-                $former = $stored->path;
-                $extension = pathinfo($former, PATHINFO_EXTENSION);
-                $path = dirname($former)."/{$name}".($extension === '' ? '' : ".{$extension}");
-
-                if ($path !== $former) {
-                    // A file already at that name (a name given back within one transaction, before its removal) holds
-                    // the same photo; it is written over, but never removed when this fails.
-                    $existed = $disk->exists($path);
-
-                    if (! $disk->copy($former, $path)) {
-                        throw MediaNotStored::at($path);
-                    }
-
-                    $copy = $existed ? null : $path;
-                }
-
-                $stored->update(['name' => $name, 'path' => $path]);
-                MediaRenamed::dispatch($stored);
-
-                if ($path !== $former) {
-                    DB::afterCommit(static function () use ($stored, $former): void {
-                        RemoveReplacedMediaFiles::run($stored->id, $former);
-                    });
-                }
-
+            if ($stored->name === $name) {
                 return $stored;
-            });
-        } catch (Throwable $exception) {
-            if ($copy !== null) {
-                $disk->delete($copy);
             }
 
-            throw $exception;
-        }
+            $former = $stored->path;
+            $extension = pathinfo($former, PATHINFO_EXTENSION);
+            $path = dirname($former)."/{$name}".($extension === '' ? '' : ".{$extension}");
+            $copy = null;
+
+            if ($path !== $former) {
+                // A file already at that name (a name given back within one transaction, before its removal) holds the
+                // same photo; it is written over, but never removed when this fails.
+                $existed = $disk->exists($path);
+
+                if (! $disk->copy($former, $path)) {
+                    throw MediaNotStored::at($path);
+                }
+
+                $copy = $existed ? null : $path;
+            }
+
+            // The copy leaves again only when the row cannot be stored, never once it is committed: whatever fails
+            // after the commit (a listener of MediaRenamed, RemoveReplacedMediaFiles) leaves a row that holds it.
+            try {
+                $stored->update(['name' => $name, 'path' => $path]);
+                MediaRenamed::dispatch($stored);
+            } catch (Throwable $exception) {
+                if ($copy !== null) {
+                    $disk->delete($copy);
+                }
+
+                throw $exception;
+            }
+
+            if ($path !== $former) {
+                DB::afterCommit(static function () use ($stored, $former): void {
+                    RemoveReplacedMediaFiles::run($stored->id, $former);
+                });
+            }
+
+            return $stored;
+        });
     }
 }

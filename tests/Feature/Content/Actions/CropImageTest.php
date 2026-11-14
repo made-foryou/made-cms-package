@@ -317,6 +317,21 @@ it('takes its files off the disk again when the row cannot be stored', function 
         ->and(Media::query()->findOrFail($media->id)->path)->toBe($media->path);
 });
 
+it('keeps the files of a committed crop when something after the commit fails', function (): void {
+    $disk = Storage::disk('public');
+    $media = cropped(quadrants(800, 600));
+    Event::listen(MediaCropped::class, static fn (): never => throw new RuntimeException('A listener failed.'));
+
+    expect(fn (): Media => CropImage::run($media, new CropMedia(new CropArea(0, 0, 400, 300))))->toThrow(RuntimeException::class);
+
+    $stored = Media::query()->findOrFail($media->id);
+
+    expect($stored->path)->not->toBe($media->path)
+        ->and($disk->exists($stored->path))->toBeTrue()
+        ->and($disk->exists((string) $stored->thumb_path))->toBeTrue()
+        ->and(storedSize($stored->path))->toBe([400, 300, 'mime' => 'image/webp']);
+});
+
 it('refuses a file that is gone, without writing', function (): void {
     $media = cropped(quadrants(400, 300));
     $files = Storage::disk('public')->allFiles();

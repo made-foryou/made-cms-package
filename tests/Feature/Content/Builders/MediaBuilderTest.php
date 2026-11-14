@@ -192,3 +192,12 @@ it('counts per folder whatever order the query has', function (): void {
 it('counts nothing in an empty library', function (): void {
     expect(Media::query()->countPerFolder())->toBe([]);
 });
+
+it('counts the files per kind, every kind also without files', function (): void {
+    Media::factory()->count(2)->create();
+    Media::factory()->document()->create();
+
+    expect(Media::query()->countPerKind())->toBe(['image' => 2, 'document' => 1, 'video' => 0])
+        ->and(Media::query()->newestFirst()->inFolder(MediaFolder::factory()->create())->countPerKind())
+        ->toBe(['image' => 0, 'document' => 0, 'video' => 0]);
+});

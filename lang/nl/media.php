@@ -106,6 +106,7 @@ return [
             'image' => '{0} Geen afbeeldingen|{1} 1 afbeelding|[2,*] :count afbeeldingen',
             'document' => '{0} Geen documenten|{1} 1 document|[2,*] :count documenten',
             'video' => '{0} Geen video’s|{1} 1 video|[2,*] :count video’s',
+            'without_alt' => '{0} Geen afbeeldingen zonder alt-tekst|{1} 1 afbeelding zonder alt-tekst|[2,*] :count afbeeldingen zonder alt-tekst',
         ],
         'all_files' => 'Alle bestanden',
         'folders' => 'Mappen',

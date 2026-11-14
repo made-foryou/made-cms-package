@@ -111,6 +111,27 @@ final class MediaBuilder extends Builder
     }
 
     /**
+     * The number of these files of each kind, by the value of the kind, in one query; a kind without files counts 0.
+     *
+     * @return array<string, int>
+     */
+    public function countPerKind(): array
+    {
+        $counts = array_fill_keys(array_map(static fn (MediaKind $kind): string => $kind->value, MediaKind::cases()), 0);
+        $rows = $this->clone()->reorder()->toBase()
+            ->select('kind')
+            ->selectRaw('count(*) as aggregate')
+            ->groupBy('kind')
+            ->get();
+
+        foreach ($rows as $row) {
+            $counts[(string) $row->kind] = (int) $row->aggregate;
+        }
+
+        return $counts;
+    }
+
+    /**
      * The files whose name or alt text holds the term, or the title of a page they are used on (in its draft or its
      * published version, never a deleted page), whatever the capitals; every file for a blank term. Wildcards in the
      * term are taken literally.

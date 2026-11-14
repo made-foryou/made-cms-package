@@ -25,6 +25,6 @@ final class ListMediaController
             $request->reject('folder', 'folder_gone');
         }
 
-        return MediaResponse::listed($list, $filter->kind);
+        return MediaResponse::listed($list, $filter);
     }
 }

@@ -200,6 +200,8 @@
 
 ### Changed
 
+- `GET /made-cms/media/folders` also answers `counts`: the numbers of the whole library per kind and of the images without an alt text (`{"all", "image", "document", "video", "without_alt"}`), whatever kind it lists, for the filters of the media library. `ListMediaFolders` gives them as `MediaFolders::$counts` (`MediaCounts`), and `MediaBuilder::countPerKind()` counts the files per kind in one query.
+- The count in words of `GET /made-cms/media/files` says "3 afbeeldingen zonder alt-tekst" for `without_alt=1`. `MediaResponse::listed()` takes the `MediaFilter` instead of the kind.
 - A search in the media library (`q` of `GET /made-cms/media/files`, `MediaBuilder::search()`, the picker) also finds a file by the title of a page it is used on, in the draft or the published version of the page, never a deleted one. The search field says "Zoek op naam, alt-tekst of pagina".
 - The README asks for a `memory_limit` of at least 256 MB instead of 128 MB: with GD, cropping a phone photo of 12 MP takes about 140 MB and one of 24 MP up to about 290 MB. A cropped photo is scaled down before it turns, so turning never copies the whole cut.
 - A file as the CMS shows it (`file` of the media endpoints, `strip.media` of the side panel, `MediaDetails`) has `croppable`: whether it is a photo with an original to cut it from again. `MediaFile` has it too, from `FindMedia`.

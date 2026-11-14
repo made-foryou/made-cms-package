@@ -106,6 +106,7 @@ return [
             'image' => '{0} No images|{1} 1 image|[2,*] :count images',
             'document' => '{0} No documents|{1} 1 document|[2,*] :count documents',
             'video' => '{0} No videos|{1} 1 video|[2,*] :count videos',
+            'without_alt' => '{0} No images without an alt text|{1} 1 image without an alt text|[2,*] :count images without an alt text',
         ],
         'all_files' => 'All files',
         'folders' => 'Folders',

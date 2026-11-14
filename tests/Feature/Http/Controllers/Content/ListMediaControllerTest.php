@@ -78,6 +78,13 @@ it('counts the images in words when it lists images', function (int $count, stri
     expect($this->getJson('made-cms/media/files?kind=image')->json('summary'))->toBe($summary);
 })->with([[0, 'Geen afbeeldingen'], [1, '1 afbeelding'], [3, '3 afbeeldingen']]);
 
+it('counts the images without an alt text in words when it lists those', function (int $count, string $summary): void {
+    Media::factory()->count($count)->create();
+    Media::factory()->withAlt('Het eerste team')->create();
+
+    expect($this->getJson('made-cms/media/files?without_alt=1')->json('summary'))->toBe($summary);
+})->with([[0, 'Geen afbeeldingen zonder alt-tekst'], [1, '1 afbeelding zonder alt-tekst'], [2, '2 afbeeldingen zonder alt-tekst']]);
+
 it('lists the files of a folder, of a kind, without an alt text or by name', function (): void {
     $teams = MediaFolder::factory()->create();
     $veld = Media::factory()->in($teams)->create(['name' => 'veld']);

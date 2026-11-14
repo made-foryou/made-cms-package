@@ -27,11 +27,13 @@ it('lists the folders from a to z with the number of their files', function (): 
                 ['id' => $nieuws->id, 'name' => 'Nieuws', 'count' => 0],
                 ['id' => $teams->id, 'name' => 'Teams', 'count' => 3],
             ],
+            'counts' => ['all' => 4, 'image' => 3, 'document' => 1, 'video' => 0, 'without_alt' => 3],
         ]);
 
     $this->getJson('made-cms/media/folders?kind=image')
         ->assertJsonPath('all', 3)
-        ->assertJsonPath('folders.1.count', 2);
+        ->assertJsonPath('folders.1.count', 2)
+        ->assertJsonPath('counts.all', 4);
 });
 
 it('refuses a kind it does not know', function (): void {

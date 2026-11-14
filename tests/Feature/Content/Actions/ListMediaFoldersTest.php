@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Actions\ListMediaFolders;
+use Made\CmsPackage\Content\Data\MediaCounts;
 use Made\CmsPackage\Content\Data\MediaFolderCount;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Models\Media;
@@ -51,5 +52,16 @@ it('gives the folders as the CMS shows them', function (): void {
     expect(ListMediaFolders::run()->toArray())->toBe([
         'all' => 1,
         'folders' => [['id' => $teams->id, 'name' => 'Teams', 'count' => 1]],
+        'counts' => ['all' => 1, 'image' => 1, 'document' => 0, 'video' => 0, 'without_alt' => 1],
     ]);
+});
+
+it('counts the files of the whole library per kind and the images without an alt text, whatever kind it lists', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    Media::factory()->in($teams)->count(2)->create();
+    Media::factory()->withAlt('Het eerste team')->create();
+    Media::factory()->in($teams)->document()->create();
+    Media::factory()->video()->create();
+
+    expect(ListMediaFolders::run(MediaKind::Document)->counts)->toEqual(new MediaCounts(all: 5, image: 3, document: 1, video: 1, withoutAlt: 2));
 });

@@ -7,10 +7,10 @@ namespace Made\CmsPackage\Http\Responses;
 use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Data\MediaCrop;
 use Made\CmsPackage\Content\Data\MediaFile;
+use Made\CmsPackage\Content\Data\MediaFilter;
 use Made\CmsPackage\Content\Data\MediaFolders;
 use Made\CmsPackage\Content\Data\MediaList;
 use Made\CmsPackage\Content\Data\ScaledImage;
-use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Support\Locale;
 use Symfony\Component\HttpFoundation\Response;
@@ -40,23 +40,34 @@ final class MediaResponse
 
     /**
      * One page of a list, each file as the upload field gets it, with the number of files the list holds in words
-     * ("12 afbeeldingen"), so the script never builds a plural itself.
-     *
-     * @param  MediaKind|null  $kind  the kind the list shows, which names its files; null for every kind
+     * ("12 afbeeldingen", "3 afbeeldingen zonder alt-tekst"), so the script never builds a plural itself.
      */
-    public static function listed(MediaList $list, ?MediaKind $kind): JsonResponse
+    public static function listed(MediaList $list, MediaFilter $filter): JsonResponse
     {
-        return self::json([
+        return self::json(self::list($list, $filter));
+    }
+
+    /**
+     * A page of a list as listed() answers it, also for the first page a screen hands its script.
+     *
+     * @return array{files: list<array<string, mixed>>, page: int, total: int, more: bool, summary: string}
+     */
+    public static function list(MediaList $list, MediaFilter $filter): array
+    {
+        $count = $filter->withoutAlt ? 'without_alt' : ($filter->kind->value ?? 'all');
+
+        return [
             'files' => array_map(self::file(...), $list->files),
             'page' => $list->page,
             'total' => $list->total,
             'more' => $list->more,
-            'summary' => trans_choice('made-cms-package::media.browser.count.'.($kind->value ?? 'all'), $list->total, ['count' => $list->total], Locale::launcher()),
-        ]);
+            'summary' => trans_choice('made-cms-package::media.browser.count.'.$count, $list->total, ['count' => $list->total], Locale::launcher()),
+        ];
     }
 
     /**
-     * The folders from a to z with the number of their files, and the number of all files.
+     * The folders from a to z with the number of their files, the number of all files, and the numbers of the whole
+     * library per kind and of the images without an alt text.
      */
     public static function folders(MediaFolders $folders): JsonResponse
     {

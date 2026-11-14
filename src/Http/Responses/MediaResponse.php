@@ -6,12 +6,16 @@ namespace Made\CmsPackage\Http\Responses;
 
 use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Data\MediaCrop;
+use Made\CmsPackage\Content\Data\MediaDescription;
 use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Data\MediaFilter;
 use Made\CmsPackage\Content\Data\MediaFolders;
 use Made\CmsPackage\Content\Data\MediaList;
+use Made\CmsPackage\Content\Data\MediaPlace;
 use Made\CmsPackage\Content\Data\ScaledImage;
+use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Http\Cms\MediaDetails;
+use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Support\Locale;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -86,6 +90,35 @@ final class MediaResponse
     }
 
     /**
+     * A file as the side column of the media library shows it: the file, the number of pages it is used on in words
+     * ("Gebruikt op 2 pagina's", "Nog nergens gebruikt"; a deleted page does not count), and the pages with the places
+     * on them, each page with the address of its edit shell (null for a deleted page, which has none) and each place
+     * with a note when it is in one version only ("Alleen in het concept", "Nog op de site, niet meer in het concept").
+     */
+    public static function described(MediaDescription $description): JsonResponse
+    {
+        $locale = Locale::launcher();
+        $count = $description->places->pageCount(withDeleted: false);
+        $pages = [];
+
+        foreach ($description->places->places as $place) {
+            $pages[$place->page] ??= [
+                'title' => $place->pageTitle,
+                'url' => $place->pageDeleted ? null : PageLinks::edit($place->page),
+                'deleted' => $place->pageDeleted,
+                'places' => [],
+            ];
+            $pages[$place->page]['places'][] = ['where' => $place->where, 'note' => self::note($place, $locale)];
+        }
+
+        return self::json([
+            'file' => self::file($description->file),
+            'used' => trans_choice('made-cms-package::media.library.used', $count, ['count' => $count], $locale),
+            'pages' => array_values($pages),
+        ]);
+    }
+
+    /**
      * A photo as the crop step shows it: the file, its original (the address of its preview, its upright size, bytes
      * and extension), how it was cut from it, and the line under the title ("teamfoto.jpg · 4000 × 2667 · 4,2 MB ·
      * geüpload 9 oktober 2026") with the pages a crop changes ("Staat op 2 pagina's …"; null for none), in words,
@@ -155,6 +188,19 @@ final class MediaResponse
             'file' => basename((string) parse_url($file->url, PHP_URL_PATH)),
             'size' => $file->size,
         ];
+    }
+
+    /**
+     * What a place is in when it is in one version of its page only: the draft added it, or the draft took it away
+     * while the site still shows it. Null for a place in both, or in the published version of a page without a draft.
+     */
+    private static function note(MediaPlace $place, string $locale): ?string
+    {
+        return match (true) {
+            ! $place->in(UsageVersion::Published) => (string) __('made-cms-package::media.library.draft_only', [], $locale),
+            ! $place->in(UsageVersion::Draft) && $place->pageHasDraft => (string) __('made-cms-package::media.library.removed_in_draft', [], $locale),
+            default => null,
+        };
     }
 
     /**

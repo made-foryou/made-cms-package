@@ -40,6 +40,7 @@ use Made\CmsPackage\Http\Controllers\Content\RenameMediaController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
+use Made\CmsPackage\Http\Controllers\Content\ShowMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ShowMediaCropController;
 use Made\CmsPackage\Http\Controllers\Content\ShowMediaOriginalController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
@@ -182,8 +183,10 @@ Route::prefix($prefix)
                 Route::put('media/{media}/name', RenameMediaController::class)->whereNumber('media')->name('media.name.update');
             });
 
-            // Putting a file into another folder is managing the library, also from the crop step.
+            // The media library and managing it: a file with the pages it is used on for its side column, and putting a
+            // file into another folder, also from the crop step.
             Route::middleware(EnsureScreenAccess::using(Screen::Media))->group(function (): void {
+                Route::get('media/{media}', ShowMediaController::class)->whereNumber('media')->name('media.show');
                 Route::put('media/{media}/move', MoveMediaController::class)->whereNumber('media')->name('media.move');
             });
 

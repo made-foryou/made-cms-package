@@ -8,6 +8,7 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\ListMedia;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
+use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
 
 const KAART_KIEZEN = '7d0c2b9e-5a41-4f3e-8b6d-2e9f0a1c3b4d';
@@ -148,16 +149,22 @@ it('opens from the media element as a modal dialog with the images of the librar
     expect($shell->script("() => document.querySelector('[data-media-picker]').matches(':modal')"))->toBeTrue();
 });
 
-it('searches by the alt text, shows the images without one, sorts by name and opens a folder', function (): void {
+it('searches by the alt text and the title of a page, shows the images without one, sorts by name and opens a folder', function (): void {
+    MediaUsage::factory()->for($this->clubavond)->for(Page::factory()->state(['title' => 'Clubnieuws']))->create();
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
 
     $shell->click('[data-path="foto"] [data-slot="image-pick"]');
 
     expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
-    $shell->type('[data-slot="media-search"]', 'tafels');
+    $shell->assertAttribute('[data-slot="media-search"]', 'placeholder', 'Zoek op naam, alt-tekst of pagina')
+        ->type('[data-slot="media-search"]', 'tafels');
 
     expect($shell->script(waitUntil(pickerShows(['teamfoto-merwestad']))))->toBeTrue();
+
+    $shell->type('[data-slot="media-search"]', 'clubnieuws');
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond']))))->toBeTrue();
 
     $shell->type('[data-slot="media-search"]', '')->click('[data-slot="media-without-alt"]');
 

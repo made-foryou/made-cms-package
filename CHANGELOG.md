@@ -200,6 +200,7 @@
 
 ### Changed
 
+- A search in the media library (`q` of `GET /made-cms/media/files`, `MediaBuilder::search()`, the picker) also finds a file by the title of a page it is used on, in the draft or the published version of the page, never a deleted one. The search field says "Zoek op naam, alt-tekst of pagina".
 - The README asks for a `memory_limit` of at least 256 MB instead of 128 MB: with GD, cropping a phone photo of 12 MP takes about 140 MB and one of 24 MP up to about 290 MB. A cropped photo is scaled down before it turns, so turning never copies the whole cut.
 - A file as the CMS shows it (`file` of the media endpoints, `strip.media` of the side panel, `MediaDetails`) has `croppable`: whether it is a photo with an original to cut it from again. `MediaFile` has it too, from `FindMedia`.
 - The hint under "Staat in het menu" on the screen of one page counts only the pages the site shows in its menu (`ListMenuPages`): "Plek 2 van 3 in het menu." no longer counts drafts. A draft says the place it takes once published ("Komt op plek 3 van 4 in het menu zodra je hem publiceert."), and a page under a page the menu of the site leaves out names that page ("Komt in het menu zodra Over ons erin staat."). Dutch and English texts `pages.show.in_menu.publish` and `pages.show.in_menu.parent`; `ShowPageResponse::make()` takes the menu of the site as its last argument.

@@ -220,6 +220,44 @@ it('works with the keyboard and the file chooser, and saves the alt text the edi
         ->assertNoJavaScriptErrors();
 });
 
+it('opens the file chooser and takes the files of a drop a host hands it', function (): void {
+    $page = visit('/werkbank/uploadveld');
+    $photo = base64_encode((string) file_get_contents(photo(1200, 800, 'jpg')));
+
+    $page->script(<<<JS
+        () => {
+            document.querySelector('[data-slot="upload-input"]').addEventListener('click', (event) => {
+                event.preventDefault();
+                window.chooserOpened = true;
+            });
+            document.querySelector('[data-upload]').dispatchEvent(new CustomEvent('made-cms:upload-choose'));
+
+            // A drop somewhere else on the page: the photo comes in, the text file gets its error like any other.
+            const transfer = new DataTransfer();
+            transfer.items.add(new File([Uint8Array.from(atob('{$photo}'), (c) => c.charCodeAt(0))], 'Teamfoto.jpg', { type: 'image/jpeg' }));
+            transfer.items.add(new File([new Uint8Array(4)], 'Notities.txt', { type: 'text/plain' }));
+            document.querySelector('[data-upload]').dispatchEvent(new CustomEvent('made-cms:upload-take', { detail: { transfer } }));
+            window.handedFiles = transfer.files.length;
+        }
+        JS);
+
+    expect($page->script('() => window.chooserOpened === true'))->toBeTrue()
+        ->and($page->script('() => window.handedFiles'))->toBe(2)
+        ->and($page->script(waitUntil("document.querySelectorAll('.upload-rij').length === 2")))->toBeTrue()
+        ->and($page->script(waitUntil("[...document.querySelectorAll('.upload-rij')].some((row) => row.dataset.state === 'done')")))->toBeTrue();
+
+    $page->script(<<<'JS'
+        () => document.querySelector('[data-upload]').dispatchEvent(new CustomEvent('made-cms:upload-take', {
+            detail: { files: [new File([new Uint8Array(4)], 'Leeg.pdf', { type: 'application/pdf' })] },
+        }))
+        JS);
+
+    expect($page->script(waitUntil("document.querySelectorAll('.upload-rij').length === 3")))->toBeTrue()
+        ->and(Media::query()->where('name', 'teamfoto')->exists())->toBeTrue();
+
+    $page->assertNoJavaScriptErrors();
+});
+
 it('uploads one file at a time, shows its progress and lets a waiting file be cancelled', function (): void {
     $page = visit('/werkbank/uploadveld');
 

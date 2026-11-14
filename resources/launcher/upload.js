@@ -18,6 +18,11 @@
  * A host stops what is still on its way with made-cms:upload-stop on the field: the file that travels and the files
  * that wait leave the field. A file the server is storing already cannot be stopped; it lands in the library.
  *
+ * A host that has a button or a drop zone of its own hands its files to the field: made-cms:upload-choose opens the
+ * file chooser (dispatch it in the click of the editor, which the browser asks for), and made-cms:upload-take
+ * {transfer} takes the files of a drop the way a drop on the field does (a folder is no file), or {files} a list of
+ * files. They go the way of any file: one at a time, each with its own error.
+ *
  * A host sends the field into another folder with made-cms:upload-folder {folder: {id, name} | null} on the field
  * (null for "Alle bestanden"), also one that has not started yet. A file keeps the folder it was given with, so a file
  * that waits or is tried again never moves into a folder chosen later.
@@ -762,6 +767,12 @@ function start(field) {
         ui.input.value = '';
     });
 
+    field.addEventListener('made-cms:upload-choose', () => ui.input.click());
+    field.addEventListener('made-cms:upload-take', (event) => {
+        const detail = event.detail ?? {};
+
+        take(detail.transfer ? dropped(detail.transfer) : [...(detail.files ?? [])].filter((file) => file instanceof File));
+    });
     field.addEventListener('made-cms:upload-stop', stop);
     field.addEventListener('made-cms:upload-folder', (event) => follow(event.detail?.folder ?? null));
     field.addEventListener('made-cms:upload-finish', (event) => event.detail?.wait?.(finish()));

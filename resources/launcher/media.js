@@ -16,7 +16,8 @@
  * changed elsewhere on the page (made-cms:media-changed) shows it in its tile.
  *
  * What a host hears on the list (the events bubble):
- * - made-cms:media-choosing {file} before the choice changes, cancelable: a host that cancels it keeps the choice;
+ * - made-cms:media-choosing {file, wait(promise)} before the choice changes, cancelable: a host that cancels it keeps
+ *   the choice, and one that hands wait() a promise holds it until the promise resolved (false keeps it);
  * - made-cms:media-chosen {file} when the choice changes, the file as the upload field gets one;
  * - made-cms:media-folder {folder} when the editor opens a folder: {id, name}, or null for "Alle bestanden".
  * A host loads the list with made-cms:media-load {file} on it: the folder it was in, no search, newest first, with
@@ -127,6 +128,8 @@ function browse(root) {
         files: [],
         total: 0,
         chosen: null,
+        // Counts the choices of other files: a choice that waits for a host goes on only while no newer one came.
+        turn: 0,
         loading: null,
         uploading: false,
         empty: false,
@@ -459,12 +462,38 @@ function browse(root) {
     }
 
     function choose(file) {
-        // A host may hold the choice back (made-cms:media-choosing), as the side column of the library does while it
-        // holds an alt text the server would refuse.
-        if (state.chosen?.id !== file.id && ! root.dispatchEvent(new CustomEvent('made-cms:media-choosing', { bubbles: true, cancelable: true, detail: { file } }))) {
+        if (state.chosen?.id === file.id) {
+            commit(file);
+
             return;
         }
 
+        // A host may hold the choice back (made-cms:media-choosing): at once by cancelling it, or until the promises it
+        // hands to wait() resolved, as the side column of the library does while it stores a typed alt text. A promise
+        // that gives false keeps the choice where it is, and a newer choice drops this one.
+        const turn = ++state.turn;
+        const waits = [];
+
+        if (! root.dispatchEvent(new CustomEvent('made-cms:media-choosing', { bubbles: true, cancelable: true, detail: { file, wait: (promise) => waits.push(promise) } }))) {
+            return;
+        }
+
+        if (waits.length === 0) {
+            commit(file);
+
+            return;
+        }
+
+        Promise.all(waits).then((results) => {
+            if (turn === state.turn && results.every((result) => result !== false)) {
+                commit(file);
+            }
+        }, () => {
+            // A host that failed keeps the choice where it is.
+        });
+    }
+
+    function commit(file) {
         state.chosen = file;
         repaint();
         address();
@@ -758,6 +787,7 @@ function browse(root) {
     root.addEventListener('made-cms:media-load', (event) => {
         // A photo the server was still storing when the list was left asks no alt text any more: it is "later".
         finished(upload);
+        state.turn++;
         state.chosen = event.detail?.file ?? null;
         state.files = [];
         reset();

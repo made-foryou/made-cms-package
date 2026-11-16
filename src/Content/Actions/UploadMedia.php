@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Actions;
 
 use Illuminate\Contracts\Filesystem\Cloud;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -56,18 +57,36 @@ final class UploadMedia
         $directory = 'media/'.Str::lower((string) Str::ulid());
 
         try {
-            $media = Media::query()->create([
-                'folder_id' => $folder?->id,
-                'kind' => $checked->kind,
-                'name' => $name,
-                ...$this->store($disk, $directory, $name, $upload->path, $checked, $image),
-                'uploaded_by' => $upload->uploadedBy,
-            ]);
+            $columns = $this->store($disk, $directory, $name, $upload->path, $checked, $image);
         } catch (Throwable $exception) {
             $disk->deleteDirectory($directory);
 
             throw $exception;
         }
+
+        // The files leave again only when the row cannot be stored, from inside the transaction, never around it: a
+        // callback after the commit that throws must not take the files of a stored row away.
+        $media = DB::transaction(static function () use ($disk, $directory, $folder, $checked, $name, $columns, $upload): Media {
+            try {
+                // The folder is read again with a shared lock, so a folder deleted while the file was scaled down is
+                // refused like a folder that never was, and one cannot be deleted before the file is in it.
+                if ($folder !== null) {
+                    MediaFolder::query()->whereKey($folder->id)->sharedLock()->first() ?? throw MediaFolderNotFound::id($folder->id);
+                }
+
+                return Media::query()->create([
+                    'folder_id' => $folder?->id,
+                    'kind' => $checked->kind,
+                    'name' => $name,
+                    ...$columns,
+                    'uploaded_by' => $upload->uploadedBy,
+                ]);
+            } catch (Throwable $exception) {
+                $disk->deleteDirectory($directory);
+
+                throw $exception;
+            }
+        });
 
         MediaUploaded::dispatch($media);
 

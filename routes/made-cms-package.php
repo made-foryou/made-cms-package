@@ -23,13 +23,16 @@ use Made\CmsPackage\Http\Controllers\Access\TwoFactorLoginController;
 use Made\CmsPackage\Http\Controllers\Access\TwoFactorSetupController;
 use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
 use Made\CmsPackage\Http\Controllers\Content\AddStripController;
+use Made\CmsPackage\Http\Controllers\Content\CreateMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\CropMediaController;
+use Made\CmsPackage\Http\Controllers\Content\DeleteMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
 use Made\CmsPackage\Http\Controllers\Content\MediaLibraryController;
+use Made\CmsPackage\Http\Controllers\Content\MoveManyMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
@@ -38,6 +41,7 @@ use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
 use Made\CmsPackage\Http\Controllers\Content\RememberMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RenameMediaController;
+use Made\CmsPackage\Http\Controllers\Content\RenameMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
@@ -185,11 +189,16 @@ Route::prefix($prefix)
             });
 
             // The media library and managing it: the screen, a file with the pages it is used on for its side column,
-            // and putting a file into another folder, also from the crop step.
+            // putting files into another folder (one from the crop step, the chosen ones from the library), and its
+            // folders.
             Route::middleware(EnsureScreenAccess::using(Screen::Media))->group(function (): void {
                 Route::get('media', MediaLibraryController::class)->name('screens.media');
                 Route::get('media/{media}', ShowMediaController::class)->whereNumber('media')->name('media.show');
                 Route::put('media/{media}/move', MoveMediaController::class)->whereNumber('media')->name('media.move');
+                Route::put('media/move', MoveManyMediaController::class)->name('media.move.many');
+                Route::post('media/folders', CreateMediaFolderController::class)->name('media.folders.store');
+                Route::put('media/folders/{folder}', RenameMediaFolderController::class)->whereNumber('folder')->name('media.folders.update');
+                Route::delete('media/folders/{folder}', DeleteMediaFolderController::class)->whereNumber('folder')->name('media.folders.destroy');
             });
 
             // The scan of the site writes code into it: only for an admin at APP_ENV=local, whatever its panel shows.

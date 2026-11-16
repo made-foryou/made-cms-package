@@ -39,10 +39,13 @@ final class CheckMediaFolderName
             throw self::refuse('folder_name_long', ['max' => self::MAX_LENGTH]);
         }
 
-        $taken = MediaFolder::query()
-            ->named($name)
-            ->when($except !== null, static fn ($query) => $query->whereKeyNot($except?->id))
-            ->first();
+        $others = MediaFolder::query()->named($name);
+
+        if ($except !== null) {
+            $others->whereKeyNot($except->id);
+        }
+
+        $taken = $others->first();
 
         if ($taken !== null) {
             throw self::refuse('folder_taken', ['name' => $taken->name]);

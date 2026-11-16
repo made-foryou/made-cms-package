@@ -672,7 +672,7 @@ $media = CropImage::run($media, new CropMedia(
 ));
 
 RenameMedia::run($media, 'Teamfoto Merwestad 4');   // becomes teamfoto-merwestad-4
-MoveMedia::run($media, $folder->id);                // null for "Alle bestanden"
+MoveMedia::run([$media->id, $other->id], $folder->id); // null for "Alle bestanden"
 ```
 
 The area is in pixels of the original as the editor sees it: upright (by its EXIF orientation), turned clockwise by `rotation` (0, 90, 180 or 270), then mirrored left to right when `flip`; `CropArea::onOriginal()` takes it back onto the original. An area outside the photo is refused with a `ValidationException` keyed by `crop`, and a file without an original (an svg, an animated gif, a document, a video) throws `MediaNotCroppable`. The crop is stored in the column `crop` of `cms_media` (null for the whole original, not turned and scaled down), so the next crop starts where the editor left off, and the upright size of the original in `original_width` and `original_height`. When only the focal point changes no file is written.

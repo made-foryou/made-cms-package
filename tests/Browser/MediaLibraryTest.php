@@ -966,6 +966,73 @@ it('moves a file dragged onto a new folder, without the layer for uploads, and t
         ->assertNoJavaScriptErrors();
 });
 
+it('stores a typed alt text before the chosen file is dragged onto a folder, and holds the file when that fails', function (): void {
+    // In all files the file stays chosen and shows the text as stored.
+    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1100);
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->drag(libraryTile($this->teamfoto), '[data-media] .kmap[data-folder="'.$this->nieuws->id.'"]');
+
+    expect($page->script(waitUntil(libraryNotice()." === 'Staat nu in Nieuws'")))->toBeTrue()
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"details-line\"]').textContent.includes('map Nieuws')")))->toBeTrue()
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels')
+        ->and($this->teamfoto->folder_id)->toBe($this->nieuws->id);
+
+    $page->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertNoJavaScriptErrors();
+
+    // From the open folder the file leaves the side column, with its text stored first.
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->training->id)->resize(1280, 1100);
+
+    expect($page->script(waitUntil(libraryDetails('training-dinsdag.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'De training op dinsdag')
+        ->drag(libraryTile($this->training), '[data-media] .kmap[data-folder="'.$this->nieuws->id.'"]');
+
+    expect($page->script(waitUntil(libraryShows(['wedstrijdschema']))))->toBeTrue()
+        ->and($page->script(waitUntil(libraryNotice()." === 'training-dinsdag.webp staat nu in Nieuws'")))->toBeTrue()
+        ->and($this->training->refresh()->alt)->toBe('De training op dinsdag')
+        ->and($this->training->folder_id)->toBe($this->nieuws->id);
+
+    $page->assertVisible('[data-slot="details-nothing"]')
+        ->assertNoJavaScriptErrors();
+
+    // A text that is not stored holds the file where it is, with the message at the text and nothing moved.
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->schema->id)->resize(1280, 1100);
+
+    expect($page->script(waitUntil(libraryDetails('wedstrijdschema.pdf'))))->toBeTrue();
+
+    $page->script(<<<'JS'
+        () => {
+            const original = window.fetch;
+
+            window.moves = 0;
+            window.fetch = (input, init = {}) => {
+                if (String(input).endsWith('/media/move')) {
+                    window.moves++;
+                }
+
+                return String(input).endsWith('/alt') ? Promise.reject(new TypeError('Failed to fetch')) : original(input, init);
+            };
+        }
+        JS);
+    $page->type('[data-slot="details-alt"]', 'Het schema van het najaar')
+        ->drag(libraryTile($this->schema), '[data-media] .kmap[data-folder="'.$this->nieuws->id.'"]');
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-alt-hint\"]').textContent === 'Opslaan lukte niet. Controleer je verbinding en probeer het opnieuw.'")))->toBeTrue()
+        ->and($page->script('() => window.moves'))->toBe(0)
+        ->and($page->script(libraryNotice()))->toBe('')
+        ->and($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-alt')
+        ->and($page->script(libraryShows(['wedstrijdschema'])))->toBeTrue()
+        ->and($this->schema->refresh()->folder_id)->toBe($this->teams->id);
+
+    $page->assertValue('[data-slot="details-alt"]', 'Het schema van het najaar')
+        ->assertSeeIn('[data-slot="details-name"]', 'wedstrijdschema.pdf')
+        ->assertNoJavaScriptErrors();
+});
+
 it('selects files with the keyboard and moves them with the folder of the side column', function (): void {
     $page = visit('/made-cms/media')->resize(1280, 1100);
 

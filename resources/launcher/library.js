@@ -301,8 +301,9 @@ function library(root) {
         state.moving = false;
         movable();
 
-        if (! result.ok) {
-            moveError(result.error ?? texts.action_failed);
+        // Without an error the list held the move for the typed alt text, whose message is at the text.
+        if (! result.ok && result.error !== null) {
+            moveError(result.error);
             ui.moveFolder.focus();
         }
     }

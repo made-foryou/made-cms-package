@@ -8,12 +8,14 @@ use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Data\MediaCrop;
 use Made\CmsPackage\Content\Data\MediaDescription;
 use Made\CmsPackage\Content\Data\MediaFile;
+use Made\CmsPackage\Content\Data\MediaFiles;
 use Made\CmsPackage\Content\Data\MediaFilter;
 use Made\CmsPackage\Content\Data\MediaFolders;
 use Made\CmsPackage\Content\Data\MediaList;
 use Made\CmsPackage\Content\Data\MediaPlace;
 use Made\CmsPackage\Content\Data\ScaledImage;
 use Made\CmsPackage\Content\Enums\UsageVersion;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Support\Locale;
@@ -83,14 +85,46 @@ final class MediaResponse
     }
 
     /**
+     * The folder a name was given, as the folders of the list have it.
+     */
+    public static function folder(MediaFolder $folder, int $status = Response::HTTP_OK): JsonResponse
+    {
+        return self::json(['folder' => ['id' => $folder->id, 'name' => $folder->name]], $status);
+    }
+
+    /**
+     * The folder that was added to the library.
+     */
+    public static function folderCreated(MediaFolder $folder): JsonResponse
+    {
+        return self::folder($folder, Response::HTTP_CREATED);
+    }
+
+    /**
+     * The folder is gone; there is nothing to answer.
+     */
+    public static function folderDeleted(): Response
+    {
+        return self::nothing();
+    }
+
+    /**
+     * The files that were moved, as they are stored now, by id.
+     */
+    public static function moved(MediaFiles $files): JsonResponse
+    {
+        $moved = $files->files;
+        ksort($moved);
+
+        return self::json(['files' => array_values(array_map(self::file(...), $moved))]);
+    }
+
+    /**
      * The folder an editor chose is remembered; there is nothing to answer.
      */
     public static function remembered(): Response
     {
-        $response = new Response('', Response::HTTP_NO_CONTENT);
-        $response->headers->set('Cache-Control', 'no-store, private');
-
-        return $response;
+        return self::nothing();
     }
 
     /**
@@ -227,6 +261,14 @@ final class MediaResponse
             ! $place->in(UsageVersion::Draft) && $place->pageHasDraft => (string) __('made-cms-package::media.library.removed_in_draft', [], $locale),
             default => null,
         };
+    }
+
+    private static function nothing(): Response
+    {
+        $response = new Response('', Response::HTTP_NO_CONTENT);
+        $response->headers->set('Cache-Control', 'no-store, private');
+
+        return $response;
     }
 
     /**

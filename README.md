@@ -645,11 +645,15 @@ $url = route('made-cms-package.screens.media', ['file' => $media->id]);
 $url = route('made-cms-package.screens.media', ['folder' => $folder->id, 'without_alt' => 1]);
 ```
 
-The query takes `folder`, `kind` (`image`, `document`, `video`) or `without_alt=1`, `q`, `sort=name` and `file`; what it does not know is left out, and a folder that is gone opens "Alle bestanden". The first page of files and the folders come with the page, so the screen shows them without a request. The side column reads a file with its places from one more endpoint, which opens for the media library only:
+The query takes `folder`, `kind` (`image`, `document`, `video`) or `without_alt=1`, `q`, `sort=name` and `file`; what it does not know is left out, and a folder that is gone opens "Alle bestanden". The first page of files and the folders come with the page, so the screen shows them without a request. The side column reads a file with its places, and the library manages its folders and moves the files an editor chose, through endpoints that open for the media library only:
 
 | Request | Does | Answers |
 |---|---|---|
 | `GET /made-cms/media/{media}` | A file with the pages it is used on, through `DescribeMedia`. | 200 with `{"file", "heading", "pages": [{"title", "url", "deleted", "note", "places": [{"where", "note"}]}]}`: `heading` as "Gebruikt op 2 pagina's" (a deleted page does not count), `url` the edit shell of the page (`null` for a deleted page), `note` for a page in the bin or places in one version only; 403; 404. |
+| `PUT /made-cms/media/move` | Puts the chosen files into a folder (`{"files": [id, …], "folder": id}`, `null` for none, at most 200), all or none of them, through `MoveMedia`. | 200 with `{"files": […]}` by id, without a file that is gone; 422 keyed by `files` or `folder`. |
+| `POST /made-cms/media/folders` | Adds a folder (`{"name": "…"}`, trimmed with single spaces, at most 60 characters, unique whatever its capitals) through `CreateMediaFolder`. | 201 with `{"folder": {"id", "name"}}`; 422 keyed by `name`. |
+| `PUT /made-cms/media/folders/{folder}` | Gives a folder another name (`{"name": "…"}`) through `RenameMediaFolder`; its files stay in it. | 200 with `{"folder": …}`; 422 keyed by `name`; 404. |
+| `DELETE /made-cms/media/folders/{folder}` | Deletes an empty folder through `DeleteMediaFolder`. | 204; 422 keyed by `folder` for a folder that holds files ("Teams heeft nog 14 bestanden. Zet ze eerst in een andere map."); 404. |
 
 ### Cropping
 

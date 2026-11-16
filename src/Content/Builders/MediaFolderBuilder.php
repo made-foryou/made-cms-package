@@ -16,4 +16,12 @@ final class MediaFolderBuilder extends Builder
     {
         return $this->orderBy('name');
     }
+
+    /**
+     * The folder with this name, without regard to capitals: "teams" finds "Teams".
+     */
+    public function named(string $name): self
+    {
+        return $this->whereRaw('lower(name) = ?', [mb_strtolower($name)]);
+    }
 }

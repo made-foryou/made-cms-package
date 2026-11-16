@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Made\CmsPackage\Access\Actions\CreateEditor;
 use Made\CmsPackage\Access\Data\NewEditor;
 use Made\CmsPackage\Access\Enums\Role;
+use Made\CmsPackage\Content\Actions\CreateMediaFolder;
 use Made\CmsPackage\Content\Actions\RebuildMediaUsage;
 use Made\CmsPackage\Content\Actions\UpdateAltText;
 use Made\CmsPackage\Content\Actions\UploadMedia;
@@ -113,7 +114,7 @@ class DatabaseSeeder extends Seeder
      */
     private function teamsFolder(): void
     {
-        $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+        $teams = CreateMediaFolder::run('Teams');
 
         $this->drawnPhoto('Teamfoto Merwestad 1.jpg', [[28, 61, 90], [243, 241, 232]], $teams, 'Het eerste team voor de tafels');
         $this->drawnPhoto('Training dinsdag.jpg', [[190, 138, 28], [14, 43, 38], [190, 138, 28]], $teams, null);

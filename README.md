@@ -637,6 +637,8 @@ They open for an editor who opens the pages or the media library, like uploading
 
 The screen Media (`/made-cms/media`, for an editor who opens `Screen::Media`) holds every photo, document and video of the site. Across the top are the search (name, alt text or the title of a page the file is on), one group of filters with the numbers of the whole library (every kind, a kind, or the images without an alt text) and the folders as chips. Below them are the files, as tiles or as the same tiles in rows of a list, newest first or by name, with a trail of the open folder, and a side column for the chosen file: its alt text with "Opslaan", the pages it is used on with a link to their edit shell, and "Bijsnijden" for a photo. "Uploaden" and files dropped on the files go into the open folder, through the upload field and the crop step.
 
+The library also manages its folders, one level deep: "Nieuwe map" next to "Uploaden", and "Hernoemen" and "Verwijderen" next to the trail of the open folder (only an empty folder is deleted; otherwise the message says how many files it still holds). "Map" with "Verplaatsen" in the side column moves the chosen file into another folder or into "Alle bestanden", without a mouse. "Selecteren" next to the views, or Cmd/Ctrl- and Shift-click on a tile, selects several files to move at once, and a tile dragged onto a folder chip, or onto "Alle bestanden" in the trail, moves it there, with the whole selection when it is selected. One message below the chips says what a folder or a move did. Browsers that drag no buttons (Firefox) move files with the side column.
+
 The address holds what the screen lists, so a reload or a link opens it the same, also on one file:
 
 ```php

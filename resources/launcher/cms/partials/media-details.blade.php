@@ -1,7 +1,8 @@
 {{--
-    The side column of the media library (design 13.1b–q): the chosen file with its thumbnail, its name and what it is,
-    its alt text with "Opslaan", the pages it is used on with a link to their edit shell, and "Bijsnijden" for a photo.
-    Without a choice it says what choosing does. library.js fills it in from the file the list chose and from
+    The side column of the media library (design 13.1b–q, 13.1ak–ar): the chosen file with its thumbnail, its name and
+    what it is, its alt text with "Opslaan", the pages it is used on with a link to their edit shell, "Bijsnijden" for a
+    photo and the folder it is in. Without a choice it says what choosing does; while the library selects it shows the
+    files the editor selected with their folder and "Klaar". library.js fills it in from the file the list chose and from
     GET made-cms/media/{media}; its slots are named details-*.
 --}}
 @php($m = static fn (string $key): string => (string) __('made-cms-package::media.'.$key, [], \Made\CmsPackage\Support\Locale::launcher()))
@@ -55,6 +56,28 @@
         <div class="bibliotheek-acties" data-slot="details-actions" hidden>
             <button type="button" class="actie" data-slot="details-crop">{{ $l('crop') }}</button>
         </div>
+    </div>
+
+    {{-- The files the editor selects (design 13.1ak–am): how many, their names, and what selecting is for. --}}
+    <div class="bibliotheek-selectie" data-slot="details-selection" hidden>
+        <span class="eyebrow">{{ $l('select') }}</span>
+        <h2 data-slot="details-selection-count"></h2>
+        <span class="bibliotheek-klein" data-slot="details-selection-names" hidden></span>
+        <span class="bibliotheek-selectie-uitleg" data-slot="details-selection-hint" hidden>{{ $l('selection_hint') }}<span class="niet-smal"> {{ $l('selection_shift') }}</span></span>
+    </div>
+
+    {{-- The folder of the chosen file or of the selection, without a mouse (design 13.1an–ar). --}}
+    <div class="bibliotheek-map" data-slot="details-move" hidden>
+        <label class="veldlabel" for="made-cms-media-map">{{ $l('folder') }}</label>
+        <div class="bibliotheek-map-rij">
+            <select class="bibliotheek-map-keuze" id="made-cms-media-map" aria-describedby="made-cms-media-map-fout" data-slot="details-move-folder"></select>
+            <button type="button" class="actie" data-slot="details-move-button">{{ $l('move') }}</button>
+        </div>
+        <span class="bibliotheek-klein fout" id="made-cms-media-map-fout" data-slot="details-move-error" hidden></span>
+    </div>
+
+    <div class="bibliotheek-klaar" data-slot="details-selection-done" hidden>
+        <button type="button" class="knop stil" data-slot="details-selection-stop">{{ $l('done') }}</button>
     </div>
 
     {{-- A page the chosen file is used on: a link to its edit shell (none in the bin), a note, and its places. --}}

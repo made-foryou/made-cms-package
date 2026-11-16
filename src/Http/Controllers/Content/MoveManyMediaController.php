@@ -14,7 +14,8 @@ use Made\CmsPackage\Http\Responses\MediaResponse;
 
 /**
  * Puts the files an editor chose in the media library into a folder, or into none, all or none of them. A folder that
- * is gone comes back as a message keyed by "folder" (422); a file that is gone is left out of the answer.
+ * is gone comes back as a message keyed by "folder" (422), which asks for another folder: the library loads its
+ * folders again itself. A file that is gone is left out of the answer.
  */
 final class MoveManyMediaController
 {
@@ -23,7 +24,7 @@ final class MoveManyMediaController
         try {
             $moved = MoveMedia::run($request->mediaIds(), $request->folderId());
         } catch (MediaFolderNotFound) {
-            $request->reject('folder', 'folder_gone');
+            $request->reject('folder', 'folder_gone_move');
         }
 
         return MediaResponse::moved(FindMedia::run(array_map(static fn (Media $media): int => $media->id, $moved)));

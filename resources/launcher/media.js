@@ -16,13 +16,27 @@
  * it (they stay), without being chosen, and a file that changed elsewhere on the page (made-cms:media-changed) shows
  * it in its tile.
  *
+ * The library also manages its folders (design 13.1aa–az): "Nieuwe map" ([data-library-new-folder]) and "Hernoemen"
+ * open one field below the chips, "Verwijderen" deletes the open folder when it is empty, and what they did shows in
+ * one message below it until the editor closes it, the next one comes, or another folder or filter. "Selecteren" (and
+ * Cmd/Ctrl- or Shift-click on a tile) selects files instead of choosing one; the selection belongs to the list the
+ * editor sees. A tile dragged onto a folder chip, or onto "Alle bestanden" in the trail, moves it there, or the whole
+ * selection when it is selected. A drag of a tile carries only DRAG_TYPE, so the layer for files from the computer
+ * never shows for it. Firefox drags no button: there the folder of the side column moves files.
+ *
  * What a host hears on the list (the events bubble):
  * - made-cms:media-choosing {file, wait(promise)} before the choice changes, cancelable: a host that cancels it keeps
  *   the choice, and one that hands wait() a promise holds it until the promise resolved (false keeps it);
  * - made-cms:media-chosen {file} when the choice changes, the file as the upload field gets one;
- * - made-cms:media-folder {folder} when the editor opens a folder: {id, name}, or null for "Alle bestanden".
+ * - made-cms:media-folder {folder} when the editor opens a folder: {id, name}, or null for "Alle bestanden";
+ * - made-cms:media-folders {folders} in the library, every time its folders load: [{id, name}] from a to z;
+ * - made-cms:media-selection {selecting, files} in the library when it starts or stops selecting and when the
+ *   selection changes;
+ * - made-cms:media-changed {file} in the library for a file it moved that stays chosen.
  * A host loads the list with made-cms:media-load {file} on it: the folder it was in, no search, newest first, with
- * that file chosen. A list outside a dialog loads at once.
+ * that file chosen. A list outside a dialog loads at once. In the library a host stops selecting with
+ * made-cms:media-select {on: false}, and moves files with made-cms:media-move {files, folder, done(result)}: the ids,
+ * the folder ({id, name}, null for "Alle bestanden"), and done gets {ok, error}; the list sets detail.taken.
  *
  * The picker ([data-media-picker]) is a modal <dialog> around a list. The side panel opens it with made-cms:pick on the
  * dialog, {field, place, hint, file, opener, choose(file)}; "Deze gebruiken" closes it and calls choose with the chosen
@@ -35,6 +49,14 @@ const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpReques
 
 /** How long the editor pauses typing before the list searches, in ms. */
 const SEARCH_AFTER = 250;
+
+/** What a tile dragged in the library carries: the ids of the files, as JSON. Never "Files", the upload layer's. */
+const DRAG_TYPE = 'application/x-made-cms-media';
+
+/** The first message of a refusal, else null. */
+function first(messages) {
+    return Array.isArray(messages) && messages.length > 0 ? String(messages[0]) : null;
+}
 
 function format(text, values = {}) {
     return String(text ?? '').replace(/:([a-z_]+)/g, (match, key) => (key in values ? String(values[key]) : match));
@@ -103,9 +125,21 @@ function browse(root) {
         emptyText: slot('empty-text'),
         emptyUpload: slot('empty-upload'),
         emptyLink: slot('empty-link'),
+        folderField: slot('folder-field'),
+        folderLabel: slot('folder-label'),
+        folderInput: slot('folder-input'),
+        folderConfirm: slot('folder-confirm'),
+        folderCancel: slot('folder-cancel'),
+        folderHint: slot('folder-hint'),
+        folderActions: slot('folder-actions'),
+        rename: slot('rename'),
+        remove: slot('delete'),
+        notice: slot('notice'),
+        select: slot('select'),
     } : null;
     const folderTemplate = root.querySelector('template[data-media-folder]');
     const tileTemplate = root.querySelector('template[data-media-tile]');
+    const noticeTemplate = root.querySelector('template[data-media-notice]');
     const all = ui.folders?.querySelector('button[data-folder=""]');
     const upload = root.querySelector('[data-upload]');
 
@@ -113,9 +147,12 @@ function browse(root) {
         return;
     }
 
-    if (shelf && Object.values(shelf).some((element) => element === null)) {
+    if (shelf && (Object.values(shelf).some((element) => element === null) || ! noticeTemplate)) {
         return;
     }
+
+    // "Nieuwe map" sits in the head of the screen, next to "Uploaden".
+    const newFolder = library ? document.querySelector('[data-library-new-folder]') : null;
 
     const filter = settings.filter ?? {};
     const state = {
@@ -134,6 +171,17 @@ function browse(root) {
         loading: null,
         uploading: false,
         empty: false,
+        // The library: the folders as they loaded last, [{id, name, count}].
+        folderList: [],
+        // Selecting instead of choosing, the selected files by id in the order they were selected, and the file a
+        // Shift-click selects a range from.
+        selecting: false,
+        selected: new Map(),
+        anchor: null,
+        // The field below the chips: {mode: 'new' | 'rename', busy}, or null while it is closed.
+        field: null,
+        // The ids of the files a drag carries.
+        dragging: null,
     };
     let typing = null;
     let refreshing = null;
@@ -209,10 +257,20 @@ function browse(root) {
             slot('folder-count', item).textContent = String(folder.count);
             // A chip of the library opens its folder, and once more all files again.
             button.addEventListener('click', () => open(library && state.folder?.id === folder.id ? null : { id: folder.id, name: folder.name }));
+
+            if (library) {
+                target(button, { id: folder.id, name: folder.name });
+            }
+
             ui.folders.append(item);
         }
 
         count(data.counts);
+
+        if (library) {
+            state.folderList = data.folders;
+            tell('made-cms:media-folders', { folders: data.folders.map((folder) => ({ id: folder.id, name: folder.name })) });
+        }
     }
 
     /** The folders with their numbers. A folder that left the library (someone removed it) takes the list back to all. */
@@ -263,6 +321,12 @@ function browse(root) {
         }
 
         state.folder = folder;
+        notice(null);
+
+        if (state.field?.mode === 'rename') {
+            field(null);
+        }
+
         pressFolders();
         trail();
         upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
@@ -331,6 +395,12 @@ function browse(root) {
         shelf.trailSeparator.hidden = ! inFolder;
         shelf.trailHere.textContent = inFolder ? state.folder.name : (texts.all_files ?? shelf.trailAll.textContent);
         root.toggleAttribute('data-in-folder', inFolder);
+        actions();
+    }
+
+    /** "Hernoemen" and "Verwijderen" belong to the open folder, and make way for the field while it renames. */
+    function actions() {
+        shelf.folderActions.hidden = state.folder === null || state.field?.mode === 'rename';
     }
 
     /** The address of the library follows what it lists, so a reload or a link opens it the same. */
@@ -373,10 +443,13 @@ function browse(root) {
     }
 
     function paint(tile, file) {
-        const chosen = state.chosen?.id === file.id;
+        // While the library selects, a tile is pressed when it is selected; the chosen file waits until it stops.
+        const selected = state.selecting && state.selected.has(file.id);
+        const chosen = ! state.selecting && state.chosen?.id === file.id;
 
-        tile.setAttribute('aria-pressed', String(chosen));
+        tile.setAttribute('aria-pressed', String(chosen || selected));
         tile.classList.toggle('gekozen', chosen);
+        tile.classList.toggle('geselecteerd', selected);
         // In the picker the check of the choice takes the place of the dot; the library keeps it.
         slot('tile-no-alt', tile).hidden = (chosen && ! library) || file.kind !== 'image' || (file.alt ?? '') !== '';
     }
@@ -442,11 +515,24 @@ function browse(root) {
         }
 
         // A click on the file that is chosen changes nothing: the side column of the library keeps what the editor typed.
-        tile.addEventListener('click', () => {
-            if (state.chosen?.id !== file.id) {
-                choose(state.files.find((candidate) => candidate.id === file.id) ?? file);
+        // While the library selects, or with Cmd/Ctrl or Shift, a click selects the file instead.
+        tile.addEventListener('click', (event) => {
+            const current = state.files.find((candidate) => candidate.id === file.id) ?? file;
+
+            if (library && (state.selecting || event.metaKey || event.ctrlKey || event.shiftKey)) {
+                pickFile(current, event);
+            } else if (state.chosen?.id !== file.id) {
+                choose(current);
             }
         });
+
+        if (library) {
+            tile.draggable = true;
+            thumb.draggable = false;
+            tile.addEventListener('dragstart', (event) => drag(event, file.id, tile));
+            tile.addEventListener('dragend', dragged);
+        }
+
         paint(tile, file);
 
         return tile;
@@ -499,6 +585,450 @@ function browse(root) {
         repaint();
         address();
         tell('made-cms:media-chosen', { file });
+    }
+
+    /**
+     * Whether the side column lets go of the file it shows, as before another choice (made-cms:media-choosing): a
+     * typed alt text is stored first, and a refusal keeps it.
+     */
+    function letGo() {
+        const waits = [];
+
+        if (! root.dispatchEvent(new CustomEvent('made-cms:media-choosing', { bubbles: true, cancelable: true, detail: { file: null, wait: (promise) => waits.push(promise) } }))) {
+            return Promise.resolve(false);
+        }
+
+        return Promise.all(waits).then((results) => results.every((result) => result !== false), () => false);
+    }
+
+    function tellSelection() {
+        tell('made-cms:media-selection', { selecting: state.selecting, files: [...state.selected.values()] });
+    }
+
+    /**
+     * Starts or stops selecting. Selecting starts with the files given, else the chosen file when the list shows it.
+     * Stopping with one file selected chooses it; with more nothing is chosen, without any the choice stays.
+     */
+    async function selecting(on, start = null) {
+        if (on === state.selecting) {
+            return true;
+        }
+
+        if (on) {
+            if (! await letGo()) {
+                return false;
+            }
+
+            const chosen = state.chosen && state.files.find((candidate) => candidate.id === state.chosen.id);
+
+            state.selecting = true;
+            state.selected = new Map((start ?? (chosen ? [chosen] : [])).map((file) => [file.id, file]));
+            state.anchor = chosen?.id ?? null;
+        }
+
+        const picked = [...state.selected.values()];
+
+        if (! on) {
+            state.selecting = false;
+            state.selected = new Map();
+            state.anchor = null;
+        }
+
+        root.toggleAttribute('data-selecting', state.selecting);
+        shelf.select.setAttribute('aria-pressed', String(state.selecting));
+        repaint();
+        tellSelection();
+
+        if (! on && picked.length === 1) {
+            commit(picked[0]);
+        } else if (! on && picked.length > 1) {
+            commit(null);
+        }
+
+        return true;
+    }
+
+    /** A click while selecting: the file in or out, with Shift the range from the file clicked before. */
+    async function pickFile(file, event) {
+        if (! state.selecting && ! await selecting(true)) {
+            return;
+        }
+
+        const ids = state.files.map((candidate) => candidate.id);
+        const from = state.anchor === null ? -1 : ids.indexOf(state.anchor);
+        const to = ids.indexOf(file.id);
+
+        if (event.shiftKey && from >= 0 && to >= 0) {
+            for (const candidate of state.files.slice(Math.min(from, to), Math.max(from, to) + 1)) {
+                state.selected.set(candidate.id, candidate);
+            }
+        } else if (state.selected.has(file.id)) {
+            state.selected.delete(file.id);
+        } else {
+            state.selected.set(file.id, file);
+        }
+
+        state.anchor = file.id;
+        repaint();
+        tellSelection();
+    }
+
+    /**
+     * One message below the folders: what a folder or a move did. It stays until the editor closes it, the next one
+     * comes, or another folder or filter; null takes it away. A link opens the folder files went to.
+     */
+    function notice(text, tone = 'goed', link = undefined) {
+        if (! shelf) {
+            return null;
+        }
+
+        if (text === null) {
+            shelf.notice.replaceChildren();
+
+            return null;
+        }
+
+        const box = noticeTemplate.content.firstElementChild.cloneNode(true);
+        const go = slot('notice-link', box);
+
+        box.classList.add(tone);
+        box.querySelector('.bol')?.classList.add(tone);
+        slot('notice-text', box).textContent = text;
+        go.hidden = link === undefined;
+
+        if (link !== undefined) {
+            go.textContent = format(texts.open_folder, { folder: link?.name ?? texts.all_files });
+            go.addEventListener('click', () => open(link));
+        }
+
+        slot('notice-close', box).addEventListener('click', () => notice(null));
+        shelf.notice.replaceChildren(box);
+
+        return box;
+    }
+
+    /** The field below the chips, for a new folder or a new name of the open one; null closes it. */
+    function field(mode) {
+        state.field = mode === null ? null : { mode, busy: false };
+        newFolder?.setAttribute('aria-expanded', String(mode === 'new'));
+        actions();
+
+        if (mode === null) {
+            shelf.folderField.hidden = true;
+            shelf.folderInput.disabled = false;
+
+            return;
+        }
+
+        const renaming = mode === 'rename';
+
+        notice(null);
+        shelf.folderField.hidden = false;
+        shelf.folderField.setAttribute('aria-label', renaming ? texts.folder_rename : texts.folder_new);
+        shelf.folderLabel.textContent = renaming ? format(texts.folder_rename_label, { folder: state.folder?.name ?? '' }) : texts.folder_new_label;
+        shelf.folderInput.value = renaming ? (state.folder?.name ?? '') : '';
+        busy(false);
+        fieldError(null);
+        shelf.folderInput.focus();
+
+        if (renaming) {
+            shelf.folderInput.select();
+        }
+    }
+
+    function busy(on) {
+        if (state.field) {
+            state.field.busy = on;
+        }
+
+        shelf.folderInput.disabled = on;
+        shelf.folderConfirm.disabled = on;
+        shelf.folderConfirm.textContent = on ? texts.saving : (state.field?.mode === 'rename' ? texts.folder_save : texts.folder_create);
+    }
+
+    function fieldError(error) {
+        shelf.folderHint.textContent = error ?? format(state.field?.mode === 'rename' ? texts.folder_rename_hint : texts.folder_new_hint, { max: settings.folder_max ?? 60 });
+        shelf.folderHint.classList.toggle('fout', error !== null);
+        shelf.folderInput.classList.toggle('fout', error !== null);
+        shelf.folderInput.setAttribute('aria-invalid', String(error !== null));
+        error === null ? shelf.folderHint.removeAttribute('role') : shelf.folderHint.setAttribute('role', 'alert');
+    }
+
+    const sending = (method, body = null) => ({
+        method,
+        credentials: 'same-origin',
+        headers: { ...HEADERS, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': settings.csrf_token ?? '' },
+        body: body === null ? null : JSON.stringify(body),
+    });
+    const folderUrl = (id) => settings.urls.folder.replace(':folder', String(id));
+    const failure = (response) => (response?.status === 401 || response?.status === 419 ? texts.expired : texts.action_failed);
+
+    /** Creates the folder or stores the new name; a refusal stays at the field. */
+    async function confirmField() {
+        const current = state.field;
+
+        if (current === null || current.busy) {
+            return;
+        }
+
+        const renaming = current.mode === 'rename';
+        const folder = state.folder;
+        const name = shelf.folderInput.value.trim();
+
+        if (renaming && (folder === null || name === folder.name)) {
+            field(null);
+            shelf.rename.focus();
+
+            return;
+        }
+
+        let response = null;
+        let data = null;
+
+        busy(true);
+
+        try {
+            response = await fetch(renaming ? folderUrl(folder.id) : settings.urls.folders_store, sending(renaming ? 'PUT' : 'POST', { name }));
+            data = await response.json().catch(() => null);
+        } catch {
+            response = null;
+        }
+
+        if (state.field !== current) {
+            return;
+        }
+
+        busy(false);
+
+        if (response?.status === 404) {
+            field(null);
+            notice(texts.folder_gone, 'alarm');
+            folders();
+
+            return;
+        }
+
+        if (! response?.ok || ! data?.folder) {
+            fieldError(response?.status === 422 ? (first(data?.errors?.name) ?? texts.action_failed) : failure(response));
+            shelf.folderInput.focus();
+
+            return;
+        }
+
+        field(null);
+
+        if (! renaming) {
+            notice(format(texts.folder_created, { folder: data.folder.name }));
+            await folders();
+            ui.folders.querySelector('button[data-folder="' + data.folder.id + '"]')?.focus();
+
+            return;
+        }
+
+        // The open folder keeps its id: the trail, the upload field and the page hear its new name.
+        state.folder = { id: data.folder.id, name: data.folder.name };
+        trail();
+        upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder: state.folder } }));
+        tell('made-cms:media-folder', { folder: state.folder });
+        notice(format(texts.folder_renamed, { folder: data.folder.name }));
+        shelf.rename.focus();
+        await refresh();
+        changedChoice();
+    }
+
+    /** The chosen file as the list holds it now, for the side column (its folder line after a new name). */
+    function changedChoice() {
+        const fresh = state.chosen && state.files.find((candidate) => candidate.id === state.chosen.id);
+
+        if (fresh) {
+            state.chosen = fresh;
+            tell('made-cms:media-changed', { file: fresh });
+        }
+    }
+
+    /** Deletes the open folder when it is empty; otherwise the message says how many files it still holds. */
+    async function removeFolder() {
+        const folder = state.folder;
+
+        if (folder === null) {
+            return;
+        }
+
+        let response = null;
+
+        notice(null);
+        shelf.remove.disabled = true;
+
+        try {
+            response = await fetch(folderUrl(folder.id), sending('DELETE'));
+        } catch {
+            response = null;
+        } finally {
+            shelf.remove.disabled = false;
+        }
+
+        if (response?.status === 204 || response?.status === 404) {
+            open(null);
+            notice(response.status === 204 ? format(texts.folder_deleted, { folder: folder.name }) : texts.folder_gone, response.status === 204 ? 'goed' : 'alarm');
+            slot('notice-close', shelf.notice)?.focus();
+
+            return;
+        }
+
+        const data = await response?.json().catch(() => null);
+
+        notice(response?.status === 422 ? (first(data?.errors?.folder) ?? texts.action_failed) : failure(response), response?.status === 422 ? 'let' : 'alarm');
+    }
+
+    /**
+     * Moves files into a folder ({id, name}) or into "Alle bestanden" (null), all or none of them. The message says
+     * where they are now, with a link when they left the folder the list shows; the list and its numbers load again,
+     * and a chosen file that left the open folder leaves the side column.
+     *
+     * @return {Promise<{ok: boolean, error: string|null}>}
+     */
+    async function move(ids, folder) {
+        let response = null;
+        let data = null;
+
+        try {
+            response = await fetch(settings.urls.move_many, sending('PUT', { files: ids, folder: folder?.id ?? null }));
+            data = await response.json().catch(() => null);
+        } catch {
+            response = null;
+        }
+
+        if (! response?.ok || ! Array.isArray(data?.files)) {
+            if (response?.status === 422) {
+                folders();
+            }
+
+            return { ok: false, error: response?.status === 422 ? (first(data?.errors?.folder) ?? first(data?.errors?.files) ?? texts.action_failed) : failure(response) };
+        }
+
+        const moved = data.files;
+        const name = folder?.name ?? texts.all_files;
+        const stays = state.folder === null || state.folder.id === (folder?.id ?? null);
+        const chosen = moved.find((file) => file.id === state.chosen?.id) ?? null;
+
+        if (moved.length > 1) {
+            notice(format(texts.moved_many, { count: moved.length, folder: name }), 'goed', stays ? undefined : folder);
+        } else if (moved.length === 1) {
+            const here = stays && ! state.selecting && chosen !== null;
+
+            notice(format(here ? texts.moved_here : texts.moved_one, { name: moved[0].file ?? moved[0].name, folder: name }), 'goed', stays ? undefined : folder);
+        }
+
+        await refresh();
+
+        if (chosen !== null && ! stays) {
+            commit(null);
+        } else if (chosen !== null) {
+            state.chosen = state.files.find((file) => file.id === chosen.id) ?? chosen;
+            tell('made-cms:media-changed', { file: state.chosen });
+        }
+
+        return { ok: true, error: null };
+    }
+
+    /** A tile starts a drag: the selection when it is selected, else the tile alone. */
+    function drag(event, id, tile) {
+        const ids = state.selecting && state.selected.has(id) ? [...state.selected.keys()] : [id];
+
+        state.dragging = ids;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData(DRAG_TYPE, JSON.stringify(ids));
+
+        if (ids.length > 1) {
+            event.dataTransfer.setDragImage(stack(ids.length, tile), 28, 28);
+        }
+
+        root.toggleAttribute('data-dragging', true);
+
+        for (const button of ui.folders.querySelectorAll('li[data-folder-item] button[data-folder]')) {
+            const open = button.dataset.folder === String(state.folder?.id ?? '');
+
+            button.classList.toggle('doel', ! open);
+            button.classList.toggle('geen-doel', open);
+        }
+
+        shelf.trailAll.classList.toggle('doel', state.folder !== null);
+
+        for (const element of ui.grid.children) {
+            element.classList.toggle('sleept', ids.includes(Number(element.dataset.id)));
+        }
+    }
+
+    /** What the browser shows under the pointer for a selection: a stack of two with the number on it. */
+    function stack(number, tile) {
+        document.querySelector('.mediabrowser-sleepbeeld')?.remove();
+
+        const image = document.createElement('div');
+        const front = tile.querySelector('.tegel-beeld').cloneNode(true);
+        const count = document.createElement('span');
+
+        image.className = 'mediabrowser-sleepbeeld';
+        image.setAttribute('aria-hidden', 'true');
+        front.classList.add('voor');
+        count.className = 'mediabrowser-sleeptel';
+        count.textContent = String(number);
+        image.append(document.createElement('span'), front, count);
+        image.firstElementChild.className = 'achter';
+        document.body.append(image);
+
+        return image;
+    }
+
+    function dragged() {
+        state.dragging = null;
+        root.removeAttribute('data-dragging');
+        document.querySelector('.mediabrowser-sleepbeeld')?.remove();
+        root.querySelectorAll('.doel, .doel-actief, .geen-doel, .sleept').forEach((element) => {
+            element.classList.remove('doel', 'doel-actief', 'geen-doel', 'sleept');
+        });
+    }
+
+    /** A folder chip, or "Alle bestanden" in the trail, takes the tiles dragged onto it, but not the open folder. */
+    function target(element, folder) {
+        const takes = (event) => state.dragging !== null
+            && [...(event.dataTransfer?.types ?? [])].includes(DRAG_TYPE)
+            && (folder?.id ?? null) !== (state.folder?.id ?? null);
+
+        element.addEventListener('dragenter', (event) => {
+            if (takes(event)) {
+                event.preventDefault();
+                element.classList.add('doel-actief');
+            }
+        });
+        element.addEventListener('dragover', (event) => {
+            if (takes(event)) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                element.classList.add('doel-actief');
+            }
+        });
+        element.addEventListener('dragleave', (event) => {
+            if (! element.contains(event.relatedTarget)) {
+                element.classList.remove('doel-actief');
+            }
+        });
+        element.addEventListener('drop', async (event) => {
+            if (! takes(event)) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const ids = state.dragging;
+
+            dragged();
+
+            const result = await move(ids, folder);
+
+            if (! result.ok) {
+                notice(result.error, 'alarm');
+            }
+        });
     }
 
     function fail(message) {
@@ -567,6 +1097,13 @@ function browse(root) {
 
     /** Draws a page of the list as its endpoint answers it. */
     function draw(data, more = false) {
+        // The selection belongs to the list the editor sees: another folder, filter, search or order starts it again.
+        if (! more && state.selecting) {
+            state.selected = new Map();
+            state.anchor = null;
+            tellSelection();
+        }
+
         const tiles = data.files.map(tileOf);
 
         state.page = data.page;
@@ -644,6 +1181,7 @@ function browse(root) {
 
         state.kind = without ? null : next;
         ui.withoutAlt.setAttribute('aria-pressed', String(without));
+        notice(null);
         pressKinds();
         refresh();
     }
@@ -683,6 +1221,54 @@ function browse(root) {
         });
         ui.withoutAlt.addEventListener('click', () => kindTo(null, true));
         shelf.trailAll.addEventListener('click', () => open(null));
+        target(shelf.trailAll, null);
+
+        newFolder?.addEventListener('click', () => (state.field?.mode === 'new' ? field(null) : field('new')));
+        shelf.rename.addEventListener('click', () => field('rename'));
+        shelf.remove.addEventListener('click', removeFolder);
+        shelf.folderConfirm.addEventListener('click', confirmField);
+        shelf.folderCancel.addEventListener('click', () => {
+            const renaming = state.field?.mode === 'rename';
+
+            field(null);
+            (renaming ? shelf.rename : newFolder)?.focus();
+        });
+        shelf.folderInput.addEventListener('input', () => {
+            if (shelf.folderHint.classList.contains('fout')) {
+                fieldError(null);
+            }
+        });
+        shelf.folderInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                confirmField();
+            } else if (event.key === 'Escape') {
+                // Escape here closes the field only, never the selection.
+                event.preventDefault();
+                event.stopPropagation();
+                shelf.folderCancel.click();
+            }
+        });
+
+        shelf.select.addEventListener('click', () => selecting(! state.selecting));
+        root.addEventListener('made-cms:media-select', (event) => selecting(event.detail?.on === true));
+        root.addEventListener('made-cms:media-move', (event) => {
+            const detail = event.detail ?? {};
+
+            detail.taken = true;
+            move(detail.files ?? [], detail.folder ?? null).then((result) => detail.done?.(result));
+        });
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || ! state.selecting || event.defaultPrevented) {
+                return;
+            }
+
+            if (event.target instanceof Element && event.target.closest('dialog, input, textarea, select')) {
+                return;
+            }
+
+            selecting(false);
+        });
 
         for (const [button, name] of [[shelf.tiles, 'tiles'], [shelf.list, 'list']]) {
             button.addEventListener('click', () => {
@@ -748,6 +1334,11 @@ function browse(root) {
     /** A file as it is stored now, in place of the one the list holds. */
     function replace(file) {
         state.files = state.files.map((candidate) => (candidate.id === file.id ? file : candidate));
+
+        if (state.selected.has(file.id)) {
+            state.selected.set(file.id, file);
+        }
+
         ui.grid.querySelector('.tegel[data-id="' + file.id + '"]')?.replaceWith(tileOf(file));
 
         if (state.chosen?.id === file.id) {
@@ -765,6 +1356,11 @@ function browse(root) {
     if (library) {
         document.addEventListener('made-cms:media-changed', (event) => {
             const file = event.detail?.file;
+
+            // A file the list moved itself is loaded again already.
+            if (event.target === root) {
+                return;
+            }
 
             if (! file || ! state.files.some((candidate) => candidate.id === file.id)) {
                 folders();

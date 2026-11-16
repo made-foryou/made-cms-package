@@ -7,10 +7,13 @@
             <h1 id="made-cms-titel">{{ $screen->label() }}</h1>
             <p class="intro">{{ $t('media.library.intro') }}</p>
         </div>
-        <button type="button" class="knop" data-slot="library-upload" data-library-upload>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
-            {{ $t('media.library.upload') }}
-        </button>
+        <div class="knoppen">
+            <button type="button" class="knop stil" aria-expanded="false" aria-controls="made-cms-media-mapveld" data-slot="library-new-folder" data-library-new-folder>{{ $t('media.library.new_folder') }}</button>
+            <button type="button" class="knop" data-slot="library-upload" data-library-upload>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 16V4"/><path d="M6 10l6-6 6 6"/><path d="M4 20h16"/></svg>
+                {{ $t('media.library.upload') }}
+            </button>
+        </div>
     </section>
 
     {{-- The list, the side column and the layer files dropped from the computer land on, in one grid (design 13.1). --}}

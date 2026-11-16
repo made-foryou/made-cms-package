@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Cms;
 
 use Closure;
+use Made\CmsPackage\Content\Actions\CheckMediaFolderName;
 use Made\CmsPackage\Content\Data\MediaLibrary;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Models\MediaFolder;
@@ -26,12 +27,13 @@ use Made\CmsPackage\Support\Locale;
  *     library: bool,
  *     script: string,
  *     config: array{
- *         urls: array{files: string, folders: string, chosen_folder: string},
+ *         urls: array{files: string, folders: string, chosen_folder: string, folders_store?: string, folder?: string, move_many?: string},
  *         csrf_token: string,
  *         kind: string|null,
  *         folder: array{id: int, name: string}|null,
  *         texts: array<string, string>,
  *         library?: true,
+ *         folder_max?: int,
  *         kinds?: array<string, string>,
  *         filter?: array{kind: string|null, without_alt: bool, q: string, sort: string},
  *         chosen?: int|null,
@@ -98,7 +100,8 @@ final class MediaBrowser
 
     /**
      * The media library: the list of every kind on a screen of its own, with the upload field of several files that
-     * hands the photos of an upload to the crop step. The script gets the filter it opens with, the file it opens
+     * hands the photos of an upload to the crop step, where the editor also manages the folders and moves the files
+     * they chose. The script gets the filter it opens with, the file it opens
      * with chosen and its first page and folders in the shape of their endpoints, so it shows them without loading;
      * it keeps its address in step with what it lists.
      *
@@ -110,7 +113,15 @@ final class MediaBrowser
         $browser = self::make($library->folder, null, UploadField::make($library->folder, crop: true));
         $locale = Locale::launcher();
         $browser['library'] = true;
+        $base = request()->getBaseUrl();
         $browser['config']['library'] = true;
+        $browser['config']['urls'] = [
+            ...$browser['config']['urls'],
+            'folders_store' => $base.route('made-cms-package.media.folders.store', [], false),
+            'folder' => $base.route('made-cms-package.media.folders.update', ['folder' => ':folder'], false),
+            'move_many' => $base.route('made-cms-package.media.move.many', [], false),
+        ];
+        $browser['config']['folder_max'] = CheckMediaFolderName::MAX_LENGTH;
         $browser['config']['texts'] = [...$browser['config']['texts'], ...self::texts('library.texts', $locale)];
         $browser['config']['kinds'] = self::texts('kinds', $locale);
         $browser['config']['filter'] = [

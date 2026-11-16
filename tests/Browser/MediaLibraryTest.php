@@ -637,6 +637,53 @@ it('takes files dropped on the files, says where they go, and asks the alt text 
     $page->assertNoJavaScriptErrors();
 });
 
+it('takes no files let go beside the library, so the browser never opens them and a typed alt text stays', function (): void {
+    $page = visit('/made-cms/media');
+
+    $page->click(libraryTile($this->training));
+
+    expect($page->script(waitUntil(libraryDetails('training-dinsdag.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'Spelers aan vier tafels');
+
+    // Over the head with "Uploaden", the bar, the menu and the crop step the page takes the files and says it does not
+    // take them (the browser would leave the CMS for the file otherwise); nothing uploads.
+    $answers = $page->script(<<<'JS'
+        () => ['.kop-met-actie', '[data-slot="library-upload"]', '.kopbalk', '#made-cms-menu', '[data-media-crop]'].map((target) => {
+            const transfer = new DataTransfer();
+
+            transfer.items.add(new File(['%PDF-1.4'], 'Inschrijfformulier.pdf', { type: 'application/pdf' }));
+
+            const over = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: transfer });
+            const drop = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: transfer });
+
+            document.querySelector(target).dispatchEvent(over);
+
+            const effect = transfer.dropEffect;
+
+            document.querySelector(target).dispatchEvent(drop);
+
+            return [target, over.defaultPrevented, effect, drop.defaultPrevented];
+        })
+        JS);
+
+    expect($answers)->toBe([
+        ['.kop-met-actie', true, 'none', true],
+        ['[data-slot="library-upload"]', true, 'none', true],
+        ['.kopbalk', true, 'none', true],
+        ['#made-cms-menu', true, 'none', true],
+        ['[data-media-crop]', true, 'none', true],
+    ]);
+
+    $page->assertMissing('[data-slot="library-drop"]')
+        ->assertMissing('[data-slot="media-upload"]')
+        ->assertValue('[data-slot="details-alt"]', 'Spelers aan vier tafels');
+
+    expect(Media::query()->count())->toBe(4);
+
+    $page->assertNoJavaScriptErrors();
+});
+
 it('hands the photos of a batch to the crop step one after the other, and closes once they are back', function (): void {
     $page = visit('/made-cms/media');
 

@@ -144,11 +144,16 @@ function library(root) {
         ui.status.classList.toggle('zichtbaar', name === 'saved');
     }
 
+    /**
+     * Shows a file. The file it shows already, as it is stored now (a crop, a move, its folder renamed), keeps a text
+     * the editor typed and did not store, with its message: only what the file is follows.
+     */
     function draw(file) {
         const kind = file.kind ?? 'image';
         const noAlt = kind === 'image' && (file.alt ?? '') === '';
         const thumb = file.thumb ?? null;
         const pending = saving.get(file.id) ?? null;
+        const kept = pending === null && state.file?.id === file.id && changed() ? ui.alt.value : null;
 
         state.file = file;
         ui.nothing.hidden = true;
@@ -173,11 +178,14 @@ function library(root) {
             file.meta,
             file.folder ? format(texts.detail_folder, { folder: file.folder }) : null,
         ].filter(Boolean).join(' · ');
-        ui.alt.value = pending?.alt ?? file.alt ?? '';
+        ui.alt.value = pending?.alt ?? kept ?? file.alt ?? '';
         ui.alt.placeholder = texts['alt_placeholder_' + kind] ?? '';
         ui.actions.hidden = file.croppable !== true;
-        hint();
-        moment(pending ? 'busy' : 'unchanged');
+
+        if (kept === null || ! changed()) {
+            hint();
+            moment(pending ? 'busy' : 'unchanged');
+        }
 
         if (state.selection === null) {
             folderOf([file]);

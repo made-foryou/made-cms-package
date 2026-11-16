@@ -1173,6 +1173,61 @@ it('renames the open folder, which the chip, the trail and the upload field foll
         ->assertNoJavaScriptErrors();
 });
 
+it('keeps the alt text the editor typed when the folder of the chosen file gets a new name', function (): void {
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->teamfoto->id)->resize(1280, 1100);
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertVisible('[data-slot="details-changed"]')
+        ->click('[data-slot="media-rename"]')
+        ->type('[data-slot="media-folder-input"]', 'Seniorenteams')
+        ->keys('[data-slot="media-folder-input"]', 'Enter');
+
+    // The line follows the new name; the typed text stays, still to be stored.
+    expect($page->script(waitUntil(libraryNotice()." === 'De map heet nu Seniorenteams'")))->toBeTrue()
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"details-line\"]').textContent.includes('map Seniorenteams')")))->toBeTrue()
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het eerste team voor de tafels');
+
+    $page->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertVisible('[data-slot="details-changed"]')
+        ->assertEnabled('[data-slot="details-save"]')
+        ->click('[data-slot="details-save"]');
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-status\"]').textContent !== ''")))->toBeTrue()
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels');
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('keeps the selection while files come in, and empties it for another folder', function (): void {
+    $page = visit('/made-cms/media?folder='.$this->teams->id)->resize(1280, 1100);
+
+    expect($page->script(waitUntil(libraryShows(['wedstrijdschema', 'training-dinsdag', 'teamfoto-merwestad-1']))))->toBeTrue();
+
+    $page->click('[data-slot="media-select"]')
+        ->keys(libraryTile($this->training), 'Space')
+        ->keys(libraryTile($this->schema), 'Space')
+        ->assertSeeIn('[data-slot="details-selection-count"]', '2 bestanden gekozen');
+
+    $page->script(dropOnLibrary([['name' => 'Inschrijfformulier.pdf', 'type' => 'application/pdf', 'path' => mediaFixture('wedstrijdschema.pdf')]], drop: true));
+
+    expect($page->script(waitUntil(libraryShows(['inschrijfformulier', 'wedstrijdschema', 'training-dinsdag', 'teamfoto-merwestad-1']))))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-selection-count"]', '2 bestanden gekozen')
+        ->assertSeeIn('[data-slot="details-selection-names"]', 'training-dinsdag.webp, wedstrijdschema.pdf')
+        ->assertAttribute(libraryTile($this->training), 'aria-pressed', 'true')
+        ->assertAttribute(libraryTile($this->schema), 'aria-pressed', 'true')
+        ->assertAttribute(libraryTile($this->teamfoto), 'aria-pressed', 'false')
+        ->click('[data-media] .kmap[data-folder="'.$this->nieuws->id.'"]');
+
+    expect($page->script(waitUntil(libraryShows(['clubavond']))))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-selection-count"]', 'Nog niets gekozen')
+        ->assertAttribute('[data-slot="media-select"]', 'aria-pressed', 'true')
+        ->assertNoJavaScriptErrors();
+});
+
 it('deletes the open folder only when it is empty', function (): void {
     $page = visit('/made-cms/media?folder='.$this->teams->id)->resize(1280, 1100);
 

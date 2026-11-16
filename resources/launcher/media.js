@@ -178,6 +178,8 @@ function browse(root) {
         selecting: false,
         selected: new Map(),
         anchor: null,
+        // What the list on the page answers (folder, filter, search, order), so loading it again keeps the selection.
+        listed: null,
         // The field below the chips: {mode: 'new' | 'rename', busy}, or null while it is closed.
         field: null,
         // The ids of the files a drag carries.
@@ -924,6 +926,13 @@ function browse(root) {
             notice(format(here ? texts.moved_here : texts.moved_one, { name: moved[0].file ?? moved[0].name, folder: name }), 'goed', stays ? undefined : folder);
         }
 
+        // What moved leaves the selection, also when the list still shows it; the mode stays.
+        if (state.selecting && ids.some((id) => state.selected.has(id))) {
+            ids.forEach((id) => state.selected.delete(id));
+            tellSelection();
+            repaint();
+        }
+
         await refresh();
 
         if (chosen !== null && ! stays) {
@@ -1100,13 +1109,37 @@ function browse(root) {
         shelf.note.textContent = folder !== null ? texts.note_folder : texts.note_all;
     }
 
-    /** Draws a page of the list as its endpoint answers it. */
-    function draw(data, more = false) {
-        // The selection belongs to the list the editor sees: another folder, filter, search or order starts it again.
+    /** What the list asks its endpoint, without the page: another answer is another list. */
+    function listing() {
+        return {
+            folder: state.folder?.id,
+            q: search(),
+            kind: kind(),
+            without_alt: withoutAlt() ? 1 : null,
+            sort: pressed(ui.newest) ? 'newest' : 'name',
+        };
+    }
+
+    /** Draws a page of the list as its endpoint answers it, for the question of listing() when it was asked. */
+    function draw(data, more = false, question = JSON.stringify(listing())) {
+        // The selection belongs to the list the editor sees: another folder, filter, search or order starts it again,
+        // and the same list loaded again (a file that came in, a folder renamed) keeps the files it still shows.
         if (! more && state.selecting) {
-            state.selected = new Map();
-            state.anchor = null;
-            tellSelection();
+            const shown = new Map(data.files.map((file) => [file.id, file]));
+            const before = state.selected.size;
+
+            state.selected = question === state.listed
+                ? new Map([...state.selected.keys()].filter((id) => shown.has(id)).map((id) => [id, shown.get(id)]))
+                : new Map();
+            state.anchor = question === state.listed && shown.has(state.anchor) ? state.anchor : null;
+
+            if (question !== state.listed || state.selected.size !== before) {
+                tellSelection();
+            }
+        }
+
+        if (! more) {
+            state.listed = question;
         }
 
         const tiles = data.files.map(tileOf);
@@ -1129,20 +1162,14 @@ function browse(root) {
 
         const controller = new AbortController();
         const page = more ? state.page + 1 : 1;
+        const question = listing();
 
         state.loading = controller;
         root.dataset.loading = '';
         ui.failed.hidden = true;
 
         try {
-            const response = await fetch(url(settings.urls.files, {
-                folder: state.folder?.id,
-                q: search(),
-                kind: kind(),
-                without_alt: withoutAlt() ? 1 : null,
-                sort: pressed(ui.newest) ? 'newest' : 'name',
-                page,
-            }), { credentials: 'same-origin', headers: HEADERS, signal: controller.signal });
+            const response = await fetch(url(settings.urls.files, { ...question, page }), { credentials: 'same-origin', headers: HEADERS, signal: controller.signal });
             const data = await response.json().catch(() => null);
 
             if (! response.ok || ! Array.isArray(data?.files)) {
@@ -1156,7 +1183,7 @@ function browse(root) {
                 return false;
             }
 
-            const tiles = draw(data, more);
+            const tiles = draw(data, more, JSON.stringify(question));
 
             // "Meer tonen" leads on to the first file it brought.
             if (more) {

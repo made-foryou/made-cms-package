@@ -883,13 +883,18 @@ function browse(root) {
     /**
      * Moves files into a folder ({id, name}) or into "Alle bestanden" (null), all or none of them. The message says
      * where they are now, with a link when they left the folder the list shows; the list and its numbers load again,
-     * and a chosen file that left the open folder leaves the side column.
+     * and a chosen file that left the open folder leaves the side column. A typed alt text of the chosen file is stored
+     * first, as before another choice: when it is not, nothing moves and the side column says why (error null).
      *
      * @return {Promise<{ok: boolean, error: string|null}>}
      */
     async function move(ids, folder) {
         let response = null;
         let data = null;
+
+        if (state.chosen !== null && ids.includes(state.chosen.id) && ! await letGo()) {
+            return { ok: false, error: null };
+        }
 
         try {
             response = await fetch(settings.urls.move_many, sending('PUT', { files: ids, folder: folder?.id ?? null }));
@@ -1025,7 +1030,7 @@ function browse(root) {
 
             const result = await move(ids, folder);
 
-            if (! result.ok) {
+            if (! result.ok && result.error !== null) {
                 notice(result.error, 'alarm');
             }
         });

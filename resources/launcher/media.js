@@ -12,8 +12,9 @@
  * of the whole library (every kind, a kind, or the images without an alt text), the folders as chips counting what
  * the filter and the search show, a trail, tiles or rows of a list (remembered by the browser), and what an empty list
  * offers. Its first page and folders come with the page (config.initial), so it shows them without a request, and its
- * address follows what it lists and the chosen file. A new file goes to the top without being chosen, and a file that
- * changed elsewhere on the page (made-cms:media-changed) shows it in its tile.
+ * address follows what it lists and the chosen file. A new file joins the list where its filter, search and order place
+ * it (they stay), without being chosen, and a file that changed elsewhere on the page (made-cms:media-changed) shows
+ * it in its tile.
  *
  * What a host hears on the list (the events bubble):
  * - made-cms:media-choosing {file, wait(promise)} before the choice changes, cancelable: a host that cancels it keeps
@@ -708,16 +709,15 @@ function browse(root) {
         show();
     });
 
-    // A file uploaded in the picker is the choice, at the top of the list it is in. The library shows every new file
-    // at the top of the folder it went into, without choosing it: a batch would make the side column jump.
+    // A file uploaded in the picker is the choice, at the top of the list it is in. The library keeps its filter, search
+    // and order, and shows a new file where they place it, without choosing it: a batch would make the side column
+    // jump, and an editor working through a filter keeps it. The upload field shows every file while it comes in.
     upload?.addEventListener('made-cms:uploaded', (event) => {
         const file = event.detail?.file;
 
         if (! file) {
             return;
         }
-
-        reset();
 
         if (library) {
             window.clearTimeout(refreshing);
@@ -726,6 +726,7 @@ function browse(root) {
             return;
         }
 
+        reset();
         choose(file);
         load();
         folders();

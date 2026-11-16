@@ -416,6 +416,88 @@ it('refuses an alt text that is too long and keeps the choice until it is shorte
     $page->assertNoJavaScriptErrors();
 });
 
+it('keeps the alt text the editor typed when the chosen tile is clicked again', function (): void {
+    $page = visit('/made-cms/media');
+
+    $page->click(libraryTile($this->teamfoto));
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
+    // A click on the file that is chosen chooses nothing: the typed text stays, unsaved.
+    $page->type('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->click(libraryTile($this->teamfoto))
+        ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertVisible('[data-slot="details-changed"]');
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
+    $page->keys('[data-slot="details-alt"]', 'Enter');
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-status\"]').textContent === 'Opgeslagen'")))->toBeTrue();
+
+    $page->click(libraryTile($this->teamfoto))
+        ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertAttribute('[data-slot="details-save"]', 'disabled', '')
+        ->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil(libraryDetails('clubavond.webp'))))->toBeTrue()
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels');
+
+    $page->click(libraryTile($this->teamfoto))
+        ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows the alt text on its way when the editor comes back to its file, and keeps it once it is stored', function (): void {
+    $page = visit('/made-cms/media');
+
+    // The first alt text waits for the test before it travels, so it is still on its way when the editor comes back.
+    $page->script(<<<'JS'
+        () => {
+            const original = window.fetch;
+
+            window.releaseAlt = null;
+            window.fetch = (input, init = {}) => {
+                if (! String(input).endsWith('/alt') || window.releaseAlt !== null) {
+                    return original(input, init);
+                }
+
+                return new Promise((resolve, reject) => {
+                    window.releaseAlt = () => original(input, init).then(resolve, reject);
+                });
+            };
+        }
+        JS);
+    $page->click(libraryTile($this->teamfoto));
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil(libraryDetails('clubavond.webp').' && window.releaseAlt !== null')))->toBeTrue();
+
+    // Back at the photo while its text travels: the column shows that text, busy, never the one the list still holds.
+    $page->click(libraryTile($this->teamfoto))
+        ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertAttribute('[data-slot="details-alt"]', 'disabled', '')
+        ->assertSeeIn('[data-slot="details-save"]', 'Bezig…');
+
+    $page->script('() => window.releaseAlt()');
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-status\"]').textContent === 'Opgeslagen'")))->toBeTrue()
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels');
+
+    $page->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertAttribute('[data-slot="details-save"]', 'disabled', '')
+        ->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil(libraryDetails('clubavond.webp'))))->toBeTrue()
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels');
+
+    $page->assertNoJavaScriptErrors();
+});
+
 it('uploads from "Uploaden" into the folder it is in, and the amber dot leaves once the new photo gets its alt text', function (): void {
     $page = visit('/made-cms/media?folder='.$this->teams->id);
 

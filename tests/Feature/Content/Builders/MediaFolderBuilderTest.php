@@ -16,3 +16,12 @@ it('lists the folders by name', function (): void {
 
     expect(MediaFolder::query()->alphabetical()->pluck('name')->all())->toBe(['Logo\'s', 'Nieuws', 'Teams']);
 });
+
+it('finds a folder by its name without regard to capitals', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    MediaFolder::factory()->create(['name' => 'Teamsport']);
+
+    expect(MediaFolder::query()->named('teams')->pluck('id')->all())->toBe([$teams->id])
+        ->and(MediaFolder::query()->named('TEAMS')->pluck('id')->all())->toBe([$teams->id])
+        ->and(MediaFolder::query()->named('Team')->exists())->toBeFalse();
+});

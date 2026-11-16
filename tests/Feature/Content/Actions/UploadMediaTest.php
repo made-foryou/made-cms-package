@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Database\QueryException;
 use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -208,6 +210,35 @@ it('refuses a folder that does not exist, and stores nothing', function (): void
         ->toThrow(MediaFolderNotFound::class, 'There is no media folder [999].');
 
     expect(mediaOnDisk())->toBe([]);
+});
+
+it('refuses a folder deleted while the file was on its way, and stores nothing', function (): void {
+    $folder = MediaFolder::factory()->create(['name' => 'Teams']);
+    MediaFolder::retrieved(static function (MediaFolder $retrieved): void {
+        DB::table('cms_media_folders')->where('id', $retrieved->id)->delete();
+    });
+
+    expect(fn (): Media => upload(mediaFixture('wedstrijdschema.pdf'), folderId: $folder->id))
+        ->toThrow(MediaFolderNotFound::class);
+
+    expect(mediaOnDisk())->toBe([])
+        ->and(Media::query()->count())->toBe(0);
+});
+
+it('reads the folder again inside the transaction that stores the file', function (): void {
+    $folder = MediaFolder::factory()->create();
+    $outside = DB::transactionLevel();
+    $levels = [];
+
+    DB::listen(static function (QueryExecuted $query) use (&$levels): void {
+        if (str_starts_with($query->sql, 'select') && str_contains($query->sql, 'cms_media_folders')) {
+            $levels[] = DB::transactionLevel();
+        }
+    });
+
+    upload(mediaFixture('wedstrijdschema.pdf'), folderId: $folder->id);
+
+    expect($levels)->toBe([$outside, $outside + 1]);
 });
 
 it('stores nothing on a disk a visitor cannot open', function (): void {

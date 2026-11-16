@@ -10,12 +10,12 @@ use Made\CmsPackage\Content\Enums\MediaKind;
 /**
  * A file of the media library as the CMS shows it, the same in the side panel and in the upload field: its name, the
  * extension of the file a visitor gets ("webp" for a photo that was scaled down), "1600 × 1067 · 412 kB", its folder
- * and alt text, the url to show it small at (a tile, a row of the upload field) and as the site renders it. Never its
- * place on the disk.
+ * by name and id, its alt text, the url to show it small at (a tile, a row of the upload field) and as the site renders
+ * it. Never its place on the disk.
  *
  * @phpstan-import-type RenderedImage from MediaFile
  *
- * @phpstan-type Details array{id: int, url: string, thumb: string|null, name: string, extension: string, meta: string, folder: string|null, alt: string|null, image: RenderedImage|null, croppable: bool}
+ * @phpstan-type Details array{id: int, url: string, thumb: string|null, name: string, extension: string, meta: string, folder: string|null, folder_id: int|null, alt: string|null, image: RenderedImage|null, croppable: bool}
  */
 final class MediaDetails
 {
@@ -37,6 +37,7 @@ final class MediaDetails
             'extension' => self::extension($file->url),
             'meta' => implode(' · ', [...$meta, self::size($file->size)]),
             'folder' => $file->folder,
+            'folder_id' => $file->folderId,
             'alt' => $file->alt,
             'image' => $file->kind === MediaKind::Image ? $file->image() : null,
             'croppable' => $file->croppable,

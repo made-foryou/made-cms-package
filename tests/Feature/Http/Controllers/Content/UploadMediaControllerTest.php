@@ -44,6 +44,7 @@ it('stores a photo scaled down and answers with the file as the field shows it',
             'extension' => 'webp',
             'meta' => '1920 × 1280 · '.max(1, (int) round($media->size / 1000)).' kB',
             'folder' => 'Teams',
+            'folder_id' => $folder->id,
             'alt' => null,
             'image' => [
                 'url' => Storage::disk('public')->url($media->path),

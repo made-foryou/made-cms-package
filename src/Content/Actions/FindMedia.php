@@ -55,6 +55,7 @@ final class FindMedia
                 focalX: $media->focal_x,
                 focalY: $media->focal_y,
                 folder: $media->folder?->name,
+                folderId: $media->folder?->id,
                 croppable: $media->kind === MediaKind::Image && $media->original_path !== null
                     && $media->original_width !== null && $media->original_height !== null,
             );

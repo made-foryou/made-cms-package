@@ -480,6 +480,21 @@ function library(root) {
         });
     }
 
+    // Files let go beside the library (the head with "Uploaden", the bar, the menu, the crop step) would make the
+    // browser leave the CMS for the file, and take a typed alt text along: the page takes them and does nothing. What
+    // the library or the upload field took has defaultPrevented already.
+    document.addEventListener('dragover', (event) => {
+        if (carriesFiles(event) && ! event.defaultPrevented) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'none';
+        }
+    });
+    document.addEventListener('drop', (event) => {
+        if (carriesFiles(event) && ! event.defaultPrevented) {
+            event.preventDefault();
+        }
+    });
+
     // An address with ?file= whose tile is not on the first page still opens that file in the side column.
     document.addEventListener('DOMContentLoaded', async () => {
         const id = listSettings.chosen;

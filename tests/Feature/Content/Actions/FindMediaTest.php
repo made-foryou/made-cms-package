@@ -45,8 +45,19 @@ it('finds the files by id with the url of the media disk, never their place on t
         focalX: 0.25,
         focalY: 0.75,
         folder: 'Teams',
+        folderId: $folder->id,
         croppable: true,
     ));
+});
+
+it('tells the folder a file is in by its name and id, and none for a file outside folders', function (): void {
+    $folder = MediaFolder::factory()->create(['name' => 'Teams']);
+    $inside = Media::factory()->in($folder)->create();
+    $outside = Media::factory()->create();
+    $files = FindMedia::run([$inside->id, $outside->id]);
+
+    expect([$files->find($inside->id)?->folder, $files->find($inside->id)?->folderId])->toBe(['Teams', $folder->id])
+        ->and([$files->find($outside->id)?->folder, $files->find($outside->id)?->folderId])->toBe([null, null]);
 });
 
 it('tells which files can be cropped: only a photo with an original to cut from', function (Closure $media, bool $croppable): void {

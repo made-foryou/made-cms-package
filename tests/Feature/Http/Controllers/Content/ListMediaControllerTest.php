@@ -51,6 +51,7 @@ it('lists the files as the upload field gets one, newest first, with the count i
         'extension' => 'webp',
         'meta' => '1600 × 1067 · 412 kB',
         'folder' => 'Teams',
+        'folder_id' => $folder->id,
         'alt' => 'Het eerste team',
         'image' => [
             'url' => $url,

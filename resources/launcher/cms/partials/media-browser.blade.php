@@ -58,6 +58,28 @@
                 </li>
             </ul>
         </nav>
+
+        {{-- One field for a new folder and for a new name of the open folder (design 13.1ab–ag), below the chips. --}}
+        <div class="mapveld" id="made-cms-media-mapveld" role="group" data-slot="media-folder-field" hidden>
+            <div class="mapveld-rij">
+                <label class="veldlabel" for="made-cms-media-mapnaam" data-slot="media-folder-label"></label>
+                <input class="mapveld-naam" id="made-cms-media-mapnaam" type="text" autocomplete="off" maxlength="255" aria-describedby="made-cms-media-mapnaam-hint" data-slot="media-folder-input">
+                <button type="button" class="actie" data-slot="media-folder-confirm"></button>
+                <button type="button" class="tekstlink" data-slot="media-folder-cancel">{{ $l('cancel') }}</button>
+            </div>
+            <span class="mediabrowser-klein" id="made-cms-media-mapnaam-hint" data-slot="media-folder-hint"></span>
+        </div>
+
+        {{-- What a folder or a move did, until the editor closes it, the next message comes, or another folder or filter. --}}
+        <div class="mediabrowser-meldplek" role="status" data-slot="media-notice"></div>
+        <template data-media-notice>
+            <div class="melding">
+                <span class="bol" aria-hidden="true"></span>
+                <span class="melding-tekst" data-slot="media-notice-text"></span>
+                <button type="button" class="tekstlink" data-slot="media-notice-link" hidden></button>
+                <button type="button" class="mediabrowser-kruis" aria-label="{{ $l('close_notice') }}" title="{{ $l('close_notice') }}" data-slot="media-notice-close">×</button>
+            </div>
+        </template>
     </section>
 
     <section class="mediabrowser-bestanden" id="made-cms-media-bestanden" aria-label="{{ $t('files') }}" data-slot="media-files">
@@ -69,12 +91,19 @@
                 <span aria-hidden="true">·</span>
                 <span role="status" data-slot="media-status">{{ $browser['config']['initial']['files']['summary'] }}</span>
             </nav>
+            <span class="mediabrowser-mapacties" data-slot="media-folder-actions" hidden>
+                <button type="button" class="tekstlink" aria-controls="made-cms-media-mapveld" data-slot="media-rename">{{ $l('folder_rename') }}</button>
+                <button type="button" class="tekstlink" data-slot="media-delete">{{ $l('folder_delete') }}</button>
+            </span>
             <div class="mediabrowser-weergave">
-                <button type="button" class="actie" aria-pressed="{{ $filter['sort'] === 'newest' ? 'true' : 'false' }}" data-slot="media-newest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4v16"/><path d="M3 16l4 4 4-4"/><path d="M13 6h8"/><path d="M13 11h6"/><path d="M13 16h4"/></svg>{{ $l('newest') }}</button>
-                <span class="mediabrowser-weergaven" role="group" aria-label="{{ $l('view') }}">
-                    <button type="button" class="actie" aria-pressed="true" data-slot="media-view-tiles">{{ $l('tiles') }}</button>
-                    <button type="button" class="actie" aria-pressed="false" data-slot="media-view-list">{{ $l('list') }}</button>
+                <span class="mediabrowser-ordening">
+                    <button type="button" class="actie" aria-pressed="{{ $filter['sort'] === 'newest' ? 'true' : 'false' }}" data-slot="media-newest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 4v16"/><path d="M3 16l4 4 4-4"/><path d="M13 6h8"/><path d="M13 11h6"/><path d="M13 16h4"/></svg>{{ $l('newest') }}</button>
+                    <span class="mediabrowser-weergaven" role="group" aria-label="{{ $l('view') }}">
+                        <button type="button" class="actie" aria-pressed="true" data-slot="media-view-tiles">{{ $l('tiles') }}</button>
+                        <button type="button" class="actie" aria-pressed="false" data-slot="media-view-list">{{ $l('list') }}</button>
+                    </span>
                 </span>
+                <button type="button" class="actie mediabrowser-selecteer" aria-pressed="false" data-slot="media-select"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>{{ $l('select') }}</button>
             </div>
         </div>
 
@@ -85,6 +114,7 @@
         @endif
 
         <div class="mediabrowser-lijstkop" aria-hidden="true">
+            <span class="kolom-vakje"></span>
             <span></span>
             <span>{{ $l('head.name') }}</span>
             <span class="kolom-soort">{{ $l('head.kind') }}</span>
@@ -161,10 +191,11 @@
     {{--
         A file of the list: its thumbnail (an icon for a document or a video) with the extension, a check on the choice
         in the picker and an amber dot without an alt text. The kind, the folder and the alt text show only as a row of
-        the list in the library.
+        the list in the library, and the round box of a selection only while the library selects.
     --}}
     <template data-media-tile>
         <button type="button" class="tegel" aria-pressed="false">
+            <span class="tegel-vakje" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span>
             <span class="tegel-beeld">
                 <svg class="tegel-icoon tegel-icoon-image" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
                 <svg class="tegel-icoon tegel-icoon-document" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h5"/><path d="M10 17h5"/></svg>

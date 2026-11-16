@@ -48,7 +48,7 @@ it('refuses a folder that is gone or no folder, and moves nothing', function (ar
 
     expect($media->refresh()->folder_id)->toBeNull();
 })->with([
-    'gone' => [['folder' => 999], 'Deze map bestaat niet meer. Herlaad de pagina en kies een andere map.'],
+    'gone' => [['folder' => 999], 'Deze map bestaat niet meer. Kies een andere map.'],
     'a text' => [['folder' => 'Teams'], 'Kies de map waar het bestand in komt.'],
     'missing' => [[], 'Kies de map waar het bestand in komt.'],
 ]);

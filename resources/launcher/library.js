@@ -11,6 +11,10 @@
  *   the computer onto the library land on a layer that hands them to the field (made-cms:upload-take). The field shows
  *   only while it has files to tell about.
  * - An address with ?file= opens with that file in the side column, also when its tile is not on the first page.
+ * - The folder of the chosen file ("Map" and "Verplaatsen", design 13.1an–ar) moves it without a mouse; while the list
+ *   selects (made-cms:media-selection) the column shows how many files are selected with the same folder and
+ *   "Klaar". The list moves them (made-cms:media-move) and says what it did; a refusal stays below the folder. The
+ *   folders come from the list (made-cms:media-folders).
  *
  * Its config is JSON on the library ([data-media-library]): the addresses, the names of the kinds and its texts.
  */
@@ -74,6 +78,16 @@ function library(root) {
         pages: slot('pages'),
         actions: slot('actions'),
         crop: slot('crop'),
+        selection: slot('selection'),
+        selectionCount: slot('selection-count'),
+        selectionNames: slot('selection-names'),
+        selectionHint: slot('selection-hint'),
+        move: slot('move'),
+        moveFolder: slot('move-folder'),
+        moveButton: slot('move-button'),
+        moveError: slot('move-error'),
+        selectionDone: slot('selection-done'),
+        selectionStop: slot('selection-stop'),
     };
     const pageTemplate = aside.querySelector('template[data-details-page]');
 
@@ -87,7 +101,14 @@ function library(root) {
         // The request for the places of the file.
         places: null,
         folder: listSettings.folder ?? null,
+        // The folders of the library, [{id, name}], as the list loaded them last.
+        folders: [],
+        // The files the list selects, or null while it chooses one.
+        selection: null,
+        // A move on its way.
+        moving: false,
     };
+    const moveLabel = ui.moveButton.textContent;
     // The alt texts on their way to the server, by the id of their file: {alt, promise}. A file the editor comes back to
     // while its text travels shows that text, never the older one the list still holds.
     const saving = new Map();
@@ -131,7 +152,7 @@ function library(root) {
 
         state.file = file;
         ui.nothing.hidden = true;
-        ui.file.hidden = false;
+        ui.file.hidden = state.selection !== null;
         ui.mini.dataset.kind = kind;
         ui.thumb.hidden = thumb === null;
 
@@ -157,12 +178,133 @@ function library(root) {
         ui.actions.hidden = file.croppable !== true;
         hint();
         moment(pending ? 'busy' : 'unchanged');
+
+        if (state.selection === null) {
+            folderOf([file]);
+        }
     }
 
     function nothing() {
         state.file = null;
-        ui.nothing.hidden = false;
+        ui.nothing.hidden = state.selection !== null;
         ui.file.hidden = true;
+
+        if (state.selection === null) {
+            ui.move.hidden = true;
+        }
+    }
+
+    /**
+     * "Map" for these files: their folder chosen when they share one ("Alle bestanden" for none), else "Kies een
+     * map" first. "Verplaatsen" works once another folder is chosen.
+     */
+    function folderOf(files) {
+        ui.move.hidden = files.length === 0;
+        folderOptions(files);
+        moveError(null);
+    }
+
+    /** The options of "Map" as the folders are now; with keep the folder the editor picked stays while it exists. */
+    function folderOptions(files, keep = false) {
+        const picked = ui.moveFolder.value;
+        const shared = new Set(files.map((file) => file.folder_id ?? null));
+        const current = shared.size === 1 ? String([...shared][0] ?? '') : 'none';
+
+        ui.moveFolder.replaceChildren(
+            ...(current === 'none' ? [new Option(texts.choose_folder ?? '', 'none')] : []),
+            new Option(texts.all_files ?? '', ''),
+            ...state.folders.map((folder) => new Option(folder.name, String(folder.id))),
+        );
+        ui.moveFolder.value = keep && [...ui.moveFolder.options].some((option) => option.value === picked) ? picked : current;
+        ui.moveFolder.dataset.current = current;
+        movable();
+    }
+
+    /** "Verplaatsen" only for another folder, and not while a move is on its way. */
+    function movable() {
+        const value = ui.moveFolder.value;
+
+        ui.moveFolder.disabled = state.moving;
+        ui.moveButton.disabled = state.moving || value === 'none' || value === ui.moveFolder.dataset.current;
+        ui.moveButton.textContent = state.moving ? texts.saving : moveLabel;
+    }
+
+    function moveError(error) {
+        ui.moveError.hidden = error === null;
+        ui.moveError.textContent = error ?? '';
+        ui.moveFolder.classList.toggle('fout', error !== null);
+        ui.moveFolder.setAttribute('aria-invalid', String(error !== null));
+        error === null ? ui.moveError.removeAttribute('role') : ui.moveError.setAttribute('role', 'alert');
+    }
+
+    /** The column while the list selects: how many, their names, and their folder; or the chosen file again. */
+    function selection(files) {
+        state.selection = files;
+        aside.classList.toggle('selecteert', files !== null);
+        ui.selection.hidden = files === null;
+        ui.selectionDone.hidden = files === null;
+
+        if (files === null) {
+            ui.nothing.hidden = state.file !== null;
+            ui.file.hidden = state.file === null;
+
+            if (state.file !== null) {
+                folderOf([state.file]);
+            } else {
+                ui.move.hidden = true;
+            }
+
+            return;
+        }
+
+        const names = files.slice(0, 3).map((file) => file.file ?? file.name).join(', ');
+        const more = files.length - 3;
+
+        ui.nothing.hidden = true;
+        ui.file.hidden = true;
+        ui.selectionCount.textContent = files.length === 0 ? texts.selected_none : (files.length === 1 ? texts.selected_one : format(texts.selected_many, { count: files.length }));
+        ui.selectionNames.hidden = files.length === 0;
+        ui.selectionNames.textContent = more <= 0 ? names : format(more === 1 ? texts.selected_more_one : texts.selected_more, { names, count: more });
+        ui.selectionHint.hidden = files.length > 0;
+        folderOf(files);
+    }
+
+    /** Moves the chosen file, after its typed alt text is stored, or the selection, through the list. */
+    async function move() {
+        const files = state.selection ?? (state.file === null ? [] : [state.file]);
+        const value = ui.moveFolder.value;
+
+        if (files.length === 0 || state.moving || value === 'none' || value === ui.moveFolder.dataset.current) {
+            return;
+        }
+
+        if (state.selection === null && ! (await save())) {
+            return;
+        }
+
+        const id = value === '' ? null : Number(value);
+        const folder = id === null ? null : (state.folders.find((candidate) => candidate.id === id) ?? { id, name: ui.moveFolder.selectedOptions[0]?.textContent ?? '' });
+
+        state.moving = true;
+        movable();
+
+        const result = await new Promise((resolve) => {
+            const detail = { files: files.map((file) => file.id), folder, done: resolve, taken: false };
+
+            list.dispatchEvent(new CustomEvent('made-cms:media-move', { detail }));
+
+            if (! detail.taken) {
+                resolve({ ok: false, error: texts.action_failed });
+            }
+        });
+
+        state.moving = false;
+        movable();
+
+        if (! result.ok) {
+            moveError(result.error ?? texts.action_failed);
+            ui.moveFolder.focus();
+        }
     }
 
     /** The pages the file is on, from the server; a newer file drops an older answer. */
@@ -381,6 +523,26 @@ function library(root) {
         }
     });
     ui.save.addEventListener('click', () => save());
+
+    ui.moveFolder.addEventListener('change', () => {
+        moveError(null);
+        movable();
+    });
+    ui.moveButton.addEventListener('click', move);
+    ui.selectionStop.addEventListener('click', () => {
+        list.dispatchEvent(new CustomEvent('made-cms:media-select', { detail: { on: false } }));
+    });
+    list.addEventListener('made-cms:media-selection', (event) => {
+        selection(event.detail?.selecting === true ? (event.detail.files ?? []) : null);
+    });
+    list.addEventListener('made-cms:media-folders', (event) => {
+        state.folders = event.detail?.folders ?? [];
+
+        // The open choice keeps its folder and a refusal its message, among the folders as they are now.
+        if (state.selection !== null || state.file !== null) {
+            folderOptions(state.selection ?? [state.file], true);
+        }
+    });
 
     ui.crop.addEventListener('click', async () => {
         const step = document.querySelector('[data-media-crop]');

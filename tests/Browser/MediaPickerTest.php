@@ -114,6 +114,18 @@ it('loads the thumbnails in the tiles and the foot, never the photos the site sh
         ->and($shell->script("() => new URL(document.querySelector('[data-slot=\"media-picker-thumb\"]').src).pathname"))->toBe('/storage/media/01k9/thumb-klein.webp');
 });
 
+it('shows the folders of the library without managing them: no field, no selecting, no dragging', function (): void {
+    $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
+    $shell->click('[data-path="foto"] [data-slot="image-pick"]');
+
+    expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
+        ->and($shell->script(pickerFolders()))->not->toBeEmpty()
+        ->and($shell->script("() => document.querySelectorAll('[data-media-picker] [data-slot=\"media-folder-field\"], [data-media-picker] [data-slot=\"media-select\"], [data-media-picker] [data-slot=\"media-rename\"]').length"))->toBe(0)
+        ->and($shell->script("() => document.querySelectorAll('[data-media-picker] .tegel[draggable=\"true\"]').length"))->toBe(0);
+
+    $shell->assertNoJavaScriptErrors();
+});
+
 it('opens from the media element as a modal dialog with the images of the library, newest first', function (): void {
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
 

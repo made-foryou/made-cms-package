@@ -31,6 +31,9 @@
     --made-inhoud-zwak-op-nadruk: #a9b6b1;
     --made-accent-op-nadruk: #d9a63a;
     --made-rand-op-nadruk: #1b3d36;
+    /* A choice that stands out: "Selecteren" while it is on, a folder chip a drag can be let go on. */
+    --made-pil-vlak: #0e2b26;
+    --made-pil-tekst: #f3f1e8;
     --font-kop: "Made CMS Nunito", Nunito, "Trebuchet MS", system-ui, sans-serif;
     --font-tekst: "Made CMS Instrument Sans", "Instrument Sans", "Segoe UI", system-ui, sans-serif;
     --made-radius-s: 10px;
@@ -60,6 +63,8 @@
         --made-inhoud-zwak-op-nadruk: #47564f;
         --made-accent-op-nadruk: #8a6210;
         --made-rand-op-nadruk: #dedbcd;
+        --made-pil-vlak: #d9a63a;
+        --made-pil-tekst: #0e2b26;
     }
 }
 
@@ -4693,6 +4698,7 @@ button.tekstlink.alarm {
     display: flex;
     grid-area: zij;
     flex-direction: column;
+    gap: 18px;
     min-width: 0;
     padding: 22px;
     border: 1.5px solid var(--made-rand);
@@ -5056,8 +5062,450 @@ button.tekstlink.alarm {
     }
 }
 
+/*
+ * Folders of the media library and selecting files (design 13.1aa–az, 14.1aa–az): one field below the chips for a
+ * new folder or a new name, one message below it, the actions of the open folder next to the trail, "Selecteren" on
+ * a row of its own with the order and the views, the round box of a selected tile, the chips a drag can be let go on,
+ * and in the side column the selection with its folder.
+ */
+.mediabrowser-bibliotheek .mapveld {
+    display: flex;
+    flex-direction: column;
+    align-self: flex-start;
+    gap: 8px;
+    max-width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--made-accent);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+    animation: mapveld-in 220ms var(--ease-uit) backwards;
+}
+
+.mediabrowser-bibliotheek .mapveld[hidden] {
+    display: none;
+}
+
+@keyframes mapveld-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+}
+
+.mapveld-rij {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+}
+
+.mapveld-naam {
+    width: 240px;
+    max-width: 100%;
+    padding: 8px 12px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+    font: 15px/1.3 var(--font-tekst);
+}
+
+.mapveld-naam:focus {
+    border-color: var(--made-accent);
+    outline: none;
+}
+
+.mapveld-naam.fout {
+    border-color: var(--made-alarm);
+}
+
+.mapveld-naam:disabled {
+    opacity: .6;
+}
+
+.mediabrowser-bibliotheek .mapveld .actie:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.mediabrowser-klein.fout {
+    font-weight: 600;
+    color: var(--made-alarm);
+}
+
+.mediabrowser-meldplek:empty {
+    display: none;
+}
+
+.mediabrowser-meldplek .melding {
+    align-items: center;
+    font-size: 14px;
+    animation: mapveld-in 220ms var(--ease-uit) backwards;
+}
+
+.mediabrowser-meldplek .melding .bol {
+    margin-top: 0;
+}
+
+.mediabrowser-meldplek .melding-tekst {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.melding.let {
+    border-color: var(--made-amber);
+}
+
+.melding.alarm {
+    border-color: var(--made-alarm);
+}
+
+.melding .bol.let {
+    background: var(--made-amber);
+}
+
+.melding .bol.alarm {
+    background: var(--made-alarm);
+}
+
+.mediabrowser-meldplek .tekstlink {
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.mediabrowser-kruis {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: transparent;
+    color: var(--made-inhoud);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.mediabrowser-kruis:hover {
+    border-color: var(--made-accent);
+}
+
+.mediabrowser-mapacties {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.mediabrowser-mapacties[hidden] {
+    display: none;
+}
+
+.mediabrowser-mapacties .tekstlink {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.mediabrowser-mapacties .tekstlink:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+/* The order, the views and "Selecteren" have a row of their own below the trail. */
+.mediabrowser-bibliotheek .mediabrowser-weergave {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px 14px;
+}
+
+.mediabrowser-ordening {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+}
+
+.mediabrowser-weergave .actie.mediabrowser-selecteer[aria-pressed="false"] {
+    color: var(--made-inhoud);
+}
+
+.mediabrowser-weergave .actie.mediabrowser-selecteer[aria-pressed="true"] {
+    border-color: var(--made-pil-vlak);
+    background: var(--made-pil-vlak);
+    color: var(--made-pil-tekst);
+}
+
+/* The round box of a selection: on the photo of a tile, in a column of its own in the list. */
+.tegel-vakje {
+    display: none;
+}
+
+.mediabrowser-bibliotheek .tegel {
+    position: relative;
+}
+
+.mediabrowser-bibliotheek[data-selecting] .tegel-vakje {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--made-krijt);
+    border-radius: 50%;
+    background: rgb(14 43 38 / .4);
+    color: var(--made-nachtgroen);
+}
+
+.mediabrowser-bibliotheek[data-selecting] .tegel-vakje svg {
+    visibility: hidden;
+}
+
+.mediabrowser-bibliotheek[data-selecting] .tegel.geselecteerd .tegel-vakje {
+    border-color: var(--made-amber);
+    background: var(--made-amber);
+}
+
+.mediabrowser-bibliotheek[data-selecting] .tegel.geselecteerd .tegel-vakje svg {
+    visibility: visible;
+}
+
+.mediabrowser-bibliotheek[data-selecting] .tegel[data-kind="document"]:not(.geselecteerd) .tegel-vakje {
+    border-color: var(--made-rand-sterk);
+    background: transparent;
+}
+
+.kolom-vakje {
+    display: none;
+}
+
+.mediabrowser-bibliotheek[data-selecting][data-view="list"] .kolom-vakje {
+    display: block;
+}
+
+.mediabrowser-bibliotheek[data-selecting][data-view="list"] .tegel-vakje {
+    position: static;
+}
+
+.mediabrowser-bibliotheek[data-selecting][data-view="list"] .tegel:not(.geselecteerd) .tegel-vakje {
+    border-color: var(--made-rand-sterk);
+    background: transparent;
+}
+
+.mediabrowser-bibliotheek[data-selecting] .mediabrowser-lijstkop,
+.mediabrowser-bibliotheek[data-selecting][data-view="list"] .tegel {
+    grid-template-columns: 22px 44px minmax(0, 1.5fr) 68px 124px 88px minmax(0, 1fr);
+}
+
+.mediabrowser-bibliotheek[data-selecting][data-in-folder] .mediabrowser-lijstkop,
+.mediabrowser-bibliotheek[data-selecting][data-in-folder][data-view="list"] .tegel {
+    grid-template-columns: 22px 44px minmax(0, 1.5fr) 70px 130px minmax(0, 1.3fr);
+}
+
+/* A drag: the tiles it carries fade, the chips it can be let go on are dashed, the open folder is no place for it. */
+.mediabrowser-bibliotheek .tegel.sleept {
+    opacity: .35;
+}
+
+.mediabrowser-bibliotheek .kmap.doel {
+    border-style: dashed;
+    border-color: var(--made-rand-sterk);
+}
+
+.mediabrowser-bibliotheek .kmap.doel-actief {
+    border-style: solid;
+    border-color: var(--made-pil-vlak);
+    background: var(--made-pil-vlak);
+    color: var(--made-pil-tekst);
+}
+
+.mediabrowser-bibliotheek .kmap.doel-actief .kmap-aantal {
+    color: inherit;
+    opacity: .8;
+}
+
+.mediabrowser-bibliotheek .kmap.geen-doel {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.mediabrowser-kruimel .tekstlink.doel {
+    border-radius: var(--made-radius-pil);
+    outline: 1.5px dashed var(--made-rand-sterk);
+    outline-offset: 4px;
+}
+
+.mediabrowser-kruimel .tekstlink.doel-actief {
+    outline: 0;
+    background: var(--made-pil-vlak);
+    box-shadow: 0 0 0 5px var(--made-pil-vlak);
+    color: var(--made-pil-tekst);
+    text-decoration: none;
+}
+
+/* What the browser shows under the pointer for a selection: two sheets and the number. Drawn off the screen. */
+.mediabrowser-sleepbeeld {
+    position: fixed;
+    top: -200px;
+    left: -200px;
+    width: 84px;
+    height: 70px;
+    pointer-events: none;
+}
+
+.mediabrowser-sleepbeeld .achter,
+.mediabrowser-sleepbeeld .voor {
+    position: absolute;
+    top: 14px;
+    left: 8px;
+    width: 64px;
+    height: 48px;
+    aspect-ratio: auto;
+    border: 2px solid var(--made-oppervlak);
+    border-radius: 8px;
+    background: var(--made-nachtgroen);
+}
+
+.mediabrowser-sleepbeeld .achter {
+    transform: translate(7px, 7px) rotate(5deg);
+}
+
+.mediabrowser-sleepbeeld .beeldkaart-ext,
+.mediabrowser-sleepbeeld .beeldkaart-stip {
+    display: none;
+}
+
+.mediabrowser-sleeptel {
+    position: absolute;
+    top: 4px;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 12px;
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 700 13px/1 var(--font-kop);
+}
+
+/* The side column while the library selects, and the folder of the chosen file or of the selection. */
+.bibliotheek-selectie {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bibliotheek-selectie[hidden],
+.bibliotheek-map[hidden],
+.bibliotheek-klaar[hidden] {
+    display: none;
+}
+
+.bibliotheek-selectie h2 {
+    margin: 0;
+    font: 700 18px/1.3 var(--font-kop);
+}
+
+.bibliotheek-selectie .bibliotheek-klein {
+    overflow-wrap: anywhere;
+}
+
+.bibliotheek-selectie-uitleg {
+    padding-top: 4px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--made-inhoud-zwak);
+}
+
+.bibliotheek-map {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bibliotheek-map-rij {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.bibliotheek-map-keuze {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 9px 12px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    font: 14px var(--font-tekst);
+}
+
+.bibliotheek-map-keuze.fout {
+    border-color: var(--made-alarm);
+}
+
+.bibliotheek-map-keuze:disabled {
+    opacity: .6;
+}
+
+.bibliotheek-map-rij .actie:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.bibliotheek-klaar .knop {
+    align-self: flex-start;
+}
+
+@media (max-width: 600px) {
+    .mediabrowser-bibliotheek .mapveld {
+        align-self: stretch;
+    }
+
+    .mapveld-naam {
+        width: 100%;
+    }
+
+    .mediabrowser-bibliotheek .mediabrowser-weergave,
+    .mediabrowser-ordening {
+        gap: 8px;
+    }
+
+    .mediabrowser-bibliotheek .mediabrowser-weergave .actie {
+        padding: 7px 8px;
+    }
+
+    .niet-smal {
+        display: none;
+    }
+
+    /* While selecting, the column stays in view at the foot of the screen. */
+    .bibliotheek-zij.selecteert {
+        position: sticky;
+        bottom: 10px;
+        z-index: 4;
+    }
+
+    .mediabrowser-bibliotheek[data-selecting][data-view="list"] .tegel,
+    .mediabrowser-bibliotheek[data-selecting][data-in-folder][data-view="list"] .tegel {
+        grid-template-columns: 22px 44px minmax(0, 1fr) auto;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .bibliotheek-skelet {
+    .bibliotheek-skelet,
+    .mediabrowser-bibliotheek .mapveld,
+    .mediabrowser-meldplek .melding {
         animation: none;
     }
 }

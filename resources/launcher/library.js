@@ -83,12 +83,13 @@ function library(root) {
     const state = {
         // The file the side column shows, as the media endpoints give it.
         file: null,
-        // An alt text on its way to the server.
-        saving: null,
         // The request for the places of the file.
         places: null,
         folder: listSettings.folder ?? null,
     };
+    // The alt texts on their way to the server, by the id of their file: {alt, promise}. A file the editor comes back to
+    // while its text travels shows that text, never the older one the list still holds.
+    const saving = new Map();
     const saveLabel = ui.save.textContent;
 
     const address = (pattern, file) => pattern.replace(':media', String(file.id));
@@ -125,6 +126,7 @@ function library(root) {
         const kind = file.kind ?? 'image';
         const noAlt = kind === 'image' && (file.alt ?? '') === '';
         const thumb = file.thumb ?? null;
+        const pending = saving.get(file.id) ?? null;
 
         state.file = file;
         ui.nothing.hidden = true;
@@ -149,11 +151,11 @@ function library(root) {
             file.meta,
             file.folder ? format(texts.detail_folder, { folder: file.folder }) : null,
         ].filter(Boolean).join(' · ');
-        ui.alt.value = file.alt ?? '';
+        ui.alt.value = pending?.alt ?? file.alt ?? '';
         ui.alt.placeholder = texts['alt_placeholder_' + kind] ?? '';
         ui.actions.hidden = file.croppable !== true;
         hint();
-        moment('unchanged');
+        moment(pending ? 'busy' : 'unchanged');
     }
 
     function nothing() {
@@ -253,8 +255,8 @@ function library(root) {
             return Promise.resolve(true);
         }
 
-        if (state.saving) {
-            return state.saving;
+        if (saving.has(file.id)) {
+            return saving.get(file.id).promise;
         }
 
         if (tooLong()) {
@@ -265,14 +267,17 @@ function library(root) {
             return Promise.resolve(false);
         }
 
+        const entry = { alt: typed(), promise: null };
+
+        saving.set(file.id, entry);
         moment('busy');
-        state.saving = (async () => {
+        entry.promise = (async () => {
             try {
                 const response = await fetch(address(settings.urls.alt, file), {
                     method: 'PUT',
                     credentials: 'same-origin',
                     headers: { ...HEADERS, 'Content-Type': 'application/json', 'X-CSRF-TOKEN': settings.csrf_token ?? '' },
-                    body: JSON.stringify({ alt: typed() }),
+                    body: JSON.stringify({ alt: entry.alt }),
                 });
 
                 if (! response.ok) {
@@ -289,8 +294,10 @@ function library(root) {
 
                 const saved = (await response.json()).file;
 
+                // The field shows the text as it is stored now, also after the column showed the file again meanwhile.
                 if (state.file?.id === file.id) {
                     state.file = saved;
+                    ui.alt.value = saved.alt ?? '';
                     ui.noAlt.hidden = ! (saved.kind === 'image' && (saved.alt ?? '') === '');
                     hint();
                     moment('saved');
@@ -307,7 +314,7 @@ function library(root) {
 
                 return false;
             } finally {
-                state.saving = null;
+                saving.delete(file.id);
 
                 if (state.file?.id === file.id && ui.alt.disabled) {
                     ui.alt.disabled = false;
@@ -315,7 +322,7 @@ function library(root) {
             }
         })();
 
-        return state.saving;
+        return entry.promise;
     }
 
     // The side column follows the choice of the list; a typed alt text is stored first, and one the server refused

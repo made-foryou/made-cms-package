@@ -437,7 +437,12 @@ function browse(root) {
             }));
         }
 
-        tile.addEventListener('click', () => choose(state.files.find((candidate) => candidate.id === file.id) ?? file));
+        // A click on the file that is chosen changes nothing: the side column of the library keeps what the editor typed.
+        tile.addEventListener('click', () => {
+            if (state.chosen?.id !== file.id) {
+                choose(state.files.find((candidate) => candidate.id === file.id) ?? file);
+            }
+        });
         paint(tile, file);
 
         return tile;

@@ -637,6 +637,36 @@ it('takes files dropped on the files, says where they go, and asks the alt text 
     $page->assertNoJavaScriptErrors();
 });
 
+it('keeps its filter and search when files come in, and shows a new file only when it falls within them', function (): void {
+    $page = visit('/made-cms/media?without_alt=1&q=training');
+
+    expect($page->script(waitUntil(libraryShows(['training-dinsdag']))))->toBeTrue();
+
+    $page->script(dropOnLibrary([
+        ['name' => 'Inschrijfformulier.pdf', 'type' => 'application/pdf', 'path' => mediaFixture('wedstrijdschema.pdf')],
+    ], drop: true));
+
+    // The document asks its alt text in the field; the numbers follow, the filter and the search stay.
+    expect($page->script(waitUntil("document.querySelector('[data-upload] [data-slot=\"upload-row-alt-input\"]')?.checkVisibility()")))->toBeTrue()
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"media-kinds\"] .filter[data-kind=\"\"]').textContent.replace(/\\s+/g, ' ').trim() === 'Alle 5'")))->toBeTrue();
+
+    $page->assertValue('[data-slot="media-search"]', 'training')
+        ->assertAttribute('[data-slot="media-without-alt"]', 'aria-pressed', 'true');
+
+    expect($page->script(libraryShows(['training-dinsdag'])))->toBeTrue()
+        ->and($page->script('() => location.search'))->toBe('?without_alt=1&q=training');
+
+    $page->type('[data-upload] [data-slot="upload-row-alt-input"]', 'Inschrijfformulier voor nieuwe leden (pdf)')
+        ->keys('[data-upload] [data-slot="upload-row-alt-input"]', 'Enter');
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"media-upload\"]').hidden")))->toBeTrue()
+        ->and(Media::query()->where('name', 'inschrijfformulier')->sole()->alt)->toBe('Inschrijfformulier voor nieuwe leden (pdf)')
+        ->and($page->script(libraryShows(['training-dinsdag'])))->toBeTrue();
+
+    $page->assertValue('[data-slot="media-search"]', 'training')
+        ->assertNoJavaScriptErrors();
+});
+
 it('takes no files let go beside the library, so the browser never opens them and a typed alt text stays', function (): void {
     $page = visit('/made-cms/media');
 

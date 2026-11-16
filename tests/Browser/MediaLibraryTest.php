@@ -448,10 +448,10 @@ it('keeps the alt text the editor typed when the chosen tile is clicked again', 
         ->assertNoJavaScriptErrors();
 });
 
-it('shows the alt text on its way when the editor comes back to its file, and keeps it once it is stored', function (): void {
+it('stores a typed alt text before the choice moves to another file, which waits for it', function (): void {
     $page = visit('/made-cms/media');
 
-    // The first alt text waits for the test before it travels, so it is still on its way when the editor comes back.
+    // The first alt text waits for the test before it travels.
     $page->script(<<<'JS'
         () => {
             const original = window.fetch;
@@ -475,22 +475,81 @@ it('shows the alt text on its way when the editor comes back to its file, and ke
     $page->type('[data-slot="details-alt"]', 'Het team aan de tafels')
         ->click(libraryTile($this->clubavond));
 
-    expect($page->script(waitUntil(libraryDetails('clubavond.webp').' && window.releaseAlt !== null')))->toBeTrue();
+    expect($page->script(waitUntil('window.releaseAlt !== null')))->toBeTrue();
 
-    // Back at the photo while its text travels: the column shows that text, busy, never the one the list still holds.
-    $page->click(libraryTile($this->teamfoto))
+    // While the text travels the photo stays chosen, busy with the text the editor typed.
+    $page->assertSeeIn('[data-slot="details-name"]', 'teamfoto-merwestad-1.webp')
         ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
         ->assertAttribute('[data-slot="details-alt"]', 'disabled', '')
-        ->assertSeeIn('[data-slot="details-save"]', 'Bezig…');
+        ->assertSeeIn('[data-slot="details-save"]', 'Bezig…')
+        ->assertAttribute(libraryTile($this->teamfoto), 'aria-pressed', 'true')
+        ->assertAttribute(libraryTile($this->clubavond), 'aria-pressed', 'false');
 
     $page->script('() => window.releaseAlt()');
 
-    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-status\"]').textContent === 'Opgeslagen'")))->toBeTrue()
+    expect($page->script(waitUntil(libraryDetails('clubavond.webp'))))->toBeTrue()
         ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels');
 
+    $page->assertAttribute(libraryTile($this->clubavond), 'aria-pressed', 'true')
+        ->click(libraryTile($this->teamfoto));
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
     $page->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
-        ->assertAttribute('[data-slot="details-save"]', 'disabled', '')
+        ->assertNoJavaScriptErrors();
+});
+
+it('keeps the choice and the typed alt text when storing it fails, and says why', function (): void {
+    $page = visit('/made-cms/media');
+
+    // The first alt text meets a network that is gone, the second an expired session; the third goes through.
+    $page->script(<<<'JS'
+        () => {
+            const original = window.fetch;
+            const answers = ['offline', 419];
+
+            window.fetch = (input, init = {}) => {
+                if (! String(input).endsWith('/alt') || answers.length === 0) {
+                    return original(input, init);
+                }
+
+                const answer = answers.shift();
+
+                return answer === 'offline'
+                    ? Promise.reject(new TypeError('Failed to fetch'))
+                    : Promise.resolve(new Response('{}', { status: answer, headers: { 'Content-Type': 'application/json' } }));
+            };
+        }
+        JS);
+    $page->click(libraryTile($this->teamfoto));
+
+    expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
+
+    $page->type('[data-slot="details-alt"]', 'Het team aan de tafels')
         ->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-alt-hint\"]').textContent === 'Opslaan lukte niet. Controleer je verbinding en probeer het opnieuw.'")))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-name"]', 'teamfoto-merwestad-1.webp')
+        ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertAttribute('[data-slot="details-alt-hint"]', 'role', 'alert')
+        ->assertAttribute(libraryTile($this->teamfoto), 'aria-pressed', 'true')
+        ->assertAttribute(libraryTile($this->clubavond), 'aria-pressed', 'false');
+
+    expect($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-alt')
+        ->and($this->teamfoto->refresh()->alt)->toBe('Het eerste team voor de tafels');
+
+    $page->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-alt-hint\"]').textContent === 'Je sessie is verlopen. Herlaad de pagina om verder te gaan.'")))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-name"]', 'teamfoto-merwestad-1.webp')
+        ->assertValue('[data-slot="details-alt"]', 'Het team aan de tafels')
+        ->assertAttribute(libraryTile($this->clubavond), 'aria-pressed', 'false');
+
+    expect($this->teamfoto->refresh()->alt)->toBe('Het eerste team voor de tafels');
+
+    $page->click(libraryTile($this->clubavond));
 
     expect($page->script(waitUntil(libraryDetails('clubavond.webp'))))->toBeTrue()
         ->and($this->teamfoto->refresh()->alt)->toBe('Het team aan de tafels');

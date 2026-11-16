@@ -2,8 +2,9 @@
  * Made CMS: the screen of the media library (design 13.1b–z, 14.1b–z), around the list of media.js.
  *
  * - The side column ([data-media-details]) shows the file the list chose (made-cms:media-chosen): its thumbnail, what
- *   it is, its alt text with "Opslaan" (Enter saves too; choosing another file saves a typed text first, and an alt
- *   text the server refuses keeps the choice where it is), the pages it is used on from GET made-cms/media/{media} with
+ *   it is, its alt text with "Opslaan" (Enter saves too; choosing another file stores a typed text first and moves
+ *   only once it is stored, so a refusal, a network that fails or an expired session keeps the choice where it is,
+ *   with its message), the pages it is used on from GET made-cms/media/{media} with
  *   a link to their edit shell, and "Bijsnijden" for a photo, which opens the crop step (made-cms:crop). A stored alt
  *   text bubbles up as made-cms:media-changed {file}, like a crop does, so the list shows it in its tile and its numbers.
  * - "Uploaden" ([data-library-upload]) opens the file chooser of the upload field of the list, and files dragged from
@@ -310,6 +311,7 @@ function library(root) {
                 if (state.file?.id === file.id) {
                     moment('error');
                     hint(texts.alt_failed);
+                    ui.alt.focus();
                 }
 
                 return false;
@@ -325,20 +327,27 @@ function library(root) {
         return entry.promise;
     }
 
-    // The side column follows the choice of the list; a typed alt text is stored first, and one the server refused
-    // keeps the choice where it is, with its error.
+    // The side column follows the choice of the list, but a typed alt text is stored first: the choice moves once it
+    // is, and stays where it is with the message when the server refuses it, the network fails or the session expired.
+    // A text longer than the server takes holds it at once.
     list.addEventListener('made-cms:media-choosing', (event) => {
-        if (changed() && (tooLong() || ui.hint.classList.contains('fout'))) {
+        if (! changed()) {
+            return;
+        }
+
+        if (tooLong()) {
             event.preventDefault();
             moment('error');
-            hint(tooLong() ? texts.alt_long : ui.hint.textContent);
+            hint(texts.alt_long);
             ui.alt.focus();
+
+            return;
         }
+
+        event.detail?.wait?.(save());
     });
     list.addEventListener('made-cms:media-chosen', (event) => {
         const file = event.detail?.file;
-
-        save();
 
         if (! file) {
             nothing();

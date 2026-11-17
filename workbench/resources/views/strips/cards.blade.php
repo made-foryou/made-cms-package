@@ -14,7 +14,7 @@
                     <img src="{{ $kaart['icoon']['url'] }}" alt="{{ $kaart['icoon']['alt'] }}" style="width: 48px; height: 48px; object-fit: cover" data-cms-field="icoon">
                 @endif
 
-                <x-made-cms::heading :heading="$kaart['titel']" field="titel" class="kaart__titel" />
+                <x-made-cms::heading :heading="$kaart['titel']" field="titel" emphasis class="kaart__titel" />
 
                 @if ($kaart['tekst'])
                     <p data-cms-field="tekst">{!! nl2br(e($kaart['tekst'])) !!}</p>

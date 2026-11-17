@@ -31,7 +31,7 @@ final class Hero extends StripType
     {
         return [
             Text::make('label')->hint('Korte regel boven de kop.'),
-            Heading::make('kop')->required(),
+            Heading::make('kop')->emphasis()->required(),
             RichText::make('intro')->hint('Twee zinnen is genoeg.'),
             Items::make('knoppen', [Button::make('knop')->required()])->max(2),
             Image::make('foto')->hint('Minimaal 1600 px breed.'),

@@ -28,6 +28,7 @@
     </script>
     <style>
         [data-laat] main { display: none; }
+        .hero__kop em, .kaart__titel em { color: #b4532a; }
     </style>
 </head>
 <body>

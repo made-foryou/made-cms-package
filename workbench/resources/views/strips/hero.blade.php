@@ -9,7 +9,7 @@
         <p><small data-cms-field="label">{{ $strip->label }}</small></p>
     @endif
 
-    <x-made-cms::heading :heading="$strip->kop" field="kop" class="hero__kop" />
+    <x-made-cms::heading :heading="$strip->kop" field="kop" emphasis class="hero__kop" />
 
     @if ($strip->intro)
         <div data-cms-field="intro">{!! $strip->intro !!}</div>

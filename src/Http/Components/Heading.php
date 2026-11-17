@@ -15,16 +15,19 @@ use Made\CmsPackage\Content\Strips\Fields\Heading as HeadingField;
  *
  * The element follows the level an editor chose, so the site gives a heading its look through a class, never through
  * its tag. It is one element, built when Blade renders it: only then does the component hold its attributes.
+ * For a field with emphasis() the view adds emphasis, and the words between asterisks become an <em>.
  */
 final class Heading extends Component implements Htmlable
 {
     /**
      * @param  array<array-key, mixed>|null  $heading  the rendered value of a Heading field: {text, tag} or null
      * @param  string|null  $field  the field it shows, for data-cms-field; in a list the field of the item ("titel")
+     * @param  bool  $emphasis  whether the field has emphasis(): the words between asterisks are an <em>
      */
     public function __construct(
         public readonly ?array $heading = null,
         public readonly ?string $field = null,
+        public readonly bool $emphasis = false,
     ) {}
 
     public function shouldRender(): bool
@@ -47,7 +50,9 @@ final class Heading extends Component implements Htmlable
         $field = $this->field === null ? [] : ['data-cms-field' => e($this->field)];
         $attributes = (string) new ComponentAttributeBag([...$field, ...$this->attributes->getAttributes()]);
 
-        return '<'.$tag.($attributes === '' ? '' : ' '.$attributes).'>'.e((string) $this->text()).'</'.$tag.'>';
+        $text = (string) $this->text();
+
+        return '<'.$tag.($attributes === '' ? '' : ' '.$attributes).'>'.($this->emphasis ? Emphasis::html($text) : e($text)).'</'.$tag.'>';
     }
 
     private function text(): ?string

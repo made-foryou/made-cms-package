@@ -34,7 +34,7 @@ final class Cards extends StripType
             Heading::make('kop'),
             Choice::make('kolommen', ['2' => 'Twee naast elkaar', '3' => 'Drie naast elkaar'])->default('3'),
             Items::make('kaarten', [
-                Heading::make('titel')->tag('h3')->required(),
+                Heading::make('titel')->tag('h3')->emphasis()->required(),
                 LongText::make('tekst'),
                 Link::make('link')->label('Gaat naar'),
                 Image::make('icoon')->hint('Vierkant werkt het best.'),

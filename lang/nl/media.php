@@ -33,6 +33,12 @@ return [
         'name' => 'Geef het bestand een naam met letters of cijfers.',
         'crop' => 'Deze uitsnede kan zo niet opgeslagen worden. Herlaad de pagina en probeer het opnieuw.',
         'not_croppable' => 'Dit bestand kan niet bijgesneden worden.',
+        'replace_kind' => [
+            'image' => 'Kies een afbeelding: je vervangt een afbeelding.',
+            'document' => 'Kies een document: je vervangt een document.',
+            'video' => 'Kies een video: je vervangt een video.',
+        ],
+        'no_previous' => 'Er staat geen vorige versie klaar om terug te zetten.',
     ],
 
     'or' => 'of',

@@ -33,6 +33,12 @@ return [
         'name' => 'Give the file a name with letters or digits.',
         'crop' => 'This crop cannot be stored like this. Reload the page and try again.',
         'not_croppable' => 'This file cannot be cropped.',
+        'replace_kind' => [
+            'image' => 'Choose an image: you are replacing an image.',
+            'document' => 'Choose a document: you are replacing a document.',
+            'video' => 'Choose a video: you are replacing a video.',
+        ],
+        'no_previous' => 'No previous version waits to be put back.',
     ],
 
     'or' => 'or',

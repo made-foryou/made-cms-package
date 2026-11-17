@@ -12,12 +12,15 @@ use League\Flysystem\FilesystemAdapter;
  * Wraps the adapter of a disk and keeps, per path, the options a write or a copy handed it and a visibility set later:
  * what an S3 disk turns into the ACL and the Cache-Control header of an object, which a local disk cannot show (it
  * ignores the header, and on Windows a file cannot be private). The options are those of the disk with the ones of
- * the write on top, as the adapter gets them.
+ * the write on top, as the adapter gets them. It also keeps every change in order (calls()).
  */
 final class RecordingAdapter implements FilesystemAdapter
 {
     /** @var array<string, array{visibility: string|null, directory_visibility: string|null, CacheControl: string|null}> */
     private array $written = [];
+
+    /** @var list<string> */
+    private array $calls = [];
 
     public function __construct(
         private readonly FilesystemAdapter $adapter,
@@ -34,6 +37,25 @@ final class RecordingAdapter implements FilesystemAdapter
         return $this->written[$path] ?? null;
     }
 
+    /**
+     * Every change this disk made, in order: "write {path}", "copy {path}", "visibility {path} {visibility}",
+     * "delete {path}" and "delete directory {path}", with what a test noted in between (note()).
+     *
+     * @return list<string>
+     */
+    public function calls(): array
+    {
+        return $this->calls;
+    }
+
+    /**
+     * Puts something that happened elsewhere, such as a query, in the order of calls().
+     */
+    public function note(string $event): void
+    {
+        $this->calls[] = $event;
+    }
+
     public function fileExists(string $path): bool
     {
         return $this->adapter->fileExists($path);
@@ -48,12 +70,14 @@ final class RecordingAdapter implements FilesystemAdapter
     {
         $this->adapter->write($path, $contents, $config);
         $this->record($path, $config);
+        $this->calls[] = "write {$path}";
     }
 
     public function writeStream(string $path, $contents, Config $config): void
     {
         $this->adapter->writeStream($path, $contents, $config);
         $this->record($path, $config);
+        $this->calls[] = "write {$path}";
     }
 
     public function read(string $path): string
@@ -69,11 +93,13 @@ final class RecordingAdapter implements FilesystemAdapter
     public function delete(string $path): void
     {
         $this->adapter->delete($path);
+        $this->calls[] = "delete {$path}";
     }
 
     public function deleteDirectory(string $path): void
     {
         $this->adapter->deleteDirectory($path);
+        $this->calls[] = "delete directory {$path}";
     }
 
     public function createDirectory(string $path, Config $config): void
@@ -84,6 +110,7 @@ final class RecordingAdapter implements FilesystemAdapter
     public function setVisibility(string $path, string $visibility): void
     {
         $this->adapter->setVisibility($path, $visibility);
+        $this->calls[] = "visibility {$path} {$visibility}";
         $this->written[$path] = [...$this->written[$path] ?? ['directory_visibility' => null, 'CacheControl' => null], 'visibility' => $visibility];
     }
 
@@ -121,6 +148,7 @@ final class RecordingAdapter implements FilesystemAdapter
     {
         $this->adapter->copy($source, $destination, $config);
         $this->record($destination, $config);
+        $this->calls[] = "copy {$destination}";
     }
 
     private function record(string $path, Config $config): void

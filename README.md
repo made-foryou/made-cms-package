@@ -341,6 +341,8 @@ For a visitor, a guest or any other value the parameter changes nothing: a draft
 
 On a page served by `Route::madeCms()`, the edit bar of a logged-in editor who opens the pages screen links to "Bewerken": the edit shell of the CMS at `/made-cms/pages/{page}/edit` (route `made-cms-package.pages.edit`). It shows the page in the edit mode in a frame, with a bar on top and a side panel on the right. Every element with `data-cms-strip` gets an outline with the name of its strip type and its number of fields; clicking one chooses that strip, also after the frame reloads. The outlines sit in a shadow root of their own, so the css of the site needs nothing for them.
 
+The bar has two ways out. "‹ Pagina's" goes back to the page in the pages screen. "Bewerken stoppen" goes to the page as visitors see it (its address without `?made-cms`, with the edit bar of the site and its "Bewerken"), or to the pages screen when visitors do not see the page. Both are plain links and both wait until the side panel has stored what it holds; when storing fails the editor stays, with the strip that failed chosen and the reason under the bar. With a draft that changes something, "Bewerken stoppen" asks first: "Stoppen zonder publiceren" keeps the draft, "Publiceren" publishes it and goes to the site. Leaving never publishes anything by itself.
+
 - A visible strip of the page whose view has no `data-cms-strip` on its root cannot be chosen; the shell warns in the browser console which strip and strip type it is.
 - Strips that the site renders in the browser after the page loaded (React or Vue without SSR) get their outline as soon as they appear.
 - Links and forms of the site do nothing inside the frame, so the frame stays on the page in the edit mode.

@@ -1795,6 +1795,7 @@ ul.lijst {
 .bewerkbalk-stop:hover,
 .bewerkbalk-stop[aria-expanded="true"] {
     border-color: var(--made-krijt);
+    color: var(--made-krijt);
     background: rgb(243 241 232 / 10%);
 }
 

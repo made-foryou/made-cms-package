@@ -1990,8 +1990,16 @@ function pending() {
     return [...states.values()].filter((state) => state.dirty || state.saving);
 }
 
-/* Saves what is still open in every strip; true once everything the panel holds is stored. */
-async function flush() {
+/*
+ * Saves what is still open in every strip; true once everything the panel holds is stored. The bar can pass report():
+ * it hears at once that a photo is still on its way ({uploading: true}) and, when something could not be stored, which
+ * strip failed first and why ({failed: {id, kind, errors}}), so it can name that strip.
+ */
+async function flush(report = null) {
+    if ([...uploads].some((upload) => upload.busy)) {
+        report?.({ uploading: true });
+    }
+
     await landed();
 
     for (let waiting = pending(); waiting.length > 0; waiting = pending()) {
@@ -2002,7 +2010,14 @@ async function flush() {
         await Promise.all(waiting.map((state) => save(state)));
     }
 
-    return ! unsaved();
+    const stored = ! unsaved();
+    const failed = [...states.values()].find((state) => state.failed);
+
+    if (! stored && failed) {
+        report?.({ failed: { id: failed.id, kind: failed.failed, errors: failed.errors ?? {} } });
+    }
+
+    return stored;
 }
 
 /*
@@ -2225,7 +2240,7 @@ if (shell && ui.form) {
     shell.addEventListener('made-cms:select', (event) => select(event.detail.id, event.detail.errors ?? null, event.detail.field ?? null, event.detail.count ?? null, event.detail.added ?? null));
     shell.addEventListener('made-cms:removing', (event) => event.detail.wait(settle(event.detail.id)));
     shell.addEventListener('made-cms:strips', (event) => forgetGone(event.detail.strips ?? []));
-    shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush()));
+    shell.addEventListener('made-cms:flush', (event) => event.detail.wait(flush(event.detail.report)));
     shell.addEventListener('made-cms:discarding', (event) => event.detail.wait(discarding(event.detail.done)));
     shell.addEventListener('made-cms:media-changed', (event) => {
         if (event.detail?.file) {

@@ -1137,7 +1137,7 @@ a.knop {
     padding: 8px 4px;
     border: 0;
     background: none;
-    color: var(--made-krijt);
+    color: var(--made-amber-licht);
     font: 600 14px/1 var(--font-tekst);
     text-decoration: underline;
     text-decoration-color: var(--made-amber);
@@ -1146,7 +1146,7 @@ a.knop {
 }
 
 .balk-link:hover {
-    color: var(--made-amber-licht);
+    color: var(--made-krijt);
 }
 
 .balk-link:focus-visible {

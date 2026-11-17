@@ -58,6 +58,7 @@ return [
             'pages_waiting' => 'Terug naar Pagina’s, even wachten',
             'not_saved' => 'Niet opgeslagen: :strip — :message',
             'not_saved_state' => 'Niet opgeslagen',
+            'not_published_state' => 'Niet gepubliceerd',
             'publish_unsaved' => 'Niet gepubliceerd: los eerst de fout in het paneel op.',
             'discarding' => 'Bezig met weggooien…',
             'unknown' => 'Strook',

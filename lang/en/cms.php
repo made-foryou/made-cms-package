@@ -58,6 +58,7 @@ return [
             'pages_waiting' => 'Back to Pages, one moment',
             'not_saved' => 'Not saved: :strip — :message',
             'not_saved_state' => 'Not saved',
+            'not_published_state' => 'Not published',
             'publish_unsaved' => 'Not published: fix the error in the panel first.',
             'discarding' => 'Discarding…',
             'unknown' => 'Strip',

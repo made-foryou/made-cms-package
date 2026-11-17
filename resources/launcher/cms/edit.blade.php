@@ -32,7 +32,7 @@
         </div>
         {{-- bar.js keeps the state of the draft up to date, publishes or discards it and leaves the shell. --}}
         <div class="bewerkbalk-rechts">
-            <span class="bewerkbalk-stand" role="status" data-slot="bar-state"><span class="lang">{{ $draft['label'] }}</span><span class="kort">{{ $draft['short_label'] }}</span></span>
+            <span class="bewerkbalk-stand" role="status" data-slot="bar-state">{{ $draft['label'] }}</span>
             <button type="button" class="bewerkbalk-link" data-slot="bar-stay" aria-label="{{ $t('cms.edit.bar_texts.stay_label') }}" hidden>{{ $t('cms.edit.bar_texts.stay') }}</button>
             <details class="bevestig bewerkbalk-weggooien" data-slot="bar-discard"{{ $draft['discardable'] ? '' : ' hidden' }}>
                 <summary class="bewerkbalk-link" aria-label="{{ $t('cms.edit.discard') }}"><span class="lang">{{ $t('cms.edit.discard') }}</span><span class="kort" aria-hidden="true">{{ $t('cms.edit.discard_short') }}</span></summary>

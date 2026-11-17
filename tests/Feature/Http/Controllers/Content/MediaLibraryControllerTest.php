@@ -163,3 +163,17 @@ it('speaks English when the launcher does', function (): void {
     expect(mediaLibrary())->toContain('<span class="eyebrow">Collections</span>')
         ->toContain('Every photo, document and video of your site in one place.');
 });
+
+it('tells its scripts where a file is replaced, put back, saved and deleted', function (): void {
+    $html = mediaLibrary();
+    $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
+    /** @var array{urls: array<string, string>} $library */
+    $library = json_decode((string) $document->querySelector('[data-media-library]')?->getAttribute('data-config'), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($library['urls'])->toMatchArray([
+        'replace' => '/made-cms/media/:media/replace',
+        'restore' => '/made-cms/media/:media/restore',
+        'download' => '/made-cms/media/:media/download',
+        'delete' => '/made-cms/media/delete',
+    ])->and(mediaLibraryConfig($html)['urls']['delete'] ?? null)->toBe('/made-cms/media/delete');
+});

@@ -25,13 +25,16 @@ use Made\CmsPackage\Http\Controllers\Access\UpcomingScreenController;
 use Made\CmsPackage\Http\Controllers\Content\AddStripController;
 use Made\CmsPackage\Http\Controllers\Content\CreateMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\CropMediaController;
+use Made\CmsPackage\Http\Controllers\Content\DeleteMediaController;
 use Made\CmsPackage\Http\Controllers\Content\DeleteMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
+use Made\CmsPackage\Http\Controllers\Content\DownloadMediaController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
 use Made\CmsPackage\Http\Controllers\Content\MediaLibraryController;
+use Made\CmsPackage\Http\Controllers\Content\MediaLinkController;
 use Made\CmsPackage\Http\Controllers\Content\MoveManyMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
@@ -42,6 +45,8 @@ use Made\CmsPackage\Http\Controllers\Content\RememberMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RenameMediaController;
 use Made\CmsPackage\Http\Controllers\Content\RenameMediaFolderController;
+use Made\CmsPackage\Http\Controllers\Content\ReplaceMediaController;
+use Made\CmsPackage\Http\Controllers\Content\RestoreMediaVersionController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
@@ -189,13 +194,17 @@ Route::prefix($prefix)
             });
 
             // The media library and managing it: the screen, a file with the pages it is used on for its side column,
-            // putting files into another folder (one from the crop step, the chosen ones from the library), and its
-            // folders.
+            // putting files into another folder (one from the crop step, the chosen ones from the library), a new
+            // version, putting the former one back, saving a file, deleting files and its folders.
             Route::middleware(EnsureScreenAccess::using(Screen::Media))->group(function (): void {
                 Route::get('media', MediaLibraryController::class)->name('screens.media');
                 Route::get('media/{media}', ShowMediaController::class)->whereNumber('media')->name('media.show');
                 Route::put('media/{media}/move', MoveMediaController::class)->whereNumber('media')->name('media.move');
                 Route::put('media/move', MoveManyMediaController::class)->name('media.move.many');
+                Route::post('media/{media}/replace', ReplaceMediaController::class)->whereNumber('media')->name('media.replace');
+                Route::post('media/{media}/restore', RestoreMediaVersionController::class)->whereNumber('media')->name('media.restore');
+                Route::get('media/{media}/download', DownloadMediaController::class)->whereNumber('media')->name('media.download');
+                Route::post('media/delete', DeleteMediaController::class)->name('media.destroy');
                 Route::post('media/folders', CreateMediaFolderController::class)->name('media.folders.store');
                 Route::put('media/folders/{folder}', RenameMediaFolderController::class)->whereNumber('folder')->name('media.folders.update');
                 Route::delete('media/folders/{folder}', DeleteMediaFolderController::class)->whereNumber('folder')->name('media.folders.destroy');
@@ -208,9 +217,11 @@ Route::prefix($prefix)
         });
     });
 
-// Static launcher assets load on every host page, so they run without middleware: no session, no cookies.
+// Static launcher assets load on every host page, so they run without middleware: no session, no cookies. The lasting
+// link of a file of the media library is for anyone too: it only sends the visitor to the address the file has now.
 Route::prefix($prefix)
     ->name('made-cms-package.')
     ->group(function (): void {
         Route::get('launcher/{asset}', LauncherAssetController::class)->name('launcher.asset');
+        Route::get('file/{ulid}/{name?}', MediaLinkController::class)->where('ulid', '[0-9a-z]{26}')->name('media.link');
     });

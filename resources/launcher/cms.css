@@ -1726,9 +1726,14 @@ ul.lijst {
     flex-shrink: 0;
 }
 
+/* The names give way before the status does: the pill (Live, Concept) always shows, the names get an ellipsis. */
+.bewerkbalk-links > .bewerkbalk-site,
 .bewerkbalk-links > .bewerkbalk-pagina {
     flex-shrink: 1;
-    min-width: 0;
+    min-width: 3ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .bewerkbalk-terug {
@@ -3519,6 +3524,20 @@ button.tekstlink.alarm {
         left: 16px;
         width: auto;
         margin-top: 12px;
+    }
+
+    /* The choice of "Bewerken stoppen" hangs under the whole bar, not under its button. */
+    .bewerkbalk-anker {
+        position: static;
+    }
+
+    .bewerkbalk-keuze {
+        position: absolute;
+        top: 100%;
+        right: 16px;
+        left: 16px;
+        width: auto;
+        margin-top: 8px;
     }
 
     .bewerkromp {

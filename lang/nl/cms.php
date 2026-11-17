@@ -59,6 +59,7 @@ return [
             'pages_waiting' => 'Terug naar Pagina’s, even wachten',
             'not_saved' => 'Niet opgeslagen: :strip — :message',
             'not_saved_state' => 'Niet opgeslagen',
+            'not_discarded_state' => 'Niet weggegooid',
             'upload_failed' => 'De foto is niet geüpload.',
             'alt_failed' => 'De alt-tekst is niet opgeslagen.',
             'not_published_state' => 'Niet gepubliceerd',

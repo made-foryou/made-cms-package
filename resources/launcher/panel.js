@@ -1942,6 +1942,8 @@ async function undo(state) {
         state.errors = {};
         render();
         announce(texts.undone);
+        // Nothing is stored for this step, so the bar hears that what the strip was refused for is gone.
+        shell.dispatchEvent(new CustomEvent('made-cms:reverted', { detail: { id: state.id } }));
 
         return;
     }

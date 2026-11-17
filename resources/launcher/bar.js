@@ -55,6 +55,8 @@ let asking = 0;
 let busy = false;
 let leaving = null;
 let navigating = false;
+// The strip the line under the bar is about, or null: it goes when that strip is stored or taken back.
+let noticeFor = null;
 
 /* Fills :placeholders like Laravel does: the longest name first, so :id never eats into :identifier. */
 function format(text, replace = {}) {
@@ -135,17 +137,29 @@ function say(text, state = 'error', short = text) {
     ui.state.dataset.state = state;
 }
 
-/* The full text of a refusal on a line of its own under the bar; the bar itself never changes in height otherwise. */
-function notify(text) {
+/*
+ * The full text of a refusal of the bar on a line of its own under the bar; the bar itself never changes in height
+ * otherwise. A refusal of a strip is about that strip: another strip that is stored does not take it away.
+ */
+function notify(text, strip = null) {
+    noticeFor = strip;
     ui.notice.textContent = text;
     ui.notice.hidden = false;
     ui.bar.classList.add('met-melding');
 }
 
 function clearNotice() {
+    noticeFor = null;
     ui.notice.hidden = true;
     ui.notice.textContent = '';
     ui.bar.classList.remove('met-melding');
+}
+
+/* The strip is stored or taken back: its refusal is over. A refusal about no strip ends with any stored strip. */
+function settleNotice(strip) {
+    if (noticeFor === null || noticeFor === strip) {
+        clearNotice();
+    }
 }
 
 /* Only the answer to the last question counts: a save during publishing asks again. */
@@ -180,7 +194,7 @@ async function ask(type, detail = {}, report = null) {
 function notSaved(failed) {
     say(texts.not_saved_state);
 
-    const named = (message) => notify(format(texts.not_saved, { strip: labels.get(failed.id) ?? texts.unknown, message }));
+    const named = (message) => notify(format(texts.not_saved, { strip: labels.get(failed.id) ?? texts.unknown, message }), failed.id);
 
     if (failed?.kind === 'invalid') {
         named(Object.values(failed.errors ?? {})[0]?.[0] ?? '');
@@ -240,7 +254,7 @@ function refused(errors) {
     notify(format(texts.publish_invalid, {
         strip: labels.get(id) ?? texts.unknown,
         message: Object.values(fields)[0]?.[0] ?? '',
-    }));
+    }), id);
     shell.dispatchEvent(new CustomEvent('made-cms:choose', { detail: { id, errors: fields } }));
 }
 
@@ -326,7 +340,8 @@ async function discard() {
     busy = false;
     ui.publish.disabled = ! draft?.publishable;
     ui.discardConfirm.disabled = false;
-    say(status === 401 || status === 419 ? texts.expired : texts.failed);
+    say(texts.not_discarded_state);
+    notify(status === 401 || status === 419 ? texts.expired : texts.failed);
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -527,11 +542,20 @@ if (shell && ui.publish && ui.state) {
         }
     });
     ui.stop.addEventListener('click', (event) => {
-        if (plain(event)) {
-            event.preventDefault();
-            closeChoice();
-            stop();
+        if (! plain(event)) {
+            return;
         }
+
+        event.preventDefault();
+
+        // The button that opened the choice closes it again, like a menu.
+        if (! ui.choice.hidden) {
+            closeChoice(true);
+
+            return;
+        }
+
+        stop();
     });
     ui.stay.addEventListener('click', stay);
     ui.choiceLeave.addEventListener('click', () => {
@@ -549,10 +573,12 @@ if (shell && ui.publish && ui.state) {
             resting();
         }
     });
-    shell.addEventListener('made-cms:saved', () => {
-        clearNotice();
+    shell.addEventListener('made-cms:saved', (event) => {
+        settleNotice(event.detail?.id ?? null);
         refresh();
     });
+    // "Ongedaan maken" put a strip back to what the server holds: what it was refused for is gone.
+    shell.addEventListener('made-cms:reverted', (event) => settleNotice(event.detail?.id ?? null));
     shell.addEventListener('made-cms:strips', (event) => {
         for (const strip of event.detail.strips ?? []) {
             labels.set(strip.id, strip.label);

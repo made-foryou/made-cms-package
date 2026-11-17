@@ -99,6 +99,20 @@ function failSaves(?int $status): string
         JS;
 }
 
+/** A script that refuses the saves of one strip with the error of a field, and lets the others through. */
+function refuseSavesOf(string $strip): string
+{
+    return <<<JS
+        () => {
+            const fetched = window.fetch;
+
+            window.fetch = (url, options) => options?.method === 'PUT' && String(url).endsWith('/strips/{$strip}')
+                ? Promise.resolve(new Response(JSON.stringify({ errors: { label: ['Een label mag hoogstens 60 tekens zijn.'] } }), { status: 422, headers: { 'Content-Type': 'application/json' } }))
+                : fetched(url, options);
+        }
+        JS;
+}
+
 /** A stored strip with a change in it: the heading of the hero. */
 function withHeroChange(Page $page, string $heading): void
 {
@@ -449,4 +463,91 @@ it('leaves for the site after a page that was never published is published with 
 
     // Nothing is left to decide: stopping goes straight to the site the page is on now.
     $shell->click('[data-slot="bar-stop"]')->assertPathIs('/concept');
+});
+
+it('names a refused discard on the line under the bar and keeps the bar short', function (): void {
+    withHeroChange($this->page, 'Al onze teams');
+
+    $shell = openExitShell($this->page);
+    $shell->script("() => { const fetched = window.fetch; window.fetch = (url, options) => options?.method === 'DELETE' ? Promise.resolve(new Response('{}', { status: 419 })) : fetched(url, options); }");
+    $shell->click('[data-slot="bar-discard"] summary')->click('[data-slot="bar-discard-confirm"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-notice', 'Je sessie is verlopen. Herlaad de pagina om verder te gaan.'))))->toBeTrue()
+        ->and($shell->script(waitUntil(barSlotSays('bar-state', 'Niet weggegooid'))))->toBeTrue();
+});
+
+it('closes the choice with the button that opened it', function (): void {
+    withHeroChange($this->page, 'Al onze teams');
+
+    $shell = openExitShell($this->page);
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(choiceIsOpen())))->toBeTrue();
+
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil('! '.choiceIsOpen())))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('.bewerkbalk').dataset.waiting === undefined"))->toBeTrue()
+        ->and($shell->script('() => document.activeElement?.dataset.slot'))->toBe('bar-stop');
+
+    $shell->assertPathIs('/made-cms/pages/'.$this->page->id.'/edit');
+});
+
+it('keeps the refusal of a strip until that strip is stored or taken back', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"label\"] input') !== null");
+
+    $shell->script(refuseSavesOf('hero'));
+    $shell->type('[data-path="label"] input', 'Een veel te lang label');
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-notice', 'Niet opgeslagen: Hero — Een label mag hoogstens 60 tekens zijn.'))))->toBeTrue();
+
+    // Another strip that is stored does not end it.
+    $shell->script("() => document.querySelector('[data-edit-shell]').dispatchEvent(new CustomEvent('made-cms:saved', { detail: { id: 'cards', seq: 1 } }))");
+
+    expect($shell->script("() => document.querySelector('[data-slot=\"bar-notice\"]').hidden"))->toBeFalse();
+
+    // Taking the change back does.
+    $shell->click('[data-slot="undo"]');
+
+    expect($shell->script(waitUntil("document.querySelector('[data-slot=\"bar-notice\"]').hidden")))->toBeTrue();
+});
+
+it('keeps the status in view between 1101 and 1280 pixels, with a long name of the site', function (int $width): void {
+    config(['app.name' => 'Made CMS Workbench']);
+    withHeroChange($this->page, 'Al onze teams');
+
+    $shell = visit('/made-cms/pages/'.$this->page->id.'/edit')->resize($width, 800);
+
+    expect($shell->script(waitUntil(barSlotSays('bar-state', 'Concept · 1 wijziging'))))->toBeTrue()
+        ->and($shell->script(<<<'JS'
+            () => {
+                const links = document.querySelector('.bewerkbalk-links').getBoundingClientRect();
+                const status = document.querySelector('[data-slot="bar-page"]');
+                const rect = status.getBoundingClientRect();
+                const name = document.querySelector('.bewerkbalk-pagina').getBoundingClientRect();
+
+                return status.checkVisibility() && rect.width > 0 && rect.left >= links.left - 1 && rect.right <= links.right + 1 && name.width > 0;
+            }
+            JS))->toBeTrue();
+})->with([1101, 1150, 1200, 1280]);
+
+it('hangs the choice under the bar on a narrow screen', function (): void {
+    withHeroChange($this->page, 'Al onze teams');
+
+    $shell = visit('/made-cms/pages/'.$this->page->id.'/edit')->resize(720, 800);
+
+    expect($shell->script(waitUntil("document.querySelector('[data-slot=\"bar-stop\"]')?.getAttribute('aria-haspopup') === 'dialog'")))->toBeTrue();
+
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(choiceIsOpen())))->toBeTrue()
+        ->and($shell->script(<<<'JS'
+            () => {
+                const choice = document.querySelector('[data-slot="bar-stop-choice"]').getBoundingClientRect();
+                const bar = document.querySelector('.bewerkbalk').getBoundingClientRect();
+
+                return choice.top >= bar.bottom - 1 && choice.left >= 0 && choice.right <= window.innerWidth;
+            }
+            JS))->toBeTrue();
 });

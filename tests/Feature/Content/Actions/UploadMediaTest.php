@@ -191,12 +191,12 @@ it('hands the disk the photo and its thumbnail public with a cache header for a 
         ->and($disk->written((string) $media->original_path))->toBe(['visibility' => 'private', 'directory_visibility' => 'public', 'CacheControl' => null]);
 });
 
-it('hands the disk a file kept as it came in public, without a cache header', function (Closure $file): void {
+it('hands the disk a file kept as it came in public, with a cache header for a year', function (Closure $file): void {
     $disk = recordMediaDisk(['visibility' => 'private']);
 
     $media = upload($file());
 
-    expect($disk->written($media->path))->toBe(['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => null]);
+    expect($disk->written($media->path))->toBe(['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => MediaFileRole::CACHE_CONTROL]);
 })->with([
     'an svg' => [fn (): string => mediaFixture('logo.svg')],
     'an animated gif' => [fn (): string => animatedGif()],

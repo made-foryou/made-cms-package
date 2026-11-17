@@ -13,9 +13,11 @@ use Illuminate\Contracts\Filesystem\Filesystem;
  * - the original is private: it holds the full size and the metadata of the camera (GPS too), and only the app reads it,
  *   to crop the photo again;
  * - the photo, its thumbnail and a file kept as it came in are public, for the visitor and the tiles of the CMS;
- * - the photo and its thumbnail may be kept by a browser or CDN for a year without asking again: every crop and every
- *   new name writes them at a new address. A file kept as it came in stays at its address when it is replaced (#57),
- *   so it gets no such header.
+ * - every file a visitor opens may be kept by a browser or CDN for a year without asking again: the bytes at an
+ *   address never change. A crop, a new name and a new version (ReplaceMedia, in a folder of its own) write at a new
+ *   address, and putting a version back brings back the same bytes at the same address;
+ * - a version that waits to be put back is private as a whole (HidePreviousVersion), so a replaced file is gone for a
+ *   visitor at once; putting it back makes its files public again by their roles.
  *
  * The folders are public as well, so a web server that runs as another user can read the public files of a local
  * disk that is private itself. A local disk turns the visibility into permissions (0600 or 0644) and ignores the
@@ -67,8 +69,8 @@ enum MediaFileRole: string
         $options = ['visibility' => $this->visibility(), 'directory_visibility' => Filesystem::VISIBILITY_PUBLIC];
 
         return match ($this) {
-            self::Photo, self::Thumbnail => [...$options, 'CacheControl' => self::CACHE_CONTROL],
-            self::Original, self::AsUploaded => $options,
+            self::Photo, self::Thumbnail, self::AsUploaded => [...$options, 'CacheControl' => self::CACHE_CONTROL],
+            self::Original => $options,
         };
     }
 }

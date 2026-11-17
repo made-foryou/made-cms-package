@@ -969,8 +969,9 @@ it('moves a file dragged onto a new folder, without the layer for uploads, and t
 });
 
 it('stores a typed alt text before the chosen file is dragged onto a folder, and holds the file when that fails', function (): void {
-    // In all files the file stays chosen and shows the text as stored.
-    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1100);
+    // In all files the file stays chosen and shows the text as stored. The whole page fits the window: a drag that
+    // has to scroll its target into view halfway never starts in Chromium on Linux and Windows.
+    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1800);
 
     expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
 
@@ -986,7 +987,7 @@ it('stores a typed alt text before the chosen file is dragged onto a folder, and
         ->assertNoJavaScriptErrors();
 
     // From the open folder the file leaves the side column, with its text stored first.
-    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->training->id)->resize(1280, 1100);
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->training->id)->resize(1280, 1800);
 
     expect($page->script(waitUntil(libraryDetails('training-dinsdag.webp'))))->toBeTrue();
 
@@ -1002,7 +1003,7 @@ it('stores a typed alt text before the chosen file is dragged onto a folder, and
         ->assertNoJavaScriptErrors();
 
     // A text that is not stored holds the file where it is, with the message at the text and nothing moved.
-    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->schema->id)->resize(1280, 1100);
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->schema->id)->resize(1280, 1800);
 
     expect($page->script(waitUntil(libraryDetails('wedstrijdschema.pdf'))))->toBeTrue();
 

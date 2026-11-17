@@ -36,6 +36,7 @@ it('describes its key, label, hint, whether it is required and its default', fun
             'required' => true,
             'default' => 'Welkom',
             'max_length' => 255,
+            'emphasis' => false,
         ]);
 });
 
@@ -80,6 +81,11 @@ it('sums up its value as a short text for the lists of the CMS', function (Field
         Items::make('teams', [Choice::make('klasse', ['a' => 'A']), Heading::make('naam'), Text::make('captain')]),
         [['klasse' => 'a', 'naam' => ['text' => 'Merwestad 1', 'tag' => 'h3'], 'captain' => 'Piet'], ['naam' => '', 'captain' => 'Klaas'], ['naam' => null]],
         'Merwestad 1, Klaas',
+    ],
+    'items by their titles with emphasis' => [
+        Items::make('kolommen', [Heading::make('kop')->emphasis(), Text::make('label')->emphasis()]),
+        [['kop' => ['text' => 'Een *mooie* dag', 'tag' => 'h3']], ['label' => '*Rust*']],
+        'Een mooie dag, Rust',
     ],
     'items without text' => [Items::make('teams', [Text::make('naam')]), [['naam' => ''], []], null],
     'no items' => [Items::make('teams', [Text::make('naam')]), null, null],

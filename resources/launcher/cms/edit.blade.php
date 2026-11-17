@@ -203,6 +203,7 @@
         <label data-slot="label"></label>
         <input type="text" data-slot="input" autocomplete="off">
         <p class="veld-hint" data-slot="hint" hidden></p>
+        <p class="veld-hint" data-slot="emphasis-hint" hidden>{{ $t('cms.edit.emphasis_hint') }}</p>
         <p class="veld-fout" data-slot="error" hidden></p>
     </div>
 </template>
@@ -265,7 +266,8 @@
 {{--
     A heading: its name with its level next to it, and its text. Whoever opens Meta-overzicht chooses the level from the
     list below the name (design 11.18–11.19); anyone else sees the level as a label (11.20). The choice is only UI: the
-    server keeps the level of a heading for an editor who does not choose it.
+    server keeps the level of a heading for an editor who does not choose it. A heading with emphasis says below its
+    text how to mark a word (emphasis-hint, as a text field does).
 --}}
 <template data-field="heading">
     <div class="veld kopveld">
@@ -280,6 +282,7 @@
         </div>
         <div data-slot="parts"></div>
         <p class="veld-hint" data-slot="hint" hidden></p>
+        <p class="veld-hint" data-slot="emphasis-hint" hidden>{{ $t('cms.edit.emphasis_hint') }}</p>
         <p class="veld-hint" data-slot="level-hint" data-choose="{{ $t('cms.edit.heading_hint') }}" data-item="{{ $t('cms.edit.heading_item_hint') }}"></p>
         <p class="veld-fout" data-slot="error" hidden></p>
     </div>

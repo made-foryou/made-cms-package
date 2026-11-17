@@ -114,3 +114,31 @@ it('leaves a strip out when the scan reads no field in it', function (): void {
         ->and(recognise('<main><section><h2>Kop</h2></section><div><button>Naar boven</button></div></main>')->strips)
         ->toHaveCount(1);
 });
+
+it('reads an <em> in a heading as emphasis between asterisks', function (string $heading, string $text): void {
+    $field = recognise('<main><section>'.$heading.'</section></main>')->strips[0]->fields[0];
+
+    expect([$field->role->value, $field->value, $field->emphasis])->toBe(['heading', ['text' => $text, 'tag' => 'h2'], true]);
+})->with([
+    'one word' => ['<h2>Jullie dag in <em>vertrouwde</em> handen</h2>', 'Jullie dag in *vertrouwde* handen'],
+    'inside a word' => ['<h2>Privacy<em>verklaring</em></h2>', 'Privacy*verklaring*'],
+    'more than one piece' => ['<h2><em>Samen</em> spelen, <em class="accent">samen winnen</em></h2>', '*Samen* spelen, *samen winnen*'],
+    'spaces inside the em' => ['<h2>Jullie dag in<em> vertrouwde </em>handen</h2>', 'Jullie dag in *vertrouwde* handen'],
+    'markup inside the em' => ['<h2>Jullie <em><strong>vertrouwde</strong>  dag</em></h2>', 'Jullie *vertrouwde dag*'],
+]);
+
+it('reads other markup in a heading, and an empty <em>, as plain text without emphasis', function (string $heading, string $text): void {
+    $field = recognise('<main><section>'.$heading.'</section></main>')->strips[0]->fields[0];
+
+    expect([$field->value, $field->emphasis])->toBe([['text' => $text, 'tag' => 'h2'], false]);
+})->with([
+    'a span' => ['<h2>Over <span class="accent">ons</span></h2>', 'Over ons'],
+    'italic and bold' => ['<h2>Over <i>ons</i> en <strong>jou</strong></h2>', 'Over ons en jou'],
+    'an empty em' => ['<h2>Over ons<em> </em></h2>', 'Over ons'],
+    'asterisks of the site' => ['<h2>Sterren * en meer</h2>', 'Sterren * en meer'],
+]);
+
+it('reads an <em> outside a heading as plain text', function (): void {
+    expect(fieldsOf('<section><h2>Kop</h2><span class="label">Sinds <em>1962</em></span></section>'))
+        ->toMatchArray(['span' => ['text', 'Sinds 1962']]);
+});

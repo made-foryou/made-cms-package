@@ -135,3 +135,17 @@ it('builds a page and a strip from their parts', function (): void {
         'strips' => [['type' => 'hero', 'selector' => 'body > main > section', 'values' => ['kop' => 'Welkom']]],
     ]);
 });
+
+it('writes and reads the emphasis of a text or heading only when it has one', function (): void {
+    $heading = new ScanField('kop', 'heading', 'h2', tag: 'h2', emphasis: true);
+    $text = new ScanField('label', 'text', 'span', emphasis: true);
+    $plain = new ScanField('kop', 'heading', 'h2', tag: 'h2');
+    $other = new ScanField('tekst', 'long_text', 'p', emphasis: true);
+
+    expect($heading->toArray())->toHaveKey('emphasis', true)
+        ->and($text->toArray())->toHaveKey('emphasis', true)
+        ->and($plain->toArray())->not->toHaveKey('emphasis')
+        ->and($other->toArray())->not->toHaveKey('emphasis')
+        ->and(ScanField::fromArray($heading->toArray())->emphasis)->toBeTrue()
+        ->and(ScanField::fromArray($plain->toArray())->emphasis)->toBeFalse();
+});

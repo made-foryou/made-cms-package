@@ -5,6 +5,7 @@
  * this file only adds behaviour. The outlines live in a shadow root of one element of its own, so the css of
  * the site and of the outlines never touch each other. The site itself only changes where it shows a field with
  * data-cms-field: while the editor types, the new value is patched into that element (made-cms:input from panel.js).
+ * A text or heading with emphasis (emphasis in made-cms:input) shows its words between asterisks as an <em>.
  * A change it cannot show that way reloads the frame after the next save.
  *
  * The strips of the page come from the server in their stored order (config.strips, then made-cms:strips from
@@ -29,6 +30,9 @@ const WARN_AFTER = 400;
 // The headings are read once the page has been quiet this long, so a burst of changes reads them once.
 const READ_AFTER = 60;
 const LEVELS = 'h1, h2, h3, h4, h5, h6';
+
+// The words between asterisks of a field with emphasis, as Content\Strips\Emphasis finds them (and panel.js).
+const EMPHASIS = /\*([^\s*](?:[^*]*[^\s*])?)\*/;
 
 // After a reload the frame holds the place of the editor this long, unless the editor scrolls first.
 const HOLD = 2000;
@@ -345,6 +349,64 @@ function setText(node, text) {
 }
 
 /*
+ * The text of a field with emphasis in its parts, in order and without empty parts: splitting on the pattern gives the
+ * words with emphasis at the odd places.
+ */
+function emphasisParts(text) {
+    return text.split(EMPHASIS)
+        .map((part, index) => ({ text: part, emphasis: index % 2 === 1 }))
+        .filter((part) => part.text !== '');
+}
+
+const isEmphasis = (child) => child.nodeType === Node.ELEMENT_NODE && child.localName === 'em';
+
+/*
+ * A text with emphasis is text nodes and <em> elements that hold only their text, in the order of its parts. The nodes
+ * that are there stay where they fit, in order, and only their text changes: a site rendered in the browser keeps its
+ * nodes, also the <em> while the editor types around it. An empty text node is left alone: Vue marks a fragment with
+ * one. A part without a node of its kind gets a new one, never through innerHTML; a new <em> takes the attributes of an
+ * <em> the site printed (a class, the data-v-* of Vue). Nodes that are left over go. An element that holds anything else
+ * is the site's to make, so it reloads.
+ */
+function setEmphasized(node, text) {
+    if (! [...node.childNodes].every((child) => child.nodeType === Node.TEXT_NODE || (isEmphasis(child) && holdsText(child)))) {
+        return false;
+    }
+
+    const doc = node.ownerDocument;
+    const children = [...node.childNodes].filter((child) => isEmphasis(child) || child.nodeValue !== '');
+    const model = children.find(isEmphasis) ?? null;
+    let index = 0;
+
+    for (const part of emphasisParts(text)) {
+        const child = children[index] ?? null;
+
+        if (child !== null && isEmphasis(child) === part.emphasis) {
+            if (part.emphasis) {
+                setText(child, part.text);
+            } else if (child.nodeValue !== part.text) {
+                child.nodeValue = part.text;
+            }
+
+            index++;
+        } else if (part.emphasis) {
+            const em = model?.cloneNode(false) ?? doc.createElement('em');
+
+            em.append(doc.createTextNode(part.text));
+            node.insertBefore(em, child);
+        } else {
+            node.insertBefore(doc.createTextNode(part.text), child);
+        }
+    }
+
+    for (const child of children.slice(index)) {
+        child.remove();
+    }
+
+    return true;
+}
+
+/*
  * A long text follows the form the site prints it in: with a <br> per line break (nl2br) when the element holds one,
  * or with the line breaks in the text itself. While the site shows no line break yet that form is unknown, so the
  * first one reloads the frame.
@@ -410,15 +472,18 @@ function setImage(node, value) {
  * An empty value is never patched: a view usually leaves an empty field out, and the server fills in a default.
  * A choice or a list decides more than one element shows, so it reloads the frame as well. A heading changes its text
  * while the element is its level; another level needs another element, which only the site makes, so it reloads.
+ * A text or heading with emphasis shows the words between asterisks as an <em>.
  */
-function patch(node, type, value) {
+function patch(node, type, value, emphasis = false) {
     if (value === null || value === '') {
         return false;
     }
 
+    const write = emphasis ? setEmphasized : setText;
+
     switch (type) {
         case 'text':
-            return setText(node, value);
+            return write(node, value);
         case 'long_text':
             return setLongText(node, value);
         case 'rich_text':
@@ -432,7 +497,7 @@ function patch(node, type, value) {
         case 'button':
             return node.hasAttribute('href') && holdsText(node) && setText(node, value.text) && setHref(node, value.url);
         case 'heading':
-            return node.localName === value.tag && setText(node, value.text);
+            return node.localName === value.tag && write(node, value.text);
         case 'image':
             return setImage(node, value);
         default:
@@ -454,7 +519,7 @@ function follow(input) {
     }
 
     const nodes = nodesFor(doc, input);
-    const shown = nodes.length > 0 && nodes.map((node) => patch(node, input.type, input.value)).every(Boolean);
+    const shown = nodes.length > 0 && nodes.map((node) => patch(node, input.type, input.value, input.emphasis === true)).every(Boolean);
 
     if (! shown) {
         markStale(input.id, input.seq);

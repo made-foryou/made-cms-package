@@ -25,6 +25,7 @@ use Made\CmsPackage\Content\Enums\ScanDoubt;
  *     max?: int|null,
  *     fields?: list<array<string, mixed>>,
  *     tag?: string|null,
+ *     emphasis?: bool,
  * }
  */
 final readonly class ScanField
@@ -36,6 +37,7 @@ final readonly class ScanField
      * @param  string|null  $item  the tag of one item of a list
      * @param  list<ScanField>  $fields  the fields of every item of a list
      * @param  string|null  $tag  the level of a heading: the tag most of its examples have
+     * @param  bool  $emphasis  whether a text or heading has emphasis: words between asterisks are an <em>
      */
     public function __construct(
         public string $key,
@@ -49,6 +51,7 @@ final readonly class ScanField
         public ?int $max = null,
         public array $fields = [],
         public ?string $tag = null,
+        public bool $emphasis = false,
     ) {}
 
     /**
@@ -84,6 +87,7 @@ final readonly class ScanField
             max: is_int($data['max'] ?? null) ? $data['max'] : null,
             fields: $fields,
             tag: is_string($data['tag'] ?? null) ? $data['tag'] : null,
+            emphasis: ($data['emphasis'] ?? false) === true,
         );
     }
 
@@ -94,7 +98,7 @@ final readonly class ScanField
 
     /**
      * Only a choice has options, only a heading a level, and only a list has an item tag, a range and fields of its
-     * own.
+     * own. Emphasis is written only for a text or heading that has it.
      *
      * @return ScanFieldArray
      */
@@ -115,6 +119,10 @@ final readonly class ScanField
 
         if ($this->type === 'heading') {
             $array['tag'] = $this->tag;
+        }
+
+        if ($this->emphasis && in_array($this->type, ['text', 'heading'], true)) {
+            $array['emphasis'] = true;
         }
 
         if ($this->type === 'items') {

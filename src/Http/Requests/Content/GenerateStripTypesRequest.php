@@ -77,6 +77,7 @@ final class GenerateStripTypesRequest extends LauncherRequest
             "{$path}.options" => ['sometimes', 'array', 'list'],
             "{$path}.options.*" => ['string'],
             "{$path}.tag" => ['sometimes', 'nullable', 'string'],
+            "{$path}.emphasis" => ['sometimes', 'boolean'],
             "{$path}.min" => ['sometimes', 'nullable', 'integer'],
             "{$path}.max" => ['sometimes', 'nullable', 'integer'],
             "{$path}.fields" => ['sometimes', 'array', 'list'],

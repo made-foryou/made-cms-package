@@ -202,6 +202,16 @@ final class Html
     }
 
     /**
+     * The text of a heading on one line with every <em> in it as emphasis between asterisks ("Jullie dag in
+     * *vertrouwde* handen", see Content\Strips\Emphasis): the spaces at the edge of an <em> stand outside the asterisks,
+     * markup inside it is text, and an <em> without text is no emphasis. Without an <em> it is text().
+     */
+    public static function emphasized(Element $element): string
+    {
+        return self::line(self::collect($element, ' ', emphasis: true));
+    }
+
+    /**
      * The text of the element with a line for every br.
      */
     public static function lines(Element $element): string
@@ -227,7 +237,7 @@ final class Html
         return self::line($text);
     }
 
-    private static function collect(Element $element, string $break): string
+    private static function collect(Element $element, string $break, bool $emphasis = false): string
     {
         if (self::isIgnored($element) || self::isDecoration($element) || self::isForm($element) || $element->localName === 'svg') {
             return '';
@@ -245,7 +255,7 @@ final class Html
                 $text .= $node->data;
                 $afterElement = false;
             } elseif ($node instanceof Element) {
-                $inner = self::collect($node, $break);
+                $inner = $emphasis && $node->localName === 'em' ? self::emphasis(self::collect($node, $break)) : self::collect($node, $break, $emphasis);
                 // Elements right after each other are separate words, as a site in flex or grid shows them.
                 $text .= self::isInline($node) && ! $afterElement ? $inner : ' '.$inner.' ';
                 $afterElement = $inner !== '';
@@ -253,6 +263,23 @@ final class Html
         }
 
         return $text;
+    }
+
+    /**
+     * The text of an <em> between asterisks, with the spaces at its edges outside them.
+     */
+    private static function emphasis(string $text): string
+    {
+        $inner = self::line($text);
+
+        if ($inner === '') {
+            return $text;
+        }
+
+        $before = preg_match('/^[\s\x{00A0}]/u', $text) === 1 ? ' ' : '';
+        $after = preg_match('/[\s\x{00A0}]$/u', $text) === 1 ? ' ' : '';
+
+        return $before.'*'.$inner.'*'.$after;
     }
 
     private static function line(string $text): string

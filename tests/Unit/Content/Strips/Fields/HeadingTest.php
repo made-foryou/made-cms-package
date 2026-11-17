@@ -161,3 +161,29 @@ it('says that only "no heading" is no heading for search engines', function (): 
         ->and($descriptions['h5'])->toBe('Zelden nodig; alleen onder een H4.')
         ->and($descriptions['h6'])->toBe('Het laagste niveau; bijna nooit nodig.');
 });
+
+it('has no emphasis by default and takes it as a changed copy', function (): void {
+    $heading = Heading::make('kop')->tag('h1');
+    $emphasis = $heading->emphasis();
+
+    expect($heading->hasEmphasis())->toBeFalse()
+        ->and($emphasis->hasEmphasis())->toBeTrue()
+        ->and($emphasis->getTag())->toBe('h1')
+        ->and($emphasis->emphasis(false)->hasEmphasis())->toBeFalse()
+        ->and($heading->describe()['emphasis'])->toBeFalse()
+        ->and($emphasis->describe()['emphasis'])->toBeTrue();
+});
+
+it('keeps the asterisks of its emphasis in its stored and rendered value', function (): void {
+    $heading = Heading::make('kop')->emphasis();
+
+    expect($heading->normalize('Jullie dag in *vertrouwde* handen'))->toBe(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h2'])
+        ->and($heading->render(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h3']))->toBe(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h3']);
+});
+
+it('sums up its text without the asterisks of its emphasis, and with them without the option', function (): void {
+    expect(Heading::make('kop')->emphasis()->summary(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h2']))->toBe('Jullie dag in vertrouwde handen')
+        ->and(Heading::make('kop')->emphasis()->summary('Privacy*verklaring*'))->toBe('Privacyverklaring')
+        ->and(Heading::make('kop')->emphasis()->summary(null))->toBeNull()
+        ->and(Heading::make('kop')->summary(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h2']))->toBe('Jullie dag in *vertrouwde* handen');
+});

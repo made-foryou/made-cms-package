@@ -198,3 +198,17 @@ it('reads a page once, also when the scan sends it twice', function (): void {
 it('combines no pages into an empty result', function (): void {
     expect(CombinePageScans::run([])->toArray())->toBe(['version' => 1, 'types' => [], 'pages' => []]);
 });
+
+it('proposes emphasis for a heading when one of its examples has an <em>, with the asterisks in its values', function (): void {
+    $strip = static fn (string $heading): string => '<main><section class="tekst"><h2>'.$heading.'</h2><p>Een club.</p></section></main>';
+
+    $scan = combine($strip('Over <em>ons</em>'), $strip('Wie wij zijn'));
+    $plain = combine($strip('Over ons'), $strip('Wie wij zijn'))->types[0]->fields[0];
+
+    expect([$scan->types[0]->fields[0]->type, $scan->types[0]->fields[0]->emphasis])->toBe(['heading', true])
+        ->and(array_map(static fn (ScanPage $page): mixed => $page->strips[0]->values['kop'], $scan->pages))->toBe([
+            ['text' => 'Over *ons*', 'tag' => 'h2'],
+            ['text' => 'Wie wij zijn', 'tag' => 'h2'],
+        ])
+        ->and($plain->emphasis)->toBeFalse();
+});

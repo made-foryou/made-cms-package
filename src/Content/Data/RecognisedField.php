@@ -11,7 +11,8 @@ use Made\CmsPackage\Content\Enums\ScanRole;
  * An element the scan read on one page, before the pages are combined: its role, where it is and what it holds.
  *
  * The value has the stored form of the field the role proposes; an icon holds its class tokens and a list holds
- * its items instead, each a list of fields with selectors from the root of that item.
+ * its items instead, each a list of fields with selectors from the root of that item. A heading with an <em> holds
+ * it between asterisks and has emphasis.
  *
  * @phpstan-type RecognisedFieldArray array{
  *     role: string,
@@ -20,6 +21,7 @@ use Made\CmsPackage\Content\Enums\ScanRole;
  *     doubts: list<string>,
  *     item?: string|null,
  *     items?: list<list<array<string, mixed>>>,
+ *     emphasis?: bool,
  * }
  */
 final readonly class RecognisedField
@@ -28,6 +30,7 @@ final readonly class RecognisedField
      * @param  list<ScanDoubt>  $doubts
      * @param  string|null  $item  the tag of one item of a list
      * @param  list<list<RecognisedField>>  $items  the fields of every item of a list
+     * @param  bool  $emphasis  whether a heading holds an <em>, as words between asterisks in its text
      */
     public function __construct(
         public ScanRole $role,
@@ -36,6 +39,7 @@ final readonly class RecognisedField
         public array $doubts = [],
         public ?string $item = null,
         public array $items = [],
+        public bool $emphasis = false,
     ) {}
 
     /**
@@ -64,6 +68,7 @@ final readonly class RecognisedField
             doubts: ScanDoubt::fromValues($data['doubts'] ?? []),
             item: is_string($data['item'] ?? null) ? $data['item'] : null,
             items: $items,
+            emphasis: ($data['emphasis'] ?? false) === true,
         );
     }
 
@@ -104,6 +109,10 @@ final readonly class RecognisedField
                 static fn (array $fields): array => array_map(static fn (self $field): array => $field->toArray(), $fields),
                 $this->items,
             );
+        }
+
+        if ($this->emphasis) {
+            $array['emphasis'] = true;
         }
 
         return $array;

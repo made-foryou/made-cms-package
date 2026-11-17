@@ -253,3 +253,9 @@ it('describes a list without limits', function (): void {
     expect($description['min'])->toBeNull()
         ->and($description['max'])->toBeNull();
 });
+
+it('tells the panel which fields of an item have emphasis', function (): void {
+    $fields = Items::make('kolommen', [Heading::make('kop')->tag('h3')->emphasis(), Text::make('label')])->describe()['fields'];
+
+    expect(array_column($fields, 'emphasis', 'key'))->toBe(['kop' => true, 'label' => false]);
+});

@@ -80,6 +80,27 @@ it('writes a heading at the level the scan found', function (): void {
     expect((string) file_get_contents($this->folder.'/Quote.php'))->toContain("Heading::make('kop')->tag('h3')->required(),");
 });
 
+it('writes a heading and a text with the emphasis the scan found', function (): void {
+    postScan(['version' => 1, 'types' => [['key' => 'quote', 'label' => 'Quote', 'fields' => [
+        ['key' => 'kop', 'type' => 'heading', 'selector' => 'h3', 'tag' => 'h3', 'emphasis' => true],
+        ['key' => 'label', 'type' => 'text', 'selector' => 'span', 'required' => false, 'emphasis' => true],
+    ]]], 'pages' => []])
+        ->assertOk()
+        ->assertJsonPath('written.0.key', 'quote');
+
+    expect((string) file_get_contents($this->folder.'/Quote.php'))
+        ->toContain("Heading::make('kop')->tag('h3')->emphasis()->required(),")
+        ->toContain("Text::make('label')->emphasis(),");
+});
+
+it('refuses emphasis that is no yes or no', function (): void {
+    postScan(['version' => 1, 'types' => [['key' => 'quote', 'label' => 'Quote', 'fields' => [
+        ['key' => 'kop', 'type' => 'heading', 'selector' => 'h3', 'emphasis' => 'graag'],
+    ]]], 'pages' => []])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('types.0.fields.0.emphasis');
+});
+
 it('says which strip types it skipped and why', function (): void {
     useStripTypes();
 

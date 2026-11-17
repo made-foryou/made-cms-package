@@ -186,3 +186,18 @@ it('keeps the fields of a list in their stored form when it travels', function (
 
     expect(RecognisedField::fromArray($field->toArray()))->toEqual($field);
 });
+
+it('takes items whose headings differ in emphasis only as one list, without doubt', function (): void {
+    $strip = '<section><div class="lijst">'
+        .'<div class="item"><h3>Een <em>mooie</em> dag</h3><p>Tekst.</p></div>'
+        .'<div class="item"><h3>Twee</h3><p>Tekst.</p></div>'
+        .'</div></section>';
+
+    expect(listOf($strip))->toMatchArray([
+        'doubts' => [],
+        'items' => [
+            ['h3' => ['heading', ['text' => 'Een *mooie* dag', 'tag' => 'h3']], 'p' => ['paragraph', 'Tekst.']],
+            ['h3' => ['heading', ['text' => 'Twee', 'tag' => 'h3']], 'p' => ['paragraph', 'Tekst.']],
+        ],
+    ]);
+});

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\MediaName;
+use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Events\MediaRenamed;
 use Made\CmsPackage\Content\Exceptions\MediaDiskNotUsable;
 use Made\CmsPackage\Content\Exceptions\MediaNotStored;
@@ -23,8 +24,9 @@ final class RenameMedia
      * digits and hyphens). The file the site shows gets it on the disk, in the folder it is in, with its own
      * extension; its original and thumbnail keep their names. It gets another address, which every page that shows
      * it takes at once; the former address stops working once the change is committed. The name stays when the
-     * typed name gives the same slug. The copy keeps the visibility of the file it copies (Flysystem retains it), and on
-     * an S3 disk its cache header too (the metadata is copied along), so it is written as its MediaFileRole says.
+     * typed name gives the same slug. The copy is made public again (the visibility of its MediaFileRole), because a
+     * disk keeps the visibility of a copy only while it retains it (retain_visibility, which a host may switch off);
+     * on an S3 disk it keeps the cache header of the file it copies, because the metadata is copied along.
      *
      * It works from the row as it is now, read again with its row locked, never from the model it is handed: a crop
      * or a new name stored after the editor opened the file is what it renames, and a crop at the same time waits.
@@ -68,6 +70,14 @@ final class RenameMedia
             // The copy leaves again only when the row cannot be stored, never once it is committed: whatever fails
             // after the commit (a listener of MediaRenamed, RemoveReplacedMediaFiles) leaves a row that holds it.
             try {
+                // A disk keeps the visibility of a copy only while it retains it (retain_visibility), so the copy is
+                // made public itself, whatever the disk says.
+                $role = MediaFileRole::shown($stored->original_path !== null);
+
+                if ($path !== $former && ! $disk->setVisibility($path, $role->visibility())) {
+                    throw MediaNotStored::at($path);
+                }
+
                 $stored->update(['name' => $name, 'path' => $path]);
                 MediaRenamed::dispatch($stored);
             } catch (Throwable $exception) {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
@@ -14,11 +15,17 @@ use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Events\MediaRenamed;
+use Made\CmsPackage\Content\Exceptions\MediaNotStored;
 use Made\CmsPackage\Content\Models\Media;
 
 beforeEach(function (): void {
     Storage::fake('public');
 });
+
+dataset('private disks', [
+    'a private disk' => [['visibility' => 'private']],
+    'a private disk that does not let a copy keep its visibility' => [['visibility' => 'private', 'retain_visibility' => false]],
+]);
 
 function renamed(string $path, string $filename = 'teamfoto.jpg'): Media
 {
@@ -120,8 +127,8 @@ it('renames a file kept as it came in, with its own extension', function (Closur
     'a pdf' => [fn (): string => mediaFixture('wedstrijdschema.pdf'), 'pdf'],
 ]);
 
-it('keeps the renamed photo public and its original private, on a disk that is private itself', function (): void {
-    Storage::fake('public', ['visibility' => 'private']);
+it('keeps the renamed photo public and its original private, on a disk that is private itself', function (array $config): void {
+    Storage::fake('public', $config);
     $disk = Storage::disk('public');
 
     $media = RenameMedia::run(renamed(photo(400, 300)), 'Teamfoto Merwestad 4');
@@ -129,15 +136,40 @@ it('keeps the renamed photo public and its original private, on a disk that is p
     expect($disk->getVisibility($media->path))->toBe('public')
         ->and($disk->getVisibility((string) $media->thumb_path))->toBe('public')
         ->and($disk->getVisibility((string) $media->original_path))->toBe('private');
-})->skipOnWindows('A file on Windows cannot be private.');
+})->with('private disks')->skipOnWindows('A file on Windows cannot be private.');
 
-it('keeps a renamed file kept as it came in public, on a disk that is private itself', function (): void {
-    Storage::fake('public', ['visibility' => 'private']);
+it('keeps a renamed file kept as it came in public, on a disk that is private itself', function (array $config): void {
+    Storage::fake('public', $config);
 
     $media = RenameMedia::run(renamed(mediaFixture('wedstrijdschema.pdf'), 'schema.pdf'), 'Wedstrijdschema');
 
     expect(Storage::disk('public')->getVisibility($media->path))->toBe('public');
-})->skipOnWindows('A file on Windows cannot be private.');
+})->with('private disks')->skipOnWindows('A file on Windows cannot be private.');
+
+it('makes the copy public itself, also on a disk that does not let a copy keep the visibility of its source', function (Closure $file): void {
+    $disk = recordMediaDisk(['visibility' => 'private', 'retain_visibility' => false]);
+
+    $media = RenameMedia::run(renamed($file(), 'bestand.jpg'), 'Nieuwe naam');
+
+    expect($disk->written($media->path)['visibility'] ?? null)->toBe('public');
+})->with([
+    'a photo' => [fn (): string => photo(400, 300)],
+    'a file kept as it came in' => [fn (): string => mediaFixture('wedstrijdschema.pdf')],
+]);
+
+it('takes the copy off the disk again and keeps the former name when the disk does not make it public', function (): void {
+    $media = renamed(photo(400, 300));
+    $former = $media->only('name', 'path');
+    $disk = Mockery::mock(FilesystemAdapter::class);
+    $disk->shouldReceive('exists')->andReturnFalse();
+    $disk->shouldReceive('copy')->once()->andReturnTrue();
+    $disk->shouldReceive('setVisibility')->once()->andReturnFalse();
+    $disk->shouldReceive('delete')->once()->with(dirname($media->path).'/clubavond.webp');
+    Storage::set('public', $disk);
+
+    expect(fn (): Media => RenameMedia::run($media, 'clubavond'))->toThrow(MediaNotStored::class)
+        ->and(Media::query()->findOrFail($media->id)->only('name', 'path'))->toBe($former);
+});
 
 it('refuses a name without letters or digits and changes nothing', function (string $name): void {
     $media = renamed(photo(400, 300));

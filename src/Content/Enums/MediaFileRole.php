@@ -39,18 +39,36 @@ enum MediaFileRole: string
     public const string CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
     /**
+     * The role of the file the site shows: the photo of a file with an original, else the file as it came in.
+     */
+    public static function shown(bool $hasOriginal): self
+    {
+        return $hasOriginal ? self::Photo : self::AsUploaded;
+    }
+
+    /**
+     * Who opens this file: the app alone (private) or everyone with its address (public).
+     */
+    public function visibility(): string
+    {
+        return match ($this) {
+            self::Original => Filesystem::VISIBILITY_PRIVATE,
+            self::Photo, self::Thumbnail, self::AsUploaded => Filesystem::VISIBILITY_PUBLIC,
+        };
+    }
+
+    /**
      * The options a write of this file hands the disk.
      *
      * @return array{visibility: string, directory_visibility: string, CacheControl?: string}
      */
     public function writeOptions(): array
     {
-        $public = ['visibility' => Filesystem::VISIBILITY_PUBLIC, 'directory_visibility' => Filesystem::VISIBILITY_PUBLIC];
+        $options = ['visibility' => $this->visibility(), 'directory_visibility' => Filesystem::VISIBILITY_PUBLIC];
 
         return match ($this) {
-            self::Photo, self::Thumbnail => [...$public, 'CacheControl' => self::CACHE_CONTROL],
-            self::Original => [...$public, 'visibility' => Filesystem::VISIBILITY_PRIVATE],
-            self::AsUploaded => $public,
+            self::Photo, self::Thumbnail => [...$options, 'CacheControl' => self::CACHE_CONTROL],
+            self::Original, self::AsUploaded => $options,
         };
     }
 }

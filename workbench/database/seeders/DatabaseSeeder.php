@@ -11,6 +11,7 @@ use Made\CmsPackage\Access\Data\NewEditor;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Content\Actions\CreateMediaFolder;
 use Made\CmsPackage\Content\Actions\RebuildMediaUsage;
+use Made\CmsPackage\Content\Actions\ReplaceMedia;
 use Made\CmsPackage\Content\Actions\UpdateAltText;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
@@ -22,6 +23,9 @@ use Workbench\Database\Factories\UserFactory;
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
+
+    /** The editor of the workbench, who uploads and replaces its files. */
+    private ?int $editor = null;
 
     /**
      * Seed the application's database.
@@ -36,7 +40,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Logs in with a code (see storage/logs) or with the password "password".
-        CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]));
+        $this->editor = CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]))->id;
 
         // Served by Route::madeCms() in workbench/routes/web.php: "/", "/over-ons" and "/over-ons/team" open. "/concept" is
         // a draft and answers 404, except to a logged-in editor in the edit mode of the CMS: "/concept?made-cms=edit".
@@ -109,21 +113,28 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * A folder Teams for the picker: two photos, one without an alt text (its amber dot), and a document the picker of
-     * an image never shows.
+     * A folder Teams for the picker: two photos, one without an alt text (its amber dot) and one replaced once, so its
+     * former version waits to be put back, and a document the picker of an image never shows.
      */
     private function teamsFolder(): void
     {
         $teams = CreateMediaFolder::run('Teams');
 
-        $this->drawnPhoto('Teamfoto Merwestad 1.jpg', [[28, 61, 90], [243, 241, 232]], $teams, 'Het eerste team voor de tafels');
+        $teamPhoto = $this->drawnPhoto('Teamfoto Merwestad 1.jpg', [[28, 61, 90], [243, 241, 232]], $teams, 'Het eerste team voor de tafels');
+        $path = $this->drawnFile([[243, 241, 232], [28, 61, 90], [243, 241, 232]]);
+
+        try {
+            ReplaceMedia::run($teamPhoto, new UploadedMedia($path, 'Teamfoto Merwestad 2026.jpg', null, $this->editor));
+        } finally {
+            unlink($path);
+        }
         $this->drawnPhoto('Training dinsdag.jpg', [[190, 138, 28], [14, 43, 38], [190, 138, 28]], $teams, null);
 
         $path = sys_get_temp_dir().'/made-cms-document-'.Str::random(16).'.pdf';
         file_put_contents($path, "%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n");
 
         try {
-            UploadMedia::run(new UploadedMedia($path, 'Wedstrijdschema najaar.pdf', $teams->id, null));
+            UploadMedia::run(new UploadedMedia($path, 'Wedstrijdschema najaar.pdf', $teams->id, $this->editor));
         } finally {
             unlink($path);
         }
@@ -137,6 +148,24 @@ class DatabaseSeeder extends Seeder
      */
     private function drawnPhoto(string $name, array $bands, ?MediaFolder $folder, ?string $alt): Media
     {
+        $path = $this->drawnFile($bands);
+
+        try {
+            $media = UploadMedia::run(new UploadedMedia($path, $name, $folder?->id, $this->editor));
+        } finally {
+            unlink($path);
+        }
+
+        return $alt === null ? $media : UpdateAltText::run($media, $alt);
+    }
+
+    /**
+     * A jpg of upright bands of colour in the temporary folder; the caller removes it.
+     *
+     * @param  list<array{int, int, int}>  $bands
+     */
+    private function drawnFile(array $bands): string
+    {
         $image = imagecreatetruecolor(2400, 1350);
         $width = intdiv(2400, count($bands));
 
@@ -147,12 +176,6 @@ class DatabaseSeeder extends Seeder
         $path = sys_get_temp_dir().'/made-cms-photo-'.Str::random(16).'.jpg';
         imagejpeg($image, $path, 85);
 
-        try {
-            $media = UploadMedia::run(new UploadedMedia($path, $name, $folder?->id, null));
-        } finally {
-            unlink($path);
-        }
-
-        return $alt === null ? $media : UpdateAltText::run($media, $alt);
+        return $path;
     }
 }

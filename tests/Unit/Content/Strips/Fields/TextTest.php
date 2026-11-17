@@ -41,3 +41,29 @@ it('labels its own path', function (): void {
 it('keeps the value as it is', function (): void {
     expect(Text::make('kop')->normalize('  Welkom '))->toBe('  Welkom ');
 });
+
+it('has no emphasis by default and takes it as a changed copy', function (): void {
+    $field = Text::make('kop');
+    $emphasis = $field->emphasis();
+
+    expect($field->hasEmphasis())->toBeFalse()
+        ->and($emphasis->hasEmphasis())->toBeTrue()
+        ->and($emphasis->emphasis(false)->hasEmphasis())->toBeFalse()
+        ->and($field->describe()['emphasis'])->toBeFalse()
+        ->and($emphasis->describe()['emphasis'])->toBeTrue();
+});
+
+it('keeps the asterisks of its emphasis in its stored and rendered value, and counts them in its length', function (): void {
+    $field = Text::make('kop')->emphasis();
+
+    expect($field->normalize('Jullie dag in *vertrouwde* handen'))->toBe('Jullie dag in *vertrouwde* handen')
+        ->and($field->render('Jullie dag in *vertrouwde* handen'))->toBe('Jullie dag in *vertrouwde* handen')
+        ->and($field->rules('kop'))->toBe(['kop' => ['nullable', 'string', 'max:255']]);
+});
+
+it('sums up its text without the asterisks of its emphasis, and with them without the option', function (): void {
+    expect(Text::make('kop')->emphasis()->summary(' Jullie dag in *vertrouwde* handen '))->toBe('Jullie dag in vertrouwde handen')
+        ->and(Text::make('kop')->emphasis()->summary('**'))->toBe('**')
+        ->and(Text::make('kop')->emphasis()->summary(null))->toBeNull()
+        ->and(Text::make('kop')->summary('Jullie dag in *vertrouwde* handen'))->toBe('Jullie dag in *vertrouwde* handen');
+});

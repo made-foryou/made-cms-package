@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Content\Strips\Fields;
 
 use Illuminate\Validation\Rule;
 use Made\CmsPackage\Content\Data\MediaFiles;
+use Made\CmsPackage\Content\Strips\Emphasis;
 
 /**
  * A heading: a text with its level, stored and rendered as {"text": "…", "tag": "h2"}.
@@ -13,6 +14,7 @@ use Made\CmsPackage\Content\Data\MediaFiles;
  * The level is the element the site prints, h1 to h6, or "span" for a text that is no heading for search engines.
  * The developer gives the level of the design (tag(), h2 by default) and may limit the levels to choose from (tags()).
  * A text stored before the field became a heading (a former Text) counts as that text with the default level.
+ * With emphasis() an editor marks a word of the text with asterisks, as in a Text.
  */
 final class Heading extends Field
 {
@@ -28,9 +30,27 @@ final class Heading extends Field
      */
     private array $tags = self::TAGS;
 
+    private bool $emphasis = false;
+
     public static function make(string $key): self
     {
         return new self($key);
+    }
+
+    /**
+     * Whether a word between asterisks is emphasis: the side panel says so, and watching along shows it as an <em>.
+     */
+    public function emphasis(bool $emphasis = true): self
+    {
+        $field = clone $this;
+        $field->emphasis = $emphasis;
+
+        return $field;
+    }
+
+    public function hasEmphasis(): bool
+    {
+        return $this->emphasis;
     }
 
     /**
@@ -93,12 +113,13 @@ final class Heading extends Field
 
     /**
      * The levels as a list of {value, label, description} (what a level means for the structure of the page), the
-     * default level and the label of the text in the side panel.
+     * default level, whether its text has emphasis and the label of the text in the side panel.
      */
     protected function details(): array
     {
         return [
             'max_length' => Text::MAX_LENGTH,
+            'emphasis' => $this->emphasis,
             'tag' => $this->tag,
             'tags' => array_map(static fn (string $tag): array => [
                 'value' => $tag,
@@ -111,9 +132,14 @@ final class Heading extends Field
         ];
     }
 
+    /**
+     * The text on one line, without the asterisks of its emphasis.
+     */
     public function summary(mixed $value): ?string
     {
-        return self::line(is_array($value) ? ($value['text'] ?? null) : $value);
+        $text = is_array($value) ? ($value['text'] ?? null) : $value;
+
+        return self::line($this->emphasis && is_string($text) ? Emphasis::plain($text) : $text);
     }
 
     public function rules(string $path): array

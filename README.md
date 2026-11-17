@@ -19,7 +19,7 @@ Content management system from Made
 - For uploaded photos: GD with WebP support (the default) or Imagick, and `exif` so photos from a phone come out upright.
 - A `memory_limit` of at least 256 MB: with GD, scaling and cropping a phone photo of 12 MP (4032 × 3024 px) takes about 140 MB, and one of 24 MP up to about 290 MB.
 - An `upload_max_filesize` and a `post_max_size` of at least `media.max_upload_kb` (25 MB by default), so PHP lets an upload through to the media library.
-- A public disk for the media library, by default `public` (run `php artisan storage:link`). See [Media](#media).
+- A disk for the media library that gives a url: by default `public` (run `php artisan storage:link`), or an S3 disk such as DigitalOcean Spaces. See [Media](#media).
 
 ## Installation
 
@@ -568,7 +568,9 @@ The edit shell patches the element with `data-cms-field` in the page as it is, s
 
 The media library holds every photo, document and video of the site in one place. A strip stores the id of a file, so a file changes everywhere it is used, and its alt text belongs to the file: written once, it holds on every page.
 
-Files go to the disk in `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`). A visitor must be able to open them, so use the `public` disk after `php artisan storage:link`, a local disk with a `url`, or a cloud disk such as S3. A local disk without a `url` is refused with a `MediaDiskNotUsable` exception the first time the library is used; the site and artisan keep working until then.
+Files go to the disk in `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`). A visitor must be able to open them by url, so use the `public` disk after `php artisan storage:link`, a local disk with a `url`, or an S3 disk such as DigitalOcean Spaces (see [DigitalOcean Spaces and other S3 disks](#digitalocean-spaces-and-other-s3-disks)). A local disk without a `url` is refused with a `MediaDiskNotUsable` exception the first time the library is used; the site and artisan keep working until then.
+
+The library writes every file with a visibility of its own, whatever the `visibility` of the disk: the photo, its thumbnail and a file kept as it came in are public, the original of a photo is private. On a local disk that is 0644 for a public file and 0600 for the original, in folders of 0755. PHP still reads the original to crop the photo again; a web server that runs as another user than PHP cannot serve it. Where the web server runs as the same user (Herd, `php artisan serve`, many servers with one user), it could, and the name of 40 random characters keeps the original from being found.
 
 An upload is checked before anything is stored. The type is read from the contents, never from the name; a file larger than `media.max_upload_kb` (default 25 MB) or of a type outside `media.allowed_mimes` (jpg, png, webp, gif, svg, pdf and mp4) is refused with a message for the editor. Each file gets a folder of its own, `media/{ulid}/`:
 
@@ -598,6 +600,45 @@ UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 A photo can be cropped again from its original with `CropImage`, renamed with `RenameMedia` and moved with `MoveMedia` (see [Cropping](#cropping)).
 
 A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->ofKind(MediaKind::Document)`, `->inFolder($folder)`, `->withoutAlt()`, `->search('merwestad')`, `->newestFirst()`, `->byName()` and `->countPerFolder()`, and the folders with `MediaFolder::query()->alphabetical()`. `ListMedia::run(new MediaFilter(...))` gives one page of the library (40 files, with the url a visitor opens each at) and `ListMediaFolders::run($kind)` the folders with the number of their files. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
+
+### DigitalOcean Spaces and other S3 disks
+
+The library can keep its files on a DigitalOcean Space, so the storage grows apart from the app server, which only has to follow the traffic. It is an option: the `public` disk keeps working as it does. Install the S3 adapter of Flysystem:
+
+```bash
+composer require league/flysystem-aws-s3-v3 "^3.0"
+```
+
+Add a disk to `config/filesystems.php`, with `url` on the CDN address of the Space, and point the library at it:
+
+```php
+'spaces' => [
+    'driver' => 's3',
+    'key' => env('SPACES_KEY'),
+    'secret' => env('SPACES_SECRET'),
+    'region' => env('SPACES_REGION', 'ams3'),
+    'bucket' => env('SPACES_BUCKET'),
+    'endpoint' => env('SPACES_ENDPOINT', 'https://ams3.digitaloceanspaces.com'),
+    'url' => env('SPACES_URL'), // the CDN address: https://{bucket}.ams3.cdn.digitaloceanspaces.com
+    'throw' => false,
+],
+```
+
+```dotenv
+MADE_CMS_MEDIA_DISK=spaces
+```
+
+Keep File Listing of the Space off, so nobody lists the files of the library.
+
+The library gives every file its ACL itself: `public-read` for the photo, its thumbnail and a file kept as it came in, `private` for the original of a photo, which then answers 403, through the CDN too. The visibility of the disk does not matter. Spaces supports these ACLs; an AWS bucket with ACLs disabled (Object Ownership "Bucket owner enforced") refuses every write that carries one, so it is not supported. The photo and its thumbnail are written with `Cache-Control: public, max-age=31536000, immutable`: every crop and every new name writes them at a new address, so a browser and the CDN may keep them for a year. The original, an svg, a gif, a pdf and an mp4 get no cache header. A wrong endpoint, bucket or key shows at the first upload, as a `MediaNotStored` exception (or the exception of Flysystem with `'throw' => true`).
+
+What stays on the app server:
+
+- Uploads go through the app server to the Space, never from the browser straight to the Space: the library reads the contents of every file before it stores it.
+- Scaling down, cropping and making thumbnails run on the app server, in the request. Cropping a photo of 12 MP takes about 140 MB, so the `memory_limit` of 256 MB stays.
+- For the crop step and for the crop itself the app server fetches the original from the Space.
+
+With a Content Security Policy, allow the domain of the disk (the CDN address of the Space) in `img-src`, and in `media-src` when the site shows videos: the site and the screens of the CMS show the photos and thumbnails from there. The crop step needs no CORS on the Space, because it fetches the original through the app.
 
 ### Uploading in the CMS
 
@@ -757,7 +798,7 @@ Keep in mind:
 - The tile only hides or shows the door. It never grants access; the login itself does.
 - Behind a load balancer or proxy, the IP allowlist only works when the application trusts the proxy (`trustProxies`), otherwise every visitor has the proxy's IP address.
 - Pages with the tile are sent as `Cache-Control: private, no-store`. A full-page cache in front of the application (a CDN "cache everything" rule, `spatie/laravel-responsecache`) can still store a page with the tile and show it to everyone; exclude those pages or disable the launcher.
-- With a Content Security Policy, allow `'self'` for `script-src`, `style-src`, `font-src` and `connect-src`. A Vite CSP nonce is added to the script automatically.
+- With a Content Security Policy, allow `'self'` for `script-src`, `style-src`, `font-src` and `connect-src`. A Vite CSP nonce is added to the script automatically. When the media library stores its files on another domain, such as a Space, allow that domain in `img-src` (and `media-src` for video) too; see [DigitalOcean Spaces and other S3 disks](#digitalocean-spaces-and-other-s3-disks).
 
 ## Logging in
 

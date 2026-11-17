@@ -14,7 +14,7 @@
  * the side panel has stored what it holds (a photo on its way counts), and nothing is lost: when that fails the editor
  * stays, with the strip that failed chosen and the reason on the line under the bar. "Bewerken stoppen" asks what to do
  * with a draft first, in a choice under the button; the editor leaves with "Stoppen zonder publiceren" (the draft is
- * kept) or "Publiceren". The addresses come from the server (config.exits), which knows what visitors see.
+ * kept) or "Publiceren". The addresses come from the server (`exits` in every state of the draft), which knows what visitors see.
  */
 
 const shell = document.querySelector('[data-edit-shell]');
@@ -49,6 +49,8 @@ const ui = {
 };
 
 let draft = config.draft ?? null;
+// Where leaving goes: it changes with the page (published, it is on the site), so every state of the draft brings it.
+let exits = draft?.exits ?? config.exits;
 let asking = 0;
 let busy = false;
 let leaving = null;
@@ -119,6 +121,11 @@ function show(state) {
     ui.discard.open = ui.discard.open && state.discardable;
     ui.choiceTitle.textContent = state.stop_title;
     ui.choiceText.textContent = state.stop_text;
+
+    if (state.exits) {
+        exits = state.exits;
+        ui.stop.setAttribute('href', exits.stop);
+    }
     ui.publish.disabled = busy || ! state.publishable;
 }
 
@@ -261,7 +268,7 @@ async function publish({ leave = false } = {}) {
 
         if (status === 204 && leave) {
             // The page is on its way: the bar keeps saying "Bezig met publiceren…" and stays off until it is gone.
-            navigate(config.exits.publish);
+            navigate(exits.publish);
 
             return;
         }
@@ -459,7 +466,7 @@ async function stop() {
     await refresh();
 
     if (! draft?.discardable) {
-        navigate(config.exits.stop);
+        navigate(exits.stop);
 
         return;
     }
@@ -529,7 +536,7 @@ if (shell && ui.publish && ui.state) {
     ui.stay.addEventListener('click', stay);
     ui.choiceLeave.addEventListener('click', () => {
         closeChoice();
-        leave(config.exits.stop, 'stop');
+        leave(exits.stop, 'stop');
     });
     ui.choicePublish.addEventListener('click', () => {
         closeChoice();

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\PublishPage;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -27,7 +28,8 @@ it('answers the changes of the draft with the texts of the bar', function (): vo
             'discard_text' => 'Je 2 wijzigingen gaan weg. De live versie blijft zoals hij is.',
             'short_label' => '2 wijzigingen',
             'stop_title' => 'Je wijzigingen staan nog niet op de site',
-            'stop_text' => 'Bezoekers zien je 2 wijzigingen pas na Publiceren. Je concept blijft bewaard.',
+            'stop_text' => 'Bezoekers zien je 2 wijzigingen pas na Publiceren. Je concept blijft bewaard. Je gaat terug naar Pagina’s.',
+            'exits' => ['stop' => '/made-cms/pages/'.$page->id, 'publish' => '/made-cms/pages/'.$page->id],
         ]]);
 
     expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
@@ -92,6 +94,22 @@ it('words the choice for stopping by what visitors see', function (): void {
     $live = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a')])->create();
 
     $this->getJson('made-cms/pages/'.$live->id.'/draft')->assertJsonPath('draft.short_label', 'Geen wijzigingen');
+});
+
+it('hands the bar the addresses it leaves for, as the page stands now', function (): void {
+    $page = Page::factory()->at('/concept')->withDraft([storedStrip('cards', id: 'a')])->create();
+    $pages = '/made-cms/pages/'.$page->id;
+
+    $this->getJson('made-cms/pages/'.$page->id.'/draft')
+        ->assertJsonPath('draft.exits', ['stop' => $pages, 'publish' => '/concept'])
+        ->assertJsonPath('draft.stop_text', 'Bezoekers zien hem pas na Publiceren. Je concept blijft bewaard. Je gaat terug naar Pagina’s.');
+
+    PublishPage::run($page);
+
+    // Published, the page is on the site: stopping now leaves for it, and the choice no longer says Pagina’s.
+    $this->getJson('made-cms/pages/'.$page->id.'/draft')
+        ->assertJsonPath('draft.exits', ['stop' => '/concept', 'publish' => '/concept'])
+        ->assertJsonPath('draft.stop_title', 'Je wijzigingen staan nog niet op de site');
 });
 
 it('answers in English when the launcher locale is English', function (): void {

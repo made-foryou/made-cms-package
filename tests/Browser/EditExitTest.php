@@ -434,3 +434,19 @@ it('rests again when leaving does not navigate', function (): void {
         ->and($shell->script("() => document.querySelector('[data-slot=\"bar-stop-text\"]').textContent.trim()"))->toBe('Bewerken stoppen')
         ->and($shell->script("() => document.querySelector('[data-slot=\"bar-stop\"]').hasAttribute('aria-busy')"))->toBeFalse();
 });
+
+it('leaves for the site after a page that was never published is published with the bar', function (): void {
+    $page = Page::factory()->at('/concept')->withDraft([storedStrip('hero', ['kop' => 'Nieuw'], id: 'hero')])->create(['title' => 'Concept']);
+
+    $shell = openExitShell($page);
+
+    expect($shell->script("() => document.querySelector('[data-slot=\"bar-stop\"]').getAttribute('href')"))->toBe('/made-cms/pages/'.$page->id);
+
+    $shell->click('[data-slot="bar-publish"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-state', 'Gepubliceerd'))))->toBeTrue()
+        ->and($shell->script(waitUntil("document.querySelector('[data-slot=\"bar-stop\"]').getAttribute('href') === '/concept'")))->toBeTrue();
+
+    // Nothing is left to decide: stopping goes straight to the site the page is on now.
+    $shell->click('[data-slot="bar-stop"]')->assertPathIs('/concept');
+});

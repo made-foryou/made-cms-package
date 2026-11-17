@@ -7,11 +7,8 @@ namespace Made\CmsPackage\Http\Responses;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
-use Made\CmsPackage\Content\Actions\DecideEditExit;
 use Made\CmsPackage\Content\Data\DraftChanges;
 use Made\CmsPackage\Content\Data\EditableStrips;
-use Made\CmsPackage\Content\Data\EditExitSituation;
-use Made\CmsPackage\Content\Enums\EditExit;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
@@ -19,9 +16,11 @@ use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\CropStep;
+use Made\CmsPackage\Http\Cms\EditExits;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
+use Made\CmsPackage\Http\Cms\SiteAddress;
 use Made\CmsPackage\Http\Cms\UploadField;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Middleware\ResolvePage;
@@ -42,14 +41,11 @@ final class EditPageResponse
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
-        $path = $page->route?->path;
         $base = request()->getBaseUrl();
-        $draft = DraftResponse::data($changes);
+        $draft = DraftResponse::data($changes, $page);
         $pagesUrl = PageLinks::show($page);
-        $exits = [
-            'stop' => self::exitUrl($page, publishing: false, pagesUrl: $pagesUrl),
-            'publish' => self::exitUrl($page, publishing: true, pagesUrl: $pagesUrl),
-        ];
+        $exits = EditExits::of($page)->toArray();
+        $site = SiteAddress::of($page);
         // The media element uploads a photo into the folder the editor chose last in the picker.
         $upload = UploadField::image($folder);
 
@@ -64,8 +60,8 @@ final class EditPageResponse
             'pagesUrl' => $pagesUrl,
             'stopUrl' => $exits['stop'],
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
-            'frameUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
-            'previewUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
+            'frameUrl' => $site === null ? null : $site.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
+            'previewUrl' => $site === null ? null : $site.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
             'editScript' => LauncherAssetController::url('edit.js'),
             'panelScript' => LauncherAssetController::url('panel.js'),
             'barScript' => LauncherAssetController::url('bar.js'),
@@ -123,18 +119,6 @@ final class EditPageResponse
                 ],
             ],
         ]);
-    }
-
-    /**
-     * The address an editor lands at when they leave the shell: the page without the edit mode, or its place in the
-     * pages screen.
-     */
-    private static function exitUrl(Page $page, bool $publishing, string $pagesUrl): string
-    {
-        $path = $page->route?->path;
-        $exit = DecideEditExit::run(new EditExitSituation($page->status, $path !== null, $publishing));
-
-        return $exit === EditExit::Site && $path !== null ? request()->getBaseUrl().$path : $pagesUrl;
     }
 
     /**

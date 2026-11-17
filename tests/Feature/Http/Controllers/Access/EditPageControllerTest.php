@@ -219,6 +219,7 @@ it('hands the bar the addresses of the draft, its state and its texts', function
             'short_label' => '1 wijziging',
             'stop_title' => 'Deze pagina staat nog niet op de site',
             'stop_text' => 'Bezoekers zien hem pas na Publiceren. Je concept blijft bewaard. Je gaat terug naar Pagina’s.',
+            'exits' => ['stop' => '/made-cms/pages/'.$page->id, 'publish' => '/over-ons'],
         ])
         ->and($config['texts']['bar'])->toMatchArray([
             'live' => 'Live',

@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
+use Made\CmsPackage\Http\Cms\SiteAddress;
 use Made\CmsPackage\Support\Site;
 
 /**
@@ -44,7 +45,7 @@ final class ShowPageResponse
                 'parentId' => $page->parent_id,
             ],
             'address' => $path === null ? null : Site::host().($path === PagePath::HOME ? '' : $path),
-            'viewUrl' => $path === null ? null : request()->getBaseUrl().$path,
+            'viewUrl' => SiteAddress::of($page),
             'indexUrl' => PageLinks::index(),
             'editUrl' => PageLinks::edit($page),
             'updateUrl' => PageLinks::update($page),

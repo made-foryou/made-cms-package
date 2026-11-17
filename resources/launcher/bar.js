@@ -173,11 +173,19 @@ async function ask(type, detail = {}, report = null) {
 function notSaved(failed) {
     say(texts.not_saved_state);
 
-    if (failed?.kind === 'invalid') {
-        const message = Object.values(failed.errors ?? {})[0]?.[0] ?? '';
+    const named = (message) => notify(format(texts.not_saved, { strip: labels.get(failed.id) ?? texts.unknown, message }));
 
-        notify(format(texts.not_saved, { strip: labels.get(failed.id) ?? texts.unknown, message }));
+    if (failed?.kind === 'invalid') {
+        named(Object.values(failed.errors ?? {})[0]?.[0] ?? '');
         shell.dispatchEvent(new CustomEvent('made-cms:choose', { detail: { id: failed.id, errors: failed.errors } }));
+
+        return;
+    }
+
+    // A photo that did not upload, or an alt text the server refused, stays in its field with its error.
+    if (failed?.kind === 'upload' || failed?.kind === 'alt') {
+        named(failed.kind === 'upload' ? texts.upload_failed : texts.alt_failed);
+        shell.dispatchEvent(new CustomEvent('made-cms:choose', { detail: { id: failed.id } }));
 
         return;
     }
@@ -253,8 +261,7 @@ async function publish({ leave = false } = {}) {
 
         if (status === 204 && leave) {
             // The page is on its way: the bar keeps saying "Bezig met publiceren…" and stays off until it is gone.
-            navigating = true;
-            window.location.assign(config.exits.publish);
+            navigate(config.exits.publish);
 
             return;
         }
@@ -267,7 +274,7 @@ async function publish({ leave = false } = {}) {
             refused(data?.errors ?? {});
         } else {
             say(texts.not_published_state);
-            notify(status === 419 ? texts.expired : texts.failed);
+            notify(status === 401 || status === 419 ? texts.expired : texts.failed);
         }
     } finally {
         if (! navigating) {
@@ -312,7 +319,7 @@ async function discard() {
     busy = false;
     ui.publish.disabled = ! draft?.publishable;
     ui.discardConfirm.disabled = false;
-    say(status === 419 ? texts.expired : texts.failed);
+    say(status === 401 || status === 419 ? texts.expired : texts.failed);
 }
 
 /* ---------------------------------------------------------------------------------------------------------------
@@ -382,13 +389,20 @@ async function settled(origin) {
     leaving = attempt;
     waiting(origin, false);
 
-    const stored = await ask('made-cms:flush', {}, (info) => {
-        if (info.uploading && ! attempt.cancelled) {
-            waiting(origin, true);
-        }
+    let stored = false;
 
-        failed = info.failed ?? failed;
-    });
+    try {
+        stored = await ask('made-cms:flush', {}, (info) => {
+            if (info.uploading && ! attempt.cancelled) {
+                waiting(origin, true);
+            }
+
+            failed = info.failed ?? failed;
+        });
+    } catch {
+        // The panel could not even try: the editor stays, and nothing waits for ever.
+        failed = { kind: 'failed' };
+    }
 
     if (attempt.cancelled) {
         return false;
@@ -404,9 +418,25 @@ async function settled(origin) {
     return true;
 }
 
+/*
+ * Goes to another page. A navigation that does not happen (the browser's Stop, a download, a refused prompt) must not
+ * leave the bar waiting for ever: after a while it rests again and asks the state of the draft.
+ */
+const NAVIGATION_GRACE = 10000;
+
+function navigate(url) {
+    navigating = true;
+    window.location.assign(url);
+    window.setTimeout(() => {
+        navigating = false;
+        resting();
+        refresh();
+    }, NAVIGATION_GRACE);
+}
+
 async function leave(url, origin) {
     if (await settled(origin)) {
-        window.location.assign(url);
+        navigate(url);
     }
 }
 
@@ -429,7 +459,7 @@ async function stop() {
     await refresh();
 
     if (! draft?.discardable) {
-        window.location.assign(config.exits.stop);
+        navigate(config.exits.stop);
 
         return;
     }

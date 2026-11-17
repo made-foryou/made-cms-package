@@ -58,6 +58,8 @@ return [
             'pages_waiting' => 'Back to Pages, one moment',
             'not_saved' => 'Not saved: :strip — :message',
             'not_saved_state' => 'Not saved',
+            'upload_failed' => 'The photo was not uploaded.',
+            'alt_failed' => 'The alt text was not saved.',
             'not_published_state' => 'Not published',
             'publish_unsaved' => 'Not published: fix the error in the panel first.',
             'discarding' => 'Discarding…',

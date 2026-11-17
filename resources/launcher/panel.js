@@ -159,7 +159,7 @@ async function open(id) {
             ui.fields.replaceChildren();
             ui.stripView.hidden = true;
             ui.itemView.hidden = true;
-            ui.status.textContent = status === 419 ? texts.expired : texts.load_failed;
+            ui.status.textContent = status === 401 || status === 419 ? texts.expired : texts.load_failed;
 
             return;
         }
@@ -344,7 +344,8 @@ async function save(state) {
     state.saving = request('PUT', stripUrl(state.id), { values })
         .catch(() => ({ status: 0, data: null }))
         .then(({ status, data }) => {
-            if (status === 200) {
+            // An answer that is no strip (a proxy page, an empty body) did not store anything the panel can trust.
+            if (status === 200 && data?.strip) {
                 // A new item gets its id here, and so does an item that came back with "Ongedaan maken".
                 for (const { key, items } of lists) {
                     (data.strip.values[key] ?? []).forEach((stored, index) => {
@@ -364,7 +365,7 @@ async function save(state) {
                 state.errors = data?.errors ?? {};
                 state.failed = 'invalid';
             } else {
-                state.failed = status === 419 ? 'expired' : 'failed';
+                state.failed = status === 401 || status === 419 ? 'expired' : 'failed';
             }
         })
         .finally(() => {
@@ -1903,7 +1904,7 @@ async function setVisibility(state, visible, undoing = false) {
             ui.visible.checked = state.visible;
         }
 
-        state.failed = status === 419 ? 'expired' : 'failed';
+        state.failed = status === 401 || status === 419 ? 'expired' : 'failed';
         showStatus(state);
 
         return false;
@@ -1991,9 +1992,32 @@ function pending() {
 }
 
 /*
+ * What the editor left open in the upload fields: an alt text typed for a photo that came in is stored first, as when
+ * the editor leaves the field (made-cms:upload-finish). The uploads whose alt text the server refused.
+ */
+async function finishUploads() {
+    const refused = [];
+
+    await Promise.all([...uploads].filter((upload) => ! upload.busy && upload.element.isConnected).map(async (upload) => {
+        const field = upload.element.querySelector('[data-upload]');
+        const waits = [];
+
+        field?.dispatchEvent(new CustomEvent('made-cms:upload-finish', { detail: { wait: (promise) => waits.push(promise) } }));
+
+        if ((await Promise.all(waits)).includes(false)) {
+            refused.push(upload);
+        }
+    }));
+
+    return refused;
+}
+
+/*
  * Saves what is still open in every strip; true once everything the panel holds is stored. The bar can pass report():
- * it hears at once that a photo is still on its way ({uploading: true}) and, when something could not be stored, which
- * strip failed first and why ({failed: {id, kind, errors}}), so it can name that strip.
+ * it hears at once that a photo is still on its way ({uploading: true}) and, when something could not be stored, what
+ * failed first ({failed: {id, kind, errors}}): a strip that was refused ('invalid', with the errors of its fields) or
+ * could not be reached ('failed', 'expired'), a photo that did not upload ('upload') or an alt text the server
+ * refused ('alt'), so the bar can name that strip.
  */
 async function flush(report = null) {
     if ([...uploads].some((upload) => upload.busy)) {
@@ -2001,6 +2025,16 @@ async function flush(report = null) {
     }
 
     await landed();
+
+    const refusedAlt = await finishUploads();
+
+    // A strip that could not be reached (no connection, a failing server) is tried again: its values are still the
+    // editor's, and without this "try again" would send nothing. A strip the server refused waits for a change.
+    for (const state of states.values()) {
+        if (state.failed === 'failed' && ! state.dirty && ! state.saving) {
+            state.dirty = true;
+        }
+    }
 
     for (let waiting = pending(); waiting.length > 0; waiting = pending()) {
         for (const state of waiting) {
@@ -2010,11 +2044,20 @@ async function flush(report = null) {
         await Promise.all(waiting.map((state) => save(state)));
     }
 
-    const stored = ! unsaved();
+    // A photo that did not upload is lost when the editor leaves: it stays in the field with its error until the
+    // editor tries again or leaves it out. One the picker superseded landed in Media only and counts for nothing.
+    const lost = [...uploads].find((upload) => upload.failed && ! upload.superseded);
     const failed = [...states.values()].find((state) => state.failed);
+    const stored = ! unsaved() && ! lost && refusedAlt.length === 0;
 
-    if (! stored && failed) {
-        report?.({ failed: { id: failed.id, kind: failed.failed, errors: failed.errors ?? {} } });
+    if (! stored) {
+        const reason = failed
+            ? { id: failed.id, kind: failed.failed, errors: failed.errors ?? {} }
+            : (lost
+                ? { id: lost.state.id, kind: 'upload', errors: {} }
+                : { id: refusedAlt[0].state.id, kind: 'alt', errors: {} });
+
+        report?.({ failed: reason });
     }
 
     return stored;

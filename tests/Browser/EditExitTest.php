@@ -6,12 +6,15 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost']);
     Storage::fake('public');
     Route::get('storage/{path}', fn (string $path) => response()->file(Storage::disk('public')->path($path)))->where('path', '.*');
+    // An address that answers without a page, so leaving for it does not navigate: the bar must not wait for ever.
+    Route::get('stil-204', fn () => response('', 204));
     useWorkbenchSite();
 
     $this->live = [
@@ -47,7 +50,7 @@ function barSlotSays(string $slot, string $text): string
     return "document.querySelector('[data-slot=\"{$slot}\"]')?.textContent.trim() === ".json_encode($text, JSON_THROW_ON_ERROR);
 }
 
-/** A script that holds the next upload on its way: window.release() sends it. */
+/** A script that holds the next upload on its way: window.release() sends it, window.drop() lets its connection drop. */
 function holdPhotoUpload(): string
 {
     return <<<'JS'
@@ -57,6 +60,7 @@ function holdPhotoUpload(): string
             XMLHttpRequest.prototype.send = function (...body) {
                 XMLHttpRequest.prototype.send = send;
                 window.release = () => send.apply(this, body);
+                window.drop = () => this.dispatchEvent(new ProgressEvent('error'));
             };
         }
         JS;
@@ -71,6 +75,25 @@ function refuseSaves(): string
 
             window.fetch = (url, options) => options?.method === 'PUT' && /\/strips\/[^/]+$/.test(String(url))
                 ? Promise.resolve(new Response(JSON.stringify({ errors: { label: ['Een label mag hoogstens 60 tekens zijn.'] } }), { status: 422, headers: { 'Content-Type': 'application/json' } }))
+                : fetched(url, options);
+        }
+        JS;
+}
+
+/** A script that lets every save of a strip fail the way the given answer says: a status, or null for no connection. */
+function failSaves(?int $status): string
+{
+    $answer = $status === null
+        ? "Promise.reject(new TypeError('offline'))"
+        : "Promise.resolve(new Response('{}', { status: {$status}, headers: { 'Content-Type': 'application/json' } }))";
+
+    return <<<JS
+        () => {
+            const fetched = window.fetch;
+
+            window.failing = true;
+            window.fetch = (url, options) => window.failing && options?.method === 'PUT' && /\\/strips\\/[^/]+$/.test(String(url))
+                ? {$answer}
                 : fetched(url, options);
         }
         JS;
@@ -318,4 +341,96 @@ it('shows the same bar in the dark theme', function (): void {
 
     $shell->assertSeeIn('.bewerkbalk-stop', 'Bewerken stoppen')
         ->assertNoJavaScriptErrors();
+});
+
+it('does not leave when a photo that was still uploading does not arrive', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"foto\"] [data-slot=\"image-upload\"]') !== null");
+
+    $shell->script(holdPhotoUpload());
+    $shell->click('[data-path="foto"] [data-slot="image-upload"]')
+        ->attach('[data-path="foto"] [data-slot="upload-input"]', photo(1200, 800, 'jpg', 'Clubavond.jpg'));
+
+    expect($shell->script(waitUntil("typeof window.drop === 'function'")))->toBeTrue();
+
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-stop-text', 'Foto uploadt…'))))->toBeTrue();
+
+    $shell->script('() => window.drop()');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-notice', 'Niet opgeslagen: Hero — De foto is niet geüpload.'))))->toBeTrue()
+        ->and($shell->script(waitUntil(barSlotSays('bar-stop-text', 'Bewerken stoppen'))))->toBeTrue()
+        ->and($shell->script('() => location.pathname'))->toBe('/made-cms/pages/'.$this->page->id.'/edit');
+
+    $shell->assertSeeIn('[data-slot="head-name"]', 'Hero');
+});
+
+it('tries a save again that could not be reached, when the editor leaves again', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"label\"] input') !== null");
+
+    $shell->script(failSaves(null));
+    $shell->type('[data-path="label"] input', 'Nieuw label');
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-notice', 'Dat lukte niet. Controleer je verbinding en probeer het opnieuw.'))))->toBeTrue()
+        ->and($shell->script(waitUntil(barSlotSays('bar-stop-text', 'Bewerken stoppen'))))->toBeTrue();
+
+    $shell->script('() => { window.failing = false; }');
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(choiceIsOpen())))->toBeTrue()
+        ->and(draftOf($this->page, 'hero')['values']['label'] ?? null)->toBe('Nieuw label')
+        ->and($shell->script("() => document.querySelector('[data-slot=\"bar-notice\"]').hidden"))->toBeTrue();
+});
+
+it('says a session that has gone as such', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"label\"] input') !== null");
+
+    $shell->script(failSaves(401));
+    $shell->type('[data-path="label"] input', 'Nieuw label');
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-notice', 'Je sessie is verlopen. Herlaad de pagina om verder te gaan.'))))->toBeTrue();
+});
+
+it('stores the alt text typed for a photo before it goes back to the pages screen', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"foto\"] [data-slot=\"image-upload\"]') !== null");
+
+    $shell->click('[data-path="foto"] [data-slot="image-upload"]')
+        ->attach('[data-path="foto"] [data-slot="upload-input"]', photo(1200, 800, 'jpg', 'Clubavond.jpg'));
+
+    expect($shell->script(waitUntil("document.querySelector('[data-path=\"foto\"] [data-slot=\"image-card\"]')?.dataset.state === 'filled'")))->toBeTrue();
+
+    // Typed, not saved with Enter or "Alt-tekst opslaan".
+    $shell->type('[data-path="foto"] [data-slot="upload-row-alt-input"]', 'Het eerste team voor de tafels');
+    $shell->click('[data-slot="bar-pages"]')->assertPathIs('/made-cms/pages/'.$this->page->id);
+
+    expect(Media::query()->sole()->alt)->toBe('Het eerste team voor de tafels');
+});
+
+it('does not wait for ever when the panel cannot even try', function (): void {
+    $shell = openExitShell($this->page);
+
+    $shell->script("() => document.querySelector('[data-edit-shell]').addEventListener('made-cms:flush', (event) => event.detail.wait(Promise.reject(new Error('boom'))))");
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil(barSlotSays('bar-notice', 'Dat lukte niet. Controleer je verbinding en probeer het opnieuw.'))))->toBeTrue()
+        ->and($shell->script(waitUntil(barSlotSays('bar-stop-text', 'Bewerken stoppen'))))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('.bewerkbalk').dataset.waiting === undefined"))->toBeTrue();
+});
+
+it('rests again when leaving does not navigate', function (): void {
+    $page = Page::factory()->published()->at('/stil-204')->withStrips($this->live)->create(['title' => 'Stil']);
+
+    $shell = openExitShell($page);
+    $shell->click('[data-slot="bar-stop"]');
+
+    expect($shell->script(waitUntil("document.querySelector('.bewerkbalk').dataset.waiting === 'stop'")))->toBeTrue();
+
+    // The bar waits for a navigation for ten seconds before it rests again.
+    $shell->script('() => new Promise((resolve) => setTimeout(resolve, 10600))');
+
+    expect($shell->script("() => document.querySelector('.bewerkbalk').dataset.waiting === undefined"))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('[data-slot=\"bar-stop-text\"]').textContent.trim()"))->toBe('Bewerken stoppen')
+        ->and($shell->script("() => document.querySelector('[data-slot=\"bar-stop\"]').hasAttribute('aria-busy')"))->toBeFalse();
 });

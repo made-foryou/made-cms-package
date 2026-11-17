@@ -105,6 +105,63 @@ it('names the site, the page and its status in the bar', function (): void {
         ->assertSee('<span class="status live" data-slot="bar-page">Live</span>', false);
 });
 
+it('links the bar back to the page in the pages screen and names the way to the start page', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+    $editor = Editor::factory()->create();
+
+    $response = $this->actingAs($editor, 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $html = (string) $response->getContent();
+
+    $response->assertSeeInOrder(['data-slot="bar-pages"', 'Pagina’s', 'TTV Merwestad', 'Voorvertoning', 'data-slot="bar-stop"', 'Bewerken stoppen', 'data-slot="bar-publish"'], false);
+
+    expect($html)->toContain('href="/made-cms/pages/'.$page->id.'"')
+        ->and($html)->toContain('title="Naar de startpagina van Made CMS"')
+        ->and($html)->toContain('aria-label="Naar de startpagina van Made CMS"');
+});
+
+it('lets stopping go to the page as visitors see it, without the edit mode', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $config = editShellConfig((string) $response->getContent());
+
+    expect($config['exits'])->toBe(['stop' => '/over-ons', 'publish' => '/over-ons'])
+        ->and($config['urls']['pages'])->toBe('/made-cms/pages/'.$page->id);
+
+    $response->assertSee('data-slot="bar-stop" href="/over-ons"', false);
+});
+
+it('keeps the home page at its own address when stopping', function (): void {
+    $page = Page::factory()->published()->at('/')->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')->getContent());
+
+    expect($config['exits']['stop'])->toBe('/');
+});
+
+it('lets stopping go to the pages screen for a page visitors do not see, and publishing to the site', function (): void {
+    $page = Page::factory()->at('/concept')->create();
+    $pages = '/made-cms/pages/'.$page->id;
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+    $config = editShellConfig((string) $response->getContent());
+
+    expect($config['exits'])->toBe(['stop' => $pages, 'publish' => '/concept']);
+
+    $response->assertSee('data-slot="bar-stop" href="'.$pages.'"', false);
+});
+
+it('lets both ways lead to the pages screen for a page without an address', function (): void {
+    $page = Page::factory()->create();
+    $pages = '/made-cms/pages/'.$page->id;
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')->getContent());
+
+    expect($config['exits'])->toBe(['stop' => $pages, 'publish' => $pages]);
+});
+
 it('counts the changes of the draft in the bar and offers to publish or discard them', function (): void {
     $page = Page::factory()->published()->at('/over-ons')
         ->withStrips([storedStrip('cards', ['kop' => 'Teams'], id: 'a')])
@@ -159,12 +216,18 @@ it('hands the bar the addresses of the draft, its state and its texts', function
             'discardable' => true,
             'label' => 'Concept · 1 wijziging',
             'discard_text' => 'Je wijziging gaat weg.',
+            'short_label' => '1 wijziging',
+            'stop_title' => 'Deze pagina staat nog niet op de site',
+            'stop_text' => 'Bezoekers zien hem pas na Publiceren. Je concept blijft bewaard. Je gaat terug naar Pagina’s.',
         ])
         ->and($config['texts']['bar'])->toMatchArray([
             'live' => 'Live',
             'draft' => 'Concept',
             'published' => 'Gepubliceerd',
             'publish_invalid' => 'Niet gepubliceerd: :strip — :message',
+            'saving' => 'Opslaan…',
+            'uploading' => 'Foto uploadt…',
+            'not_saved' => 'Niet opgeslagen: :strip — :message',
         ]);
 });
 

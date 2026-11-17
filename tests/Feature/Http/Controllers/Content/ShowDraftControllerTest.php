@@ -25,6 +25,9 @@ it('answers the changes of the draft with the texts of the bar', function (): vo
             'discardable' => true,
             'label' => 'Concept · 2 wijzigingen',
             'discard_text' => 'Je 2 wijzigingen gaan weg. De live versie blijft zoals hij is.',
+            'short_label' => '2 wijzigingen',
+            'stop_title' => 'Je wijzigingen staan nog niet op de site',
+            'stop_text' => 'Bezoekers zien je 2 wijzigingen pas na Publiceren. Je concept blijft bewaard.',
         ]]);
 
     expect($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
@@ -72,6 +75,23 @@ it('counts one change in the singular', function (): void {
     $this->getJson('made-cms/pages/'.$page->id.'/draft')
         ->assertJsonPath('draft.label', 'Concept · 1 wijziging')
         ->assertJsonPath('draft.discard_text', 'Je wijziging gaat weg.');
+});
+
+it('words the choice for stopping by what visitors see', function (): void {
+    $never = Page::factory()->withDraft([storedStrip('cards', id: 'a')])->create();
+
+    $this->getJson('made-cms/pages/'.$never->id.'/draft')
+        ->assertJsonPath('draft.short_label', '1 wijziging')
+        ->assertJsonPath('draft.stop_title', 'Deze pagina staat nog niet op de site')
+        ->assertJsonPath('draft.stop_text', 'Bezoekers zien hem pas na Publiceren. Je concept blijft bewaard. Je gaat terug naar Pagina’s.');
+
+    $clean = Page::factory()->create();
+
+    $this->getJson('made-cms/pages/'.$clean->id.'/draft')->assertJsonPath('draft.short_label', 'Niet gepubliceerd');
+
+    $live = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a')])->create();
+
+    $this->getJson('made-cms/pages/'.$live->id.'/draft')->assertJsonPath('draft.short_label', 'Geen wijzigingen');
 });
 
 it('answers in English when the launcher locale is English', function (): void {

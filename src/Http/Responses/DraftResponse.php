@@ -36,7 +36,7 @@ final class DraftResponse
     /**
      * The state with its texts, so the script of the bar never builds a plural itself.
      *
-     * @return array{live: bool, changes: int, publishable: bool, discardable: bool, label: string, discard_text: string}
+     * @return array{live: bool, changes: int, publishable: bool, discardable: bool, label: string, discard_text: string, short_label: string, stop_title: string, stop_text: string}
      */
     public static function data(DraftChanges $changes): array
     {
@@ -52,6 +52,11 @@ final class DraftResponse
             'discardable' => $changes->discardable,
             'label' => $count === 0 && ! $changes->live ? $t('unpublished') : $choice('changes'),
             'discard_text' => $changes->live ? $choice('discard_text').' '.$t('discard_live') : $choice('discard_text'),
+            // On a narrow bar the label drops the word "Concept".
+            'short_label' => $count === 0 && ! $changes->live ? $t('unpublished_short') : $choice('changes_short'),
+            // What stopping with a draft tells: visitors see it only after publishing, and where the editor lands.
+            'stop_title' => $changes->live ? $t('stop_title') : $t('stop_title_new'),
+            'stop_text' => $changes->live ? $choice('stop_text') : $t('stop_text_new'),
         ];
     }
 }

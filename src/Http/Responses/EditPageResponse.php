@@ -7,8 +7,11 @@ namespace Made\CmsPackage\Http\Responses;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\DecideEditExit;
 use Made\CmsPackage\Content\Data\DraftChanges;
 use Made\CmsPackage\Content\Data\EditableStrips;
+use Made\CmsPackage\Content\Data\EditExitSituation;
+use Made\CmsPackage\Content\Enums\EditExit;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
@@ -17,6 +20,7 @@ use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
+use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
 use Made\CmsPackage\Http\Cms\UploadField;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
@@ -41,6 +45,11 @@ final class EditPageResponse
         $path = $page->route?->path;
         $base = request()->getBaseUrl();
         $draft = DraftResponse::data($changes);
+        $pagesUrl = PageLinks::show($page);
+        $exits = [
+            'stop' => self::exitUrl($page, publishing: false, pagesUrl: $pagesUrl),
+            'publish' => self::exitUrl($page, publishing: true, pagesUrl: $pagesUrl),
+        ];
         // The media element uploads a photo into the folder the editor chose last in the picker.
         $upload = UploadField::image($folder);
 
@@ -52,6 +61,8 @@ final class EditPageResponse
             ],
             'draft' => $draft,
             'counts' => PageStripsResponse::counts($strips),
+            'pagesUrl' => $pagesUrl,
+            'stopUrl' => $exits['stop'],
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
             'frameUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
             'previewUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
@@ -76,7 +87,11 @@ final class EditPageResponse
                     'strip' => $base.route('made-cms-package.pages.strips.show', ['page' => $page, 'strip' => ':strip'], false),
                     'draft' => $base.route('made-cms-package.pages.draft.show', ['page' => $page], false),
                     'publish' => $base.route('made-cms-package.pages.publish', ['page' => $page], false),
+                    'pages' => $pagesUrl,
                 ],
+                // Where "Bewerken stoppen" leads: the page as visitors see it (never the edit mode), or the pages screen
+                // when visitors do not see it; after publishing, the page is on the site.
+                'exits' => $exits,
                 'draft' => $draft,
                 // Every strip of the working copy in its stored order: its place is the position the endpoints take.
                 'strips' => PageStripsResponse::strips($strips),
@@ -108,6 +123,18 @@ final class EditPageResponse
                 ],
             ],
         ]);
+    }
+
+    /**
+     * The address an editor lands at when they leave the shell: the page without the edit mode, or its place in the
+     * pages screen.
+     */
+    private static function exitUrl(Page $page, bool $publishing, string $pagesUrl): string
+    {
+        $path = $page->route?->path;
+        $exit = DecideEditExit::run(new EditExitSituation($page->status, $path !== null, $publishing));
+
+        return $exit === EditExit::Site && $path !== null ? request()->getBaseUrl().$path : $pagesUrl;
     }
 
     /**

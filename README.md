@@ -267,12 +267,12 @@ final class Hero extends StripType
 
 | Field | Stored value | Rendered value | Notes |
 |---|---|---|---|
-| `Text::make('kop')` | string | string | One line, at most 255 characters. Print it escaped. |
+| `Text::make('kop')` | string | string | One line, at most 255 characters. Print it escaped. With `->emphasis()` an editor marks words with asterisks; print it with `<x-made-cms::emphasis>`, see [Emphasis](#emphasis). |
 | `LongText::make('intro')` | string | string | Plain text over several lines. Print it escaped, e.g. `{!! nl2br(e($strip->intro)) !!}`. |
 | `RichText::make('tekst')` | HTML | HTML | Only `p`, `strong`, `em`, `ul`, `ol`, `li` and `a href` (http, https, mailto, tel, relative, but not `//`). Other markup keeps its text but loses its tags; scripts, styles and embeds disappear. Cleaned when it is stored and again when it is rendered, so print it unescaped. |
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published; an address the validation would refuse, e.g. from a seeder, renders as `null` too. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
-| `Heading::make('kop')` | `{"text": "…", "tag": "h2"}` | `{"text": "…", "tag": "h2"}` or `null` | A text (as a `Text`) with its level: `h1` to `h6`, or `span` for a text that is no heading for search engines. `->tag('h1')` gives the level of the design (`h2` by default), `->tags(['h1', 'h2', 'h3'])` limits the levels to choose from (all seven by default). A text stored before the field became a `Heading`, and a level no longer in `tags()`, count as the default level. `null` without a text. See [Headings](#headings). |
+| `Heading::make('kop')` | `{"text": "…", "tag": "h2"}` | `{"text": "…", "tag": "h2"}` or `null` | A text (as a `Text`) with its level: `h1` to `h6`, or `span` for a text that is no heading for search engines. `->tag('h1')` gives the level of the design (`h2` by default), `->tags(['h1', 'h2', 'h3'])` limits the levels to choose from (all seven by default). A text stored before the field became a `Heading`, and a level no longer in `tags()`, count as the default level. `null` without a text. `->emphasis()` as for a `Text`. See [Headings](#headings). |
 | `Image::make('foto')` | the id of a file of the [media library](#media) | `{"url": "…", "alt": "…", "width": 1600, "height": 1067, "focal": {"x": 0.5, "y": 0.5}}` or `null` | An image of the library, so a file changes everywhere it is used. The url comes from the media disk, never the place on the disk; the alt text is the one of the file (an empty text without one); an svg has no `width` and `height`; without a focal point it is the centre. `null` without an image and when its file is gone or is no image, so the site shows its own fallback; saving or publishing the strip refuses such a file. No `default()`, also not in the default of a list: the id of a file differs per database. See [Images](#images). |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
 | `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one, `itemLabel('Knop')` names one item in the side panel ("Knop toevoegen", "Item" by default). One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
@@ -376,14 +376,14 @@ Choosing a strip shows its fields, built from its strip type, with the values of
 
 | Field | Control |
 |---|---|
-| `Text` | One line. |
+| `Text` | One line. With `->emphasis()`, a line below it says how to give a word emphasis: "Zet een woord tussen sterretjes voor nadruk, zoals \*handen\*." |
 | `LongText` | A text area. |
 | `RichText` | A text with a fixed toolbar: bold, italic, link and list. Pasted text arrives without its markup; the package cleans the HTML again when it stores it. |
 | `Link` | One input that suggests the pages of the site. A chosen page, or the exact address of a page, is stored as that page and follows it when its address changes; anything else is stored as an address. |
 | `Button` | Its text and its link side by side. |
-| `Heading` | Its text, with its level next to its name. An editor who opens Meta-overzicht (the SEO specialist and the admin) chooses the level from the levels of the field, each with what it means; anyone else sees the level as a label, and saving keeps it for them. |
+| `Heading` | Its text, with its level next to its name. An editor who opens Meta-overzicht (the SEO specialist and the admin) chooses the level from the levels of the field, each with what it means; anyone else sees the level as a label, and saving keeps it for them. With `->emphasis()` the line about emphasis stands below its text, as for a `Text`. |
 | `Choice` | A select with the options in their order; "Geen keuze" when the field is not required. |
-| `Items` | A row per item with its title (the first field that has a value), a grip and "Bewerken". The grip drags the item, or moves it with the arrow keys. "Bewerken" opens the item with a breadcrumb ("← Hero / Knoppen / Lid worden"); adding stops at `max()`, removing at `min()`. |
+| `Items` | A row per item with its title (the first field that has a value, without the asterisks of its emphasis), a grip and "Bewerken". The grip drags the item, or moves it with the arrow keys. "Bewerken" opens the item with a breadcrumb ("← Hero / Knoppen / Lid worden"); adding stops at `max()`, removing at `min()`. |
 
 - Every change is saved as the draft: a moment after the editor stops typing, when a field loses focus, when another strip is chosen and with "Opslaan als concept". The panel always sends every field of the strip to `UpdateStrip`. A field with [`data-cms-field`](#the-data-cms-attributes) already shows on the site while the editor types; for any other change the frame reloads at the same scroll position. Visitors keep seeing the published version until the page is published.
 - A value the strip type refuses is not saved. Its message appears under the field once the editor leaves it (or presses "Opslaan als concept"), and the panel says how many fields still need a fix. The shell warns before it is closed with changes that were not saved.
@@ -483,6 +483,27 @@ A `Heading` field holds the level of the heading next to its text, so the elemen
 
 A heading that was a `Text` switches without a migration: change `Text::make('kop')` into `Heading::make('kop')` with the level the view printed (`->tag('h1')`), and print the heading as above. A stored text counts as that text with the default level until an editor saves the strip; publishing and the count of changes treat both the same.
 
+### Emphasis
+
+A `Text` or `Heading` with `->emphasis()` lets an editor give words emphasis by putting them between asterisks: "Jullie dag in \*vertrouwde\* handen", also more than one piece or inside a word (`Privacy*verklaring*`). The side panel says how, and the edit shell shows the words as an `<em>` while the editor types. The value keeps the asterisks, stored and rendered (they count in the 255 characters), so the view prints the words between them as an `<em>` and escapes the rest:
+
+- Blade: `<x-made-cms::heading :heading="$strip->kop" field="kop" emphasis class="hero__kop" />` for a heading. For a `Text`, put `<x-made-cms::emphasis>` in your own element: `<h2 data-cms-field="kop" class="hero__kop"><x-made-cms::emphasis :text="$strip->kop" /></h2>`. It prints nothing else, no whitespace either, and nothing without a text.
+- React: split the text on the pattern below; the words with emphasis land at the odd places.
+
+```tsx
+const EMPHASIS = /\*([^\s*](?:[^*]*[^\s*])?)\*/;
+
+function Emphasis({ text }: { text: string }) {
+  return <>{text.split(EMPHASIS).map((part, i) => (i % 2 ? <em key={i}>{part}</em> : part))}</>;
+}
+
+{Kop && <Kop data-cms-field="kop" className="hero__kop"><Emphasis text={strip.kop.text} /></Kop>}
+```
+
+- Vue: `<template v-for="(part, i) in strip.kop.text.split(EMPHASIS)" :key="i"><em v-if="i % 2">{{ part }}</em><template v-else>{{ part }}</template></template>` inside the element of the field.
+
+The words between asterisks start and end with a character that is no space or asterisk, so an asterisk without a partner, `2 * 3 * 4` or `* a *` stays an asterisk; without `->emphasis()` every asterisk is text. `Content\Strips\Emphasis::parts()` gives the parts of a text in PHP, `Emphasis::plain()` the text without the asterisks (for a `<title>` or an `aria-label`). Style the `<em>` through the class of its element (`.hero__kop em`; in Vue with scoped css `.hero__kop :deep(em)`): the edit shell makes a new `<em>` like one the site printed, with its attributes, or a plain one when the text had none yet.
+
 ### Images
 
 An `Image` field stores the id of a file of the [media library](#media) and renders as `{url, alt, width, height, focal}`, so the site never deals with ids. `RenderStrips` finds the files of every image on the page in one query. Without an image, and when its file is gone from the library or is no image, the field is `null`: show a fallback of your own. The focal point (`x` and `y` from 0 to 1) is the place a crop keeps in view; use it as `object-position`.
@@ -517,12 +538,12 @@ The edit shell patches the element with `data-cms-field` in the page as it is, s
 
 | Field | The element with `data-cms-field` |
 |---|---|
-| `Text` | Holds only the text: no icon or other element next to it. |
+| `Text` | Holds only the text: no icon or other element next to it. With emphasis it holds the text and its `<em>` elements, as `<x-made-cms::emphasis>` prints them. |
 | `LongText` | Holds only the text. Print line breaks as `<br>` (`nl2br`) or keep them in the text (`white-space: pre-line`); the shell follows the form it finds. |
 | `RichText` | Prints the HTML unescaped: `{!! !!}`, `dangerouslySetInnerHTML`, `v-html`. |
 | `Link` | Has the address in its `href`. |
 | `Button` | Holds only the text and has the address in its `href`. |
-| `Heading` | Is the element of its level and holds only the text, as `<x-made-cms::heading>` prints it. An element of another level reloads the frame. |
+| `Heading` | Is the element of its level and holds only the text (with emphasis: and its `<em>` elements), as `<x-made-cms::heading>` prints it. An element of another level reloads the frame. |
 | `Image` | Is the `<img>` that shows it, without `srcset` and not in a `<picture>`; the shell sets its `src` and `alt`, and its `width` and `height` when the site prints them. Another element (a background) reloads the frame. |
 | `Choice`, `Items` | Not patched: the frame reloads. |
 
@@ -891,7 +912,7 @@ src/
 │   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render, and UploadMedia
 │   └── ...
 ├── Console/    technical layer: artisan commands
-├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips> and <x-made-cms::heading> components, controllers grouped per context, the login session
+├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips>, <x-made-cms::heading> and <x-made-cms::emphasis> components, controllers grouped per context, the login session
 ├── Support/    context-free helpers: site name and url, launcher locale, QR code
 └── CmsPackageServiceProvider.php
 ```

@@ -26,15 +26,14 @@ final class MediaFactory extends Factory
      */
     public function definition(): array
     {
-        $folder = 'media/'.Str::lower((string) Str::ulid());
-
         return [
+            'ulid' => Str::lower((string) Str::ulid()),
             'folder_id' => null,
             'kind' => MediaKind::Image,
             'name' => fake()->unique()->slug(3),
-            'path' => fn (array $attributes): string => "{$folder}/{$attributes['name']}.webp",
-            'original_path' => "{$folder}/original.jpg",
-            'thumb_path' => "{$folder}/thumb.webp",
+            'path' => fn (array $attributes): string => "media/{$attributes['ulid']}/{$attributes['name']}.webp",
+            'original_path' => fn (array $attributes): string => "media/{$attributes['ulid']}/original.jpg",
+            'thumb_path' => fn (array $attributes): string => "media/{$attributes['ulid']}/thumb.webp",
             'mime' => 'image/webp',
             'size' => fake()->numberBetween(80_000, 600_000),
             'width' => 1920,
@@ -45,8 +44,45 @@ final class MediaFactory extends Factory
             'focal_x' => null,
             'focal_y' => null,
             'crop' => null,
+            'version' => 1,
+            'previous' => null,
             'uploaded_by' => null,
+            'replaced_by' => null,
+            'replaced_at' => null,
         ];
+    }
+
+    /**
+     * A photo that was replaced once: version 2 in a folder of its own (media/{ulid}/{8 random}), the upload waiting
+     * next to it at the root of the file to be put back.
+     */
+    public function replaced(): self
+    {
+        return $this->state(fn (): array => [
+            'version' => 2,
+            'path' => fn (array $attributes): string => "media/{$attributes['ulid']}/k3f9a2b1/{$attributes['name']}.webp",
+            'original_path' => fn (array $attributes): string => "media/{$attributes['ulid']}/k3f9a2b1/original.jpg",
+            'thumb_path' => fn (array $attributes): string => "media/{$attributes['ulid']}/k3f9a2b1/thumb.webp",
+            'replaced_at' => now()->toImmutable(),
+            'previous' => fn (array $attributes): array => [
+                'version' => 1,
+                'name' => "{$attributes['name']}-oud",
+                'path' => "media/{$attributes['ulid']}/{$attributes['name']}-oud.webp",
+                'original_path' => "media/{$attributes['ulid']}/original.jpg",
+                'thumb_path' => "media/{$attributes['ulid']}/thumb.webp",
+                'mime' => 'image/webp',
+                'size' => 240_000,
+                'width' => 1600,
+                'height' => 1067,
+                'original_width' => 1600,
+                'original_height' => 1067,
+                'focal_x' => null,
+                'focal_y' => null,
+                'crop' => null,
+                'placed_by' => null,
+                'placed_at' => null,
+            ],
+        ]);
     }
 
     /**
@@ -87,7 +123,7 @@ final class MediaFactory extends Factory
     {
         return $this->state(fn (): array => [
             'kind' => $kind,
-            'path' => fn (array $attributes): string => 'media/'.Str::lower((string) Str::ulid())."/{$attributes['name']}.{$extension}",
+            'path' => fn (array $attributes): string => "media/{$attributes['ulid']}/{$attributes['name']}.{$extension}",
             'original_path' => null,
             'thumb_path' => null,
             'mime' => $mime,

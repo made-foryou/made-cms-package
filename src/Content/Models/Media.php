@@ -19,6 +19,7 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * A file of the media library: a photo, a document or a video, stored on the media disk.
  *
  * @property int $id
+ * @property string $ulid the folder of the file on the media disk (media/{ulid}) and the key of its lasting link
  * @property int|null $folder_id the folder the file is in; null for none
  * @property MediaKind $kind
  * @property string $name the slug of the file name without extension
@@ -35,7 +36,11 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * @property float|null $focal_x the point a crop keeps in view, from 0 (left) to 1 (right)
  * @property float|null $focal_y the point a crop keeps in view, from 0 (top) to 1 (bottom)
  * @property array<string, mixed>|null $crop how the photo was cut from its original (CropArea with scale_down); null for the whole original
+ * @property int $version the number of the version the site shows: 1 for the upload
+ * @property array<string, mixed>|null $previous the version that waits to be put back (MediaVersion); null for none
  * @property int|null $uploaded_by the id of the editor who uploaded the file
+ * @property int|null $replaced_by the id of the editor who placed the version the site shows; null for the upload
+ * @property CarbonImmutable|null $replaced_at when the version the site shows was placed; null for the upload
  * @property-read MediaFolder|null $folder
  * @property-read Collection<int, MediaUsage> $usages
  * @property CarbonImmutable|null $created_at
@@ -51,6 +56,7 @@ class Media extends Model
     protected $table = 'cms_media';
 
     protected $fillable = [
+        'ulid',
         'folder_id',
         'kind',
         'name',
@@ -67,7 +73,11 @@ class Media extends Model
         'focal_x',
         'focal_y',
         'crop',
+        'version',
+        'previous',
         'uploaded_by',
+        'replaced_by',
+        'replaced_at',
     ];
 
     /**
@@ -86,7 +96,11 @@ class Media extends Model
             'focal_x' => 'float',
             'focal_y' => 'float',
             'crop' => 'array',
+            'version' => 'integer',
+            'previous' => 'array',
             'uploaded_by' => 'integer',
+            'replaced_by' => 'integer',
+            'replaced_at' => 'immutable_datetime',
         ];
     }
 

@@ -56,7 +56,8 @@ final class UploadMedia
             : null;
 
         $name = MediaName::fromFilename($upload->filename, $checked->kind)->value;
-        $directory = 'media/'.Str::lower((string) Str::ulid());
+        $ulid = Str::lower((string) Str::ulid());
+        $directory = "media/{$ulid}";
 
         try {
             $columns = $this->store($disk, $directory, $name, $upload->path, $checked, $image);
@@ -68,7 +69,7 @@ final class UploadMedia
 
         // The files leave again only when the row cannot be stored, from inside the transaction, never around it: a
         // callback after the commit that throws must not take the files of a stored row away.
-        $media = DB::transaction(static function () use ($disk, $directory, $folder, $checked, $name, $columns, $upload): Media {
+        $media = DB::transaction(static function () use ($disk, $directory, $ulid, $folder, $checked, $name, $columns, $upload): Media {
             try {
                 // The folder is read again with a shared lock, so a folder deleted while the file was scaled down is
                 // refused like a folder that never was, and one cannot be deleted before the file is in it.
@@ -77,6 +78,7 @@ final class UploadMedia
                 }
 
                 return Media::query()->create([
+                    'ulid' => $ulid,
                     'folder_id' => $folder?->id,
                     'kind' => $checked->kind,
                     'name' => $name,

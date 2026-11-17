@@ -29,7 +29,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 |---|:-:|:-:|:-:|:-:|:-:|---|---|
 | Pagina's (`pages`) | ✓ | ✓ | ✓ | ✓ | ✓ | Je site | gebouwd (#19); verder in #60 |
 | Nieuws (`news`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
-| Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | gebouwd (#55, mappen #56); verder in #57 |
+| Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | gebouwd (#55, mappen #56, bestandsacties #57) |
 | Berichten (`messages`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
 | Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#88); het kopniveau in de bewerkschil: gebouwd (#126) |
 | Alt-teksten (`alt-texts`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#95) |
@@ -64,6 +64,8 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | Een bestand een andere naam geven (`PUT made-cms/media/{media}/name`) | `Screen::Pages` of `Screen::Media` | Staat in de bijsnijd-stap naast de alt-tekst. De bestandsnaam leest Google mee, dus juist de SEO-specialist geeft hem. | #54 (besluit 3) |
 | Een bestand naar een map verplaatsen (`PUT made-cms/media/{media}/move`) | `Screen::Media` | Beheer van de bibliotheek (besluit 8 van #49). De keuzelijst Map staat in de bijsnijd-stap alleen voor wie Media opent; na een upload in de kiezer staat het bestand al in de map die de redacteur opende. | #49 (besluit 8), #54 (besluit 3), #56 |
 | Meerdere bestanden tegelijk naar een map verplaatsen, en mappen aanmaken, hernoemen en verwijderen (`PUT made-cms/media/move`, `POST made-cms/media/folders`, `PUT`/`DELETE made-cms/media/folders/{folder}`) | `Screen::Media` | Beheer van de bibliotheek (besluit 8 van #49). De kiezer toont de mappen alleen. | #56 |
+| Een bestand vervangen, de vorige versie terugzetten, een bestand downloaden en bestanden verwijderen (`POST made-cms/media/{media}/replace`, `POST made-cms/media/{media}/restore`, `GET made-cms/media/{media}/download`, `POST made-cms/media/delete`) | `Screen::Media` | Beheer van de bibliotheek (besluit 8 van #49). Vervangen en terugzetten veranderen het bestand meteen op elke pagina, ook gepubliceerd. Downloaden geeft van een foto het privé origineel, alleen via de app. Verwijderen kan alleen voor een bestand dat nergens staat, ook niet in een concept of op een pagina in de prullenbak. | #49 (besluit 7 en 8), #57 |
+| De vaste link van een bestand openen (`GET made-cms/file/{ulid}/{naam}`) | iedereen | De link die "Link kopiëren" geeft, staat in nieuwsbrieven en mails. Hij stuurt alleen door naar het adres dat het bestand nu heeft, dat al publiek is; de sleutel staat al in dat adres, dus er wordt niets opsombaar. Zonder sessie of cookie. | #57 |
 | Een link kiezen in het zijpaneel | `Screen::Pages` | Hoort bij een pagina bewerken. | #75 |
 | De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
 | Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop"), en de weergave "Koppen" naast de Opbouw | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De weergave Koppen toont daarvoor alle koppen van de pagina met de signalen; ze is alleen UI. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2 en 3), #126, #127 |

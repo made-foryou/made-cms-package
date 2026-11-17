@@ -570,7 +570,7 @@ The media library holds every photo, document and video of the site in one place
 
 Files go to the disk in `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`). A visitor must be able to open them by url, so use the `public` disk after `php artisan storage:link`, a local disk with a `url`, or an S3 disk such as DigitalOcean Spaces (see [DigitalOcean Spaces and other S3 disks](#digitalocean-spaces-and-other-s3-disks)). A local disk without a `url` is refused with a `MediaDiskNotUsable` exception the first time the library is used; the site and artisan keep working until then.
 
-The library writes every file with a visibility of its own, whatever the `visibility` of the disk: the photo, its thumbnail and a file kept as it came in are public, the original of a photo is private. On a local disk that is 0644 for a public file and 0600 for the original, in folders of 0755. PHP still reads the original to crop the photo again; a web server that runs as another user than PHP cannot serve it. Where the web server runs as the same user (Herd, `php artisan serve`, many servers with one user), it could, and the name of 40 random characters keeps the original from being found.
+The library writes every file with a visibility of its own, whatever the `visibility` of the disk: the photo, its thumbnail and a file kept as it came in are public, the original of a photo is private, and so is a former version that waits to be put back after a replacement. On a local disk that is 0644 for a public file and 0600 for the original, in folders of 0755. PHP still reads the original to crop the photo again; a web server that runs as another user than PHP cannot serve it. Where the web server runs as the same user (Herd, `php artisan serve`, many servers with one user), it could, and the name of 40 random characters keeps the original from being found.
 
 An upload is checked before anything is stored. The type is read from the contents, never from the name; a file larger than `media.max_upload_kb` (default 25 MB) or of a type outside `media.allowed_mimes` (jpg, png, webp, gif, svg, pdf and mp4) is refused with a message for the editor. Each file gets a folder of its own, `media/{ulid}/`:
 
@@ -597,7 +597,24 @@ $media = UploadMedia::run(new UploadedMedia(
 UpdateAltText::run($media, 'Het eerste team na de kampioenswedstrijd');
 ```
 
-A photo can be cropped again from its original with `CropImage`, renamed with `RenameMedia` and moved with `MoveMedia` (see [Cropping](#cropping)).
+A photo can be cropped again from its original with `CropImage`, renamed with `RenameMedia` and moved with `MoveMedia` (see [Cropping](#cropping)). A file gets a new version, is put back and leaves the library with these Actions (see [Versions, downloading and deleting](#versions-downloading-and-deleting)):
+
+```php
+use Made\CmsPackage\Content\Actions\DeleteMedia;
+use Made\CmsPackage\Content\Actions\ReplaceMedia;
+use Made\CmsPackage\Content\Actions\RestoreMediaVersion;
+
+// A new version under the same id: of the same kind, in a folder of its own, with the name of the upload.
+$media = ReplaceMedia::run($media, new UploadedMedia(storage_path('import/teamfoto-2026.jpg'), 'Teamfoto 2026.jpg', null, $editorId));
+
+// The former version waits; putting it back swaps the two, so doing it again undoes it.
+$media = RestoreMediaVersion::run($media);
+
+// Deletes what no page uses, every version with it, and keeps the rest.
+$result = DeleteMedia::run([$media->id, $other->id]);
+$result->deleted; // list<Media>
+$result->kept;    // list<Media> a page uses
+```
 
 A refused file throws a `ValidationException` keyed by `file` (an alt text longer than 255 characters one keyed by `alt`). `UploadMedia` dispatches `MediaUploaded` and `UpdateAltText` dispatches `AltTextUpdated`, both after the commit. Read the library with `Media::query()->images()`, `->ofKind(MediaKind::Document)`, `->inFolder($folder)`, `->withoutAlt()`, `->search('merwestad')`, `->newestFirst()`, `->byName()` and `->countPerFolder()`, and the folders with `MediaFolder::query()->alphabetical()`. `ListMedia::run(new MediaFilter(...))` gives one page of the library (40 files, with the url a visitor opens each at) and `ListMediaFolders::run($kind)` the folders with the number of their files. A strip holds an image of the library through the field type `Image` (see [Images](#images)); `FindMedia::run($ids)` gives files with the url a visitor opens them at.
 
@@ -630,7 +647,7 @@ MADE_CMS_MEDIA_DISK=spaces
 
 Keep File Listing of the Space off, so nobody lists the files of the library.
 
-The library gives every file its ACL itself: `public-read` for the photo, its thumbnail and a file kept as it came in, `private` for the original of a photo, which then answers 403, through the CDN too. The visibility of the disk does not matter. Spaces supports these ACLs; an AWS bucket with ACLs disabled (Object Ownership "Bucket owner enforced") refuses every write that carries one, so it is not supported. The photo and its thumbnail are written with `Cache-Control: public, max-age=31536000, immutable`: every crop and every new name writes them at a new address, so a browser and the CDN may keep them for a year. The original, an svg, a gif, a pdf and an mp4 get no cache header. A wrong endpoint, bucket or key shows at the first upload, as a `MediaNotStored` exception (or the exception of Flysystem with `'throw' => true`).
+The library gives every file its ACL itself: `public-read` for the photo, its thumbnail and a file kept as it came in, `private` for the original of a photo, which then answers 403, through the CDN too. The visibility of the disk does not matter. Spaces supports these ACLs; an AWS bucket with ACLs disabled (Object Ownership "Bucket owner enforced") refuses every write that carries one, so it is not supported. Every file a visitor opens (the photo, its thumbnail, an svg, a gif, a pdf and an mp4) is written with `Cache-Control: public, max-age=31536000, immutable`: every crop, every new name and every new version writes at a new address, so a browser and the CDN may keep it for a year. The original gets no cache header. A replaced file is gone for a visitor at once, because its former version is made private, but a CDN may still serve a copy it holds until that expires: purge the CDN when a file must be gone everywhere at once. A wrong endpoint, bucket or key shows at the first upload, as a `MediaNotStored` exception (or the exception of Flysystem with `'throw' => true`).
 
 What stays on the app server:
 
@@ -692,11 +709,25 @@ The query takes `folder`, `kind` (`image`, `document`, `video`) or `without_alt=
 
 | Request | Does | Answers |
 |---|---|---|
-| `GET /made-cms/media/{media}` | A file with the pages it is used on, through `DescribeMedia`. | 200 with `{"file", "heading", "pages": [{"title", "url", "deleted", "note", "places": [{"where", "note"}]}]}`: `heading` as "Gebruikt op 2 pagina's" (a deleted page does not count), `url` the edit shell of the page (`null` for a deleted page), `note` for a page in the bin or places in one version only; 403; 404. |
+| `GET /made-cms/media/{media}` | A file with the pages it is used on and its history, through `DescribeMedia`. | 200 with `{"file", "history", "removal", "heading", "pages": [{"title", "url", "deleted", "note", "places": [{"where", "note"}]}]}`: `file.link` the lasting link of the file, `history` the line "Geüpload door … op … · versie 2 · vervangen door …" with the version that waits (`previous`, `can_restore`), `removal` whether it can be deleted with the reason (`allowed`, `note`), `heading` as "Gebruikt op 2 pagina's" (a deleted page does not count), `url` the edit shell of the page (`null` for a deleted page), `note` for a page in the bin or places in one version only; 403; 404. |
+| `POST /made-cms/media/{media}/replace` | Takes one `file` as the new version of a file, through `ReplaceMedia`. | 200 with `{"file"}`; 422 keyed by `file` for a file the library refuses or of another kind; 404. |
+| `POST /made-cms/media/{media}/restore` | Puts the version that waits back, through `RestoreMediaVersion`. | 200 with `{"file"}`; 422 keyed by `version` when none waits; 404. |
+| `GET /made-cms/media/{media}/download` | Saves a file, read through the app: of a photo its original as it was uploaded, of any other file the file itself (`OpenMediaDownload`). | 200 with `Content-Disposition: attachment; filename={name}.{extension}`, never cached; 404 when the file is not on the disk. |
+| `POST /made-cms/media/delete` | Deletes the chosen files no page uses (`{"files": [id, …]}`, at most 200) and keeps the rest, through `DeleteMedia`. | 200 with `{"deleted", "kept", "missing", "notice", "refusal"}`: the ids, and what to tell the editor in words ("2 bestanden verwijderd.", "logo.svg staat nog op een pagina en blijft staan."); 422 keyed by `files`. |
 | `PUT /made-cms/media/move` | Puts the chosen files into a folder (`{"files": [id, …], "folder": id}`, `null` for none, at most 200), all or none of them, through `MoveMedia`. | 200 with `{"files": […]}` by id, without a file that is gone; 422 keyed by `files` or `folder`. |
 | `POST /made-cms/media/folders` | Adds a folder (`{"name": "…"}`, trimmed with single spaces, at most 60 characters, unique whatever its capitals) through `CreateMediaFolder`. | 201 with `{"folder": {"id", "name"}}`; 422 keyed by `name`. |
 | `PUT /made-cms/media/folders/{folder}` | Gives a folder another name (`{"name": "…"}`) through `RenameMediaFolder`; its files stay in it. | 200 with `{"folder": …}`; 422 keyed by `name`; 404. |
 | `DELETE /made-cms/media/folders/{folder}` | Deletes an empty folder through `DeleteMediaFolder`. | 204; 422 keyed by `folder` for a folder that holds files ("Teams heeft nog 14 bestanden. Zet ze eerst in een andere map."); 404. |
+
+### Versions, downloading and deleting
+
+A file of the library gets a new version under the same id with `ReplaceMedia`, so it changes on every page that shows it at once, the published ones too, without a publication. Only a file of the same kind replaces it (an image by an image, an svg or an animated gif too; a document by a document; a video by a video), because an image field on a page would break on anything else. The new version is checked and stored as an upload is, in a folder of its own (`media/{ulid}/{8 random}/`), takes the name of the upload and has no crop or focal point; the alt text, the folder and who uploaded the file stay. The version the site showed waits to be put back and is private from then on, so a visitor no longer opens it. One version waits at a time: `RestoreMediaVersion` swaps it with the version the site shows, so putting it back again undoes it, and the next replacement takes the oldest off the disk. `cms_media` keeps the number of the version, who placed it (`replaced_by`, `replaced_at`) and the version that waits (`previous`).
+
+`OpenMediaDownload` gives a file to save, read through the app from the disk: of a photo its original as it was uploaded (full size, its own type, not cropped), of any other file the file itself.
+
+Every file has a lasting link on the domain of the site, `/made-cms/file/{ulid}/{name}`: it sends the visitor to the address the file has now, so a link pasted into a newsletter keeps working when the file is replaced, cropped or renamed. It is open to anyone, without a session or a cookie, and gives a 404 once the file left the library. The key is the folder of the file on the disk, which its address shows already. It ends without an extension, so a rule of the web server for `\.pdf$` never takes it for a file on the disk.
+
+`DeleteMedia` deletes only a file no page uses: a place in the draft or the published version of a page, also in a hidden strip or on a page in the bin until it is pruned, keeps it. It leaves for good, with every version, and its folder leaves the disk once the change is committed. `SyncMediaUsage` reads the files it gives a place with a shared lock, so a strip saved while its file is deleted never gets a place for a file that is gone. `MediaReplaced`, `MediaVersionRestored` and `MediaDeleted` are dispatched after the commit.
 
 ### Cropping
 

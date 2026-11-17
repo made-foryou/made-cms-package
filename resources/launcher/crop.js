@@ -11,7 +11,7 @@
  * mirrored left to right when flipped; the server takes it back onto the original (CropArea). The focal point is kept
  * in the same pixels while the editor works and sent as 0 to 1 of the crop, the photo that comes out.
  *
- * A host opens it with made-cms:crop on the dialog: {files, opener, upload, done(results)}, the files as the upload
+ * A host opens it with made-cms:crop on the dialog: {files, opener, upload, replace, done(results)}, the files as the upload
  * field gets one. The step sets detail.taken when it opens for them; a host that finds it unset (the step is open
  * already, or this script did not load) gets no done to wait for and goes on without the step. "Opslaan" stores what changed of the file (its name, alt text, folder and crop, one request each, in
  * that order) and goes to the next file; "Zo laten, zonder snijden", the cross and Escape store the fields on the
@@ -411,9 +411,12 @@ function step(dialog) {
         const count = queue.length;
         const file = current?.file;
 
-        ui.eyebrow.textContent = request?.upload
-            ? (count === 1 ? texts.eyebrow_upload_one : format(texts.eyebrow_upload, { index: index + 1, count }))
-            : texts.eyebrow;
+        // A new version of a file says so; an upload counts its photos.
+        ui.eyebrow.textContent = request?.replace
+            ? texts.eyebrow_replace
+            : (request?.upload
+                ? (count === 1 ? texts.eyebrow_upload_one : format(texts.eyebrow_upload, { index: index + 1, count }))
+                : texts.eyebrow);
         ui.line.textContent = current?.details?.line ?? file?.name ?? '';
         ui.used.hidden = ! current?.details?.used;
         ui.used.textContent = current?.details?.used ?? '';

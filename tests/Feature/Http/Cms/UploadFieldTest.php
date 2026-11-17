@@ -164,3 +164,51 @@ it('takes one photo in the language of the launcher too', function (): void {
         ->and($upload['config']['texts']['not_image'])->toStartWith('This field only takes photos.')
         ->and(uploadFieldHtml($upload))->toContain('Drag your photo here');
 });
+
+it('sends the new version of a file to the file it replaces, one kind at a time', function (): void {
+    $config = UploadField::replace()['config'];
+
+    expect($config['urls']['upload'])->toBe('/made-cms/media/:media/replace')
+        ->and($config['replace'])->toBeTrue()
+        ->and($config['crop'])->toBeTrue()
+        ->and($config['one_image'])->toBeFalse()
+        ->and($config['accepts'])->toBe([
+            'image' => 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml',
+            'document' => 'application/pdf',
+            'video' => 'video/mp4',
+        ])
+        ->and($config['texts'])->each->toBeString()
+        ->and($config['texts'])->toMatchArray([
+            'rules_image' => 'jpg, png, webp, gif of svg · tot 25 MB',
+            'rules_document' => 'pdf · tot 25 MB',
+            'rules_video' => 'mp4 · tot 25 MB',
+            'kind_image' => 'Kies een afbeelding: je vervangt een afbeelding.',
+            'kind_document' => 'Kies een document: je vervangt een document.',
+            'title_document' => 'Sleep een document hierheen',
+            'drag_image' => 'Hij vervangt :name',
+        ]);
+});
+
+it('tells only the kinds the site takes for a new version', function (): void {
+    config(['made-cms-package.media.allowed_mimes' => ['image/jpeg', 'image/png', 'application/pdf']]);
+
+    $config = UploadField::replace()['config'];
+
+    expect($config['accepts'])->toBe(['image' => 'image/jpeg,image/png', 'document' => 'application/pdf'])
+        ->and($config['texts'])->toHaveKey('rules_image', 'jpg of png · tot 25 MB')
+        ->and($config['texts'])->not->toHaveKey('rules_video');
+});
+
+it('renders the field of a new version for one file, without a folder or an alt text to ask', function (): void {
+    $upload = UploadField::replace();
+
+    $html = uploadFieldHtml($upload);
+    $document = HTMLDocument::createFromString('<!doctype html><body>'.$html, LIBXML_NOERROR);
+
+    expect($document->querySelector('[data-upload]')?->getAttribute('aria-label'))->toBe('Nieuwe versie uploaden')
+        ->and($document->querySelector('[data-upload]')?->hasAttribute('data-replace'))->toBeTrue()
+        ->and($document->querySelector('[data-upload]')?->hasAttribute('data-one-image'))->toBeFalse()
+        ->and($document->querySelector('input[type="file"][data-slot="upload-input"]')?->hasAttribute('multiple'))->toBeFalse()
+        ->and($document->querySelector('[data-slot="upload-rules"]')?->textContent)->toBe('')
+        ->and($html)->toMatch('#data-slot="upload-row-dismiss" hidden>Ander bestand</button>#');
+});

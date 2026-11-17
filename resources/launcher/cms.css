@@ -4965,6 +4965,209 @@ button.tekstlink.alarm {
     cursor: pointer;
 }
 
+/* What downloading gives and what the link follows, right below the actions (13.1bt–bu). */
+.bibliotheek-uitleg {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: -8px;
+}
+
+.bibliotheek-kopie {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.bibliotheek-kopie:empty {
+    display: none;
+}
+
+.bibliotheek-kopie .bol,
+.bibliotheek-let .bol {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--made-status);
+}
+
+.bibliotheek-kopie .bol.let,
+.bibliotheek-let .bol {
+    background: var(--made-amber);
+}
+
+.bibliotheek-linkveld {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.bibliotheek-link {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 9px 12px;
+    border: 2px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud);
+    font: 13px/1.4 var(--font-tekst);
+}
+
+.bibliotheek-link:focus {
+    border-color: var(--made-accent);
+    outline: none;
+}
+
+/* The field of a new version (13.1ba–bl): one panel below the actions, the field folded to one file. */
+.bibliotheek-vervang {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak);
+}
+
+.bibliotheek-vervang-kop {
+    font: 700 15px/1.3 var(--font-kop);
+}
+
+.bibliotheek-let {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.bibliotheek-vervang-stop {
+    align-self: center;
+}
+
+/* The note is for the moment at rest; a file the server is storing, or a refusal with "Ander bestand", has no Annuleren. */
+.bibliotheek-vervang:not([data-moment="rest"]) .bibliotheek-vervang-noot,
+.bibliotheek-vervang[data-moment="busy"] .bibliotheek-vervang-stop,
+.bibliotheek-vervang[data-moment="error"] .bibliotheek-vervang-stop {
+    display: none;
+}
+
+.upload[data-replace] .upload-vlak {
+    gap: 6px;
+    padding: 16px 12px;
+    font-size: 13.5px;
+}
+
+.upload[data-replace] .upload-icoon {
+    width: 36px;
+    height: 36px;
+}
+
+.upload[data-replace] .upload-titel {
+    font-size: 15px;
+}
+
+.upload[data-replace] [data-slot="upload-summary"],
+.upload[data-replace] .upload-kop,
+.upload[data-replace] [data-slot="upload-errors-note"],
+.upload[data-replace] .upload-acties,
+.upload[data-replace]:not([data-moment="rest"]):not([data-moment="drag"]) .upload-vlak {
+    display: none;
+}
+
+/* In the narrow column the buttons of a row go below its text. */
+.upload[data-replace] .upload-rij-kop {
+    flex-wrap: wrap;
+}
+
+.upload[data-replace] .upload-rij-tekst {
+    flex: 1 1 160px;
+}
+
+/* The line of the versions with Terugzetten, and Verwijderen (13.1bm–cg). */
+.bibliotheek-voet {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--made-rand);
+}
+
+.bibliotheek-versie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+}
+
+.bibliotheek-wis {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding-top: 6px;
+}
+
+.bibliotheek-voet .tekstlink.klein {
+    font-size: 13px;
+}
+
+.bibliotheek-voet .tekstlink[disabled],
+.bibliotheek-wis .tekstlink[disabled] {
+    color: var(--made-inhoud-subtiel);
+    text-decoration-color: var(--made-rand-sterk);
+    cursor: default;
+}
+
+.bibliotheek-wis > .bibliotheek-klein:not(.fout) {
+    color: var(--made-link);
+}
+
+.bibliotheek-wisvraag {
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    gap: 10px;
+    padding: 14px;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak);
+}
+
+.bibliotheek-wistekst {
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.bibliotheek-wisrij {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+}
+
+.bibliotheek-wisrij .knop {
+    min-height: 40px;
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+.bibliotheek-wisrij .knop[aria-disabled="true"],
+.bibliotheek-voet .tekstlink[aria-disabled="true"] {
+    opacity: .6;
+    cursor: progress;
+}
+
 @media (prefers-color-scheme: dark) {
     .bibliotheek-drop {
         background: rgb(14 43 38 / .9);
@@ -4982,7 +5185,8 @@ button.tekstlink.alarm {
     }
 
     /* The line between the pages: the border of the dark theme is the surface of the column. */
-    .bibliotheek-pagina {
+    .bibliotheek-pagina,
+    .bibliotheek-voet {
         border-top-color: rgb(243 241 232 / .16);
     }
 

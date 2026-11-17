@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Http\Controllers\Content;
 use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Actions\FindMedia;
 use Made\CmsPackage\Content\Actions\RestoreMediaVersion;
+use Made\CmsPackage\Content\Data\MediaHistory;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Http\Requests\Content\RestoreMediaVersionRequest;
 use Made\CmsPackage\Http\Responses\MediaResponse;
@@ -21,6 +22,9 @@ final class RestoreMediaVersionController
     {
         $restored = RestoreMediaVersion::run($media);
 
-        return MediaResponse::saved(FindMedia::run([$restored->id])->find($restored->id) ?? abort(Response::HTTP_NOT_FOUND));
+        return MediaResponse::restored(
+            FindMedia::run([$restored->id])->find($restored->id) ?? abort(Response::HTTP_NOT_FOUND),
+            MediaHistory::of($restored),
+        );
     }
 }

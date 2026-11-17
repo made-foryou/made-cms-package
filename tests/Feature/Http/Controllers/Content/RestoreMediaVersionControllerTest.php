@@ -29,7 +29,8 @@ it('puts the version that waits back and answers with the file as it is stored n
         ->assertOk()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertJsonPath('file.id', $media->id)
-        ->assertJsonPath('file.name', 'een');
+        ->assertJsonPath('file.name', 'een')
+        ->assertJsonPath('notice', 'Versie 1 is teruggezet. Versie 2 staat nog klaar om terug te zetten.');
 
     expect(Media::query()->findOrFail($media->id)->version)->toBe(1);
 });

@@ -945,6 +945,54 @@ function browse(root) {
         return { ok: true, error: null };
     }
 
+    /**
+     * Deletes files that no page uses, from the side column (made-cms:media-delete): the server keeps what a page uses
+     * and says what it did. The message tells what left; what stayed is told only of a selection (the side column says
+     * it of the one file it shows). What left leaves the selection and the side column; the list loads again.
+     *
+     * @return {Promise<{ok: boolean, deleted: number[], kept: number[], error: string|null}>}
+     */
+    async function remove(ids, selection = false) {
+        let response = null;
+        let data = null;
+
+        try {
+            response = await fetch(settings.urls.delete, sending('POST', { files: ids }));
+            data = await response.json().catch(() => null);
+        } catch {
+            response = null;
+        }
+
+        if (! response?.ok || ! Array.isArray(data?.deleted)) {
+            return { ok: false, deleted: [], kept: [], error: response?.status === 422 ? (first(data?.errors?.files) ?? texts.action_failed) : failure(response) };
+        }
+
+        const gone = [...data.deleted, ...(data.missing ?? [])];
+        const told = [data.notice, selection ? data.refusal : null].filter(Boolean).join(' ');
+
+        if (told !== '') {
+            notice(told, data.deleted.length > 0 ? 'goed' : 'let');
+        }
+
+        if (state.selecting && gone.some((id) => state.selected.has(id))) {
+            gone.forEach((id) => state.selected.delete(id));
+            tellSelection();
+        }
+
+        await refresh();
+
+        if (state.chosen !== null && gone.includes(state.chosen.id)) {
+            commit(null);
+        }
+
+        // The button that deleted is gone with the file: the message takes the focus, as after deleting a folder.
+        if (data.deleted.length > 0) {
+            slot('notice-close', shelf.notice)?.focus();
+        }
+
+        return { ok: true, deleted: data.deleted, kept: data.kept ?? [], error: null };
+    }
+
     /** A tile starts a drag: the selection when it is selected, else the tile alone. */
     function drag(event, id, tile) {
         const ids = state.selecting && state.selected.has(id) ? [...state.selected.keys()] : [id];
@@ -1290,6 +1338,18 @@ function browse(root) {
             detail.taken = true;
             move(detail.files ?? [], detail.folder ?? null).then((result) => detail.done?.(result));
         });
+        root.addEventListener('made-cms:media-delete', (event) => {
+            const detail = event.detail ?? {};
+
+            detail.taken = true;
+            remove(detail.files ?? [], detail.selection === true).then((result) => detail.done?.(result));
+        });
+        // What the side column did to a file (a new version, a version put back) is told in the same place.
+        root.addEventListener('made-cms:media-notice', (event) => {
+            if (event.detail?.text) {
+                notice(event.detail.text, event.detail.tone ?? 'goed');
+            }
+        });
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape' || ! state.selecting || event.defaultPrevented) {
                 return;
@@ -1363,8 +1423,14 @@ function browse(root) {
         }
     });
 
-    /** A file as it is stored now, in place of the one the list holds. */
-    function replace(file) {
+    /**
+     * A file as it is stored now, in place of the one the list holds. An answer that is not a page of the list (an alt
+     * text, a crop, a new version) does not say whether a page uses the file or give its lasting link: those stay.
+     */
+    function replace(changed) {
+        const before = state.files.find((candidate) => candidate.id === changed.id) ?? state.selected.get(changed.id);
+        const file = { used: before?.used, link: before?.link, ...changed };
+
         state.files = state.files.map((candidate) => (candidate.id === file.id ? file : candidate));
 
         if (state.selected.has(file.id)) {

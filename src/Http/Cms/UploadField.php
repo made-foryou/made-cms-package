@@ -9,6 +9,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Actions\DescribeUploadLimits;
+use Made\CmsPackage\Content\Data\UploadLimits;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
@@ -24,6 +25,7 @@ use Made\CmsPackage\Support\Locale;
  *     limits: string,
  *     accept: string,
  *     one_image: bool,
+ *     replace: bool,
  *     script: string,
  *     config: array{
  *         urls: array{upload: string, alt: string},
@@ -31,6 +33,8 @@ use Made\CmsPackage\Support\Locale;
  *         folder: array{id: int|null, label: string},
  *         limits: array{max_bytes: int},
  *         one_image: bool,
+ *         replace: bool,
+ *         accepts: array<string, string>,
  *         crop: bool,
  *         texts: array<string, string>,
  *     },
@@ -67,16 +71,31 @@ final class UploadField
     }
 
     /**
+     * The field that takes the new version of a file of the library, in its side column: one file at a time, sent to
+     * the file it replaces, which the host names with made-cms:upload-target {media: {id, kind, name}}. The field then
+     * takes only that kind and says so; a photo goes to the crop step once it is in. The alt text and the folder of the
+     * file stay, so the field asks neither. ReplaceMedia checks the file again, its kind too.
+     *
      * @return Field
      */
-    private static function field(?MediaFolder $folder, bool $oneImage, bool $crop): array
+    public static function replace(): array
+    {
+        return self::field(null, oneImage: false, crop: true, replace: true);
+    }
+
+    /**
+     * @return Field
+     */
+    private static function field(?MediaFolder $folder, bool $oneImage, bool $crop, bool $replace = false): array
     {
         $locale = Locale::launcher();
-        // The field for one photo speaks in the singular where its texts differ (upload.single).
-        $t = static function (string $key, array $replace = []) use ($locale, $oneImage): string {
-            $single = 'made-cms-package::media.upload.single.'.$key;
+        // The field for one photo speaks in the singular where its texts differ (upload.single), the field of a new
+        // version in its own words (upload.replace).
+        $own = $replace ? 'replace' : ($oneImage ? 'single' : null);
+        $t = static function (string $key, array $replace = []) use ($locale, $own): string {
+            $special = 'made-cms-package::media.upload.'.$own.'.'.$key;
 
-            return (string) __($oneImage && Lang::has($single, $locale) ? $single : 'made-cms-package::media.upload.'.$key, $replace, $locale);
+            return (string) __($own !== null && Lang::has($special, $locale) ? $special : 'made-cms-package::media.upload.'.$key, $replace, $locale);
         };
         $limits = DescribeUploadLimits::run();
         $mimes = $oneImage
@@ -94,15 +113,19 @@ final class UploadField
 
         return [
             't' => static fn (string $key): string => $t($key),
-            'rules' => str_replace(':folder', $label, $rules),
+            // The field of a new version names the types of the kind it replaces once it knows that kind.
+            'rules' => $replace ? '' : str_replace(':folder', $label, $rules),
             // What the field takes without the folder, for a host that tells it beside a drop zone of its own.
             'limits' => $t('limits', ['kinds' => $kindList, 'max' => $limits->max]),
             'accept' => implode(',', $mimes),
             'one_image' => $oneImage,
+            'replace' => $replace,
             'script' => LauncherAssetController::url('upload.js'),
             'config' => [
                 'urls' => [
-                    'upload' => $base.route('made-cms-package.media.store', [], false),
+                    'upload' => $base.($replace
+                        ? route('made-cms-package.media.replace', ['media' => ':media'], false)
+                        : route('made-cms-package.media.store', [], false)),
                     'alt' => $base.route('made-cms-package.media.alt.update', ['media' => ':media'], false),
                 ],
                 'csrf_token' => (string) csrf_token(),
@@ -110,10 +133,14 @@ final class UploadField
                 // Only to spare an editor an upload the server refuses anyway; CheckUploadedMedia decides.
                 'limits' => ['max_bytes' => $limits->maxBytes],
                 'one_image' => $oneImage,
+                'replace' => $replace,
+                // What the file chooser offers for each kind a new version can be of.
+                'accepts' => $replace ? self::accepts($limits) : [],
                 'crop' => $crop,
                 'texts' => [
                     ...self::texts('upload.texts', $locale),
                     ...($oneImage ? self::texts('upload.single.texts', $locale) : []),
+                    ...($replace ? self::replaceTexts($limits, $locale) : []),
                     'processing_image' => (string) __('made-cms-package::media.upload.texts.processing_image', [
                         'format' => config()->string('made-cms-package.media.image.format'),
                         'width' => config()->integer('made-cms-package.media.image.max_width'),
@@ -130,6 +157,48 @@ final class UploadField
                 ],
             ],
         ];
+    }
+
+    /**
+     * The types the library takes, by the kind of file they are: "image" => "image/jpeg,image/png".
+     *
+     * @return array<string, string>
+     */
+    private static function accepts(UploadLimits $limits): array
+    {
+        $accepts = [];
+
+        foreach ($limits->mimes() as $mime) {
+            $accepts[MediaKind::fromMime($mime)->value][] = $mime;
+        }
+
+        return array_map(static fn (array $mimes): string => implode(',', $mimes), $accepts);
+    }
+
+    /**
+     * The words of the field of a new version, and for each kind the types it takes ("jpg, png of svg · tot 25 MB") and
+     * the refusal of a file of another kind, the one ReplaceMedia gives.
+     *
+     * @return array<string, string>
+     */
+    private static function replaceTexts(UploadLimits $limits, string $locale): array
+    {
+        $texts = self::texts('upload.replace.texts', $locale);
+        $types = [];
+
+        foreach ($limits->extensions as $mime => $extension) {
+            $types[MediaKind::fromMime($mime)->value][] = $extension;
+        }
+
+        foreach ($types as $kind => $extensions) {
+            $texts['rules_'.$kind] = (string) __('made-cms-package::media.upload.replace.rules', [
+                'types' => self::list($extensions, (string) __('made-cms-package::media.upload.or', [], $locale)),
+                'max' => $limits->max,
+            ], $locale);
+            $texts['kind_'.$kind] = (string) __('made-cms-package::media.errors.replace_kind.'.$kind, [], $locale);
+        }
+
+        return $texts;
     }
 
     /**

@@ -1,9 +1,11 @@
 {{--
-    The side column of the media library (design 13.1b–q, 13.1ak–ar): the chosen file with its thumbnail, its name and
-    what it is, its alt text with "Opslaan", the pages it is used on with a link to their edit shell, "Bijsnijden" for a
-    photo and the folder it is in. Without a choice it says what choosing does; while the library selects it shows the
-    files the editor selected with their folder and "Klaar". library.js fills it in from the file the list chose and from
-    GET made-cms/media/{media}; its slots are named details-*.
+    The side column of the media library (design 13.1b–q, 13.1ak–ar, 13.1ba–ck): the chosen file with its thumbnail, its
+    name and what it is, its alt text with "Opslaan", the pages it is used on with a link to their edit shell, its
+    actions (Bijsnijden for a photo, Vervangen with the field of a new version, Downloaden, Link kopiëren), the folder it
+    is in, the line of its versions with Terugzetten, and Verwijderen with its confirmation inline. Without a choice it
+    says what choosing does; while the library selects it shows the files the editor selected with their folder,
+    Verwijderen and "Klaar". library.js fills it in from the file the list chose and from GET made-cms/media/{media}; its
+    slots are named details-*.
 --}}
 @php($m = static fn (string $key): string => (string) __('made-cms-package::media.'.$key, [], \Made\CmsPackage\Support\Locale::launcher()))
 @php($l = static fn (string $key): string => $m('library.'.$key))
@@ -53,8 +55,31 @@
             <div data-slot="details-pages"></div>
         </div>
 
-        <div class="bibliotheek-acties" data-slot="details-actions" hidden>
-            <button type="button" class="actie" data-slot="details-crop">{{ $l('crop') }}</button>
+        <div class="bibliotheek-acties" data-slot="details-actions">
+            <button type="button" class="actie" data-slot="details-crop" hidden>{{ $l('crop') }}</button>
+            <button type="button" class="actie" aria-expanded="false" aria-controls="made-cms-media-vervang" data-slot="details-replace">{{ $l('replace') }}</button>
+            <a class="actie" download data-slot="details-download">{{ $l('download') }}</a>
+            <button type="button" class="actie" data-slot="details-copy">{{ $l('copy_link') }}</button>
+        </div>
+
+        {{-- What downloading gives and what the link follows; "Link gekopieerd", or the link to copy by hand. --}}
+        <div class="bibliotheek-uitleg">
+            <span class="bibliotheek-klein" data-slot="details-explain"></span>
+            <p class="bibliotheek-kopie" role="status" data-slot="details-copied"></p>
+            <div class="bibliotheek-linkveld" data-slot="details-link-field" hidden>
+                <label class="veldlabel" for="made-cms-media-link">{{ $l('link') }}</label>
+                <input class="bibliotheek-link" id="made-cms-media-link" type="text" readonly data-slot="details-link">
+                <button type="button" class="tekstlink klein" data-slot="details-link-close">{{ $l('close') }}</button>
+            </div>
+        </div>
+
+        {{-- The new version (design 13.1ba–bl): one field that library.js points at the chosen file. --}}
+        <div class="bibliotheek-vervang" id="made-cms-media-vervang" role="group" aria-labelledby="made-cms-media-vervang-kop" data-moment="rest" data-slot="details-replacing" hidden>
+            <strong class="bibliotheek-vervang-kop" id="made-cms-media-vervang-kop" data-slot="details-replace-title"></strong>
+            <span class="bibliotheek-let" data-slot="details-replace-warning" hidden><span class="bol" aria-hidden="true"></span><span data-slot="details-replace-warning-text"></span></span>
+            @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $replace])
+            <span class="bibliotheek-klein bibliotheek-vervang-noot" data-slot="details-replace-note"></span>
+            <button type="button" class="tekstlink klein bibliotheek-vervang-stop" data-slot="details-replace-cancel">{{ $l('cancel') }}</button>
         </div>
     </div>
 
@@ -75,6 +100,20 @@
         </div>
         <span class="bibliotheek-klein fout" id="made-cms-media-map-fout" data-slot="details-move-error" hidden></span>
     </div>
+
+    {{-- The versions of the chosen file and deleting it (design 13.1bm–cc). --}}
+    <div class="bibliotheek-voet" data-slot="details-foot" hidden>
+        <span class="bibliotheek-klein" data-slot="details-history"></span>
+        <span class="bibliotheek-versie" data-slot="details-waiting" hidden>
+            <span class="bibliotheek-klein" data-slot="details-previous"></span>
+            <button type="button" class="tekstlink klein" data-slot="details-restore">{{ $l('restore') }}</button>
+        </span>
+        <span class="bibliotheek-klein fout" data-slot="details-restore-error" hidden></span>
+        @include('made-cms-package-launcher::cms.partials.media-delete', ['id' => 'made-cms-media-wis', 'final' => $l('delete_final'), 'slot' => 'details-delete'])
+    </div>
+
+    {{-- Deleting what the editor selected (design 13.1cd–cg). --}}
+    @include('made-cms-package-launcher::cms.partials.media-delete', ['id' => 'made-cms-media-selwis', 'final' => $l('delete_final_many'), 'slot' => 'details-selection-delete'])
 
     <div class="bibliotheek-klaar" data-slot="details-selection-done" hidden>
         <button type="button" class="knop stil" data-slot="details-selection-stop">{{ $l('done') }}</button>

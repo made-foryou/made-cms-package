@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Http\Controllers\Content;
 
 use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Actions\FindMedia;
+use Made\CmsPackage\Content\Actions\ListMediaPlaces;
 use Made\CmsPackage\Content\Actions\ReplaceMedia;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Http\Requests\Content\ReplaceMediaRequest;
@@ -23,6 +24,9 @@ final class ReplaceMediaController
     {
         $replaced = ReplaceMedia::run($media, $request->toData());
 
-        return MediaResponse::saved(FindMedia::run([$replaced->id])->find($replaced->id) ?? abort(Response::HTTP_NOT_FOUND));
+        return MediaResponse::replaced(
+            FindMedia::run([$replaced->id])->find($replaced->id) ?? abort(Response::HTTP_NOT_FOUND),
+            ListMediaPlaces::run($replaced),
+        );
     }
 }

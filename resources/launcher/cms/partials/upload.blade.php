@@ -1,11 +1,12 @@
 {{--
     The upload field: one field with five moments (at rest, dragging, busy, done, an error per file), the same in the
-    media library, the picker and the edit shell. A host includes it with $upload = UploadField::make($folder), or
-    UploadField::image($folder) for the field of an image (one photo at a time), and loads $upload['script']. Its
+    media library, the picker and the edit shell. A host includes it with $upload = UploadField::make($folder),
+    UploadField::image($folder) for the field of an image (one photo at a time) or UploadField::replace() for the new
+    version of a file, and loads $upload['script']. Its
     fixed texts are here; upload.js fills in the rest from data-config.
 --}}
 @php($t = $upload['t'])
-<section class="upload" data-upload data-moment="rest"@if ($upload['one_image']) data-one-image @endif data-config="{{ json_encode($upload['config'], JSON_THROW_ON_ERROR) }}" aria-label="{{ $t('label') }}">
+<section class="upload" data-upload data-moment="rest"@if ($upload['one_image']) data-one-image @endif @if ($upload['replace'] ?? false) data-replace @endif data-config="{{ json_encode($upload['config'], JSON_THROW_ON_ERROR) }}" aria-label="{{ $t('label') }}">
     <div class="upload-vlak" data-slot="upload-zone">
         <span class="upload-icoon" aria-hidden="true">
             <svg data-slot="upload-icon-rest" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"></path><path d="M6 10l6-6 6 6"></path><path d="M4 20h16"></path></svg>
@@ -16,7 +17,7 @@
         <span class="upload-klein" data-slot="upload-rules">{{ $upload['rules'] }}</span>
         <strong class="upload-titel" data-slot="upload-drag-title" hidden>{{ $t('drop') }}</strong>
         <span data-slot="upload-drag-line" hidden></span>
-        <input class="sr-only" type="file" @unless ($upload['one_image']) multiple @endunless accept="{{ $upload['accept'] }}" tabindex="-1" aria-hidden="true" data-slot="upload-input">
+        <input class="sr-only" type="file" @unless ($upload['one_image'] || ($upload['replace'] ?? false)) multiple @endunless accept="{{ $upload['accept'] }}" tabindex="-1" aria-hidden="true" data-slot="upload-input">
     </div>
 
     <p class="upload-kop" data-slot="upload-done" hidden>

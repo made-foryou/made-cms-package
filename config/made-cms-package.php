@@ -141,11 +141,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | Uploaded files are stored on disk, which must give a url (the public
-    | disk after storage:link, or a cloud disk). Only the types in
-    | allowed_mimes up to max_upload_kb are accepted; the type is read from
-    | the contents, never from the name. A photo is scaled down to max_width
-    | and stored in format at quality with driver (gd or imagick); the
-    | original is kept next to it. An svg and an animated gif stay as they are.
+    | disk after storage:link, or an S3 disk such as DigitalOcean Spaces).
+    | Only the types in allowed_mimes up to max_upload_kb are accepted; the
+    | type is read from the contents, never from the name. A photo is scaled
+    | down to max_width and stored in format at quality with driver (gd or
+    | imagick); the original is kept next to it. An svg and an animated gif
+    | stay as they are. The original is written private and every other file
+    | public, whatever the visibility of the disk.
     |
     */
 

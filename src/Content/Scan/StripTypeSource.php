@@ -9,6 +9,7 @@ use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Support\Locale;
 
@@ -126,11 +127,10 @@ final class StripTypeSource
             return self::listed($make.', [', self::options($field), '])'.$required, $indent);
         }
 
-        if ($field instanceof Heading && $field->getTag() !== Heading::make($field->getKey())->getTag()) {
-            return $make.')->tag('.self::string($field->getTag()).')'.$required;
-        }
+        $tag = $field instanceof Heading && $field->getTag() !== Heading::make($field->getKey())->getTag() ? '->tag('.self::string($field->getTag()).')' : '';
+        $emphasis = ($field instanceof Text || $field instanceof Heading) && $field->hasEmphasis() ? '->emphasis()' : '';
 
-        return $make.')'.$required;
+        return $make.')'.$tag.$emphasis.$required;
     }
 
     /**

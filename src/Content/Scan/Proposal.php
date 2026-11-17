@@ -25,6 +25,7 @@ final class Proposal
      * @param  list<Proposal>  $fields
      * @param  ScanRole|null  $name  the role it is named after, when that differs from the role of its type
      * @param  string|null  $tag  the level of a heading
+     * @param  bool  $emphasis  whether a heading has emphasis: one of its examples had an <em>
      */
     public function __construct(
         public readonly ScanRole $role,
@@ -38,6 +39,7 @@ final class Proposal
         public readonly array $fields = [],
         public readonly ?ScanRole $name = null,
         public readonly ?string $tag = null,
+        public readonly bool $emphasis = false,
     ) {}
 
     public function toField(): ScanField
@@ -56,6 +58,7 @@ final class Proposal
             max: $this->max,
             fields: array_map(static fn (self $field): ScanField => $field->toField(), $this->fields),
             tag: $this->tag,
+            emphasis: $this->emphasis,
         );
     }
 

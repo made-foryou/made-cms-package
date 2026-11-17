@@ -183,3 +183,14 @@ it('writes classes that Pint leaves as they are', function (): void {
 
     expect(pintComplaints($sources))->toBe('');
 });
+
+it('gives a text or heading with emphasis its option, after its level and before required', function (): void {
+    expect(sourceOf('kop', 'Kop', [
+        new ScanField('kop', 'heading', 'h1', tag: 'h1', emphasis: true),
+        new ScanField('kop_2', 'heading', 'h2', required: false, emphasis: true),
+        new ScanField('label', 'text', 'span', emphasis: true),
+    ]))
+        ->toContain("Heading::make('kop')->tag('h1')->emphasis()->required(),")
+        ->toContain("Heading::make('kop_2')->emphasis(),")
+        ->toContain("Text::make('label')->emphasis()->required(),");
+});

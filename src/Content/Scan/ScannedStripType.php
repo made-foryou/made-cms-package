@@ -124,6 +124,10 @@ final class ScannedStripType extends StripType
                 default => throw InvalidStripType::fieldType(self::class, $path.$field->key, $field->type),
             };
 
+            if (($definition instanceof Text || $definition instanceof Heading) && $field->emphasis) {
+                $definition = $definition->emphasis();
+            }
+
             if ($definition instanceof Field) {
                 $fields[] = $field->required ? $definition->required() : $definition;
             }

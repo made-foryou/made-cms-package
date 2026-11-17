@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Data\ScanStrip;
 use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Enums\ScanRole;
+use Made\CmsPackage\Content\Strips\Emphasis;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 
 /**
@@ -145,7 +146,9 @@ final class TypeMerger
             return $inItems ? self::choice($selector, $cells, $everywhere) : null;
         }
 
-        $values = array_map(static fn (RecognisedField $cell): mixed => self::convert($cell->value, $cell->role, $role), $cells);
+        // A heading has emphasis when one of its examples had an <em>; in a column that is no heading it is plain text.
+        $emphasis = $role === ScanRole::Heading && array_filter($cells, static fn (RecognisedField $cell): bool => $cell->emphasis) !== [];
+        $values = array_map(static fn (RecognisedField $cell): mixed => self::convert($cell->emphasis && ! $emphasis ? self::withoutEmphasis($cell->value) : $cell->value, $cell->role, $role), $cells);
         $compared = $role === ScanRole::Heading ? array_map(self::textOf(...), $values) : $values;
         $same = $inItems && $everywhere && $instances > 1;
         $levels = $role === ScanRole::Heading ? self::levels($values) : [];
@@ -180,7 +183,16 @@ final class TypeMerger
             values: $filled,
             name: $role === ScanRole::Link || $first->role === ScanRole::Link ? null : $first->role,
             tag: $levels[0] ?? null,
+            emphasis: $emphasis,
         );
+    }
+
+    /**
+     * A heading without the asterisks of its emphasis.
+     */
+    private static function withoutEmphasis(mixed $value): mixed
+    {
+        return is_array($value) && is_string($value['text'] ?? null) ? [...$value, 'text' => Emphasis::plain($value['text'])] : $value;
     }
 
     /**

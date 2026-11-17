@@ -144,3 +144,13 @@ it('is checked by the rules of the catalogue', function (ScanType $scanned, stri
     'heading level' => [new ScanType('hero', 'Hero', null, 'f', 1, [new ScanField('kop', 'heading', 'h2', tag: 'h7')]), 'unknown heading level [h7]'],
     'range' => [new ScanType('hero', 'Hero', null, 'f', 1, [new ScanField('items', 'items', 'ul', item: 'li', min: 3, max: 2, fields: [new ScanField('regel', 'text', '')])]), 'invalid min or max'],
 ]);
+
+it('proposes emphasis for a text or heading the scan found it in', function (): void {
+    [$heading, $text, $plain] = scannedType([
+        new ScanField('kop', 'heading', 'h3', tag: 'h3', emphasis: true),
+        new ScanField('label', 'text', 'span', emphasis: true),
+        new ScanField('kop_2', 'heading', 'h2'),
+    ])->fields();
+
+    expect([$heading->hasEmphasis(), $heading->getTag(), $text->hasEmphasis(), $plain->hasEmphasis()])->toBe([true, 'h3', true, false]);
+});

@@ -88,10 +88,11 @@ final class FieldReader
             return [];
         }
 
+        // An <em> in a heading is emphasis: its words between asterisks. Without one the text is the same as text().
         if (Html::isHeading($element)) {
-            $text = Html::text($element);
+            $text = Html::emphasized($element);
 
-            return $text === '' ? [] : [new RecognisedField(ScanRole::Heading, $selector, ['text' => $text, 'tag' => $name])];
+            return $text === '' ? [] : [new RecognisedField(ScanRole::Heading, $selector, ['text' => $text, 'tag' => $name], emphasis: $text !== Html::text($element))];
         }
 
         if ($name === 'p' && ! $this->holdsOnlyLinks($element)) {

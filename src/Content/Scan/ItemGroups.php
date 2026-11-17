@@ -77,7 +77,8 @@ final class ItemGroups
                 continue;
             }
 
-            if (! Html::hasContent($child)) {
+            // An <em> in a heading is emphasis, which is content too: items with and without one are built alike.
+            if (! Html::hasContent($child) || ($child->localName === 'em' && Html::isHeading($element))) {
                 continue;
             }
 

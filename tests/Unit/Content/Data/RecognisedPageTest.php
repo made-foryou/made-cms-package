@@ -112,3 +112,14 @@ it('proposes the types the strip fields of the package have, apart from the imag
 
     expect(array_values(array_diff($proposed, $types)))->toBe(['image']);
 });
+
+it('writes and reads the emphasis of a heading only when it has one', function (): void {
+    $plain = new RecognisedField(ScanRole::Heading, 'h2', ['text' => 'Welkom', 'tag' => 'h2']);
+    $emphasis = new RecognisedField(ScanRole::Heading, 'h2', ['text' => 'Jullie *dag*', 'tag' => 'h2'], emphasis: true);
+
+    expect($plain->toArray())->not->toHaveKey('emphasis')
+        ->and($emphasis->toArray())->toHaveKey('emphasis', true)
+        ->and(RecognisedField::fromArray($emphasis->toArray())?->emphasis)->toBeTrue()
+        ->and(RecognisedField::fromArray($plain->toArray())?->emphasis)->toBeFalse()
+        ->and(RecognisedField::fromArray([...$plain->toArray(), 'emphasis' => 'ja'])?->emphasis)->toBeFalse();
+});

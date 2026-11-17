@@ -38,7 +38,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
       "doubts": [],
       "fields": [
         {"key": "label", "type": "text", "selector": "div > div > div > span", "required": true, "certain": true, "doubts": []},
-        {"key": "kop", "type": "heading", "selector": "div > div > div > h2", "required": true, "certain": true, "doubts": [], "tag": "h2"},
+        {"key": "kop", "type": "heading", "selector": "div > div > div > h2", "required": true, "certain": true, "doubts": [], "tag": "h2", "emphasis": true},
         {"key": "tekst", "type": "long_text", "selector": "div > div > div > p", "required": true, "certain": true, "doubts": []},
         {
           "key": "items",
@@ -69,7 +69,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
           "selector": "#over-ons",
           "values": {
             "label": "Over ons",
-            "kop": {"text": "Meer dan alleen tafeltennis", "tag": "h2"},
+            "kop": {"text": "Meer dan alleen *tafeltennis*", "tag": "h2"},
             "tekst": "Bij TTV Merwestad draait het om sport, plezier en verbinding.",
             "items": [
               {"icoon": "users", "kop": {"text": "Alle niveaus", "tag": "h3"}, "tekst": "Of je nu voor het eerst een batje vasthoudt …"},
@@ -117,6 +117,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
 | `certain`, `doubts` | Twijfel over dit veld. |
 | `options` | Alleen bij `choice`: de opties. |
 | `tag` | Alleen bij `heading`: het standaardniveau, de tag die in de voorbeelden het vaakst voorkomt (zie [Koppen](#koppen)). |
+| `emphasis` | Alleen bij een `heading` met nadruk: `true` als een van de voorbeelden een `<em>` had (zie [Koppen](#koppen)). Zonder nadruk ontbreekt de sleutel. |
 | `item`, `min`, `max`, `fields` | Alleen bij `items`: de tag van één item, het voorstel 1 en het grootste aantal items dat de scan zag, en de velden van elk item. |
 
 **Pagina (`ScanPage`) en strook (`ScanStrip`)**
@@ -132,7 +133,7 @@ Een deel van de scan van de home van TTV Merwestad (`tests/Fixtures/Scan/ttv-mer
 
 | `type` | Herkend aan | Waarde |
 |---|---|---|
-| `heading` | `h1`–`h6` | `{"text": "Over ons", "tag": "h2"}`, met het niveau dat op de pagina stond |
+| `heading` | `h1`–`h6` | `{"text": "Over ons", "tag": "h2"}`, met het niveau dat op de pagina stond; een `<em>` als woorden tussen sterretjes (`"Over *ons*"`) |
 | `text` | een ander element met alleen (inline) tekst | `"Over ons"` |
 | `long_text` | een `p`; een herhaling binnen een item (één regel per element) | `"Kom\nspelen"` (een regel per `br`) |
 | `rich_text` | een blok met twee of meer alinea's of lijsten, een lijst van gewone regels, een `p` met een link | opgeschoonde HTML (`p`, `strong`, `em`, `a`, `ul`, `ol`, `li`) |
@@ -196,6 +197,7 @@ Het niveau van een kop is inhoud, geen opbouw. De redacteur met Meta-overzicht k
 - **Uitlijnen:** een kop lijnt uit op zijn plek onder de koppen van zijn ouder, niet op zijn selector. De `h2` van de ene pagina en de `h3` van de andere zijn zo één veld.
 - **Standaardniveau (`tag`):** de tag die in de voorbeelden (stroken, of alle items van alle stroken) het vaakst voorkomt. Bij een gelijke stand wint de hoogste kop. Hebben de voorbeelden meer dan één niveau, dan krijgt het veld `heading_levels_differ`.
 - **Waarden:** elke strook houdt het niveau dat hij op zijn pagina had. De import (#33) neemt het over, de views (#32) printen de tag uit de waarde.
+- **Nadruk (`emphasis`):** een `<em>` in een kop wordt woorden tussen sterretjes, `Over <em>ons</em>` wordt `"Over *ons*"` (#144). Spaties aan de rand van de `<em>` komen buiten de sterretjes, opmaak erin wordt tekst, een lege `<em>` telt niet. Het veld krijgt `emphasis` als een van de voorbeelden een `<em>` had, ook in een item. Net als het niveau is nadruk inhoud: de lijsten zien een kop met en zonder `<em>` als dezelfde opbouw. Alleen een `<em>` telt, geen `<span>`, `<i>` of `<strong>`, want de site toont nadruk als `<em>`.
 
 ## Van type naar klasse (4.4)
 
@@ -207,6 +209,7 @@ Het niveau van een kop is inhoud, geen opbouw. De redacteur met Meta-overzicht k
 | `label` | `label()`, alleen als de klassenaam het niet al zo leest (`Over ons`, `Strook 1`) |
 | `type` | `Text`, `Heading`, `LongText`, `RichText`, `Button`, `Link`, `Choice` of `Items`; `image` valt weg met een regel commentaar |
 | `tag` | `->tag('h3')`, alleen als het niveau niet `h2` is, het standaardniveau van `Heading`; de redacteur met Meta-overzicht kiest uit alle niveaus |
+| `emphasis` | `->emphasis()`, na `->tag()` en vóór `->required()` |
 | `required` | `->required()` |
 | `options` | een keuze met per waarde een label om te vertalen (`'map-pin' => 'Map pin'`) |
 | `min`, `max` | `->max()`; `->min()` alleen boven 1, want `required` vraagt al om één item |
@@ -219,7 +222,7 @@ Het niveau van een kop is inhoud, geen opbouw. De redacteur met Meta-overzicht k
 
 - De scan ziet alleen de markup, geen berekende stijlen: een achtergrond uit een stylesheet of een element dat via CSS verborgen is, ziet hij niet.
 - Een keuze ontstaat alleen uit iconen, niet uit klassen op knoppen of balken (de stijl van een knop) en niet uit tekst (een weekdag).
-- Een kop in twee kleuren (`TTV <span>Merwestad</span>`) of een getal met een teken erachter (`60+`) is één tekst.
+- Een kop in twee kleuren (`TTV <span>Merwestad</span>`) of een getal met een teken erachter (`60+`) is één tekst. Alleen een `<em>` in een kop wordt nadruk (zie [Koppen](#koppen)); een `<em>` in een ander tekstelement is gewone tekst.
 - Elementen op een rij met een eigen tag of een eigen icoon zijn losse velden, ook als ze er als een lijst uitzien.
 - Een waarde die alleen in een attribuut staat, leest de scan niet, zoals de `id` die het anker van een strook is.
 - Een `p` is altijd lange tekst, ook als er maar één regel in past.

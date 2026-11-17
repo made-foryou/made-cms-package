@@ -20,6 +20,9 @@
 
 const SAVE_AFTER = 700;
 
+// The words between asterisks of a field with emphasis, as Content\Strips\Emphasis finds them (and edit.js).
+const EMPHASIS = /\*([^\s*](?:[^*]*[^\s*])?)\*/g;
+
 const shell = document.querySelector('[data-edit-shell]');
 const config = JSON.parse(document.querySelector('script[data-config]')?.textContent ?? '{}');
 const texts = config.texts?.panel ?? {};
@@ -246,9 +249,15 @@ function rendered(field, value) {
     }
 }
 
+/* The text of a field with emphasis as a visitor reads it, without the asterisks around its emphasis. */
+function withoutEmphasis(text) {
+    return text.replace(EMPHASIS, '$1');
+}
+
 /*
  * One field of the strip changed: "kop", or "knoppen.1.knop" in an item, with the number of items so edit.js knows
- * the site shows the same list. A list itself ("knoppen") changes when an item is added, removed or moved.
+ * the site shows the same list. A list itself ("knoppen") changes when an item is added, removed or moved. A text or
+ * heading with emphasis says so, so edit.js shows the words between asterisks as an <em>.
  */
 function liveInput(state, path, field, value) {
     const [key, , sub] = path.split('.');
@@ -261,6 +270,7 @@ function liveInput(state, path, field, value) {
             value: rendered(field, value),
             count: sub === undefined ? null : (state.values[key]?.length ?? 0),
             seq: ++state.seq,
+            emphasis: field.emphasis === true,
         },
     }));
 }
@@ -486,10 +496,11 @@ function render() {
 
 function describedBy(element, input) {
     const hint = element.querySelector(':scope > [data-slot="hint"]');
+    const emphasis = element.querySelector(':scope > [data-slot="emphasis-hint"]:not([hidden])');
     const error = element.querySelector(':scope > [data-slot="error"]');
     const ids = [];
 
-    for (const part of [hint, error]) {
+    for (const part of [hint, emphasis, error]) {
         if (part) {
             part.id ||= 'paneel-' + (++uid);
             ids.push(part.id);
@@ -518,6 +529,13 @@ function control(state, field, owner, path, follow = null) {
     if (hint) {
         hint.textContent = field.hint ?? hint.dataset.default ?? '';
         hint.hidden = hint.textContent === '';
+    }
+
+    // How to give a word emphasis, below the hint of the developer. A heading has it below its text, not in it.
+    const emphasis = slot('emphasis-hint', element);
+
+    if (emphasis) {
+        emphasis.hidden = field.emphasis !== true;
     }
 
     if (input) {
@@ -1102,7 +1120,7 @@ function heading(state, element, field, owner, path) {
 
     // The hints below the heading describe its text too.
     const input = slot('input', text);
-    const hints = [...element.querySelectorAll(':scope > [data-slot="hint"], :scope > [data-slot="level-hint"]')].filter((hint) => ! hint.hidden);
+    const hints = [...element.querySelectorAll(':scope > [data-slot="hint"], :scope > [data-slot="emphasis-hint"], :scope > [data-slot="level-hint"]')].filter((hint) => ! hint.hidden);
 
     input.setAttribute('aria-describedby', [input.getAttribute('aria-describedby'), ...hints.map((hint) => {
         hint.id ||= 'paneel-' + (++uid);
@@ -1624,13 +1642,15 @@ function richText(element, editor, value, set) {
 function summary(field, value) {
     switch (field.type) {
         case 'text':
+            return field.emphasis === true ? withoutEmphasis(value ?? '') : (value ?? '');
         case 'long_text':
             return value ?? '';
         case 'rich_text':
             return new DOMParser().parseFromString(value ?? '', 'text/html').body.textContent.trim();
         case 'button':
-        case 'heading':
             return value?.text ?? '';
+        case 'heading':
+            return field.emphasis === true ? withoutEmphasis(value?.text ?? '') : (value?.text ?? '');
         case 'choice':
             return field.options.find((option) => option.value === value)?.label ?? '';
         case 'link':

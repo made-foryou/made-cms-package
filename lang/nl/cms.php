@@ -123,6 +123,7 @@ return [
         'image_no_alt' => 'Geen alt-tekst',
         'heading_hint' => 'Het niveau is voor Google en schermlezers. Op de site ziet de kop er hetzelfde uit, welk niveau je ook kiest.',
         'heading_item_hint' => 'Geldt voor dit item. Het niveau is voor Google en schermlezers; op de site ziet de kop er hetzelfde uit.',
+        'emphasis_hint' => 'Zet een woord tussen sterretjes voor nadruk, zoals *handen*.',
         'structure' => 'Opbouw',
         'structure_list' => 'Stroken op deze pagina, in volgorde',
         'structure_add' => '+ Strook toevoegen',

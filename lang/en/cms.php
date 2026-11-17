@@ -123,6 +123,7 @@ return [
         'image_no_alt' => 'No alt text',
         'heading_hint' => 'The level is for Google and screen readers. On the site the heading looks the same, whichever level you choose.',
         'heading_item_hint' => 'Applies to this item. The level is for Google and screen readers; on the site the heading looks the same.',
+        'emphasis_hint' => 'Put a word between asterisks to emphasise it, like *hands*.',
         'structure' => 'Layout',
         'structure_list' => 'Strips on this page, in order',
         'structure_add' => '+ Add a strip',

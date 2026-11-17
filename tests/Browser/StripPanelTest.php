@@ -281,3 +281,36 @@ it('shows which image a field holds and keeps it, also in the usage of media, wh
 
     $shell->assertNoJavaScriptErrors();
 });
+
+it('says how to give a word emphasis at a field with emphasis, and sums up an item without the asterisks', function (): void {
+    $page = Page::factory()->published()->at('/nadruk')->withStrips([
+        storedStrip('hero', ['kop' => 'Jullie dag in *vertrouwde* handen', 'label' => 'Over *ons*'], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen', 'kaarten' => [['id' => KNOP_LID, 'titel' => 'Samen *trainen*']]], id: 'cards'),
+    ])->create(['title' => 'Nadruk']);
+
+    $hint = fn (string $path): string => "document.querySelector('[data-path=\"{$path}\"] > [data-slot=\"emphasis-hint\"]')";
+    $describes = fn (string $path, string $input): string => "(document.querySelector('{$input}').getAttribute('aria-describedby') ?? '').split(' ').includes({$hint($path)}.id)";
+
+    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Jullie dag in *vertrouwde* handen'");
+
+    expect($shell->script($hint('kop').'.hidden'))->toBeFalse()
+        ->and($shell->script($hint('kop').'.textContent.trim()'))->toBe('Zet een woord tussen sterretjes voor nadruk, zoals *handen*.')
+        ->and($shell->script($describes('kop', '[data-path="kop"] input')))->toBeTrue()
+        ->and($shell->script($hint('label').'.hidden'))->toBeTrue()
+        ->and($shell->script($describes('label', '[data-path="label"] input')))->toBeFalse()
+        ->and($shell->script("document.querySelector('[data-path=\"kop.text\"] [data-slot=\"emphasis-hint\"]').hidden"))->toBeTrue();
+
+    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="cards"] .tab'));
+
+    expect($shell->script(waitUntil("document.querySelectorAll('[data-path=\"kaarten\"] li').length === 1")))->toBeTrue()
+        ->and($shell->script($hint('kop').'.hidden'))->toBeTrue()
+        ->and($shell->script("document.querySelector('[data-path=\"kaarten\"] li:nth-child(1) [data-slot=\"title\"]').textContent"))->toBe('Samen trainen');
+
+    $shell->click('[data-path="kaarten"] li:nth-child(1) [data-slot="edit"]')
+        ->assertSeeIn('[data-slot="crumb-item"]', 'Samen trainen');
+
+    expect($shell->script($hint('kaarten.0.titel').'.hidden'))->toBeFalse()
+        ->and($shell->script($describes('kaarten.0.titel', '[data-path="kaarten.0.titel"] input')))->toBeTrue();
+
+    $shell->assertNoJavaScriptErrors();
+});

@@ -23,7 +23,8 @@ final class RenameMedia
      * digits and hyphens). The file the site shows gets it on the disk, in the folder it is in, with its own
      * extension; its original and thumbnail keep their names. It gets another address, which every page that shows
      * it takes at once; the former address stops working once the change is committed. The name stays when the
-     * typed name gives the same slug.
+     * typed name gives the same slug. The copy keeps the visibility of the file it copies (Flysystem retains it), and on
+     * an S3 disk its cache header too (the metadata is copied along), so it is written as its MediaFileRole says.
      *
      * It works from the row as it is now, read again with its row locked, never from the model it is handed: a crop
      * or a new name stored after the editor opened the file is what it renames, and a crop at the same time waits.

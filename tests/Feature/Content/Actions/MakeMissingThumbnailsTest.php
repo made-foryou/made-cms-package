@@ -6,6 +6,7 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Content\Actions\MakeMissingThumbnails;
 use Made\CmsPackage\Content\Data\MadeThumbnails;
+use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Exceptions\MediaNotStored;
 use Made\CmsPackage\Content\Models\Media;
 
@@ -48,6 +49,25 @@ it('puts the thumbnail next to the original, not in the folder of a cropped phot
     MakeMissingThumbnails::run();
 
     expect((string) $media->refresh()->thumb_path)->toMatch('#^media/01k9/thumb-[0-9A-Za-z]{40}\.webp$#');
+});
+
+it('writes the thumbnail public, on a disk that is private itself', function (): void {
+    Storage::fake('public', ['visibility' => 'private']);
+    $media = photoWithoutThumbnail('media/01k9');
+
+    MakeMissingThumbnails::run();
+
+    expect(Storage::disk('public')->getVisibility((string) $media->refresh()->thumb_path))->toBe('public');
+})->skipOnWindows('A file on Windows cannot be private.');
+
+it('hands the disk the thumbnail with a cache header for a year', function (): void {
+    $disk = recordMediaDisk(['visibility' => 'private']);
+    $media = photoWithoutThumbnail('media/01k9');
+
+    MakeMissingThumbnails::run();
+
+    expect($disk->written((string) $media->refresh()->thumb_path))
+        ->toBe(['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => MediaFileRole::CACHE_CONTROL]);
 });
 
 it('leaves a photo that has a thumbnail alone', function (): void {

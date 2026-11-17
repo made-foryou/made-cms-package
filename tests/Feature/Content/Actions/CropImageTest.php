@@ -13,6 +13,7 @@ use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
+use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Events\MediaCropped;
 use Made\CmsPackage\Content\Exceptions\MediaNotCroppable;
 use Made\CmsPackage\Content\Models\Media;
@@ -228,6 +229,31 @@ it('writes the photo at a new address with a new thumbnail, and takes the former
         ->and($disk->directoryExists(dirname($first->path)))->toBeFalse()
         ->and($disk->exists((string) $first->thumb_path))->toBeFalse()
         ->and($disk->allFiles())->toEqualCanonicalizing([$second->path, (string) $second->thumb_path, (string) $second->original_path]);
+});
+
+it('writes the new photo and its thumbnail public and keeps the original private, on a disk that is private itself', function (): void {
+    Storage::fake('public', ['visibility' => 'private']);
+    $disk = Storage::disk('public');
+    $media = cropped(quadrants(800, 600));
+
+    $media = CropImage::run($media, new CropMedia(new CropArea(0, 0, 800, 300)));
+
+    expect($disk->getVisibility($media->path))->toBe('public')
+        ->and($disk->getVisibility((string) $media->thumb_path))->toBe('public')
+        ->and($disk->getVisibility((string) $media->original_path))->toBe('private')
+        ->and(permissionsOf($disk->path(dirname($media->path))))->toBe('755');
+})->skipOnWindows('A file on Windows cannot be private.');
+
+it('hands the disk the new photo and its thumbnail with a cache header for a year', function (): void {
+    $disk = recordMediaDisk(['visibility' => 'private']);
+    $media = cropped(quadrants(800, 600));
+
+    $media = CropImage::run($media, new CropMedia(new CropArea(0, 0, 800, 300)));
+
+    $public = ['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => MediaFileRole::CACHE_CONTROL];
+
+    expect($disk->written($media->path))->toBe($public)
+        ->and($disk->written((string) $media->thumb_path))->toBe($public);
 });
 
 it('stores only the focal point when the area stays as it was', function (): void {

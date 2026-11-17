@@ -5,16 +5,19 @@ declare(strict_types=1);
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Format;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\AnimationFactoryInterface;
+use League\Flysystem\Filesystem as Flysystem;
 use Made\CmsPackage\Access\Actions\RememberDevice;
 use Made\CmsPackage\Access\Enums\LoginMethod;
 use Made\CmsPackage\Access\Models\Editor;
@@ -34,6 +37,7 @@ use Made\CmsPackage\Content\Scan\StripTypeSource;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
+use Made\CmsPackage\Tests\Fixtures\Filesystem\RecordingAdapter;
 use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
@@ -140,6 +144,33 @@ function countHashing(): CountingHasher
     config(['hashing.driver' => 'counting']);
 
     return $hasher;
+}
+
+/**
+ * Puts a disk on "public" that keeps the options every write and copy hands it (RecordingAdapter), with its files on
+ * the fake disk of the test. $config is the configuration of the disk itself, such as ['visibility' => 'private'],
+ * which Laravel hands its Flysystem as the defaults of every write.
+ *
+ * @param  array<string, mixed>  $config
+ */
+function recordMediaDisk(array $config = []): RecordingAdapter
+{
+    $recording = new RecordingAdapter(Storage::fake('public', $config)->getAdapter());
+    $defaults = array_intersect_key($config, array_flip(['visibility', 'directory_visibility', 'retain_visibility']));
+
+    Storage::set('public', new FilesystemAdapter(new Flysystem($recording, $defaults), $recording, $config));
+
+    return $recording;
+}
+
+/**
+ * The permissions of a file or folder on a local disk, as "644".
+ */
+function permissionsOf(string $path): string
+{
+    clearstatcache(true, $path);
+
+    return decoct(((int) fileperms($path)) & 0777);
 }
 
 /**

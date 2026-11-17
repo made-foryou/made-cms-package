@@ -26,6 +26,7 @@ return [
         'folder_taken' => 'There is a folder :name already.',
         'folder_not_empty' => '{1} :name still holds :count file. Put it in another folder first.|[2,*] :name still holds :count files. Put them in another folder first.',
         'files' => 'Choose the files you want to move. Reload the page and try again.',
+        'files_delete' => 'Choose the files you want to delete. Reload the page and try again.',
         'server_limit' => 'The server does not take this file: it is set to at most :max per upload. Ask your web developer to raise that limit.',
         'filter' => 'This list cannot be filtered this way. Reload the page and try again.',
         'crop_outside' => 'The crop lies outside the photo. Reload the page and try again.',
@@ -193,6 +194,25 @@ return [
         'move' => 'Move',
         'done' => 'Done',
         'close_notice' => 'Close message',
+        // Made by the server for the side column: who uploaded the file and its version, whether it can be deleted,
+        // and what deleting did.
+        'history' => [
+            'uploaded_by' => 'Uploaded by :name on :date',
+            'uploaded' => 'Uploaded on :date',
+            'version' => 'version :version',
+            'replaced_by' => 'replaced by :name on :date',
+            'replaced' => 'replaced on :date',
+            'previous' => 'Version :version still waits to be put back.',
+        ],
+        'removal' => [
+            'free' => 'Used nowhere; it can be deleted right away.',
+            'used' => '{1} On :count page. Take it off there first.|[2,*] On :count pages. Take it off there first.',
+            'bin' => '{1} Still on a page in the bin. It can be deleted once that is cleared.|[2,*] Still on :count pages in the bin. It can be deleted once those are cleared.',
+        ],
+        'removed' => [
+            'deleted' => '{1} :name was deleted.|[2,*] :count files deleted.',
+            'kept' => '{1} :names is still on a page and stays.|[2,*] :names are still on a page and stay.',
+        ],
         // Filled in by the scripts.
         'texts' => [
             'note_folder' => 'Drag files from your computer here to put them in this folder. An amber dot means: no alt text yet.',

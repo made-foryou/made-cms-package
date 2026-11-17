@@ -26,6 +26,7 @@ return [
         'folder_taken' => 'Er is al een map :name.',
         'folder_not_empty' => '{1} :name heeft nog :count bestand. Zet het eerst in een andere map.|[2,*] :name heeft nog :count bestanden. Zet ze eerst in een andere map.',
         'files' => 'Kies de bestanden die je wilt verplaatsen. Herlaad de pagina en probeer het opnieuw.',
+        'files_delete' => 'Kies de bestanden die je wilt verwijderen. Herlaad de pagina en probeer het opnieuw.',
         'server_limit' => 'De server neemt dit bestand niet aan: hij staat op hoogstens :max per upload. Vraag je webbouwer om die grens te verhogen.',
         'filter' => 'Deze lijst kan zo niet gefilterd worden. Herlaad de pagina en probeer het opnieuw.',
         'crop_outside' => 'De uitsnede valt buiten de foto. Herlaad de pagina en probeer het opnieuw.',
@@ -193,6 +194,25 @@ return [
         'move' => 'Verplaatsen',
         'done' => 'Klaar',
         'close_notice' => 'Melding sluiten',
+        // Made by the server for the side column: who uploaded the file and its version, whether it can be deleted,
+        // and what deleting did.
+        'history' => [
+            'uploaded_by' => 'Geüpload door :name op :date',
+            'uploaded' => 'Geüpload op :date',
+            'version' => 'versie :version',
+            'replaced_by' => 'vervangen door :name op :date',
+            'replaced' => 'vervangen op :date',
+            'previous' => 'Versie :version staat nog klaar om terug te zetten.',
+        ],
+        'removal' => [
+            'free' => 'Wordt nergens gebruikt; verwijderen kan direct.',
+            'used' => '{1} Staat op :count pagina. Haal het daar eerst weg.|[2,*] Staat op :count pagina’s. Haal het daar eerst weg.',
+            'bin' => '{1} Staat nog op een pagina in de prullenbak. Verwijderen kan zodra die is opgeruimd.|[2,*] Staat nog op :count pagina’s in de prullenbak. Verwijderen kan zodra die zijn opgeruimd.',
+        ],
+        'removed' => [
+            'deleted' => '{1} :name is verwijderd.|[2,*] :count bestanden verwijderd.',
+            'kept' => '{1} :names staat nog op een pagina en blijft staan.|[2,*] :names staan nog op een pagina en blijven staan.',
+        ],
         // Filled in by the scripts.
         'texts' => [
             'note_folder' => 'Sleep bestanden van je computer hierheen om ze in deze map te zetten. Een amber stip betekent: nog geen alt-tekst.',

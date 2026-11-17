@@ -40,10 +40,11 @@ final class MediaLibraryResponse
     }
 
     /**
-     * What library.js needs, as JSON on the library itself: where it reads a file with its places and stores an alt
-     * text, the names of the kinds, and the texts it fills in.
+     * What library.js needs, as JSON on the library itself: where it reads a file with its places, stores an alt text,
+     * replaces a file, puts its former version back, saves it and deletes files, the names of the kinds, and the texts
+     * it fills in.
      *
-     * @return array{urls: array{show: string, alt: string}, csrf_token: string, kinds: array<string, string>, limits: string, alt_max: int, texts: array<string, string>}
+     * @return array{urls: array{show: string, alt: string, replace: string, restore: string, download: string, delete: string}, csrf_token: string, kinds: array<string, string>, limits: string, alt_max: int, texts: array<string, string>}
      */
     private static function config(string $limits): array
     {
@@ -56,6 +57,10 @@ final class MediaLibraryResponse
             'urls' => [
                 'show' => $base.route('made-cms-package.media.show', ['media' => ':media'], false),
                 'alt' => $base.route('made-cms-package.media.alt.update', ['media' => ':media'], false),
+                'replace' => $base.route('made-cms-package.media.replace', ['media' => ':media'], false),
+                'restore' => $base.route('made-cms-package.media.restore', ['media' => ':media'], false),
+                'download' => $base.route('made-cms-package.media.download', ['media' => ':media'], false),
+                'delete' => $base.route('made-cms-package.media.destroy', [], false),
             ],
             'csrf_token' => (string) csrf_token(),
             'kinds' => is_array($kinds) ? array_map(strval(...), $kinds) : [],

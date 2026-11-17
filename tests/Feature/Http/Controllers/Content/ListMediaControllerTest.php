@@ -64,6 +64,8 @@ it('lists the files as the upload field gets one, newest first, with the count i
         'kind' => 'image',
         'file' => 'teamfoto.webp',
         'size' => 412_000,
+        'link' => "http://localhost/made-cms/file/{$media->ulid}/teamfoto",
+        'used' => false,
     ])
         ->and($response->json('page'))->toBe(1)
         ->and($response->json('total'))->toBe(2)
@@ -168,4 +170,12 @@ it('answers 401 to a guest', function (): void {
 
 it('leaves the address made-cms/media to the screen of the media library', function (): void {
     $this->get('made-cms/media')->assertOk()->assertSee('data-media-library', false)->assertDontSee('wordt nog gebouwd');
+});
+
+it('says of each file whether a page uses it', function (): void {
+    $used = Media::factory()->create(['created_at' => now()]);
+    Media::factory()->create(['created_at' => now()->subDay()]);
+    MediaUsage::factory()->for($used)->create();
+
+    expect(array_column($this->getJson('made-cms/media/files')->assertOk()->json('files'), 'used'))->toBe([true, false]);
 });

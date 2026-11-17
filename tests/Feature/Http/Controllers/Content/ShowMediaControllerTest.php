@@ -130,3 +130,53 @@ it('answers 401 to a guest', function (): void {
 
     $this->getJson('made-cms/media/'.Media::factory()->create()->id)->assertUnauthorized();
 });
+
+it('tells who uploaded the file, its version and the version that waits, in words', function (): void {
+    $uploader = Editor::factory()->create(['name' => 'Menno Tempelaar']);
+    $replacer = Editor::factory()->create(['name' => 'Sanne de Vries']);
+    $media = Media::factory()->replaced()->create([
+        'name' => 'teamfoto',
+        'uploaded_by' => $uploader->id,
+        'created_at' => '2026-10-09 14:00:00',
+        'replaced_by' => $replacer->id,
+        'replaced_at' => '2026-10-20 09:30:00',
+    ]);
+
+    $this->getJson('made-cms/media/'.$media->id)
+        ->assertOk()
+        ->assertJsonPath('history', [
+            'line' => 'Geüpload door Menno Tempelaar op 9 oktober 2026 · versie 2 · vervangen door Sanne de Vries op 20 oktober 2026',
+            'previous' => 'Versie 1 staat nog klaar om terug te zetten.',
+            'can_restore' => true,
+        ])
+        ->assertJsonPath('file.link', "http://localhost/made-cms/file/{$media->ulid}/teamfoto");
+});
+
+it('tells the upload without a name when nobody is known, and nothing waits', function (): void {
+    $media = Media::factory()->create(['created_at' => '2026-10-09 14:00:00']);
+
+    $this->getJson('made-cms/media/'.$media->id)
+        ->assertJsonPath('history', [
+            'line' => 'Geüpload op 9 oktober 2026 · versie 1',
+            'previous' => null,
+            'can_restore' => false,
+        ]);
+});
+
+it('says whether the file can be deleted, and why not', function (array $pages, bool $allowed, string $note): void {
+    $media = Media::factory()->create();
+
+    foreach ($pages as $deleted) {
+        $page = Page::factory()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'h')])->create($deleted ? ['deleted_at' => now()] : []);
+        SyncMediaUsage::run($page);
+    }
+
+    $this->getJson('made-cms/media/'.$media->id)
+        ->assertJsonPath('removal', ['allowed' => $allowed, 'note' => $note])
+        ->assertJsonPath('file.used', ! $allowed);
+})->with([
+    'nowhere' => [[], true, 'Wordt nergens gebruikt; verwijderen kan direct.'],
+    'on one page' => [[false], false, 'Staat op 1 pagina. Haal het daar eerst weg.'],
+    'on two pages and one in the bin' => [[false, false, true], false, 'Staat op 2 pagina’s. Haal het daar eerst weg.'],
+    'only in the bin' => [[true], false, 'Staat nog op een pagina in de prullenbak. Verwijderen kan zodra die is opgeruimd.'],
+]);

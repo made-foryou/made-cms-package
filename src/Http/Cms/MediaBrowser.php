@@ -27,7 +27,7 @@ use Made\CmsPackage\Support\Locale;
  *     library: bool,
  *     script: string,
  *     config: array{
- *         urls: array{files: string, folders: string, chosen_folder: string, folders_store?: string, folder?: string, move_many?: string},
+ *         urls: array{files: string, folders: string, chosen_folder: string, folders_store?: string, folder?: string, move_many?: string, delete?: string},
  *         csrf_token: string,
  *         kind: string|null,
  *         folder: array{id: int, name: string}|null,
@@ -120,6 +120,7 @@ final class MediaBrowser
             'folders_store' => $base.route('made-cms-package.media.folders.store', [], false),
             'folder' => $base.route('made-cms-package.media.folders.update', ['folder' => ':folder'], false),
             'move_many' => $base.route('made-cms-package.media.move.many', [], false),
+            'delete' => $base.route('made-cms-package.media.destroy', [], false),
         ];
         $browser['config']['folder_max'] = CheckMediaFolderName::MAX_LENGTH;
         $browser['config']['texts'] = [...$browser['config']['texts'], ...self::texts('library.texts', $locale)];

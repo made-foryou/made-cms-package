@@ -1,12 +1,13 @@
 {{--
     The hero strip of the workbench: data-cms-strip on the root is required, data-cms-field per field is optional.
     A field sits on the element that holds only its text; in data-cms-items every direct child is one item.
-    A heading is printed as the element of its level, so its look hangs on a class, never on h2.
+    A heading is printed as the element of its level, so its look hangs on a class, never on h2. The label and the
+    heading have emphasis: the words between asterisks are an <em>.
     An image is {url, alt, width, height, focal} or null; the focal point is the place object-position keeps in view.
 --}}
 <section data-cms-strip="{{ $strip->id }}">
     @if ($strip->label)
-        <p><small data-cms-field="label">{{ $strip->label }}</small></p>
+        <p><small data-cms-field="label"><x-made-cms::emphasis :text="$strip->label" /></small></p>
     @endif
 
     <x-made-cms::heading :heading="$strip->kop" field="kop" emphasis class="hero__kop" />

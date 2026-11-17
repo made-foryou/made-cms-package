@@ -30,7 +30,7 @@ final class Hero extends StripType
     public function fields(): array
     {
         return [
-            Text::make('label')->hint('Korte regel boven de kop.'),
+            Text::make('label')->emphasis()->hint('Korte regel boven de kop.'),
             Heading::make('kop')->emphasis()->required(),
             RichText::make('intro')->hint('Twee zinnen is genoeg.'),
             Items::make('knoppen', [Button::make('knop')->required()])->max(2),

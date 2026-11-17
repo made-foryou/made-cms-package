@@ -267,3 +267,82 @@ it('patches the address and the alt text of an image without reloading the frame
 
     $shell->assertNoJavaScriptErrors();
 });
+
+it('shows the words between asterisks of a heading with emphasis as an <em> while the editor types, without reloading the frame', function (): void {
+    $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Welkom bij de club'");
+    $heading = siteInFrame()."?.querySelector('[data-cms-strip=\"hero\"] h2')";
+
+    $shell->script(markFrame());
+    $shell->type('[data-path="kop"] input', 'Jullie dag in ')
+        ->typeSlowly('[data-path="kop"] input', '*vertrouwde', 20);
+
+    // An asterisk without a partner is an asterisk, until the editor types the second one.
+    expect($shell->script(waitUntil("{$heading}?.innerHTML === 'Jullie dag in *vertrouwde'")))->toBeTrue();
+
+    $shell->typeSlowly('[data-path="kop"] input', '*', 20);
+
+    expect($shell->script(waitUntil("{$heading}?.innerHTML === 'Jullie dag in <em>vertrouwde</em>'")))->toBeTrue();
+
+    // The <em> stays the same element while the editor types around it, so a site rendered in the browser keeps it.
+    $shell->script('() => { '.siteInFrame().".querySelector('[data-cms-strip=\"hero\"] h2 em').voorTypen = true; }");
+    $shell->typeSlowly('[data-path="kop"] input', ' handen', 20);
+
+    expect($shell->script(waitUntil("{$heading}?.innerHTML === 'Jullie dag in <em>vertrouwde</em> handen'")))->toBeTrue()
+        ->and($shell->script("{$heading}.querySelector('em').voorTypen === true"))->toBeTrue()
+        ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse()
+        ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h2']);
+
+    $shell->type('[data-path="kop"] input', 'Jullie dag in vertrouwde handen');
+
+    expect($shell->script(waitUntil("{$heading}?.innerHTML === 'Jullie dag in vertrouwde handen'")))->toBeTrue()
+        ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse();
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('shows emphasis in a text and in a heading of an item, and keeps the asterisks of a heading without emphasis as text', function (): void {
+    $page = Page::factory()->published()->at('/nadruk')->withStrips([
+        storedStrip('hero', ['label' => 'Over de club', 'kop' => 'Jullie dag in *vertrouwde* handen'], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen', 'kaarten' => [
+            ['id' => '7e3a4b5c-6d7e-4f8a-8b9c-1d2e3f4a5b6c', 'titel' => 'Trainen'],
+            ['id' => '8f4b5c6d-7e8f-4a9b-9c0d-2e3f4a5b6c7d', 'titel' => 'Spelen'],
+        ]], id: 'cards'),
+    ])->create(['title' => 'Nadruk']);
+
+    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"label\"] input')?.value === 'Over de club'");
+    $site = siteInFrame();
+
+    // The site prints the emphasis itself, and the frame keeps that <em> when the editor changes the word.
+    expect($shell->script("{$site}.querySelector('[data-cms-strip=\"hero\"] h2').innerHTML"))->toBe('Jullie dag in <em>vertrouwde</em> handen');
+
+    $shell->script(markFrame());
+    $shell->script("() => { {$site}.querySelector('[data-cms-strip=\"hero\"] h2 em').vanDeSite = true; }");
+    $shell->type('[data-path="label"] input', 'Over *ons*')
+        ->type('[data-path="kop"] input', 'Jullie dag in *goede* handen');
+
+    expect($shell->script(waitUntil("{$site}.querySelector('[data-cms-field=\"label\"]')?.innerHTML === 'Over <em>ons</em>'")))->toBeTrue()
+        ->and($shell->script(waitUntil("{$site}.querySelector('[data-cms-strip=\"hero\"] h2')?.innerHTML === 'Jullie dag in <em>goede</em> handen'")))->toBeTrue()
+        ->and($shell->script("{$site}.querySelector('[data-cms-strip=\"hero\"] h2 em').vanDeSite === true"))->toBeTrue()
+        ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue();
+
+    $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="cards"] .tab'));
+
+    expect($shell->script(waitUntil("document.querySelectorAll('[data-path=\"kaarten\"] li').length === 2")))->toBeTrue();
+
+    $shell->type('[data-path="kop"] input', 'Wat *we* doen')
+        ->click('[data-path="kaarten"] li:nth-child(2) [data-slot="edit"]')
+        ->type('[data-path="kaarten.1.titel.text"] input', 'Echte *wedstrijden*');
+
+    expect($shell->script(waitUntil("{$site}.querySelectorAll('[data-cms-strip=\"cards\"] li')[1]?.querySelector('h3')?.innerHTML === 'Echte <em>wedstrijden</em>'")))->toBeTrue()
+        ->and($shell->script("{$site}.querySelector('[data-cms-strip=\"cards\"] h2').innerHTML"))->toBe('Wat *we* doen');
+
+    $shell->click('[data-slot="done"]');
+
+    expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse()
+        ->and(draftOf($page, 'cards')['values']['kaarten'][1]['titel'] ?? null)->toBe(['text' => 'Echte *wedstrijden*', 'tag' => 'h3']);
+
+    $shell->assertNoJavaScriptErrors();
+});

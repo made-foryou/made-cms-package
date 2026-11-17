@@ -296,14 +296,15 @@ it('says how to give a word emphasis at a field with emphasis, and sums up an it
     expect($shell->script($hint('kop').'.hidden'))->toBeFalse()
         ->and($shell->script($hint('kop').'.textContent.trim()'))->toBe('Zet een woord tussen sterretjes voor nadruk, zoals *handen*.')
         ->and($shell->script($describes('kop', '[data-path="kop"] input')))->toBeTrue()
-        ->and($shell->script($hint('label').'.hidden'))->toBeTrue()
-        ->and($shell->script($describes('label', '[data-path="label"] input')))->toBeFalse()
+        ->and($shell->script($hint('label').'.hidden'))->toBeFalse()
+        ->and($shell->script($describes('label', '[data-path="label"] input')))->toBeTrue()
         ->and($shell->script("document.querySelector('[data-path=\"kop.text\"] [data-slot=\"emphasis-hint\"]').hidden"))->toBeTrue();
 
     $shell->withinFrame('.bewerkframe', fn ($frame) => $frame->click('[data-strip="cards"] .tab'));
 
     expect($shell->script(waitUntil("document.querySelectorAll('[data-path=\"kaarten\"] li').length === 1")))->toBeTrue()
         ->and($shell->script($hint('kop').'.hidden'))->toBeTrue()
+        ->and($shell->script($describes('kop', '[data-path="kop"] input')))->toBeFalse()
         ->and($shell->script("document.querySelector('[data-path=\"kaarten\"] li:nth-child(1) [data-slot=\"title\"]').textContent"))->toBe('Samen trainen');
 
     $shell->click('[data-path="kaarten"] li:nth-child(1) [data-slot="edit"]')

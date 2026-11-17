@@ -73,6 +73,24 @@ final readonly class MediaVersion
     }
 
     /**
+     * The version that waits to be put back; null when nothing waits.
+     */
+    public static function waiting(Media $media): ?self
+    {
+        return self::fromArray($media->previous);
+    }
+
+    /**
+     * Every file the row holds: those of the version the site shows and of the version that waits to be put back.
+     *
+     * @return list<string>
+     */
+    public static function held(Media $media): array
+    {
+        return [...self::current($media)->files(), ...self::waiting($media)?->files() ?? []];
+    }
+
+    /**
      * The version as `previous` holds it; null for anything that is no version.
      */
     public static function fromArray(mixed $values): ?self

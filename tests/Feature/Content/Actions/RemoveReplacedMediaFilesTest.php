@@ -77,3 +77,70 @@ it('removes the former files of a row that is gone', function (): void {
     expect(Storage::disk('public')->exists("{$home}/clubavond.webp"))->toBeFalse()
         ->and(Storage::disk('public')->exists($media->path))->toBeTrue();
 });
+
+it('leaves every file of the version that waits to be put back', function (): void {
+    $media = Media::factory()->replaced()->create();
+    $previous = (array) $media->previous;
+
+    foreach ([$media->path, $media->original_path, $media->thumb_path, $previous['path'], $previous['original_path'], $previous['thumb_path']] as $file) {
+        Storage::disk('public')->put((string) $file, 'bytes');
+    }
+
+    RemoveReplacedMediaFiles::run($media->id, (string) $previous['path'], (string) $previous['thumb_path']);
+
+    expect(Storage::disk('public')->allFiles())->toHaveCount(6);
+});
+
+it('never takes the folder of a version that waits for the folder of a crop', function (): void {
+    // Version 2 was cropped and committed; version 1 was put back before the cleanup of that crop got the lock.
+    $root = 'media/01jc8x0000000000000000000a';
+    $media = Media::factory()->create([
+        'ulid' => '01jc8x0000000000000000000a',
+        'path' => "{$root}/teamfoto.webp",
+        'original_path' => "{$root}/original-v1.jpg",
+        'thumb_path' => "{$root}/thumb-v1.webp",
+        'previous' => [
+            'version' => 2,
+            'name' => 'nieuw',
+            'path' => "{$root}/b2b2b2b2/c3c3c3c3/nieuw.webp",
+            'original_path' => "{$root}/b2b2b2b2/original-v2.jpg",
+            'thumb_path' => "{$root}/b2b2b2b2/thumb-v2b.webp",
+            'mime' => 'image/webp',
+            'size' => 100,
+        ],
+    ]);
+
+    foreach ([$media->path, $media->original_path, $media->thumb_path, "{$root}/b2b2b2b2/nieuw.webp", "{$root}/b2b2b2b2/thumb-v2a.webp", "{$root}/b2b2b2b2/c3c3c3c3/nieuw.webp", "{$root}/b2b2b2b2/original-v2.jpg", "{$root}/b2b2b2b2/thumb-v2b.webp"] as $file) {
+        Storage::disk('public')->put((string) $file, 'bytes');
+    }
+
+    RemoveReplacedMediaFiles::run($media->id, "{$root}/b2b2b2b2/nieuw.webp", "{$root}/b2b2b2b2/thumb-v2a.webp");
+
+    expect(Storage::disk('public')->allFiles())->toEqualCanonicalizing([
+        $media->path,
+        $media->original_path,
+        $media->thumb_path,
+        "{$root}/b2b2b2b2/c3c3c3c3/nieuw.webp",
+        "{$root}/b2b2b2b2/original-v2.jpg",
+        "{$root}/b2b2b2b2/thumb-v2b.webp",
+    ]);
+});
+
+it('removes the folder of a former crop of the version in a folder of its own', function (): void {
+    $root = 'media/01jc8x0000000000000000000a';
+    $media = Media::factory()->create([
+        'ulid' => '01jc8x0000000000000000000a',
+        'path' => "{$root}/b2b2b2b2/d4d4d4d4/nieuw.webp",
+        'original_path' => "{$root}/b2b2b2b2/original-v2.jpg",
+        'thumb_path' => "{$root}/b2b2b2b2/thumb-v2.webp",
+    ]);
+
+    foreach ([$media->path, $media->original_path, $media->thumb_path, "{$root}/b2b2b2b2/c3c3c3c3/nieuw.webp"] as $file) {
+        Storage::disk('public')->put((string) $file, 'bytes');
+    }
+
+    RemoveReplacedMediaFiles::run($media->id, "{$root}/b2b2b2b2/c3c3c3c3/nieuw.webp");
+
+    expect(Storage::disk('public')->directoryExists("{$root}/b2b2b2b2/c3c3c3c3"))->toBeFalse()
+        ->and(Storage::disk('public')->allFiles())->toEqualCanonicalizing([$media->path, $media->original_path, $media->thumb_path]);
+});

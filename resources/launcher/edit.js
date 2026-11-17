@@ -30,6 +30,10 @@ const WARN_AFTER = 400;
 const READ_AFTER = 60;
 const LEVELS = 'h1, h2, h3, h4, h5, h6';
 
+// After a reload the frame holds the place of the editor this long, unless the editor scrolls first.
+const HOLD = 2000;
+const SCROLLING = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+
 const shell = document.querySelector('[data-edit-shell]');
 const frame = shell?.querySelector('iframe.bewerkframe');
 const overlay = document.querySelector('template[data-overlay]');
@@ -61,6 +65,9 @@ const live = new Map();
 // Strips with a change the frame could not show, with the number of the last such change: a save that stores it
 // reloads the frame.
 const stale = new Map();
+
+// The place the frame holds after a reload ({left, top}), until the editor scrolls or the hold is over.
+let holding = null;
 
 /* Fills :placeholders like Laravel does: the longest name first, so :id never eats into :identifier. */
 function format(text, replace) {
@@ -595,7 +602,8 @@ function select(id, errors = null, field = null, added = null) {
 
 /*
  * After a save or a publication the frame shows the working copy again, at the place the editor was looking at. After
- * a strip was added or moved that strip may lie elsewhere: once the site shows it, it scrolls into view when it is not.
+ * a strip was added or moved that strip may lie elsewhere: once the site shows it, it comes into view when it is not.
+ * A reload while the frame still holds a place keeps that place, which the site may not be long enough for yet.
  */
 function reloadFrame(reveal = null) {
     const win = frame?.contentWindow;
@@ -604,38 +612,88 @@ function reloadFrame(reveal = null) {
         return;
     }
 
-    const x = win.scrollX;
-    const y = win.scrollY;
+    const place = holding ? { left: holding.left, top: holding.top } : { left: win.scrollX, top: win.scrollY };
 
-    frame.addEventListener('load', () => {
-        frame.contentWindow?.scrollTo(x, y);
-
-        if (reveal !== null) {
-            show(reveal);
-        }
-    }, { once: true });
+    frame.addEventListener('load', () => hold(place, reveal), { once: true });
     win.location.reload();
 }
 
-/* A site rendered in the browser puts its strips in the page after it loaded, so this looks a few times. */
-function show(id, tries = 20) {
-    const doc = frame?.contentDocument;
-    const element = doc ? stripElement(doc, id) : null;
+/*
+ * A site rendered in the browser (Inertia, React without ssr) is not long enough for the place yet when it has loaded,
+ * and may scroll by itself while it starts: Inertia puts back a place it remembered, smoothly. So the frame puts the
+ * site back at the place in every frame for a while, at once also on a site with scroll-behavior: smooth. A strip to
+ * reveal that lies outside that view is held at the top instead, once the site shows it. The editor scrolling ends it.
+ */
+function hold(place, reveal) {
+    const win = frame.contentWindow;
+    const doc = frame.contentDocument;
 
-    if (! element) {
-        if (tries > 0) {
-            window.setTimeout(() => show(id, tries - 1), 100);
-        }
-
+    if (! win || ! doc) {
         return;
     }
 
-    const box = element.getBoundingClientRect();
-    const height = doc.defaultView.innerHeight;
+    const held = { ...place };
+    const stop = new AbortController();
+    const until = win.performance.now() + HOLD;
+    let looking = reveal !== null;
+    let strip = null;
+    let offset = 0;
 
-    if (box.bottom < 0 || box.top > height) {
-        element.scrollIntoView({ block: 'start' });
+    const release = () => {
+        stop.abort();
+
+        if (holding === held) {
+            holding = null;
+        }
+    };
+
+    const step = (now) => {
+        if (stop.signal.aborted) {
+            return;
+        }
+
+        if (looking) {
+            const element = stripElement(doc, reveal);
+            const box = element?.getBoundingClientRect();
+
+            // Only a strip the site shows has a place; one in a part it did not show yet has no size.
+            if (box && (box.width > 0 || box.height > 0)) {
+                looking = false;
+
+                if (box.bottom + win.scrollY < held.top || box.top + win.scrollY > held.top + win.innerHeight) {
+                    element.scrollIntoView({ block: 'start', behavior: 'instant' });
+                    strip = element;
+                    offset = element.getBoundingClientRect().top;
+                }
+            }
+        }
+
+        if (strip) {
+            const moved = strip.getBoundingClientRect().top - offset;
+
+            if (Math.abs(moved) >= 1) {
+                win.scrollBy({ top: moved, behavior: 'instant' });
+            }
+
+            held.left = win.scrollX;
+            held.top = win.scrollY;
+        } else if (Math.abs(win.scrollX - held.left) >= 1 || Math.abs(win.scrollY - held.top) >= 1) {
+            win.scrollTo({ left: held.left, top: held.top, behavior: 'instant' });
+        }
+
+        if (now < until) {
+            win.requestAnimationFrame(step);
+        } else {
+            release();
+        }
+    };
+
+    for (const type of SCROLLING) {
+        win.addEventListener(type, release, { capture: true, passive: true, signal: stop.signal });
     }
+
+    holding = held;
+    step(win.performance.now());
 }
 
 function attach() {
@@ -660,7 +718,7 @@ if (shell) {
         follow(event.detail);
     });
     shell.addEventListener('made-cms:saved', (event) => saved(event.detail.id, event.detail.seq ?? Infinity));
-    shell.addEventListener('made-cms:published', reloadFrame);
+    shell.addEventListener('made-cms:published', () => reloadFrame());
     // A file changed in the crop step: its former address is gone, and a focal point is no attribute to patch.
     shell.addEventListener('made-cms:media-changed', () => reloadFrame());
     // The overview of the headings chooses a strip with the field of the heading (field, with count in a list).

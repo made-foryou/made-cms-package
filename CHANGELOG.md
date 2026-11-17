@@ -266,6 +266,7 @@
 
 ### Fixed
 
+- The edit shell no longer sends the editor back to the top of the site when its frame reloads after a change, a strip that moved or a publication, on a site rendered in the browser (Inertia, React without ssr): the frame holds the place the editor was looking at while the site grows to it and when it scrolls by itself (Inertia puts back a place it remembered, smoothly), until the editor scrolls. A strip that was added or moved and lies outside that view comes into view once the site shows it.
 - Cleaning rich text no longer cuts it off at 65,535 bytes; the validation still allows at most 65,535 characters.
 - Rich text nested deeper than 100 levels no longer crashes PHP when it is stored or rendered: markup beyond that depth keeps only its text.
 - Changes to the draft made at the same time no longer get lost: two strips saved at once in the side panel, the opbouw moving or removing a strip while the panel saves another, two editors on one page. Every strip Action, `PublishPage` and `DiscardDraft` reads the page again in a transaction with its row locked (`ChangeDraft`), so the next change waits and starts from what the previous one stored; publishing and discarding see the draft as it was last stored. A page deleted in between throws `ModelNotFoundException` (404).

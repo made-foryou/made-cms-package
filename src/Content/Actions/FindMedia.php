@@ -58,6 +58,7 @@ final class FindMedia
                 folderId: $media->folder?->id,
                 croppable: $media->kind === MediaKind::Image && $media->original_path !== null
                     && $media->original_width !== null && $media->original_height !== null,
+                key: $media->ulid,
             );
         }
 

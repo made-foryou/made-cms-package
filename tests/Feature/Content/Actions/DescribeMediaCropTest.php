@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Content\Actions\CropImage;
 use Made\CmsPackage\Content\Actions\DescribeMediaCrop;
 use Made\CmsPackage\Content\Actions\FindMedia;
+use Made\CmsPackage\Content\Actions\ReplaceMedia;
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\CropArea;
@@ -77,3 +78,15 @@ it('describes no file that cannot be cropped', function (Closure $media): void {
     'a document' => [fn (): Media => Media::factory()->document()->create()],
     'a photo without the size of its original' => [fn (): Media => Media::factory()->create(['original_width' => null, 'original_height' => null])],
 ])->throws(MediaNotCroppable::class);
+
+it('says a replaced photo was uploaded when its version was placed', function (): void {
+    CarbonImmutable::setTestNow('2026-10-09 14:00:00');
+    $media = UploadMedia::run(new UploadedMedia(quadrants(1200, 800), 'teamfoto.jpg'));
+    CarbonImmutable::setTestNow('2026-10-20 09:30:00');
+    $media = ReplaceMedia::run($media, new UploadedMedia(quadrants(900, 600), 'nieuw.jpg'));
+
+    $crop = DescribeMediaCrop::run($media);
+
+    expect($crop->uploadedAt?->toDateTimeString())->toBe('2026-10-20 09:30:00')
+        ->and([$crop->originalWidth, $crop->originalHeight])->toBe([900, 600]);
+});

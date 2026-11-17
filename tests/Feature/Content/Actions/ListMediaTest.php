@@ -10,6 +10,8 @@ use Made\CmsPackage\Content\Enums\MediaSort;
 use Made\CmsPackage\Content\Exceptions\MediaFolderNotFound;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
+use Made\CmsPackage\Content\Models\MediaUsage;
+use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
     config([
@@ -117,4 +119,13 @@ it('asks nothing of the media disk when no file matches', function (): void {
     $list = ListMedia::run(new MediaFilter(kind: MediaKind::Image));
 
     expect($list->files)->toBe([])->and($list->total)->toBe(0);
+});
+
+it('says which files of the page a page uses', function (): void {
+    [$free, $used, $onDeletedPage] = Media::factory()->count(3)->create()->all();
+    MediaUsage::factory()->for($used)->create();
+    MediaUsage::factory()->for($onDeletedPage)->for(Page::factory()->create(['deleted_at' => now()]))->draft()->create();
+
+    expect(ListMedia::run(new MediaFilter)->used)->toBe([$used->id, $onDeletedPage->id])
+        ->and($free->id)->not->toBeIn(ListMedia::run(new MediaFilter)->used);
 });

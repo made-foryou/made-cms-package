@@ -64,6 +64,14 @@ final class MediaBuilder extends Builder
     }
 
     /**
+     * The file whose folder on the disk, media/{ulid}, is this one: the key of the link that always leads to it.
+     */
+    public function linkedBy(string $ulid): self
+    {
+        return $this->where('ulid', $ulid);
+    }
+
+    /**
      * These files, read to give them a place on a page (SyncMediaUsage): each with a shared lock, in the order of their
      * ids, so a file DeleteMedia holds is read only once it is deleted or kept, and a file read here is deleted only
      * once the place is committed. The order keeps two such transactions from waiting on each other.

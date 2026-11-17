@@ -283,12 +283,14 @@ it('shows the words between asterisks of a heading with emphasis as an <em> whil
 
     expect($shell->script(waitUntil("{$heading}?.innerHTML === 'Jullie dag in <em>vertrouwde</em>'")))->toBeTrue();
 
-    // The <em> stays the same element while the editor types around it, so a site rendered in the browser keeps it.
-    $shell->script('() => { '.siteInFrame().".querySelector('[data-cms-strip=\"hero\"] h2 em').voorTypen = true; }");
+    // The <em> stays the same element while the editor types around it, so a site rendered in the browser keeps it,
+    // and an empty text node (the anchor of a fragment in Vue) stays where it is.
+    $shell->script('() => { const kop = '.siteInFrame().".querySelector('[data-cms-strip=\"hero\"] h2'); kop.querySelector('em').voorTypen = true; const anker = kop.ownerDocument.createTextNode(''); anker.anker = true; kop.prepend(anker); }");
     $shell->typeSlowly('[data-path="kop"] input', ' handen', 20);
 
     expect($shell->script(waitUntil("{$heading}?.innerHTML === 'Jullie dag in <em>vertrouwde</em> handen'")))->toBeTrue()
         ->and($shell->script("{$heading}.querySelector('em').voorTypen === true"))->toBeTrue()
+        ->and($shell->script("{$heading}.firstChild.anker === true && {$heading}.firstChild.nodeValue === '' && {$heading}.childNodes.length === 4"))->toBeTrue()
         ->and($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
         ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse()
         ->and(draftOf($this->page, 'hero')['values']['kop'] ?? null)->toBe(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h2']);

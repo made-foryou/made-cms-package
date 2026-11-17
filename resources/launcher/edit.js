@@ -363,9 +363,10 @@ const isEmphasis = (child) => child.nodeType === Node.ELEMENT_NODE && child.loca
 /*
  * A text with emphasis is text nodes and <em> elements that hold only their text, in the order of its parts. The nodes
  * that are there stay where they fit, in order, and only their text changes: a site rendered in the browser keeps its
- * nodes, also the <em> while the editor types around it. A part without a node of its kind gets a new one, never through
- * innerHTML; a new <em> takes the attributes of an <em> the site printed (a class, the data-v-* of Vue). Nodes that are
- * left over go. An element that holds anything else is the site's to make, so it reloads.
+ * nodes, also the <em> while the editor types around it. An empty text node is left alone: Vue marks a fragment with
+ * one. A part without a node of its kind gets a new one, never through innerHTML; a new <em> takes the attributes of an
+ * <em> the site printed (a class, the data-v-* of Vue). Nodes that are left over go. An element that holds anything else
+ * is the site's to make, so it reloads.
  */
 function setEmphasized(node, text) {
     if (! [...node.childNodes].every((child) => child.nodeType === Node.TEXT_NODE || (isEmphasis(child) && holdsText(child)))) {
@@ -373,11 +374,12 @@ function setEmphasized(node, text) {
     }
 
     const doc = node.ownerDocument;
-    const model = [...node.childNodes].find(isEmphasis) ?? null;
+    const children = [...node.childNodes].filter((child) => isEmphasis(child) || child.nodeValue !== '');
+    const model = children.find(isEmphasis) ?? null;
     let index = 0;
 
     for (const part of emphasisParts(text)) {
-        const child = node.childNodes[index] ?? null;
+        const child = children[index] ?? null;
 
         if (child !== null && isEmphasis(child) === part.emphasis) {
             if (part.emphasis) {
@@ -385,6 +387,8 @@ function setEmphasized(node, text) {
             } else if (child.nodeValue !== part.text) {
                 child.nodeValue = part.text;
             }
+
+            index++;
         } else if (part.emphasis) {
             const em = model?.cloneNode(false) ?? doc.createElement('em');
 
@@ -393,12 +397,10 @@ function setEmphasized(node, text) {
         } else {
             node.insertBefore(doc.createTextNode(part.text), child);
         }
-
-        index++;
     }
 
-    while (node.childNodes.length > index) {
-        node.lastChild.remove();
+    for (const child of children.slice(index)) {
+        child.remove();
     }
 
     return true;

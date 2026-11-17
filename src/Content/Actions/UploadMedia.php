@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
-use Illuminate\Contracts\Filesystem\Cloud;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Made\CmsPackage\Content\Data\CheckedMedia;
 use Made\CmsPackage\Content\Data\MediaName;
-use Made\CmsPackage\Content\Data\ScaledImage;
 use Made\CmsPackage\Content\Data\UploadedMedia;
-use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Events\MediaUploaded;
 use Made\CmsPackage\Content\Exceptions\ImageDriverNotSupported;
@@ -60,7 +56,7 @@ final class UploadMedia
         $directory = "media/{$ulid}";
 
         try {
-            $columns = $this->store($disk, $directory, $name, $upload->path, $checked, $image);
+            $columns = StoreMediaFiles::run($disk, $directory, $name, $upload->path, $checked, $image);
         } catch (Throwable $exception) {
             $disk->deleteDirectory($directory);
 
@@ -95,72 +91,5 @@ final class UploadMedia
         MediaUploaded::dispatch($media);
 
         return $media;
-    }
-
-    /**
-     * Writes the files and gives the columns that describe them.
-     *
-     * @return array{path: string, original_path: string|null, thumb_path: string|null, mime: string, size: int, width: int|null, height: int|null, original_width: int|null, original_height: int|null}
-     *
-     * @throws MediaNotStored
-     */
-    private function store(Cloud $disk, string $directory, string $name, string $file, CheckedMedia $checked, ?ScaledImage $image): array
-    {
-        if ($image === null || $image->contents === null) {
-            return [
-                'path' => $this->put($disk, $directory, $file, "{$name}.{$checked->extension}", MediaFileRole::AsUploaded),
-                'original_path' => null,
-                'thumb_path' => null,
-                'mime' => $checked->mime,
-                'size' => $checked->size,
-                'width' => $image?->width,
-                'height' => $image?->height,
-                'original_width' => null,
-                'original_height' => null,
-            ];
-        }
-
-        $thumbnail = MakeThumbnail::run($image->contents);
-        $original = $this->put($disk, $directory, $file, 'original-'.Str::random(40).".{$checked->extension}", MediaFileRole::Original);
-        $path = $this->write($disk, "{$directory}/{$name}.{$image->extension}", $image->contents, MediaFileRole::Photo);
-        $thumb = $this->write($disk, "{$directory}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents, MediaFileRole::Thumbnail);
-
-        return [
-            'path' => $path,
-            'original_path' => $original,
-            'thumb_path' => $thumb,
-            'mime' => $image->mime,
-            'size' => strlen($image->contents),
-            'width' => $image->width,
-            'height' => $image->height,
-            'original_width' => $image->sourceWidth,
-            'original_height' => $image->sourceHeight,
-        ];
-    }
-
-    /**
-     * @throws MediaNotStored
-     */
-    private function write(Cloud $disk, string $path, string $contents, MediaFileRole $role): string
-    {
-        if (! $disk->put($path, $contents, $role->writeOptions())) {
-            throw MediaNotStored::at($path);
-        }
-
-        return $path;
-    }
-
-    /**
-     * @throws MediaNotStored
-     */
-    private function put(Cloud $disk, string $directory, string $file, string $name, MediaFileRole $role): string
-    {
-        $path = $disk->putFileAs($directory, $file, $name, $role->writeOptions());
-
-        if (! is_string($path)) {
-            throw MediaNotStored::at("{$directory}/{$name}");
-        }
-
-        return $path;
     }
 }

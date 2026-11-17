@@ -9,10 +9,10 @@ use League\Flysystem\FileAttributes;
 use League\Flysystem\FilesystemAdapter;
 
 /**
- * Wraps the adapter of a disk and keeps, per path, the options a write or a copy handed it: what an S3 disk turns into
- * the ACL and the Cache-Control header of an object, which a local disk cannot show (it ignores the header, and on
- * Windows a file cannot be private). The options are those of the disk with the ones of the write on top, as the
- * adapter gets them.
+ * Wraps the adapter of a disk and keeps, per path, the options a write or a copy handed it and a visibility set later:
+ * what an S3 disk turns into the ACL and the Cache-Control header of an object, which a local disk cannot show (it
+ * ignores the header, and on Windows a file cannot be private). The options are those of the disk with the ones of
+ * the write on top, as the adapter gets them.
  */
 final class RecordingAdapter implements FilesystemAdapter
 {
@@ -24,7 +24,8 @@ final class RecordingAdapter implements FilesystemAdapter
     ) {}
 
     /**
-     * The options the last write or copy to this path handed the disk; null when nothing was written there.
+     * The options the last write or copy to this path handed the disk, with a visibility set afterwards on top; null
+     * when nothing was written there.
      *
      * @return array{visibility: string|null, directory_visibility: string|null, CacheControl: string|null}|null
      */
@@ -83,6 +84,7 @@ final class RecordingAdapter implements FilesystemAdapter
     public function setVisibility(string $path, string $visibility): void
     {
         $this->adapter->setVisibility($path, $visibility);
+        $this->written[$path] = [...$this->written[$path] ?? ['directory_visibility' => null, 'CacheControl' => null], 'visibility' => $visibility];
     }
 
     public function visibility(string $path): FileAttributes

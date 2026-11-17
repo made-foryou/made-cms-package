@@ -25,7 +25,7 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 ### 2. Install
 
 - `composer require made-foryou/made-cms-package`; the service provider is auto-discovered
-- publish and run the migrations: `php artisan vendor:publish --tag="made-cms-package-migrations"` and `php artisan migrate`
+- publish and run the migrations: `php artisan vendor:publish --tag="made-cms-package-migrations"` and `php artisan migrate`, again after every update of the package (a change of the database always comes as a new migration)
 - the media library stores files on `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`): run `php artisan storage:link`, or use a local disk with a `url` or an S3 disk; a local disk without `url` throws `MediaDiskNotUsable` the first time the library is used. It writes the original of a photo private and every other file public itself, whatever the `visibility` of the disk. For DigitalOcean Spaces (or another S3 bucket with ACLs): `composer require league/flysystem-aws-s3-v3 "^3.0"`, an `s3` disk with `endpoint`, `region`, `bucket` and `url` on the CDN address of the Space, File Listing off, and with a Content Security Policy that domain in `img-src` (and `media-src` for video); an AWS bucket with ACLs disabled is not supported
 
 ### 3. Launcher (the MADE tile on the website)

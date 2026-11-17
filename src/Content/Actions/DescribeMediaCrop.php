@@ -55,7 +55,8 @@ final class DescribeMediaCrop
             area: $area !== null && $area->fits($width, $height) ? $area : CropArea::whole($width, $height),
             scaleDown: ($media->crop['scale_down'] ?? true) !== false,
             pages: ListMediaPlaces::run($media)->pageCount(withDeleted: false),
-            uploadedAt: $media->created_at === null ? null : CarbonImmutable::instance($media->created_at),
+            // A replaced photo was uploaded when its version was placed: the original is the one of that version.
+            uploadedAt: $media->replaced_at ?? ($media->created_at === null ? null : CarbonImmutable::instance($media->created_at)),
         );
     }
 }

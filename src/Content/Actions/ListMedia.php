@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Enums\MediaSort;
 use Made\CmsPackage\Content\Exceptions\MediaDiskNotUsable;
 use Made\CmsPackage\Content\Exceptions\MediaFolderNotFound;
 use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Models\MediaUsage;
 
 final class ListMedia
 {
@@ -57,6 +58,12 @@ final class ListMedia
             static fn (?MediaFile $file): bool => $file !== null,
         ));
 
-        return new MediaList($files, $page, $total, $page * self::PER_PAGE < $total);
+        // A file a page uses cannot be deleted: the list says so before the editor asks (DeleteMedia checks again).
+        $used = $ids === [] ? [] : array_values(array_map(
+            intval(...),
+            MediaUsage::query()->ofMedia($ids)->distinct()->orderBy('media_id')->pluck('media_id')->all(),
+        ));
+
+        return new MediaList($files, $page, $total, $page * self::PER_PAGE < $total, $used);
     }
 }

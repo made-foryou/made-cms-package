@@ -211,3 +211,10 @@ it('reads files to give them a place with a shared lock, in the order of their i
         ->and($query->getQuery()->orders)->toBe([['column' => 'id', 'direction' => 'asc']])
         ->and($query->pluck('id')->all())->toBe([$a->id, $b->id]);
 });
+
+it('finds a file by the key of its folder', function (): void {
+    $media = Media::factory()->create();
+    Media::factory()->create();
+
+    expect(Media::query()->linkedBy($media->ulid)->pluck('id')->all())->toBe([$media->id]);
+});

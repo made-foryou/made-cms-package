@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Storage;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\DescribeMedia;
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Models\Media;
@@ -42,4 +43,29 @@ it('says of a place whether its page has a draft', function (): void {
     SyncMediaUsage::run($page);
 
     expect(DescribeMedia::run($media)->places->places[0]->pageHasDraft)->toBeTrue();
+});
+
+it('describes who uploaded a file, its version and the version that waits to be put back', function (): void {
+    $uploader = Editor::factory()->create();
+    $replacer = Editor::factory()->create();
+    $media = Media::factory()->replaced()->create(['uploaded_by' => $uploader->id, 'replaced_by' => $replacer->id]);
+
+    $history = DescribeMedia::run($media)->history;
+
+    expect($history->uploadedBy)->toBe($uploader->id)
+        ->and($history->uploadedAt)->not->toBeNull()
+        ->and($history->version)->toBe(2)
+        ->and($history->replacedBy)->toBe($replacer->id)
+        ->and($history->replacedAt)->not->toBeNull()
+        ->and($history->previous?->version)->toBe(1)
+        ->and($history->editors())->toBe([$uploader->id, $replacer->id]);
+});
+
+it('describes a file that was never replaced without a version that waits', function (): void {
+    $history = DescribeMedia::run(Media::factory()->create())->history;
+
+    expect($history->version)->toBe(1)
+        ->and($history->replacedBy)->toBeNull()
+        ->and($history->previous)->toBeNull()
+        ->and($history->editors())->toBe([]);
 });

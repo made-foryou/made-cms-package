@@ -26,6 +26,7 @@ final readonly class MediaFile
      * @param  string|null  $folder  the name of the folder the file is in; null for none
      * @param  int|null  $folderId  the id of that folder; null for none
      * @param  bool  $croppable  whether the file is a photo with an original to cut it from again (CropImage)
+     * @param  string|null  $key  the folder of the file on the disk (media/{ulid}), the key of its lasting link
      */
     public function __construct(
         public int $id,
@@ -43,6 +44,7 @@ final readonly class MediaFile
         public ?string $folder,
         public ?int $folderId = null,
         public bool $croppable = false,
+        public ?string $key = null,
     ) {}
 
     /**

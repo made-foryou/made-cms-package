@@ -47,6 +47,7 @@ it('finds the files by id with the url of the media disk, never their place on t
         folder: 'Teams',
         folderId: $folder->id,
         croppable: true,
+        key: $media->ulid,
     ));
 });
 

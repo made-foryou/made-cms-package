@@ -34,6 +34,12 @@
  * (detail.taken); otherwise the field asks their alt text itself. An svg, an animated gif and a document never go to
  * the step.
  *
+ * The field of a new version (config.replace, UploadField::replace()) sends one file at a time to the file it replaces,
+ * which the host names with made-cms:upload-target {media: {id, kind, name}}: it then takes only that kind, says so, and
+ * keeps that file for a row that came in before another target. It asks no alt text (the file keeps its own) and
+ * closes by itself once the file is in, a photo once the crop step gave it back. made-cms:uploaded carries the notice
+ * of the server ({file, notice}).
+ *
  * A host that leaves the field (a dialog that closes, a choice that is used) finishes it first with
  * made-cms:upload-finish {wait} on the field: the moment "done" is left as with "Alt-tekst opslaan", a typed alt text
  * is stored and without one it is "later". wait gets a promise of true once nothing of "done" is left, and of false
@@ -126,6 +132,10 @@ function start(field) {
     let wasBusy = false;
     // The photos of a batch in the crop step, until it gives them back.
     let stepping = null;
+    // The field of a new version takes one file at a time, like the field of an image.
+    const single = config.one_image === true || config.replace === true;
+    // The file a new version goes to: {id, kind, name}, from made-cms:upload-target.
+    let target = null;
 
     const folder = () => config.folder?.label ?? '';
     // The folder a file went into: the one of the field when the file came in.
@@ -133,7 +143,9 @@ function start(field) {
     const open = (row) => row.state === 'waiting' || row.state === 'uploading' || row.state === 'processing';
     // Every file asks its alt text, a document and a video too (the description of its download link, of what happens
     // in it); a photo the crop step has or had asks it there, not here.
-    const describes = (row) => row.state === 'done' && row.step !== 'waiting' && row.step !== 'handled';
+    const describes = (row) => ! config.replace && row.state === 'done' && row.step !== 'waiting' && row.step !== 'handled';
+    // The kind of a file as the browser names its type; the server reads it from the contents again.
+    const kindOf = (file) => (file.type.startsWith('image/') ? 'image' : (file.type.startsWith('video/') ? 'video' : 'document'));
 
     function announce(text) {
         ui.announce.textContent = '';
@@ -297,11 +309,11 @@ function start(field) {
     function settle(row, xhr) {
         const data = xhr.response;
 
-        if (xhr.status === 201 && data?.file) {
+        if ((xhr.status === 201 || xhr.status === 200) && data?.file) {
             row.state = 'done';
             row.result = data.file;
             paint(row);
-            tell('made-cms:uploaded', { file: data.file });
+            tell('made-cms:uploaded', { file: data.file, notice: data.notice ?? null });
         } else if (xhr.status === 422) {
             fail(row, refusal(data), false);
         } else if (xhr.status === 413) {
@@ -319,7 +331,7 @@ function start(field) {
 
         body.append('file', row.file, row.file.name);
 
-        if (row.folder?.id !== null && row.folder?.id !== undefined) {
+        if (! config.replace && row.folder?.id !== null && row.folder?.id !== undefined) {
             body.append('folder', String(row.folder.id));
         }
 
@@ -330,7 +342,7 @@ function start(field) {
         row.loaded = 0;
         row.started = performance.now();
 
-        xhr.open('POST', config.urls.upload);
+        xhr.open('POST', config.replace ? config.urls.upload.replace(':media', String(row.target.id)) : config.urls.upload);
         xhr.responseType = 'json';
         Object.entries({ ...HEADERS, 'X-CSRF-TOKEN': config.csrf_token ?? '' }).forEach(([name, value]) => xhr.setRequestHeader(name, value));
 
@@ -379,6 +391,24 @@ function start(field) {
 
         refresh();
         handOver();
+        closeReplaced();
+    }
+
+    /**
+     * The field of a new version asks nothing once its file is in: it closes, a photo once the crop step gave it back.
+     * A photo the crop step never got (the field was out of sight) closes at once.
+     */
+    function closeReplaced() {
+        if (! config.replace || rows.some(open) || stepping !== null) {
+            return;
+        }
+
+        const done = rows.filter((row) => row.state === 'done');
+        const waits = (row) => config.crop && row.result.croppable === true && row.step === undefined && field.checkVisibility();
+
+        if (done.length > 0 && ! done.some(waits)) {
+            close({ focus: false });
+        }
     }
 
     /**
@@ -411,6 +441,7 @@ function start(field) {
         const detail = {
             files: photos.map((row) => row.result),
             upload: true,
+            replace: config.replace === true,
             taken: false,
             done: (results) => {
                 if (stepping === waiting) {
@@ -451,7 +482,8 @@ function start(field) {
             refresh();
             slot('row-alt-input', asking.element).focus();
         } else if (rows.some((row) => row.state === 'done')) {
-            close();
+            // The host of a new version puts the focus where its panel was.
+            close({ focus: ! config.replace });
         }
     }
 
@@ -469,7 +501,7 @@ function start(field) {
     function add(file) {
         const element = template.content.firstElementChild.cloneNode(true);
         const part = (name) => slot('row-' + name, element);
-        const row = { file, element, folder: config.folder ?? null, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false, xhr: null };
+        const row = { file, element, folder: config.folder ?? null, target, state: 'waiting', percent: 0, loaded: 0, started: 0, result: null, error: '', retry: false, broken: false, xhr: null };
         const id = 'made-cms-upload-' + (++serial);
         const name = part('name');
         const input = part('alt-input');
@@ -497,6 +529,11 @@ function start(field) {
         part('dismiss').addEventListener('click', () => {
             remove(row);
             refresh();
+
+            // "Ander bestand": the field of a new version opens the file chooser again, in the click of the editor.
+            if (config.replace) {
+                ui.input.click();
+            }
         });
         part('retry').addEventListener('click', () => {
             row.state = 'waiting';
@@ -524,6 +561,8 @@ function start(field) {
         // The field of an image takes no document or video, also not one that was dropped past the file chooser.
         if (config.one_image && ! file.type.startsWith('image/')) {
             fail(row, texts.not_image, false);
+        } else if (config.replace && kindOf(file) !== row.target.kind) {
+            fail(row, texts['kind_' + row.target.kind] ?? texts.failed, false);
         } else if (file.size > (config.limits?.max_bytes ?? Infinity)) {
             fail(row, file.type.startsWith('video/') ? texts.too_large_video : texts.too_large, false);
         } else {
@@ -532,11 +571,12 @@ function start(field) {
     }
 
     function take(files) {
-        if (files.length === 0) {
+        // The field of a new version takes nothing before it knows the file it replaces.
+        if (files.length === 0 || (config.replace && target === null)) {
             return;
         }
 
-        (config.one_image ? files.slice(0, 1) : files).forEach(add);
+        (single ? files.slice(0, 1) : files).forEach(add);
         pump();
     }
 
@@ -701,6 +741,29 @@ function start(field) {
         }
     }
 
+    /**
+     * Points the field of a new version at the file it replaces: its words and the file chooser follow its kind. A
+     * refusal belonged to the file before; a file on its way keeps its own.
+     */
+    function aim(media) {
+        if (! config.replace || ! Number.isInteger(media?.id)) {
+            return;
+        }
+
+        const kind = ['image', 'document', 'video'].includes(media.kind) ? media.kind : 'document';
+
+        if (target?.id !== media.id) {
+            rows.filter((row) => row.state === 'error').forEach(remove);
+        }
+
+        target = { id: media.id, kind, name: String(media.name ?? '') };
+        ui.title.textContent = texts['title_' + kind] ?? ui.title.textContent;
+        ui.choose.textContent = texts['choose_' + kind] ?? ui.choose.textContent;
+        ui.rules.textContent = texts['rules_' + kind] ?? '';
+        ui.input.accept = config.accepts?.[kind] ?? '';
+        refresh();
+    }
+
     /** The files of a drop; a folder is no file. */
     function dropped(transfer) {
         const items = [...(transfer.items ?? [])].filter((item) => item.kind === 'file');
@@ -722,9 +785,11 @@ function start(field) {
             // While dragging the browser tells how many, not which: enough for "3 bestanden".
             const count = [...(transfer?.items ?? [])].filter((item) => item.kind === 'file').length;
 
-            ui.dragLine.textContent = count === 0
-                ? format(texts.drag_unknown, { folder: folder() })
-                : format(count === 1 ? texts.drag_one : texts.drag_many, { count, folder: folder() });
+            ui.dragLine.textContent = config.replace
+                ? format(texts['drag_' + (target?.kind ?? 'image')], { name: target?.name ?? '' })
+                : (count === 0
+                    ? format(texts.drag_unknown, { folder: folder() })
+                    : format(count === 1 ? texts.drag_one : texts.drag_many, { count, folder: folder() }));
         }
 
         if (dragging === over) {
@@ -784,6 +849,7 @@ function start(field) {
     });
     field.addEventListener('made-cms:upload-stop', stop);
     field.addEventListener('made-cms:upload-folder', (event) => follow(event.detail?.folder ?? null));
+    field.addEventListener('made-cms:upload-target', (event) => aim(event.detail?.media ?? null));
     field.addEventListener('made-cms:upload-finish', (event) => event.detail?.wait?.(finish()));
     ui.save.addEventListener('click', () => save());
     ui.later.addEventListener('click', () => close());

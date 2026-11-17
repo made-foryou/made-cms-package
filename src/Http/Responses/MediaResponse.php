@@ -47,6 +47,36 @@ final class MediaResponse
     }
 
     /**
+     * The file as it is stored now, after a new version took its place, with what to tell the editor: the name of the
+     * new version, and that the site shows it when a published page that is not in the bin holds the file.
+     */
+    public static function replaced(MediaFile $file, MediaPlaces $places): JsonResponse
+    {
+        $details = self::file($file);
+        $live = array_filter($places->places, static fn (MediaPlace $place): bool => ! $place->pageDeleted && $place->in(UsageVersion::Published)) !== [];
+
+        return self::json([
+            'file' => $details,
+            'notice' => (string) __('made-cms-package::media.library.new_version.'.($live ? 'done_live' : 'done'), ['name' => $details['file']], Locale::launcher()),
+        ]);
+    }
+
+    /**
+     * The file as it is stored now, after the version that waited was put back, with what to tell the editor: the
+     * version the site shows now and the one that waits in its turn.
+     */
+    public static function restored(MediaFile $file, MediaHistory $history): JsonResponse
+    {
+        return self::json([
+            'file' => self::file($file),
+            'notice' => $history->previous === null ? null : (string) __('made-cms-package::media.library.restored', [
+                'version' => $history->version,
+                'waiting' => $history->previous->version,
+            ], Locale::launcher()),
+        ]);
+    }
+
+    /**
      * The file as it is stored now, after its alt text changed.
      */
     public static function saved(MediaFile $file): JsonResponse
@@ -152,7 +182,9 @@ final class MediaResponse
      * meer in het concept"); when its places differ, each place in one version has that note itself.
      *
      * Next to them the line of its history ("Geüpload door Menno Tempelaar op 9 oktober 2026 · versie 2 · vervangen
-     * door …") with the version that waits to be put back, and whether it can be deleted with the reason in words.
+     * door …") with the version that waits to be put back and the name of the button that puts it back, whether it can
+     * be deleted with the reason in words, and what replacing it changes ("Staat op 2 pagina's; vervangen verandert hem
+     * daar meteen, ook op de site."; null when no page that is not in the bin holds it).
      *
      * @param  array<int, string>  $names  the names of the editors of its history, by id (NameEditors)
      */
@@ -178,6 +210,7 @@ final class MediaResponse
             'file' => [...self::file($description->file), 'link' => self::link($description->file), 'used' => ! $description->places->isEmpty()],
             'history' => self::history($description->history, $names, $locale),
             'removal' => self::removal($description->places, $locale),
+            'replace' => ['warning' => $count === 0 ? null : trans_choice('made-cms-package::media.library.new_version.warning.'.$description->file->kind->value, $count, ['count' => $count], $locale)],
             'heading' => $count === 0
                 ? (string) __('made-cms-package::media.library.usage', [], $locale)
                 : trans_choice('made-cms-package::media.library.used', $count, ['count' => $count], $locale),
@@ -358,7 +391,7 @@ final class MediaResponse
      * The line of the history of a file and the version that waits, in words.
      *
      * @param  array<int, string>  $names
-     * @return array{line: string, previous: string|null, can_restore: bool}
+     * @return array{line: string, previous: string|null, restore: string|null, can_restore: bool}
      */
     private static function history(MediaHistory $history, array $names, string $locale): array
     {
@@ -385,6 +418,7 @@ final class MediaResponse
         return [
             'line' => Str::ucfirst(implode(' · ', $line)),
             'previous' => $history->previous === null ? null : $text('previous', ['version' => $history->previous->version]),
+            'restore' => $history->previous === null ? null : $text('restore', ['version' => $history->previous->version]),
             'can_restore' => $history->previous !== null,
         ];
     }

@@ -147,6 +147,7 @@ it('tells who uploaded the file, its version and the version that waits, in word
         ->assertJsonPath('history', [
             'line' => 'Geüpload door Menno Tempelaar op 9 oktober 2026 · versie 2 · vervangen door Sanne de Vries op 20 oktober 2026',
             'previous' => 'Versie 1 staat nog klaar om terug te zetten.',
+            'restore' => 'Versie 1 terugzetten',
             'can_restore' => true,
         ])
         ->assertJsonPath('file.link', "http://localhost/made-cms/file/{$media->ulid}/teamfoto");
@@ -159,6 +160,7 @@ it('tells the upload without a name when nobody is known, and nothing waits', fu
         ->assertJsonPath('history', [
             'line' => 'Geüpload op 9 oktober 2026 · versie 1',
             'previous' => null,
+            'restore' => null,
             'can_restore' => false,
         ]);
 });
@@ -179,4 +181,21 @@ it('says whether the file can be deleted, and why not', function (array $pages, 
     'on one page' => [[false], false, 'Staat op 1 pagina. Haal het daar eerst weg.'],
     'on two pages and one in the bin' => [[false, false, true], false, 'Staat op 2 pagina’s. Haal het daar eerst weg.'],
     'only in the bin' => [[true], false, 'Staat nog op een pagina in de prullenbak. Verwijderen kan zodra die is opgeruimd.'],
+]);
+
+it('warns that replacing changes the file at once on the pages it is on, by the kind of the file', function (string $kind, array $pages, ?string $warning): void {
+    $media = Media::factory()->create(['kind' => $kind]);
+
+    foreach ($pages as $deleted) {
+        $page = Page::factory()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'h')])->create($deleted ? ['deleted_at' => now()] : []);
+        SyncMediaUsage::run($page);
+    }
+
+    $this->getJson('made-cms/media/'.$media->id)->assertJsonPath('replace', ['warning' => $warning]);
+})->with([
+    'nowhere' => ['image', [], null],
+    'only in the bin' => ['image', [true], null],
+    'an image on one page' => ['image', [false], 'Staat op 1 pagina; vervangen verandert hem daar meteen, ook op de site.'],
+    'a document on two pages' => ['document', [false, false], 'Staat op 2 pagina’s; vervangen verandert het daar meteen, ook op de site.'],
+    'a video on one page' => ['video', [false], 'Staat op 1 pagina; vervangen verandert hem daar meteen, ook op de site.'],
 ]);

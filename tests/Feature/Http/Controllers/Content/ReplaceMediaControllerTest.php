@@ -6,9 +6,11 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
     Storage::fake('public');
@@ -34,8 +36,24 @@ it('takes a file as the new version and answers with the file as it is stored no
         ->and($response->json('file.name'))->toBe('teamfoto-2026')
         ->and($response->json('file.url'))->toBe(Storage::disk('public')->url($stored->path))
         ->and($stored->version)->toBe(2)
-        ->and($stored->replaced_by)->toBe($this->editor->id);
+        ->and($stored->replaced_by)->toBe($this->editor->id)
+        ->and($response->json('notice'))->toBe('Vervangen door teamfoto-2026.webp.');
 });
+
+it('tells that the site shows the new version when a published page holds the file', function (string $version, string $notice): void {
+    useStripTypes();
+    $media = UploadMedia::run(new UploadedMedia(photo(800, 600), 'teamfoto.jpg'));
+    $strips = [storedStrip('hero', ['foto' => $media->id], id: 'h')];
+    $page = ($version === 'draft' ? Page::factory()->withStrips([])->withDraft($strips) : Page::factory()->withStrips($strips))->create();
+    SyncMediaUsage::run($page);
+
+    $this->post("made-cms/media/{$media->id}/replace", ['file' => uploadedReplacement(photo(640, 480), 'Teamfoto 2026.jpg')], ['Accept' => 'application/json'])
+        ->assertOk()
+        ->assertJsonPath('notice', $notice);
+})->with([
+    'on the site' => ['published', 'Vervangen door teamfoto-2026.webp. Op de site staat nu de nieuwe versie.'],
+    'only in a draft' => ['draft', 'Vervangen door teamfoto-2026.webp.'],
+]);
 
 it('refuses a file of another kind, keyed by file', function (): void {
     $media = UploadMedia::run(new UploadedMedia(photo(800, 600), 'teamfoto.jpg'));

@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Data\MediaLibrary;
 use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\Shell;
+use Made\CmsPackage\Http\Cms\UploadField;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Support\Locale;
 
@@ -34,6 +35,8 @@ final class MediaLibraryResponse
             'browser' => $browser,
             'library' => self::config($browser['upload']['limits'] ?? ''),
             'libraryScript' => LauncherAssetController::url('library.js'),
+            // The field of a new version in the side column, pointed at the chosen file by library.js.
+            'replace' => UploadField::replace(),
             // Moving a file into another folder is managing the library, which this screen is.
             'crop' => CropStep::make(moves: true),
         ]);

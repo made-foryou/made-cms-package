@@ -40,7 +40,7 @@ Place every domain class in the right context and layer, written test-first, so 
 | Writing to the media disk | `src/Content/Actions/UploadMedia.php` (through `CheckMediaDisk`) | Only Content Actions use `Storage` (`tests/Arch/WritingTest.php`), never `fopen`. Check the upload first (`CheckUploadedMedia`: type from the contents, size, svg), then write `media/{ulid}/…`, and take the folder off the disk again when the row fails. |
 | Exception | `src/<Context>/Exceptions/` | `final`, named after the situation, static constructor such as `for(...)`. |
 | Factory | `database/factories/<Context>/` | `final`, namespace `Made\CmsPackage\Database\Factories\<Context>`. |
-| Migration | `database/migrations/` | `YYYY_MM_DD_HHMMSS_create_cms_<table>_table.php`, anonymous class. |
+| Migration | `database/migrations/` | `YYYY_MM_DD_HHMMSS_create_cms_<table>_table.php`, anonymous class. An existing migration is never changed: a change of the schema is a new `…_add_<columns>_to_cms_<table>_table.php` with a later timestamp and a `down()`, which fills in a column a row cannot be without. |
 
 ## Examples
 

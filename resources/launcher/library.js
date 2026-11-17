@@ -15,6 +15,12 @@
  *   selects (made-cms:media-selection) the column shows how many files are selected with the same folder and
  *   "Klaar". The list moves them (made-cms:media-move) and says what it did; a refusal stays below the folder. The
  *   folders come from the list (made-cms:media-folders).
+ * - The actions of a file (design 13.1ba–ck): "Vervangen" opens the field of a new version (UploadField::replace(),
+ *   pointed at the file with made-cms:upload-target), "Downloaden" saves it through the app, "Link kopiëren" puts its
+ *   lasting link on the clipboard (or in a field to copy by hand when the browser refuses), the line of its versions
+ *   comes from the server with "Terugzetten", and "Verwijderen", for the file or for the selection, asks inline and
+ *   lets the list delete (made-cms:media-delete). What a new version or a version put back did is told in the message
+ *   of the list (made-cms:media-notice), and the file bubbles up as made-cms:media-changed.
  *
  * Its config is JSON on the library ([data-media-library]): the addresses, the names of the kinds and its texts.
  */
@@ -88,6 +94,28 @@ function library(root) {
         moveError: slot('move-error'),
         selectionDone: slot('selection-done'),
         selectionStop: slot('selection-stop'),
+        replace: slot('replace'),
+        download: slot('download'),
+        copy: slot('copy'),
+        explain: slot('explain'),
+        copied: slot('copied'),
+        linkField: slot('link-field'),
+        link: slot('link'),
+        linkClose: slot('link-close'),
+        replacing: slot('replacing'),
+        replaceTitle: slot('replace-title'),
+        replaceWarning: slot('replace-warning'),
+        replaceWarningText: slot('replace-warning-text'),
+        replaceNote: slot('replace-note'),
+        replaceCancel: slot('replace-cancel'),
+        foot: slot('foot'),
+        history: slot('history'),
+        waiting: slot('waiting'),
+        previous: slot('previous'),
+        restore: slot('restore'),
+        restoreError: slot('restore-error'),
+        fileDelete: slot('delete'),
+        selectionDelete: slot('selection-delete'),
     };
     const pageTemplate = aside.querySelector('template[data-details-page]');
 
@@ -107,7 +135,16 @@ function library(root) {
         selection: null,
         // A move on its way.
         moving: false,
+        // What the server tells of the file the column shows (GET made-cms/media/{media}): its history, whether it
+        // can be deleted, what replacing changes and its lasting link; null until it came.
+        described: null,
+        // A version on its way back.
+        restoring: false,
+        // The field of a new version: rest, sending (its bytes travel, it can be stopped), busy or error.
+        replaceMoment: 'rest',
     };
+    const replaceField = ui.replacing.querySelector('[data-upload]');
+    const restoreLabel = ui.restore.textContent;
     const moveLabel = ui.moveButton.textContent;
     // The alt texts on their way to the server, by the id of their file: {alt, promise}. A file the editor comes back to
     // while its text travels shows that text, never the older one the list still holds.
@@ -154,8 +191,19 @@ function library(root) {
         const thumb = file.thumb ?? null;
         const pending = saving.get(file.id) ?? null;
         const kept = pending === null && state.file?.id === file.id && changed() ? ui.alt.value : null;
+        const other = state.file?.id !== file.id;
 
         state.file = file;
+
+        // What the column did for the file before is not for another one.
+        if (other) {
+            state.described = null;
+            replacing(false);
+            copied('rest');
+            restoreError(null);
+            fileDelete.reset();
+        }
+
         ui.nothing.hidden = true;
         ui.file.hidden = state.selection !== null;
         ui.mini.dataset.kind = kind;
@@ -180,7 +228,7 @@ function library(root) {
         ].filter(Boolean).join(' · ');
         ui.alt.value = pending?.alt ?? kept ?? file.alt ?? '';
         ui.alt.placeholder = texts['alt_placeholder_' + kind] ?? '';
-        ui.actions.hidden = file.croppable !== true;
+        drawActions(file);
 
         if (kept === null || ! changed()) {
             hint();
@@ -194,13 +242,411 @@ function library(root) {
 
     function nothing() {
         state.file = null;
+        state.described = null;
         ui.nothing.hidden = state.selection !== null;
         ui.file.hidden = true;
+        replacing(false);
+        copied('rest');
+        drawFoot();
 
         if (state.selection === null) {
             ui.move.hidden = true;
         }
     }
+
+    /**
+     * The actions of a file: "Bijsnijden" for a photo with an original, the address it is saved from, and what
+     * downloading gives and what the link follows.
+     */
+    function drawActions(file) {
+        const photo = file.croppable === true;
+
+        ui.crop.hidden = ! photo;
+        ui.download.href = address(settings.urls.download, file);
+        ui.copy.hidden = linkOf() === null;
+        ui.explain.textContent = [photo ? texts.download_photo : texts.download_file, photo ? texts.link_photo : texts.link_file].join(' ');
+    }
+
+    /** The lasting link of the file the column shows, absolute; null for a file without one. */
+    function linkOf() {
+        return state.described?.file?.link ?? state.file?.link ?? null;
+    }
+
+    /** "Link gekopieerd", or the link in a field to copy by hand when the browser refused; rest takes both away. */
+    function copied(moment) {
+        ui.copied.replaceChildren();
+
+        if (moment !== 'rest') {
+            const dot = document.createElement('span');
+            const text = document.createElement('span');
+
+            dot.className = moment === 'refused' ? 'bol let' : 'bol';
+            dot.setAttribute('aria-hidden', 'true');
+            text.textContent = moment === 'copied' ? texts.copied : texts.copy_refused;
+            ui.copied.append(dot, text);
+        }
+
+        ui.linkField.hidden = moment !== 'refused';
+
+        if (moment === 'refused') {
+            ui.link.value = linkOf() ?? '';
+            ui.link.focus();
+            ui.link.select();
+        }
+    }
+
+    async function copy() {
+        const link = linkOf();
+
+        if (link === null) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(link);
+            copied('copied');
+        } catch {
+            // No clipboard (an address without https) or the browser refused it: the editor copies by hand.
+            copied('refused');
+        }
+    }
+
+    /** What the list says of the side column, in its message. */
+    function tell(text) {
+        if (text) {
+            list.dispatchEvent(new CustomEvent('made-cms:media-notice', { detail: { text, tone: 'goed' } }));
+        }
+    }
+
+    /** The file as the server answers it now, with what a page of the list said of it and the answer does not. */
+    function keeping(file) {
+        return { used: state.file?.used, link: state.file?.link, ...file };
+    }
+
+    /**
+     * Opens or closes the field of a new version, pointed at the file the column shows: its words follow the kind of
+     * the file, the warning what replacing changes on the pages it is on.
+     */
+    function replacing(open) {
+        const file = state.file;
+
+        ui.replacing.hidden = ! open || file === null;
+        ui.replace.setAttribute('aria-expanded', String(! ui.replacing.hidden));
+
+        if (ui.replacing.hidden) {
+            return;
+        }
+
+        const kind = file.kind ?? 'image';
+
+        ui.replaceTitle.textContent = texts['replace_title_' + kind] ?? '';
+        ui.replaceNote.textContent = file.croppable === true ? texts.replace_note_photo : texts.replace_note;
+        warn();
+        replaceField?.dispatchEvent(new CustomEvent('made-cms:upload-target', { detail: { media: { id: file.id, kind, name: file.file ?? file.name } } }));
+    }
+
+    function warn() {
+        const warning = state.described?.replace?.warning ?? null;
+
+        ui.replaceWarning.hidden = warning === null;
+        ui.replaceWarningText.textContent = warning ?? '';
+    }
+
+    /** "Annuleren": a file whose bytes travel stops; one the server is storing already lands as the new version. */
+    function stopReplacing() {
+        if (state.replaceMoment === 'sending') {
+            replaceField?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
+        }
+
+        replacing(false);
+        ui.replace.focus();
+    }
+
+    /** The line of the versions with "Terugzetten", and "Verwijderen", once the server told them. */
+    function drawFoot() {
+        const data = state.described;
+
+        ui.foot.hidden = state.selection !== null || state.file === null || data === null;
+
+        if (data !== null) {
+            ui.history.textContent = data.history?.line ?? '';
+            ui.waiting.hidden = data.history?.can_restore !== true;
+            ui.previous.textContent = data.history?.previous ?? '';
+            drawRestore();
+            warn();
+        }
+
+        fileDelete.draw();
+    }
+
+    // Busy, the button keeps the focus (aria-disabled, never disabled): a second click does nothing meanwhile.
+    function drawRestore() {
+        ui.restore.setAttribute('aria-disabled', String(state.restoring));
+        ui.restore.textContent = state.restoring ? texts.restoring : restoreLabel;
+
+        const label = state.described?.history?.restore ?? null;
+
+        label === null || state.restoring ? ui.restore.removeAttribute('aria-label') : ui.restore.setAttribute('aria-label', label);
+    }
+
+    function restoreError(error) {
+        ui.restoreError.hidden = error === null;
+        ui.restoreError.textContent = error ?? '';
+        error === null ? ui.restoreError.removeAttribute('role') : ui.restoreError.setAttribute('role', 'alert');
+    }
+
+    /** "Terugzetten": the version that waits swaps places with the one the site shows. */
+    async function restore() {
+        const file = state.file;
+
+        if (file === null || state.restoring) {
+            return;
+        }
+
+        let response = null;
+        let data = null;
+
+        state.restoring = true;
+        restoreError(null);
+        drawRestore();
+
+        try {
+            response = await fetch(address(settings.urls.restore, file), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { ...HEADERS, 'X-CSRF-TOKEN': settings.csrf_token ?? '' },
+            });
+            data = await response.json().catch(() => null);
+        } catch {
+            response = null;
+        }
+
+        state.restoring = false;
+        drawRestore();
+
+        if (response?.ok && data?.file) {
+            const restored = keeping(data.file);
+
+            tell(data.notice);
+            root.dispatchEvent(new CustomEvent('made-cms:media-changed', { bubbles: true, detail: { file: restored } }));
+
+            if (state.file?.id === file.id) {
+                show(restored);
+            }
+
+            return;
+        }
+
+        if (state.file?.id === file.id) {
+            const message = response?.status === 422 ? data?.errors?.version?.[0] : null;
+
+            restoreError(message ?? (response?.status === 401 || response?.status === 419 ? texts.expired : texts.restore_failed));
+        }
+    }
+
+    /**
+     * "Verwijderen" with its confirmation inline, for the chosen file or the selection: what describe() gives says
+     * which files, whether it can, why not, and the words of the confirmation; null hides it. The list deletes
+     * (made-cms:media-delete) and says what it did.
+     */
+    function deleter(part, describe) {
+        const piece = (name) => part.querySelector('[data-slot="details-delete-' + name + '"]');
+        const own = {
+            button: piece('button'),
+            note: piece('note'),
+            kept: piece('kept'),
+            ask: piece('ask'),
+            text: piece('text'),
+            error: piece('error'),
+            yes: piece('yes'),
+            no: piece('no'),
+        };
+        let open = false;
+        let busy = false;
+
+        function draw() {
+            const what = describe();
+
+            part.hidden = what === null;
+
+            if (what === null) {
+                open = false;
+
+                return;
+            }
+
+            open = open && what.allowed;
+            own.button.hidden = open;
+            own.button.disabled = ! what.allowed;
+            own.button.setAttribute('aria-expanded', String(open));
+            own.note.hidden = open || ! what.note;
+            own.note.textContent = what.note ?? '';
+            own.ask.hidden = ! open;
+            own.text.textContent = what.text;
+            own.yes.textContent = busy ? texts.deleting : what.yes;
+            // Busy, "Ja, verwijder" keeps the focus (aria-disabled, never disabled); confirm() ignores it meanwhile.
+            own.yes.setAttribute('aria-disabled', String(busy));
+            own.no.disabled = busy;
+        }
+
+        function error(message) {
+            own.error.hidden = message === null;
+            own.error.textContent = message ?? '';
+        }
+
+        /** Why a file stayed after all; with focus it takes the focus, as the button it came from is gone. */
+        function kept(message, focus = false) {
+            own.kept.hidden = message === null;
+            own.kept.textContent = message ?? '';
+
+            if (message !== null && focus) {
+                own.kept.focus();
+            }
+        }
+
+        function ask(on) {
+            open = on;
+            error(null);
+            kept(null);
+            draw();
+            (on ? own.no : own.button).focus();
+        }
+
+        async function confirm() {
+            const what = describe();
+
+            if (what === null || busy) {
+                return;
+            }
+
+            busy = true;
+            error(null);
+            draw();
+
+            const result = await new Promise((resolve) => {
+                const detail = { files: what.ids, selection: what.selection === true, done: resolve, taken: false };
+
+                list.dispatchEvent(new CustomEvent('made-cms:media-delete', { detail }));
+
+                if (! detail.taken) {
+                    resolve({ ok: false, deleted: [], kept: [], error: texts.action_failed });
+                }
+            });
+
+            busy = false;
+
+            if (! result.ok) {
+                draw();
+                error(result.error === texts.action_failed ? what.failed : result.error);
+                own.yes.focus();
+
+                return;
+            }
+
+            open = false;
+            draw();
+            what.after?.(result);
+        }
+
+        own.button.addEventListener('click', () => ask(true));
+        own.no.addEventListener('click', () => ask(false));
+        own.yes.addEventListener('click', confirm);
+        own.ask.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && ! busy) {
+                // Escape closes the confirmation only, never the selection.
+                event.preventDefault();
+                event.stopPropagation();
+                ask(false);
+            }
+        });
+
+        return {
+            draw,
+            kept,
+            reset() {
+                if (! busy) {
+                    open = false;
+                    error(null);
+                    kept(null);
+                }
+
+                draw();
+            },
+        };
+    }
+
+    const nameOf = (file) => file.file ?? file.name;
+
+    /** Names as one line: "a", "a en b", "a, b en 3 andere". */
+    function names(files) {
+        if (files.length <= 1) {
+            return files.map(nameOf).join('');
+        }
+
+        if (files.length === 2) {
+            return format(texts.names_two, { first: nameOf(files[0]), second: nameOf(files[1]) });
+        }
+
+        const more = files.length - 2;
+
+        return format(more === 1 ? texts.selected_more_one : texts.selected_more, { names: files.slice(0, 2).map(nameOf).join(', '), count: more });
+    }
+
+    const fileDelete = deleter(ui.fileDelete, () => {
+        const file = state.file;
+        const data = state.described;
+
+        if (file === null || data === null) {
+            return null;
+        }
+
+        const name = nameOf(file);
+
+        return {
+            ids: [file.id],
+            allowed: data.removal?.allowed === true,
+            note: data.removal?.note ?? null,
+            text: format(data.history?.can_restore ? texts.delete_one_previous : texts.delete_one, { name }),
+            yes: format(texts.delete_yes, { name }),
+            failed: texts.delete_failed,
+            // A page took the file in the meantime: said at the button, and the column shows where it is now.
+            after(result) {
+                if (result.kept.includes(file.id) && state.file?.id === file.id) {
+                    fileDelete.kept(format(texts.delete_kept, { name }), true);
+                    usage(state.file);
+                }
+            },
+        };
+    });
+
+    // The selection: what can go is counted beforehand from what the list says of each file; the server checks again.
+    const selectionDelete = deleter(ui.selectionDelete, () => {
+        const files = state.selection;
+
+        if (files === null || files.length === 0) {
+            return null;
+        }
+
+        const free = files.filter((file) => file.used !== true);
+        const used = files.filter((file) => file.used === true);
+        const stay = used.length === 0 ? '' : format(used.length === 1 ? texts.kept_one : texts.kept_many, { names: names(used) });
+        const all = files.length === 1
+            ? format(texts.delete_one, { name: nameOf(files[0]) })
+            : (files.length === 2 ? texts.delete_all_two : format(texts.delete_all_many, { count: files.length }));
+        const none = files.length === 1
+            ? format(texts.delete_none_one, { name: nameOf(files[0]) })
+            : (files.length === 2 ? texts.delete_none_two : format(texts.delete_none_many, { count: files.length }));
+
+        return {
+            ids: files.map((file) => file.id),
+            selection: true,
+            allowed: free.length > 0,
+            note: free.length === 0 ? none : null,
+            text: used.length === 0 ? all : [format(free.length === 1 ? texts.delete_some_one : texts.delete_some, { count: free.length, total: files.length }), stay].join(' '),
+            yes: free.length === 1 ? texts.delete_yes_one : format(texts.delete_yes_many, { count: free.length }),
+            failed: texts.delete_failed_many,
+        };
+    });
 
     /**
      * "Map" for these files: their folder chosen when they share one ("Alle bestanden" for none), else "Kies een
@@ -251,6 +697,8 @@ function library(root) {
         aside.classList.toggle('selecteert', files !== null);
         ui.selection.hidden = files === null;
         ui.selectionDone.hidden = files === null;
+        drawFoot();
+        selectionDelete.reset();
 
         if (files === null) {
             ui.nothing.hidden = state.file !== null;
@@ -323,6 +771,13 @@ function library(root) {
         const controller = new AbortController();
 
         state.places = controller;
+
+        // The same file keeps what the server told of it until the new answer is in, so a button keeps its focus.
+        if (state.described?.file?.id !== file.id) {
+            state.described = null;
+            drawFoot();
+        }
+
         ui.heading.textContent = texts.usage ?? ui.heading.textContent;
         ui.loading.hidden = false;
         ui.loadingText.textContent = texts.loading;
@@ -340,6 +795,13 @@ function library(root) {
             }
 
             ui.loading.hidden = true;
+
+            if (state.file?.id === file.id) {
+                state.described = data;
+                ui.copy.hidden = linkOf() === null;
+                drawFoot();
+            }
+
             ui.heading.textContent = data.heading ?? '';
             ui.nowhere.hidden = (data.pages ?? []).length > 0;
             ui.pages.replaceChildren(...(data.pages ?? []).map(page));
@@ -553,6 +1015,67 @@ function library(root) {
         }
     });
 
+    ui.replace.addEventListener('click', () => {
+        if (! ui.replacing.hidden) {
+            stopReplacing();
+
+            return;
+        }
+
+        replacing(true);
+        replaceField?.querySelector('[data-slot="upload-choose"]')?.focus();
+    });
+    ui.replaceCancel.addEventListener('click', stopReplacing);
+    ui.copy.addEventListener('click', copy);
+    ui.link.addEventListener('focus', () => ui.link.select());
+    ui.linkClose.addEventListener('click', () => {
+        copied('rest');
+        ui.copy.focus();
+    });
+    ui.restore.addEventListener('click', restore);
+
+    // The field of a new version: its moment decides what the panel shows around it; a version that came in is told
+    // and shown, and the panel closes once the field is done (a photo after the crop step).
+    replaceField?.addEventListener('made-cms:upload', (event) => {
+        const detail = event.detail ?? {};
+
+        state.replaceMoment = detail.busy ? (detail.sending ? 'sending' : 'busy') : ((detail.failed ?? 0) > 0 ? 'error' : 'rest');
+        ui.replacing.dataset.moment = state.replaceMoment;
+    });
+    replaceField?.addEventListener('made-cms:uploaded', (event) => {
+        const file = event.detail?.file;
+
+        if (! file) {
+            return;
+        }
+
+        tell(event.detail.notice);
+
+        const replaced = state.file?.id === file.id ? keeping(file) : file;
+
+        root.dispatchEvent(new CustomEvent('made-cms:media-changed', { bubbles: true, detail: { file: replaced } }));
+
+        if (state.file?.id === file.id) {
+            show(replaced);
+        }
+    });
+    replaceField?.addEventListener('made-cms:upload-closed', (event) => {
+        const file = (event.detail?.files ?? []).find((candidate) => candidate.id === state.file?.id);
+
+        if (file) {
+            show(keeping(file));
+        }
+
+        replacing(false);
+
+        // The focus was in the panel or in the crop step, which are gone: it goes to "Vervangen".
+        const focused = document.activeElement;
+
+        if (state.file !== null && (focused === null || focused === document.body || ! focused.checkVisibility())) {
+            ui.replace.focus();
+        }
+    });
+
     ui.crop.addEventListener('click', async () => {
         const step = document.querySelector('[data-media-crop]');
 
@@ -619,18 +1142,21 @@ function library(root) {
         root.toggleAttribute('data-drop', over);
     }
 
+    // Files above the open panel of a new version go there, not to the folder of the list.
+    const replacingAt = (event) => ! ui.replacing.hidden && event.target instanceof Node && ui.replacing.contains(event.target);
+
     if (field) {
         root.addEventListener('dragenter', (event) => {
             if (carriesFiles(event)) {
                 event.preventDefault();
-                hover(true, event.dataTransfer);
+                hover(! replacingAt(event), event.dataTransfer);
             }
         });
         root.addEventListener('dragover', (event) => {
             if (carriesFiles(event)) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = 'copy';
-                hover(true, event.dataTransfer);
+                hover(! replacingAt(event), event.dataTransfer);
             }
         });
         root.addEventListener('dragleave', (event) => {
@@ -647,7 +1173,7 @@ function library(root) {
             }
 
             event.preventDefault();
-            field.dispatchEvent(new CustomEvent('made-cms:upload-take', { detail: { transfer: event.dataTransfer } }));
+            (replacingAt(event) ? replaceField : field)?.dispatchEvent(new CustomEvent('made-cms:upload-take', { detail: { transfer: event.dataTransfer } }));
         });
     }
 

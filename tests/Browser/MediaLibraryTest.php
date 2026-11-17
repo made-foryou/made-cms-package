@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\ReplaceMedia;
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
@@ -12,6 +13,7 @@ use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost']);
@@ -561,7 +563,7 @@ it('uploads from "Uploaden" into the folder it is in, and the amber dot leaves o
     $page = visit('/made-cms/media?folder='.$this->teams->id);
 
     $page->script(<<<'JS'
-        () => document.querySelector('[data-slot="upload-input"]').addEventListener('click', (event) => {
+        () => document.querySelector('[data-media] [data-slot="upload-input"]').addEventListener('click', (event) => {
             event.preventDefault();
             window.chooserOpened = true;
         })
@@ -570,7 +572,7 @@ it('uploads from "Uploaden" into the folder it is in, and the amber dot leaves o
 
     expect($page->script('() => window.chooserOpened === true'))->toBeTrue();
 
-    $page->attach('[data-slot="upload-input"]', quadrants(2400, 1600, 'jpg', 'Teamfoto Merwestad 5.jpg'));
+    $page->attach('[data-media] [data-slot="upload-input"]', quadrants(2400, 1600, 'jpg', 'Teamfoto Merwestad 5.jpg'));
 
     expect($page->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
 
@@ -626,9 +628,9 @@ it('takes files dropped on the files, says where they go, and asks the alt text 
     // Back from the step, the field asks the description of the document.
     expect($page->script(waitUntil("! document.querySelector('[data-media-crop]').open && document.activeElement?.dataset.slot === 'upload-row-alt-input'")))->toBeTrue();
 
-    $page->assertSeeIn('[data-upload] [data-slot="upload-row-alt-hint"]:not([hidden])', 'Voor een document is dit de omschrijving bij de downloadlink.')
-        ->type('[data-upload] .upload-rij:nth-child(2) [data-slot="upload-row-alt-input"]', 'Inschrijfformulier voor nieuwe leden (pdf)')
-        ->keys('[data-upload] .upload-rij:nth-child(2) [data-slot="upload-row-alt-input"]', 'Enter');
+    $page->assertSeeIn('[data-media] [data-upload] [data-slot="upload-row-alt-hint"]:not([hidden])', 'Voor een document is dit de omschrijving bij de downloadlink.')
+        ->type('[data-media] [data-upload] .upload-rij:nth-child(2) [data-slot="upload-row-alt-input"]', 'Inschrijfformulier voor nieuwe leden (pdf)')
+        ->keys('[data-media] [data-upload] .upload-rij:nth-child(2) [data-slot="upload-row-alt-input"]', 'Enter');
 
     expect($page->script(waitUntil("document.querySelector('[data-slot=\"media-upload\"]').hidden")))->toBeTrue()
         ->and(Media::query()->where('name', 'inschrijfformulier')->sole()->only('alt', 'folder_id'))->toBe(['alt' => 'Inschrijfformulier voor nieuwe leden (pdf)', 'folder_id' => $this->teams->id])
@@ -647,7 +649,7 @@ it('keeps its filter and search when files come in, and shows a new file only wh
     ], drop: true));
 
     // The document asks its alt text in the field; the numbers follow, the filter and the search stay.
-    expect($page->script(waitUntil("document.querySelector('[data-upload] [data-slot=\"upload-row-alt-input\"]')?.checkVisibility()")))->toBeTrue()
+    expect($page->script(waitUntil("document.querySelector('[data-media] [data-upload] [data-slot=\"upload-row-alt-input\"]')?.checkVisibility()")))->toBeTrue()
         ->and($page->script(waitUntil("document.querySelector('[data-slot=\"media-kinds\"] .filter[data-kind=\"\"]').textContent.replace(/\\s+/g, ' ').trim() === 'Alle 5'")))->toBeTrue();
 
     $page->assertValue('[data-slot="media-search"]', 'training')
@@ -656,8 +658,8 @@ it('keeps its filter and search when files come in, and shows a new file only wh
     expect($page->script(libraryShows(['training-dinsdag'])))->toBeTrue()
         ->and($page->script('() => location.search'))->toBe('?without_alt=1&q=training');
 
-    $page->type('[data-upload] [data-slot="upload-row-alt-input"]', 'Inschrijfformulier voor nieuwe leden (pdf)')
-        ->keys('[data-upload] [data-slot="upload-row-alt-input"]', 'Enter');
+    $page->type('[data-media] [data-upload] [data-slot="upload-row-alt-input"]', 'Inschrijfformulier voor nieuwe leden (pdf)')
+        ->keys('[data-media] [data-upload] [data-slot="upload-row-alt-input"]', 'Enter');
 
     expect($page->script(waitUntil("document.querySelector('[data-slot=\"media-upload\"]').hidden")))->toBeTrue()
         ->and(Media::query()->where('name', 'inschrijfformulier')->sole()->alt)->toBe('Inschrijfformulier voor nieuwe leden (pdf)')
@@ -764,8 +766,8 @@ it('asks the alt text of a photo the editor did not get to in the crop step', fu
         ->and(Media::query()->where('name', 'teamfoto')->sole()->alt)->toBe('Het eerste team')
         ->and($page->script("() => [...document.querySelectorAll('[data-slot=\"upload-row-alt-input\"]')].filter((input) => input.checkVisibility()).length"))->toBe(1);
 
-    $page->type('[data-upload] li:nth-child(2) [data-slot="upload-row-alt-input"]', 'Het veld achter de sporthal')
-        ->click('[data-slot="upload-save"]');
+    $page->type('[data-media] [data-upload] li:nth-child(2) [data-slot="upload-row-alt-input"]', 'Het veld achter de sporthal')
+        ->click('[data-media] [data-slot="upload-save"]');
 
     expect($page->script(waitUntil("document.querySelector('[data-slot=\"media-upload\"]').hidden")))->toBeTrue()
         ->and(Media::query()->where('name', 'veld')->sole()->alt)->toBe('Het veld achter de sporthal');
@@ -967,8 +969,9 @@ it('moves a file dragged onto a new folder, without the layer for uploads, and t
 });
 
 it('stores a typed alt text before the chosen file is dragged onto a folder, and holds the file when that fails', function (): void {
-    // In all files the file stays chosen and shows the text as stored.
-    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1100);
+    // In all files the file stays chosen and shows the text as stored. The whole page fits the window: a drag that
+    // has to scroll its target into view halfway never starts in Chromium on Linux and Windows.
+    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1800);
 
     expect($page->script(waitUntil(libraryDetails('teamfoto-merwestad-1.webp'))))->toBeTrue();
 
@@ -984,7 +987,7 @@ it('stores a typed alt text before the chosen file is dragged onto a folder, and
         ->assertNoJavaScriptErrors();
 
     // From the open folder the file leaves the side column, with its text stored first.
-    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->training->id)->resize(1280, 1100);
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->training->id)->resize(1280, 1800);
 
     expect($page->script(waitUntil(libraryDetails('training-dinsdag.webp'))))->toBeTrue();
 
@@ -1000,7 +1003,7 @@ it('stores a typed alt text before the chosen file is dragged onto a folder, and
         ->assertNoJavaScriptErrors();
 
     // A text that is not stored holds the file where it is, with the message at the text and nothing moved.
-    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->schema->id)->resize(1280, 1100);
+    $page = visit('/made-cms/media?folder='.$this->teams->id.'&file='.$this->schema->id)->resize(1280, 1800);
 
     expect($page->script(waitUntil(libraryDetails('wedstrijdschema.pdf'))))->toBeTrue();
 
@@ -1039,7 +1042,7 @@ it('selects files with the keyboard and moves them with the folder of the side c
     $page->click('[data-slot="media-select"]')
         ->assertAttribute('[data-slot="media-select"]', 'aria-pressed', 'true')
         ->assertSeeIn('[data-slot="details-selection-count"]', 'Nog niets gekozen')
-        ->assertSeeIn('[data-slot="details-selection-hint"]', 'Kies de bestanden die je wilt verplaatsen.')
+        ->assertSeeIn('[data-slot="details-selection-hint"]', 'Kies de bestanden die je wilt verplaatsen of verwijderen.')
         ->assertMissing('[data-slot="details-move"]')
         ->assertMissing('[data-slot="details-nothing"]')
         ->keys(libraryTile($this->training), 'Space')
@@ -1298,5 +1301,315 @@ it('manages folders and selects files by tapping on a phone', function (): void 
         ->and($page->script('() => document.documentElement.scrollWidth <= window.innerWidth'))->toBeTrue();
 
     $page->screenshot(filename: 'media-library-phone-selection')
+        ->assertNoJavaScriptErrors();
+});
+
+/**
+ * A JavaScript condition: the side column shows the line of the versions of its file, with this text in it.
+ */
+function libraryVersion(string $text): string
+{
+    return "! document.querySelector('[data-slot=\"details-foot\"]').hidden && document.querySelector('[data-slot=\"details-history\"]').textContent.includes('{$text}')";
+}
+
+/**
+ * A script for $page->script() that puts a clipboard in place of the browser's: one that takes the text, or refuses.
+ */
+function stubClipboard(bool $refuses): string
+{
+    $write = $refuses ? "() => Promise.reject(new Error('denied'))" : '(text) => { window.madeCmsCopied = text; return Promise.resolve(); }';
+
+    return "() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: {$write} } }); return true; }";
+}
+
+it('replaces a photo from the side column through the crop step, and the site shows the new version', function (): void {
+    $photo = UploadMedia::run(new UploadedMedia(quadrants(2400, 1600), 'Teamfoto Merwestad 6.jpg', $this->teams->id));
+    $page = Page::factory()->published()->at('/fotos')->withStrips([storedStrip('hero', ['kop' => ['text' => 'Foto’s', 'tag' => 'h1'], 'foto' => $photo->id], id: 'hero')])->create(['title' => 'Foto’s']);
+    SyncMediaUsage::run($page);
+
+    $library = visit('/made-cms/media?file='.$photo->id)->resize(1280, 1300);
+
+    expect($library->script(waitUntil(libraryVersion('versie 1'))))->toBeTrue();
+
+    $library->assertSeeIn('[data-slot="details-history"]', 'Geüpload op')
+        ->assertAttribute('[data-slot="details-replace"]', 'aria-expanded', 'false')
+        ->click('[data-slot="details-replace"]')
+        ->assertAttribute('[data-slot="details-replace"]', 'aria-expanded', 'true')
+        ->assertSeeIn('[data-slot="details-replace-title"]', 'Vervangen door een nieuwe afbeelding')
+        ->assertSeeIn('[data-slot="details-replace-warning"]', 'Staat op 1 pagina; vervangen verandert hem daar meteen, ook op de site.')
+        ->assertSeeIn('[data-slot="details-replacing"] [data-slot="upload-title"]', 'Sleep een afbeelding hierheen')
+        ->assertSeeIn('[data-slot="details-replacing"] [data-slot="upload-rules"]', 'jpg, png, webp, gif of svg · tot 25 MB')
+        ->assertSeeIn('[data-slot="details-replace-note"]', 'een uitsnede of brandpunt vervalt')
+        ->assertAttribute('[data-slot="details-replacing"] [data-slot="upload-input"]', 'accept', 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml');
+
+    expect($library->script('() => document.activeElement?.dataset.slot'))->toBe('upload-choose');
+
+    $library->screenshot(filename: 'media-replace-field')
+        ->attach('[data-slot="details-replacing"] [data-slot="upload-input"]', quadrants(1600, 1200, 'jpg', 'Teamfoto 2027.jpg'));
+
+    expect($library->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
+
+    $library->assertSeeIn('[data-slot="crop-eyebrow"]', 'Vervangen')
+        ->assertValue('[data-slot="crop-name"]', 'teamfoto-2027')
+        ->click('[data-slot="crop-save"]');
+
+    expect($library->script(waitUntil("! document.querySelector('[data-media-crop]').open && document.querySelector('[data-slot=\"details-replacing\"]').hidden")))->toBeTrue()
+        ->and($library->script(waitUntil(libraryNotice()." === 'Vervangen door teamfoto-2027.webp. Op de site staat nu de nieuwe versie.'")))->toBeTrue()
+        ->and($library->script(waitUntil(libraryVersion('versie 2'))))->toBeTrue()
+        ->and($library->script('() => document.activeElement?.dataset.slot'))->toBe('details-replace');
+
+    $library->assertSeeIn('[data-slot="details-name"]', 'teamfoto-2027.webp')
+        ->assertSeeIn('[data-slot="details-previous"]', 'Versie 1 staat nog klaar om terug te zetten.')
+        ->assertSeeIn(libraryTile($photo).' [data-slot="media-tile-name"]', 'teamfoto-2027')
+        ->assertNoJavaScriptErrors();
+
+    $stored = $photo->refresh();
+
+    expect($stored->version)->toBe(2)
+        ->and($stored->alt)->toBe($photo->alt)
+        ->and($stored->folder_id)->toBe($this->teams->id);
+
+    // The site renders its strips with the strip types of the workbench, whose views these are.
+    app()->instance(StripTypes::class, StripTypes::discover(__DIR__.'/../../workbench/app/Cms/Strips', 'Workbench\\App\\Cms\\Strips'));
+
+    $site = visit('/fotos');
+
+    expect($site->script("() => [...document.querySelectorAll('[data-cms-strip] img')].map((image) => image.getAttribute('src').split('/').pop())"))->toBe(['teamfoto-2027.webp']);
+});
+
+it('puts the former version back from the line of its versions, and doing it again undoes it', function (): void {
+    $file = UploadMedia::run(new UploadedMedia(quadrants(1200, 800), 'Een.jpg', $this->teams->id));
+    ReplaceMedia::run($file, new UploadedMedia(quadrants(1200, 800), 'Twee.jpg'));
+
+    $page = visit('/made-cms/media?file='.$file->id)->resize(1280, 1300);
+
+    expect($page->script(waitUntil(libraryVersion('versie 2'))))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-previous"]', 'Versie 1 staat nog klaar om terug te zetten.')
+        ->assertAttribute('[data-slot="details-restore"]', 'aria-label', 'Versie 1 terugzetten')
+        ->click('[data-slot="details-restore"]');
+
+    expect($page->script(waitUntil(libraryNotice()." === 'Versie 1 is teruggezet. Versie 2 staat nog klaar om terug te zetten.'")))->toBeTrue()
+        ->and($page->script(waitUntil(libraryVersion('versie 1'))))->toBeTrue()
+        ->and($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-restore')
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"details-name\"]').textContent === 'een.webp'")))->toBeTrue()
+        ->and($file->refresh()->version)->toBe(1);
+
+    $page->assertSeeIn('[data-slot="details-previous"]', 'Versie 2 staat nog klaar om terug te zetten.')
+        ->assertAttribute('[data-slot="details-restore"]', 'aria-label', 'Versie 2 terugzetten')
+        ->assertSeeIn(libraryTile($file).' [data-slot="media-tile-name"]', 'een');
+
+    // Nothing waits any more in the meantime: the refusal stays below the line, and nothing changed.
+    Media::query()->whereKey($file->id)->update(['previous' => null]);
+    $page->click('[data-slot="details-restore"]');
+
+    expect($page->script(waitUntil("! document.querySelector('[data-slot=\"details-restore-error\"]').hidden")))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-restore-error"]', 'Er staat geen vorige versie klaar om terug te zetten.')
+        ->assertAttribute('[data-slot="details-restore-error"]', 'role', 'alert')
+        ->assertNoJavaScriptErrors();
+});
+
+it('replaces a document only by a document, and says so before the file travels', function (): void {
+    $document = UploadMedia::run(new UploadedMedia(mediaFixture('wedstrijdschema.pdf'), 'Reglement.pdf', $this->teams->id));
+    $page = visit('/made-cms/media?file='.$document->id)->resize(1280, 1300);
+
+    expect($page->script(waitUntil(libraryVersion('versie 1'))))->toBeTrue();
+
+    $page->click('[data-slot="details-replace"]')
+        ->assertSeeIn('[data-slot="details-replace-title"]', 'Vervangen door een nieuw document')
+        ->assertMissing('[data-slot="details-replace-warning"]')
+        ->assertSeeIn('[data-slot="details-replacing"] [data-slot="upload-rules"]', 'pdf · tot 25 MB')
+        ->assertSeeIn('[data-slot="details-replace-note"]', 'De alt-tekst en de map blijven. De vorige versie blijft bewaard')
+        ->attach('[data-slot="details-replacing"] [data-slot="upload-input"]', photo(800, 600, 'jpg', 'Sfeerfoto.jpg'));
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-replacing\"]').dataset.moment === 'error'")))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-replacing"] [data-slot="upload-row-note"]', 'Kies een document: je vervangt een document.')
+        ->assertSeeIn('[data-slot="details-replacing"] [data-slot="upload-row-dismiss"]', 'Ander bestand')
+        ->assertMissing('[data-slot="details-replace-cancel"]')
+        ->assertMissing('[data-slot="details-replacing"] [data-slot="upload-zone"]')
+        ->screenshot(filename: 'media-replace-refused');
+
+    expect($page->script("() => [...document.querySelectorAll('[data-slot=\"details-replacing\"] .upload-rij')].length"))->toBe(1)
+        ->and($document->refresh()->version)->toBe(1);
+
+    $page->attach('[data-slot="details-replacing"] [data-slot="upload-input"]', mediaFixture('wedstrijdschema.pdf', 'Reglement 2027.pdf'));
+
+    expect($page->script(waitUntil(libraryNotice()." === 'Vervangen door reglement-2027.pdf.'")))->toBeTrue()
+        ->and($page->script(waitUntil(libraryVersion('versie 2'))))->toBeTrue()
+        ->and($page->script("() => document.querySelector('[data-slot=\"details-replacing\"]').hidden"))->toBeTrue()
+        ->and($document->refresh()->version)->toBe(2);
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('copies the lasting link of a file, offers it to copy by hand when the browser refuses, and downloads it', function (): void {
+    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1300);
+
+    expect($page->script(waitUntil(libraryVersion('versie 1'))))->toBeTrue();
+
+    // Absolute, on the address the CMS is opened at.
+    $link = $page->script('() => location.origin').'/made-cms/file/'.$this->teamfoto->ulid.'/teamfoto-merwestad-1';
+
+    $page->assertAttribute('[data-slot="details-download"]', 'href', '/made-cms/media/'.$this->teamfoto->id.'/download')
+        ->assertAttribute('[data-slot="details-download"]', 'download', '')
+        ->assertSeeIn('[data-slot="details-explain"]', 'Downloaden geeft het origineel zoals het geüpload is: volle maat, niet bijgesneden. De link blijft werken na vervangen, bijsnijden en hernoemen.');
+
+    $page->script(stubClipboard(refuses: false));
+    $page->click('[data-slot="details-copy"]');
+
+    expect($page->script(waitUntil("document.querySelector('[data-slot=\"details-copied\"]').textContent === 'Link gekopieerd'")))->toBeTrue()
+        ->and($page->script('() => window.madeCmsCopied'))->toBe($link);
+
+    $page->assertAttribute('[data-slot="details-copied"]', 'role', 'status')
+        ->assertMissing('[data-slot="details-link-field"]');
+
+    $page->script(stubClipboard(refuses: true));
+    $page->click('[data-slot="details-copy"]');
+
+    expect($page->script(waitUntil("! document.querySelector('[data-slot=\"details-link-field\"]').hidden")))->toBeTrue()
+        ->and($page->script('() => [document.activeElement?.dataset.slot, document.activeElement?.value, document.activeElement?.selectionEnd]'))->toBe(['details-link', $link, strlen($link)]);
+
+    $page->assertSeeIn('[data-slot="details-copied"]', 'Je browser liet het kopiëren niet toe.')
+        ->click('[data-slot="details-link-close"]')
+        ->assertMissing('[data-slot="details-link-field"]');
+
+    expect($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-copy');
+
+    // Another file leaves what was told of the first.
+    $page->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil(libraryDetails('clubavond.webp'))))->toBeTrue()
+        ->and($page->script("() => document.querySelector('[data-slot=\"details-copied\"]').textContent"))->toBe('');
+
+    // A document gives itself.
+    $page->click(libraryTile($this->schema));
+
+    expect($page->script(waitUntil(libraryDetails('wedstrijdschema.pdf'))))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-explain"]', 'Downloaden geeft het bestand zelf. De link blijft werken na vervangen.')
+        ->assertMissing('[data-slot="details-crop"]');
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('deletes a file nowhere in use after its inline confirmation, and keeps a file a page uses', function (): void {
+    $page = visit('/made-cms/media?file='.$this->teamfoto->id)->resize(1280, 1300);
+
+    expect($page->script(waitUntil(libraryVersion('versie 1'))))->toBeTrue()
+        ->and($page->script("() => document.querySelector('[data-slot=\"details-delete-button\"]').disabled"))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-delete"] [data-slot="details-delete-note"]', 'Staat op 1 pagina. Haal het daar eerst weg.')
+        ->click(libraryTile($this->clubavond));
+
+    expect($page->script(waitUntil(libraryDetails('clubavond.webp').' && '.libraryVersion('versie 1'))))->toBeTrue();
+
+    $page->assertSeeIn('[data-slot="details-delete"] [data-slot="details-delete-note"]', 'Wordt nergens gebruikt; verwijderen kan direct.')
+        ->click('[data-slot="details-delete"] [data-slot="details-delete-button"]')
+        ->assertVisible('[data-slot="details-delete"] [data-slot="details-delete-ask"]')
+        ->assertSeeIn('[data-slot="details-delete"] [data-slot="details-delete-text"]', 'clubavond.webp gaat definitief weg.')
+        ->assertSeeIn('[data-slot="details-delete"] [data-slot="details-delete-yes"]', 'Ja, verwijder clubavond.webp')
+        ->screenshot(filename: 'media-delete-ask');
+
+    // Escape closes the confirmation and gives the focus back.
+    expect($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-delete-no');
+
+    $page->keys('[data-slot="details-delete"] [data-slot="details-delete-no"]', 'Escape')
+        ->assertMissing('[data-slot="details-delete"] [data-slot="details-delete-ask"]');
+
+    expect($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-delete-button');
+
+    $page->click('[data-slot="details-delete"] [data-slot="details-delete-button"]')
+        ->click('[data-slot="details-delete"] [data-slot="details-delete-yes"]');
+
+    expect($page->script(waitUntil(libraryNotice()." === 'clubavond.webp is verwijderd.'")))->toBeTrue()
+        ->and($page->script(waitUntil("! document.querySelector('".libraryTile($this->clubavond)."') && ! document.querySelector('[data-slot=\"details-nothing\"]').hidden")))->toBeTrue()
+        ->and($page->script('() => document.activeElement?.dataset.slot'))->toBe('media-notice-close')
+        ->and(Media::query()->find($this->clubavond->id))->toBeNull();
+
+    $page->assertNoJavaScriptErrors();
+});
+
+it('keeps a file a page took while its deletion was asked, and says so at the button', function (): void {
+    $page = visit('/made-cms/media?file='.$this->training->id)->resize(1280, 1300);
+
+    expect($page->script(waitUntil(libraryVersion('versie 1'))))->toBeTrue();
+
+    $page->click('[data-slot="details-delete"] [data-slot="details-delete-button"]');
+
+    MediaUsage::factory()->for($this->training)->for($this->page)->create(['strip_id' => 'tweede', 'field' => 'foto']);
+
+    $page->click('[data-slot="details-delete"] [data-slot="details-delete-yes"]');
+
+    expect($page->script(waitUntil("! document.querySelector('[data-slot=\"details-delete\"] [data-slot=\"details-delete-kept\"]').hidden")))->toBeTrue()
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"details-delete\"] [data-slot=\"details-delete-button\"]').disabled")))->toBeTrue();
+
+    expect($page->script('() => document.activeElement?.dataset.slot'))->toBe('details-delete-kept');
+
+    $page->assertSeeIn('[data-slot="details-delete"] [data-slot="details-delete-kept"]', 'Niet verwijderd: training-dinsdag.webp staat intussen op een pagina. Haal het daar eerst weg.')
+        ->assertSeeIn('[data-slot="details-delete"] [data-slot="details-delete-note"]', 'Staat op 1 pagina. Haal het daar eerst weg.')
+        ->assertSeeIn('[data-slot="details-pages"]', 'Onze teams')
+        ->assertVisible(libraryTile($this->training))
+        ->assertNoJavaScriptErrors();
+
+    expect(Media::query()->find($this->training->id))->not->toBeNull();
+});
+
+it('deletes what a selection can lose, and keeps the files a page uses selected', function (): void {
+    $page = visit('/made-cms/media')->resize(1280, 1300);
+
+    $page->click('[data-slot="media-select"]')
+        ->click(libraryTile($this->teamfoto))
+        ->assertSeeIn('[data-slot="details-selection-delete"] [data-slot="details-delete-note"]', 'teamfoto-merwestad-1.webp staat nog op een pagina. Haal het daar eerst weg.');
+
+    expect($page->script("() => document.querySelector('[data-slot=\"details-selection-delete\"] [data-slot=\"details-delete-button\"]').disabled"))->toBeTrue();
+
+    $page->click(libraryTile($this->training))
+        ->click(libraryTile($this->clubavond))
+        ->click('[data-slot="details-selection-delete"] [data-slot="details-delete-button"]')
+        ->assertSeeIn('[data-slot="details-selection-delete"] [data-slot="details-delete-text"]', '2 van de 3 kunnen weg. teamfoto-merwestad-1.webp staat nog op een pagina en blijft staan.')
+        ->assertSeeIn('[data-slot="details-selection-delete"] [data-slot="details-delete-yes"]', 'Ja, verwijder 2 bestanden')
+        ->screenshot(filename: 'media-delete-selection')
+        ->click('[data-slot="details-selection-delete"] [data-slot="details-delete-yes"]');
+
+    expect($page->script(waitUntil(libraryNotice()." === '2 bestanden verwijderd. teamfoto-merwestad-1.webp staat nog op een pagina en blijft staan.'")))->toBeTrue()
+        ->and($page->script(waitUntil("document.querySelector('[data-slot=\"details-selection-count\"]').textContent === '1 bestand gekozen'")))->toBeTrue()
+        ->and(Media::query()->whereKey([$this->training->id, $this->clubavond->id])->count())->toBe(0);
+
+    $page->assertAttribute(libraryTile($this->teamfoto), 'aria-pressed', 'true')
+        ->assertMissing('[data-slot="details-selection-delete"] [data-slot="details-delete-ask"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('shows the actions, the versions and a confirmation in the dark and on a phone', function (): void {
+    $file = UploadMedia::run(new UploadedMedia(quadrants(1200, 800), 'Een.jpg', $this->teams->id));
+    ReplaceMedia::run($file, new UploadedMedia(quadrants(1200, 800), 'Twee.jpg'));
+
+    $page = visit('/made-cms/media?file='.$file->id)->inDarkMode()->resize(1280, 1400);
+
+    expect($page->script(waitUntil(libraryVersion('versie 2'))))->toBeTrue();
+
+    $page->click('[data-slot="details-replace"]')
+        ->click('[data-slot="details-delete"] [data-slot="details-delete-button"]');
+
+    // Dark text on the light red of the dark theme, which chalk would not stand out on.
+    expect($page->script("() => ['details-delete-yes', 'details-delete-ask'].map((name) => getComputedStyle(document.querySelector('[data-slot=\"details-delete\"] [data-slot=\"' + name + '\"]'))[name === 'details-delete-yes' ? 'color' : 'backgroundColor'])"))
+        ->toBe(['rgb(14, 43, 38)', 'rgb(14, 43, 38)']);
+
+    $page->screenshot(filename: 'media-actions-dark')
+        ->assertNoJavaScriptErrors();
+
+    $phone = visit('/made-cms/media?file='.$file->id)->resize(390, 1600);
+
+    expect($phone->script(waitUntil(libraryVersion('versie 2'))))->toBeTrue()
+        ->and($phone->script('() => document.documentElement.scrollWidth <= window.innerWidth'))->toBeTrue();
+
+    $phone->click('[data-slot="details-replace"]')
+        ->click('[data-slot="details-delete"] [data-slot="details-delete-button"]');
+
+    expect($phone->script('() => document.documentElement.scrollWidth <= window.innerWidth'))->toBeTrue();
+
+    $phone->screenshot(filename: 'media-actions-phone')
         ->assertNoJavaScriptErrors();
 });

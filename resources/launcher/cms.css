@@ -1004,6 +1004,13 @@ h2 {
     color: var(--made-krijt);
 }
 
+/* The light red of the dark theme takes dark text: chalk on it does not reach 4.5:1. */
+@media (prefers-color-scheme: dark) {
+    .knop.gevaar {
+        color: var(--made-nachtgroen);
+    }
+}
+
 .knop[disabled] {
     opacity: .45;
     cursor: not-allowed;

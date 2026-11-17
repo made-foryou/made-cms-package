@@ -1592,6 +1592,10 @@ it('shows the actions, the versions and a confirmation in the dark and on a phon
     $page->click('[data-slot="details-replace"]')
         ->click('[data-slot="details-delete"] [data-slot="details-delete-button"]');
 
+    // Dark text on the light red of the dark theme, which chalk would not stand out on.
+    expect($page->script("() => ['details-delete-yes', 'details-delete-ask'].map((name) => getComputedStyle(document.querySelector('[data-slot=\"details-delete\"] [data-slot=\"' + name + '\"]'))[name === 'details-delete-yes' ? 'color' : 'backgroundColor'])"))
+        ->toBe(['rgb(14, 43, 38)', 'rgb(14, 43, 38)']);
+
     $page->screenshot(filename: 'media-actions-dark')
         ->assertNoJavaScriptErrors();
 

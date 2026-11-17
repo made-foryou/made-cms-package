@@ -272,6 +272,7 @@
 
 ### Fixed
 
+- A red button that deletes ("Ja, verwijder …" in the media library, deleting a page) has dark text in the dark colours, so it stands out on its light red (4.8:1 instead of 2.8:1).
 - The edit shell no longer sends the editor back to the top of the site when its frame reloads after a change, a strip that moved or a publication, on a site rendered in the browser (Inertia, React without ssr): the frame holds the place the editor was looking at while the site grows to it and when it scrolls by itself (Inertia puts back a place it remembered, smoothly), until the editor scrolls. A strip that was added or moved and lies outside that view comes into view once the site shows it.
 - Cleaning rich text no longer cuts it off at 65,535 bytes; the validation still allows at most 65,535 characters.
 - Rich text nested deeper than 100 levels no longer crashes PHP when it is stored or rendered: markup beyond that depth keeps only its text.

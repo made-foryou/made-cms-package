@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
+use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Events\MediaUploaded;
 use Made\CmsPackage\Content\Exceptions\MediaDiskNotUsable;
@@ -142,6 +143,62 @@ it('keeps a file that is no photo exactly as it came in', function (Closure $fil
     'a pdf' => [fn (): string => mediaFixture('wedstrijdschema.pdf'), 'wedstrijdschema.pdf', MediaKind::Document, 'application/pdf', null],
     'an mp4' => [fn (): string => mediaFixture('samenvatting.mp4'), 'samenvatting.mp4', MediaKind::Video, 'video/mp4', null],
     'an animated gif' => [fn (): string => animatedGif(), 'laden.gif', MediaKind::Image, 'image/gif', [40, 30]],
+]);
+
+it('writes the original private and the photo, its thumbnail and their folder public, whatever the disk says', function (array $config): void {
+    Storage::fake('public', $config);
+    $disk = Storage::disk('public');
+
+    $media = upload(photo(800, 600));
+
+    expect($disk->getVisibility((string) $media->original_path))->toBe('private')
+        ->and($disk->getVisibility($media->path))->toBe('public')
+        ->and($disk->getVisibility((string) $media->thumb_path))->toBe('public')
+        ->and(permissionsOf($disk->path(dirname($media->path))))->toBe('755')
+        ->and(permissionsOf($disk->path('media')))->toBe('755');
+})->with([
+    'a public disk' => [['visibility' => 'public']],
+    'a private disk' => [['visibility' => 'private']],
+    'a disk without a visibility' => [[]],
+])->skipOnWindows('A file on Windows cannot be private.');
+
+it('writes a file kept as it came in public, on a disk that is private itself', function (Closure $file): void {
+    Storage::fake('public', ['visibility' => 'private']);
+
+    $media = upload($file());
+
+    expect(Storage::disk('public')->getVisibility($media->path))->toBe('public');
+})->with([
+    'an svg' => [fn (): string => mediaFixture('logo.svg')],
+    'an animated gif' => [fn (): string => animatedGif()],
+    'a pdf' => [fn (): string => mediaFixture('wedstrijdschema.pdf')],
+    'an mp4' => [fn (): string => mediaFixture('samenvatting.mp4')],
+])->skipOnWindows('A file on Windows cannot be private.');
+
+it('hands the disk the photo and its thumbnail public with a cache header for a year, and the original private without', function (): void {
+    $disk = recordMediaDisk(['visibility' => 'private']);
+
+    $media = upload(photo(800, 600));
+
+    $public = ['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => MediaFileRole::CACHE_CONTROL];
+
+    expect(MediaFileRole::CACHE_CONTROL)->toBe('public, max-age=31536000, immutable')
+        ->and($disk->written($media->path))->toBe($public)
+        ->and($disk->written((string) $media->thumb_path))->toBe($public)
+        ->and($disk->written((string) $media->original_path))->toBe(['visibility' => 'private', 'directory_visibility' => 'public', 'CacheControl' => null]);
+});
+
+it('hands the disk a file kept as it came in public, without a cache header', function (Closure $file): void {
+    $disk = recordMediaDisk(['visibility' => 'private']);
+
+    $media = upload($file());
+
+    expect($disk->written($media->path))->toBe(['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => null]);
+})->with([
+    'an svg' => [fn (): string => mediaFixture('logo.svg')],
+    'an animated gif' => [fn (): string => animatedGif()],
+    'a pdf' => [fn (): string => mediaFixture('wedstrijdschema.pdf')],
+    'an mp4' => [fn (): string => mediaFixture('samenvatting.mp4')],
 ]);
 
 it('names the file after the upload, as a slug without extension', function (string $filename, string $name): void {

@@ -13,6 +13,7 @@ use Made\CmsPackage\Content\Data\CheckedMedia;
 use Made\CmsPackage\Content\Data\MediaName;
 use Made\CmsPackage\Content\Data\ScaledImage;
 use Made\CmsPackage\Content\Data\UploadedMedia;
+use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Events\MediaUploaded;
 use Made\CmsPackage\Content\Exceptions\ImageDriverNotSupported;
@@ -33,8 +34,9 @@ final class UploadMedia
      * {name}.{format}, with the upload next to it under a name nobody guesses from the url of the photo, because it
      * still holds the full size and the metadata of the camera, and its thumbnail (MakeThumbnail) as
      * thumb-{random}.{format} for the tiles of the CMS. Anything else (an svg, an animation, a document, a video) is
-     * stored as {name}.{extension} exactly as it came in. The file is checked before anything is stored, and a row
-     * that cannot be stored takes its files off the disk again.
+     * stored as {name}.{extension} exactly as it came in. Each file is written as its role says (MediaFileRole): the
+     * original private, the rest public, whatever the disk says. The file is checked before anything is stored, and a
+     * row that cannot be stored takes its files off the disk again.
      *
      * @throws ValidationException keyed by "file" for a file the library does not take
      * @throws MediaFolderNotFound
@@ -104,7 +106,7 @@ final class UploadMedia
     {
         if ($image === null || $image->contents === null) {
             return [
-                'path' => $this->put($disk, $directory, $file, "{$name}.{$checked->extension}"),
+                'path' => $this->put($disk, $directory, $file, "{$name}.{$checked->extension}", MediaFileRole::AsUploaded),
                 'original_path' => null,
                 'thumb_path' => null,
                 'mime' => $checked->mime,
@@ -117,9 +119,9 @@ final class UploadMedia
         }
 
         $thumbnail = MakeThumbnail::run($image->contents);
-        $original = $this->put($disk, $directory, $file, 'original-'.Str::random(40).".{$checked->extension}");
-        $path = $this->write($disk, "{$directory}/{$name}.{$image->extension}", $image->contents);
-        $thumb = $this->write($disk, "{$directory}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
+        $original = $this->put($disk, $directory, $file, 'original-'.Str::random(40).".{$checked->extension}", MediaFileRole::Original);
+        $path = $this->write($disk, "{$directory}/{$name}.{$image->extension}", $image->contents, MediaFileRole::Photo);
+        $thumb = $this->write($disk, "{$directory}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents, MediaFileRole::Thumbnail);
 
         return [
             'path' => $path,
@@ -137,9 +139,9 @@ final class UploadMedia
     /**
      * @throws MediaNotStored
      */
-    private function write(Cloud $disk, string $path, string $contents): string
+    private function write(Cloud $disk, string $path, string $contents, MediaFileRole $role): string
     {
-        if (! $disk->put($path, $contents)) {
+        if (! $disk->put($path, $contents, $role->writeOptions())) {
             throw MediaNotStored::at($path);
         }
 
@@ -149,9 +151,9 @@ final class UploadMedia
     /**
      * @throws MediaNotStored
      */
-    private function put(Cloud $disk, string $directory, string $file, string $name): string
+    private function put(Cloud $disk, string $directory, string $file, string $name, MediaFileRole $role): string
     {
-        $path = $disk->putFileAs($directory, $file, $name);
+        $path = $disk->putFileAs($directory, $file, $name, $role->writeOptions());
 
         if (! is_string($path)) {
             throw MediaNotStored::at("{$directory}/{$name}");

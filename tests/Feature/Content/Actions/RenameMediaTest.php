@@ -120,6 +120,25 @@ it('renames a file kept as it came in, with its own extension', function (Closur
     'a pdf' => [fn (): string => mediaFixture('wedstrijdschema.pdf'), 'pdf'],
 ]);
 
+it('keeps the renamed photo public and its original private, on a disk that is private itself', function (): void {
+    Storage::fake('public', ['visibility' => 'private']);
+    $disk = Storage::disk('public');
+
+    $media = RenameMedia::run(renamed(photo(400, 300)), 'Teamfoto Merwestad 4');
+
+    expect($disk->getVisibility($media->path))->toBe('public')
+        ->and($disk->getVisibility((string) $media->thumb_path))->toBe('public')
+        ->and($disk->getVisibility((string) $media->original_path))->toBe('private');
+})->skipOnWindows('A file on Windows cannot be private.');
+
+it('keeps a renamed file kept as it came in public, on a disk that is private itself', function (): void {
+    Storage::fake('public', ['visibility' => 'private']);
+
+    $media = RenameMedia::run(renamed(mediaFixture('wedstrijdschema.pdf'), 'schema.pdf'), 'Wedstrijdschema');
+
+    expect(Storage::disk('public')->getVisibility($media->path))->toBe('public');
+})->skipOnWindows('A file on Windows cannot be private.');
+
 it('refuses a name without letters or digits and changes nothing', function (string $name): void {
     $media = renamed(photo(400, 300));
     $files = Storage::disk('public')->allFiles();

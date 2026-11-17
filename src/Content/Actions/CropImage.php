@@ -13,6 +13,7 @@ use Intervention\Image\Format;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
+use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Events\MediaCropped;
 use Made\CmsPackage\Content\Exceptions\ImageDriverNotSupported;
@@ -36,8 +37,9 @@ final class CropImage
      * original stays as it was, so the next crop starts from it again.
      *
      * The photo gets a new address in a folder of its own next to the original ({home}/{8 random}/{name}), and a new
-     * thumbnail (MakeThumbnail) from it, so no cache keeps the former photo; the former files leave the disk once the
-     * row is committed. When only the focal point changed, no file is written. The photo changes on every page that
+     * thumbnail (MakeThumbnail) from it, so no cache keeps the former photo, both public and with the cache header of
+     * MediaFileRole; the former files leave the disk once the row is committed. The original is never written again,
+     * so it stays private. When only the focal point changed, no file is written. The photo changes on every page that
      * shows it, the published version too.
      *
      * It works from the row as it is now, read again with its row locked, never from the model it is handed: the
@@ -99,14 +101,14 @@ final class CropImage
             $thumbnail = MakeThumbnail::run($photo);
 
             $home = dirname($stored->original_path);
-            $path = $this->write($disk, "{$home}/".Str::lower(Str::random(8))."/{$stored->name}.{$format->fileExtension()->value}", $photo);
+            $path = $this->write($disk, "{$home}/".Str::lower(Str::random(8))."/{$stored->name}.{$format->fileExtension()->value}", $photo, MediaFileRole::Photo);
 
             // The new files leave again only when the row cannot be stored, never once it is committed: whatever
             // fails after the commit (a listener of MediaCropped, RemoveReplacedMediaFiles) leaves a row that holds
             // them. A change that is not committed after all (a commit that fails, a transaction of the host that
             // rolls back) leaves them on the disk, unused.
             try {
-                $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents);
+                $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents, MediaFileRole::Thumbnail);
             } catch (MediaNotStored $exception) {
                 $disk->deleteDirectory(dirname($path));
 
@@ -177,9 +179,9 @@ final class CropImage
     /**
      * @throws MediaNotStored
      */
-    private function write(Cloud $disk, string $path, string $contents): string
+    private function write(Cloud $disk, string $path, string $contents, MediaFileRole $role): string
     {
-        if (! $disk->put($path, $contents)) {
+        if (! $disk->put($path, $contents, $role->writeOptions())) {
             throw MediaNotStored::at($path);
         }
 

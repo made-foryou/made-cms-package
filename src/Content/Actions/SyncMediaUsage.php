@@ -163,7 +163,9 @@ final class SyncMediaUsage
             return [];
         }
 
-        $known = array_flip(Media::query()->whereKey($ids)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all());
+        // A shared lock on the files, so a file that is being deleted gets no place, and one read here is not
+        // deleted before this place is committed (DeleteMedia).
+        $known = array_flip(Media::query()->lockedForUsage($ids)->pluck('id')->map(static fn (mixed $id): int => (int) $id)->all());
 
         return array_filter($places, static fn (array $place): bool => isset($known[$place['media_id']]));
     }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Actions\AddStrip;
 use Made\CmsPackage\Content\Actions\DiscardDraft;
@@ -299,4 +301,22 @@ it('leaves the places of other pages alone', function (): void {
     SyncMediaUsage::run(Page::factory()->create());
 
     expect(usageRows($other))->toBe(["published c kaarten.{$card['id']}.icoon {$a->id}"]);
+});
+
+it('reads the files it gives a place through the shared lock of the library, in the order of their ids', function (): void {
+    [$a, $b] = Media::factory()->count(2)->create()->all();
+    $page = Page::factory()->withStrips([storedStrip('hero', ['foto' => $b->id], id: 'h'), storedStrip('hero', ['foto' => $a->id], id: 'g')])->create();
+    $reads = [];
+
+    DB::listen(static function (QueryExecuted $query) use (&$reads): void {
+        if (str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from "cms_media"')) {
+            $reads[] = $query->sql;
+        }
+    });
+
+    SyncMediaUsage::run($page);
+
+    expect($reads)->toHaveCount(1)
+        ->and($reads[0])->toEndWith('order by "id" asc')
+        ->and(usageRows($page))->toHaveCount(2);
 });

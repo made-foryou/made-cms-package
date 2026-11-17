@@ -64,6 +64,18 @@ final class MediaBuilder extends Builder
     }
 
     /**
+     * These files, read to give them a place on a page (SyncMediaUsage): each with a shared lock, in the order of their
+     * ids, so a file DeleteMedia holds is read only once it is deleted or kept, and a file read here is deleted only
+     * once the place is committed. The order keeps two such transactions from waiting on each other.
+     *
+     * @param  list<int>  $ids
+     */
+    public function lockedForUsage(array $ids): self
+    {
+        return $this->whereKey($ids)->orderBy('id')->sharedLock();
+    }
+
+    /**
      * Loads the places of every file with their page, also a deleted page, for ListMediaPlaces.
      */
     public function withUsage(): self

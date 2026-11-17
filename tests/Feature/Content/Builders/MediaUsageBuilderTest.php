@@ -30,3 +30,12 @@ it('counts a place in both versions of a page once', function (): void {
         ->and(MediaUsage::query()->onPage($page)->placeCount())->toBe(2)
         ->and(MediaUsage::query()->onPage(Page::factory()->create())->placeCount())->toBe(0);
 });
+
+it('returns the places of these files on any page, also a deleted one', function (): void {
+    $page = Page::factory()->create();
+    $here = MediaUsage::factory()->for($page)->create(['strip_id' => 'a']);
+    $deleted = MediaUsage::factory()->for(Page::factory()->create(['deleted_at' => now()]))->draft()->create(['strip_id' => 'b']);
+    MediaUsage::factory()->create();
+
+    expect(MediaUsage::query()->ofMedia([$here->media_id, $deleted->media_id])->orderBy('id')->pluck('id')->all())->toBe([$here->id, $deleted->id]);
+});

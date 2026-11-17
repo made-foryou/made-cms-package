@@ -50,7 +50,7 @@ php artisan vendor:publish --tag="made-cms-package-migrations"
 php artisan migrate
 ```
 
-Do the same after every update of the package: a change of the database comes as a new migration, so the ones you ran stay as they are and `migrate` runs only what is new.
+Do the same after every update of the package: a change of the database comes as a new migration, so the ones you ran stay as they are and `migrate` runs only what is new. Publishing skips every migration you have already, whatever date it got when you published it; `--force` overwrites one where it is, never as a copy under a new date.
 
 A site that already had pages before it got the table `cms_media_usages` runs `php artisan made-cms:media-usage` once after migrating, so the media library knows where its files are used (see [Where a file is used](#where-a-file-is-used)). A site that already had photos before the library made thumbnails runs `php artisan made-cms:media-thumbnails` once (see [Thumbnails](#thumbnails)).
 

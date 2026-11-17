@@ -32,6 +32,7 @@ use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Routing\RouterMixin;
 use Made\CmsPackage\Http\Session\LoginSession;
+use Made\CmsPackage\Support\PublishedMigrations;
 use Symfony\Component\HttpFoundation\IpUtils;
 
 class CmsPackageServiceProvider extends ServiceProvider
@@ -122,9 +123,14 @@ class CmsPackageServiceProvider extends ServiceProvider
             __DIR__.'/../public' => public_path('vendor/made-cms-package'),
         ], ['made-cms-package', 'made-cms-package-assets']);
 
-        $this->publishesMigrations([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
-        ], ['made-cms-package', 'made-cms-package-migrations']);
+        // Each migration on its own: one the host published already is skipped, never published again under a new
+        // date (PublishedMigrations). Only a command reads the folder of the host.
+        if ($this->app->runningInConsole()) {
+            $this->publishes(
+                PublishedMigrations::paths(__DIR__.'/../database/migrations', database_path('migrations'), now()),
+                ['made-cms-package', 'made-cms-package-migrations'],
+            );
+        }
     }
 
     /**

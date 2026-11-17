@@ -12,6 +12,12 @@ use Orchestra\Testbench\TestCase as Orchestra;
 abstract class TestCase extends Orchestra
 {
     /**
+     * A database folder of its own, for a test that publishes into it: tests running at the same time never share one.
+     * The application takes it when it is (re)created.
+     */
+    public static ?string $databasePath = null;
+
+    /**
      * @param  Application  $app
      * @return list<class-string>
      */
@@ -28,6 +34,10 @@ abstract class TestCase extends Orchestra
      */
     protected function defineEnvironment($app): void
     {
+        if (self::$databasePath !== null) {
+            $app->useDatabasePath(self::$databasePath);
+        }
+
         $app['config']->set('database.default', 'testing');
         $app['config']->set('database.connections.testing', [
             'driver' => 'sqlite',

@@ -22,6 +22,16 @@ final class MediaUsageBuilder extends Builder
     }
 
     /**
+     * The places of these files, on any page, in both versions, also on a deleted page: a file with a place is in use.
+     *
+     * @param  list<int>  $ids
+     */
+    public function ofMedia(array $ids): self
+    {
+        return $this->whereIn('media_id', $ids);
+    }
+
+    /**
      * The number of places these rows are: a place in the draft and in the published version of a page counts once,
      * as the library counts it.
      */

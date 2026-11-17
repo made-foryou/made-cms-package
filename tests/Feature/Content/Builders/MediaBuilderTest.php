@@ -201,3 +201,13 @@ it('counts the files per kind, every kind also without files', function (): void
         ->and(Media::query()->newestFirst()->inFolder(MediaFolder::factory()->create())->countPerKind())
         ->toBe(['image' => 0, 'document' => 0, 'video' => 0]);
 });
+
+it('reads files to give them a place with a shared lock, in the order of their ids', function (): void {
+    [$a, $b] = Media::factory()->count(2)->create()->all();
+
+    $query = Media::query()->lockedForUsage([$b->id, $a->id]);
+
+    expect($query->getQuery()->lock)->toBeFalse()
+        ->and($query->getQuery()->orders)->toBe([['column' => 'id', 'direction' => 'asc']])
+        ->and($query->pluck('id')->all())->toBe([$a->id, $b->id]);
+});

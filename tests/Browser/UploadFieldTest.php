@@ -161,6 +161,36 @@ it('takes the good files of a drop and keeps the error of the one that is too la
         ->assertNoJavaScriptErrors();
 });
 
+it('takes several photos at once in the field of a list of images, and no document', function (): void {
+    $files = [
+        ['name' => 'Clubavond.jpg', 'type' => 'image/jpeg', 'path' => photo(1200, 800)],
+        ['name' => 'Wedstrijdschema najaar.pdf', 'type' => 'application/pdf', 'path' => mediaFixture('wedstrijdschema.pdf')],
+        ['name' => 'Toernooi zomer.jpg', 'type' => 'image/jpeg', 'path' => photo(1200, 800)],
+    ];
+
+    $page = visit('/werkbank/uploadveld?fotos=1');
+
+    $page->assertSeeIn('[data-slot="upload-rules"]', 'Foto’s · tot 25 MB per bestand · komen in Alle bestanden')
+        ->assertAttribute('[data-slot="upload-input"]', 'accept', implode(',', array_filter(
+            config()->array('made-cms-package.media.allowed_mimes'),
+            static fn (mixed $mime): bool => is_string($mime) && str_starts_with($mime, 'image/'),
+        )));
+
+    expect($page->script("() => document.querySelector('[data-slot=\"upload-input\"]').multiple"))->toBeTrue();
+
+    $page->script(dragFiles($files, drop: true));
+
+    expect($page->script(waitUntil(uploadMoment('done'))))->toBeTrue();
+
+    $rows = $page->script(uploadRows());
+
+    expect(Media::query()->orderBy('id')->pluck('name')->all())->toBe(['clubavond', 'toernooi-zomer'])
+        ->and(array_column($rows, 'state'))->toBe(['done', 'error', 'done'])
+        ->and($rows[1]['note'])->toBe('Dit veld neemt alleen foto’s. Dit bestand is niet geüpload; sleep een foto hierheen, of kies er een op je computer.');
+
+    $page->assertNoJavaScriptErrors();
+});
+
 it('works with the keyboard and the file chooser, and saves the alt text the editor types', function (): void {
     $page = visit('/werkbank/uploadveld');
 

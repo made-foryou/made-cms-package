@@ -6,7 +6,8 @@
  * template). Its fixed texts are in the markup (cms/partials/upload.blade.php), the ones filled in here come as JSON
  * on the field itself (data-config), like where a file goes and the largest file. Files go to the server one at a
  * time, so it never scales three photos down at once. An error belongs to its file: the others go on, and it stays
- * until the editor leaves the file out or tries again. The field of an image (one_image) takes one photo at a time.
+ * until the editor leaves the file out or tries again. The field of an image (one_image) takes one photo at a time; the
+ * field of a list of images (only_images, UploadField::images()) takes several photos and, like it, no other kind.
  *
  * What a host hears on the field (the events bubble):
  * - made-cms:upload {busy, done, total, failed, percent, sending} after every change and while a file travels, for a
@@ -558,8 +559,8 @@ function start(field) {
         ui.list.append(element);
 
         // A file the server refuses anyway never travels: the largest file is known here. The server checks again.
-        // The field of an image takes no document or video, also not one that was dropped past the file chooser.
-        if (config.one_image && ! file.type.startsWith('image/')) {
+        // A field of images takes no document or video, also not one that was dropped past the file chooser.
+        if ((config.one_image || config.only_images) && ! file.type.startsWith('image/')) {
             fail(row, texts.not_image, false);
         } else if (config.replace && kindOf(file) !== row.target.kind) {
             fail(row, texts['kind_' + row.target.kind] ?? texts.failed, false);

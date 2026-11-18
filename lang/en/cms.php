@@ -81,6 +81,8 @@ return [
             'move' => 'Move :item',
             'moved' => ':item is now in place :n of :m.',
             'added' => ':item was added.',
+            'added_after_one' => ':item was added, after :after.',
+            'added_after_many' => ':first to :last were added, after :after.',
             'removed' => ':item was removed.',
             'item_error' => 'Needs a fix',
             'page' => 'Page of your site: :title (:path)',

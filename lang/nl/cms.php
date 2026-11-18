@@ -81,6 +81,8 @@ return [
             'move' => 'Verplaats :item',
             'moved' => ':item staat nu op plek :n van :m.',
             'added' => ':item is toegevoegd.',
+            'added_after_one' => ':item is toegevoegd, na :after.',
+            'added_after_many' => ':first tot en met :last zijn toegevoegd, na :after.',
             'removed' => ':item is verwijderd.',
             'item_error' => 'Klopt nog niet',
             'page' => 'Pagina van je site: :title (:path)',

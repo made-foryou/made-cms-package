@@ -114,7 +114,7 @@ it('loads the thumbnails in the tiles and the foot, never the photos the site sh
         ->and($shell->script("() => new URL(document.querySelector('[data-slot=\"media-picker-thumb\"]').src).pathname"))->toBe('/storage/media/01k9/thumb-klein.webp');
 });
 
-it('shows the folders of the library without managing them: no field, no selecting, no dragging', function (): void {
+it('shows the folders of the library without managing them: no field, no dragging, and outside a list no selecting', function (): void {
     $shell = openStrip($this->page, 'hero', pickedState('foto', 'empty'));
     $shell->click('[data-path="foto"] [data-slot="image-pick"]');
 

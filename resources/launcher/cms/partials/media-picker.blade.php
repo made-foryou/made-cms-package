@@ -1,8 +1,9 @@
 {{--
     The picker of an image (design 13.4, 14.4): the list of the media library in a modal dialog above the edit shell,
     never in the frame of the site. A host includes it once with $picker = MediaBrowser::picker($folder) and loads
-    $picker['browser']['script']; the side panel opens it with made-cms:pick on the dialog. Its slots are named
-    media-picker-*, so the side panel, which takes the first slot of a name in the shell, never finds them.
+    $picker['browser']['script']; the side panel opens it with made-cms:pick on the dialog, for an item of a list with
+    the number of photos the list takes (many), so it chooses several. Its slots are named media-picker-*, so the side
+    panel, which takes the first slot of a name in the shell, never finds them.
 --}}
 @php($t = $picker['t'])
 @php($texts = $picker['config']['texts'])

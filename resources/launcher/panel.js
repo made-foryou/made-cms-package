@@ -977,7 +977,9 @@ function image(state, element, field, owner, path, set) {
     });
 
     // The picker opens with the photo of the field chosen; "Deze gebruiken" makes its choice the value of the field,
-    // wherever the field is now, and a photo of this field that still travels no longer overwrites it.
+    // wherever the field is now, and a photo of this field that still travels no longer overwrites it. Opened for an
+    // item of a list, it chooses several photos: the first is the value of this field, every next one a new item
+    // right after it, as long as the list takes them.
     pick.addEventListener('click', () => {
         const value = owner[key] ?? null;
         const file = value === null ? null : (media.get(value) ?? null);
@@ -990,13 +992,14 @@ function image(state, element, field, owner, path, set) {
                 place: stripPlace(state, path),
                 hint: field.hint ?? null,
                 file: file?.image ? file : null,
+                many: manyFor(state, list),
                 opener: pick,
-                choose: (chosen) => {
+                choose: (files) => {
                     const now = where(spot);
 
-                    media.set(chosen.id, chosen);
+                    files.forEach((chosen) => media.set(chosen.id, chosen));
 
-                    if (! now) {
+                    if (! now || files.length === 0) {
                         return;
                     }
 
@@ -1006,11 +1009,19 @@ function image(state, element, field, owner, path, set) {
                         travelling.superseded = true;
                     }
 
-                    now.owner[key] = chosen.id;
-                    liveInput(state, now.path, field, chosen.id);
+                    now.owner[key] = files[0].id;
+                    liveInput(state, now.path, field, files[0].id);
+
+                    const added = list === null ? [] : addItems(state, list, now.owner, key, files.slice(1));
+
                     changed(state);
                     leave(state, now.path);
                     draw();
+
+                    if (added.length > 0) {
+                        itemPlace(state);
+                        announceAdded(state, list, now.owner, added);
+                    }
                 },
             },
         }));
@@ -1674,6 +1685,70 @@ function newItem(field) {
     return Object.fromEntries([['id', null], ...field.fields.map((sub) => [sub.key, clone(sub.default)])]);
 }
 
+/* How many photos a list takes from one of its items on: that item and the places left; null without a limit. */
+function roomIn(field, items) {
+    return field.max === null ? null : 1 + Math.max(0, field.max - items.length);
+}
+
+/*
+ * What the picker chooses for an image in an item of a list: several photos, {room, max, list}. Null outside a list,
+ * and for a list that takes no other item.
+ */
+function manyFor(state, key) {
+    const field = key === null ? null : state.fields.find((candidate) => candidate.key === key);
+    const items = field ? state.values[key] : null;
+
+    if (! field || ! Array.isArray(items)) {
+        return null;
+    }
+
+    const room = roomIn(field, items);
+
+    return room !== null && room <= 1 ? null : { room, max: field.max, list: field.label };
+}
+
+/*
+ * A new item for every photo, right after the item that holds the field, with the other fields at their default, as
+ * many as the list still takes. The items below move a place, so the errors of the list go (the next save gives them
+ * again), and the new items count as finished: a refusal shows on their rows.
+ */
+function addItems(state, key, item, fieldKey, files) {
+    const field = state.fields.find((candidate) => candidate.key === key);
+    const list = state.values[key];
+    const at = list.indexOf(item);
+    const room = roomIn(field, list);
+    const fitting = room === null ? files : files.slice(0, room - 1);
+
+    if (at < 0 || fitting.length === 0) {
+        return [];
+    }
+
+    const items = fitting.map((file) => ({ ...newItem(field), [fieldKey]: file.id }));
+
+    list.splice(at + 1, 0, ...items);
+    forgetErrorsOf(state, key);
+    state.touched.add(key);
+    for (let place = at + 1; place <= at + items.length; place++) {
+        state.touched.add('item:' + key + '.' + place);
+    }
+    liveInput(state, key, field, null);
+
+    return items;
+}
+
+/* Reads out which items the picker added: "Item 3 is toegevoegd, na Item 2." */
+function announceAdded(state, key, item, items) {
+    const field = state.fields.find((candidate) => candidate.key === key);
+    const list = state.values[key];
+    const name = (index) => format(texts.item, { item: field.item_label, n: index + 1 });
+    const first = list.indexOf(items[0]);
+    const after = name(list.indexOf(item));
+
+    announce(items.length === 1
+        ? format(texts.added_after_one, { item: name(first), after })
+        : format(texts.added_after_many, { first: name(first), last: name(first + items.length - 1), after }));
+}
+
 function items(state, element, field, owner, path) {
     const rows = slot('rows', element);
     const add = slot('add', element);
@@ -1836,9 +1911,21 @@ function renderItem(state) {
     ui.crumbStrip.textContent = state.label;
     ui.crumbList.textContent = field.label;
     ui.crumbItem.textContent = itemTitle(field, item, index).title;
-    ui.itemPosition.textContent = format(texts.position, { n: index + 1, m: list.length });
-    ui.remove.disabled = field.min !== null && list.length <= field.min;
+    itemPlace(state);
     ui.itemFields.replaceChildren(...field.fields.map((sub) => control(state, sub, item, prefix + '.' + sub.key)));
+}
+
+/* The place of the open item in its list ("Item 2 van 5") and whether it can go, also after items were added. */
+function itemPlace(state) {
+    if (state !== current || ! state.item) {
+        return;
+    }
+
+    const field = state.fields.find((candidate) => candidate.key === state.item.key);
+    const list = state.values[field.key];
+
+    ui.itemPosition.textContent = format(texts.position, { n: state.item.index + 1, m: list.length });
+    ui.remove.disabled = field.min !== null && list.length <= field.min;
 }
 
 function closeItem(state) {

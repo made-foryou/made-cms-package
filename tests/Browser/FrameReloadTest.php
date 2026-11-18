@@ -103,7 +103,7 @@ it('shows a strip added at the end of a long page, on a site rendered in the bro
 
     $shell->script(renderedInTheBrowser());
     $shell->click('[data-slot="structure-add"]')
-        ->click('[data-slot="catalogue-types"] .soortkaart:first-child');
+        ->click('[data-slot="catalogue-types"] .soortkaart:nth-child(2)');
 
     expect($shell->script(waitUntil(frameReloaded()." && document.querySelector('[data-slot=\"head-position\"]')?.textContent.trim() === 'Strook 33 van 33'")))->toBeTrue();
 

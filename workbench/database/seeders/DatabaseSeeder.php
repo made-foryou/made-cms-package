@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
         // Logs in with a code (see storage/logs) or with the password "password".
         $this->editor = CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]))->id;
 
-        // Served by Route::madeCms() in workbench/routes/web.php: "/", "/over-ons" and "/over-ons/team" open. "/concept" is
+        // Served by Route::madeCms() in workbench/routes/web.php: "/", "/over-ons", "/over-ons/team" and "/fotos" open. "/concept" is
         // a draft and answers 404, except to a logged-in editor in the edit mode of the CMS: "/concept?made-cms=edit".
         // The positions give the order of the menu and of the pages screen.
         $about = Page::factory()->published()->atPosition(1)->at('/over-ons')->withStrips([
@@ -84,6 +84,14 @@ class DatabaseSeeder extends Seeder
         Page::factory()->atPosition(2)->at('/concept')->withDraft([
             $this->strip('hero', ['kop' => 'Een pagina die nog niet gepubliceerd is']),
         ])->create(['title' => 'Concept', 'slug' => 'concept']);
+
+        // A gallery with one photo: "Kiezen uit media" in Foto 1 picks several photos at once, the rest as new items.
+        [$evening] = $this->clubFolder();
+
+        Page::factory()->published()->atPosition(3)->at('/fotos')->withStrips([
+            $this->strip('hero', ['kop' => 'Foto’s']),
+            $this->strip('gallery', ['fotos' => [['foto' => $evening->id, 'bijschrift' => 'Clubavond in de kantine']]]),
+        ])->create(['title' => 'Foto’s', 'slug' => 'fotos']);
 
         // The factories write the strips without the Actions, so the library learns from them where its photo is.
         RebuildMediaUsage::run();
@@ -138,6 +146,22 @@ class DatabaseSeeder extends Seeder
         } finally {
             unlink($path);
         }
+    }
+
+    /**
+     * A folder Clubleven for the gallery: three photos to pick at once.
+     *
+     * @return list<Media>
+     */
+    private function clubFolder(): array
+    {
+        $club = CreateMediaFolder::run('Clubleven');
+
+        return [
+            $this->drawnPhoto('Clubavond.jpg', [[14, 43, 38], [190, 138, 28]], $club, 'Leden aan de tafels tijdens de clubavond'),
+            $this->drawnPhoto('Toernooi zomer.jpg', [[243, 241, 232], [14, 43, 38], [243, 241, 232], [14, 43, 38]], $club, 'Het zomertoernooi in de sporthal'),
+            $this->drawnPhoto('Jeugdtraining.jpg', [[190, 138, 28], [243, 241, 232]], $club, null),
+        ];
     }
 
     /**

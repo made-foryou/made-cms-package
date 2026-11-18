@@ -30,19 +30,23 @@
  * - made-cms:media-chosen {file} when the choice changes, the file as the upload field gets one;
  * - made-cms:media-folder {folder} when the editor opens a folder: {id, name}, or null for "Alle bestanden";
  * - made-cms:media-folders {folders} in the library, every time its folders load: [{id, name}] from a to z;
- * - made-cms:media-selection {selecting, files} in the library when it starts or stops selecting and when the
- *   selection changes;
+ * - made-cms:media-selection {selecting, files, full} in the library and in a picker opened from an item of a list,
+ *   when it starts or stops selecting and when the selection changes (full: the list of the item takes no more);
  * - made-cms:media-changed {file} in the library for a file it moved that stays chosen.
- * A host loads the list with made-cms:media-load {file} on it: the folder it was in, no search, newest first, with
- * that file chosen. A list outside a dialog loads at once. In the library a host stops selecting with
+ * A host loads the list with made-cms:media-load {file, many} on it: the folder it was in, no search, newest first,
+ * with that file chosen and nothing selected; many ({room, max, count, list, items, item}) for a picker opened from an
+ * item of a list, null outside one; made-cms:media-deselect {id} takes a file out of its selection. A list outside a
+ * dialog loads at once. In the library a host stops selecting with
  * made-cms:media-select {on: false}, and moves files with made-cms:media-move {files, folder, done(result)}: the ids,
  * the folder ({id, name}, null for "Alle bestanden"), and done gets {ok, error}; the list sets detail.taken.
  *
  * The picker ([data-media-picker]) is a modal <dialog> around a list. The side panel opens it with made-cms:pick on the
- * dialog, {field, place, hint, file, opener, choose(file)}; "Deze gebruiken" closes it and calls choose with the chosen
- * file. Escape, "Annuleren", the cross and a click beside it close it without a choice; the focus goes back to opener.
- * Both finish the upload field first, so an alt text the editor typed for a new photo is stored and goes with the
- * choice, and the field is at rest the next time the picker opens.
+ * dialog, {field, place, hint, file, many, opener, choose(files)}; "Deze gebruiken" closes it and calls choose with
+ * the chosen file, or, opened for an item of a list (many), with the files it selects, in the order of the items they
+ * become. Escape, "Annuleren", the cross and a click beside it close it without a choice; the focus goes back to
+ * opener. Both finish the upload fields first, so an alt text the editor typed for a new photo is stored and goes with
+ * the choice, and the fields are at rest the next time the picker opens. The picker holds the upload field of one
+ * photo and of several; each time it opens it shows the field of several photos when it chooses several files.
  */
 
 const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
@@ -137,11 +141,27 @@ function browse(root) {
         notice: slot('notice'),
         select: slot('select'),
     } : null;
+    // The parts of a picker that chooses several photos for an item of a list (design 13.4b–p): the line with the
+    // button, the messages above the tiles and the hint below them. Only the picker has them.
+    const stand = {
+        root: slot('picker-stand'),
+        status: slot('picker-status'),
+        full: slot('picker-full'),
+        many: slot('picker-many'),
+        notices: slot('picker-notices'),
+        hint: slot('picker-hint'),
+        notice: root.querySelector('template[data-picker-notice]'),
+    };
     const folderTemplate = root.querySelector('template[data-media-folder]');
     const tileTemplate = root.querySelector('template[data-media-tile]');
     const noticeTemplate = root.querySelector('template[data-media-notice]');
     const all = ui.folders?.querySelector('button[data-folder=""]');
-    const upload = root.querySelector('[data-upload]');
+    // The upload fields of the list. The picker holds two ([data-picker-upload]): the field of one photo and the field
+    // of several photos for a picker opened from an item of a list; each time it opens one of them is in sight, so a
+    // field never changes while its files are on their way. Every field follows the open folder; the list hears only
+    // the field in sight.
+    const uploads = [...root.querySelectorAll('[data-upload]')];
+    let upload = uploads[0] ?? null;
 
     if (Object.values(ui).some((element) => element === null) || ! folderTemplate || ! tileTemplate || ! all) {
         return;
@@ -180,6 +200,15 @@ function browse(root) {
         anchor: null,
         // What the list on the page answers (folder, filter, search, order), so loading it again keeps the selection.
         listed: null,
+        // The picker opened from an item of a list: {room, max, count, list, items, item}, room the number of files the
+        // list takes from that item on (null for no limit; 1 for a full list, which chooses one file); null outside a
+        // list.
+        many: null,
+        // In that picker: more than one photo uploaded at once started selecting, the photos that came in while the
+        // list took no more, and the photos uploaded since it opened (they say they are new).
+        started: false,
+        over: 0,
+        fresh: new Set(),
         // The field below the chips: {mode: 'new' | 'rename', busy}, or null while it is closed.
         field: null,
         // The ids of the files a drag carries.
@@ -214,6 +243,99 @@ function browse(root) {
         ui.folders.querySelectorAll('button[data-folder]').forEach((button) => {
             button.setAttribute('aria-pressed', String(button.dataset.folder === open));
         });
+    }
+
+    /** In a picker that selects, a folder says how many of its files are chosen ("2 gekozen in Teams"). */
+    function countChosen() {
+        ui.folders.querySelectorAll('button[data-folder]').forEach((button) => {
+            const badge = slot('folder-chosen', button);
+
+            if (! badge) {
+                return;
+            }
+
+            const chosen = library || ! state.selecting || button.dataset.folder === ''
+                ? 0
+                : [...state.selected.values()].filter((file) => String(file.folder_id ?? '') === button.dataset.folder).length;
+
+            badge.hidden = chosen === 0;
+            badge.textContent = String(chosen);
+            badge.setAttribute('aria-label', format(texts.folder_chosen, { count: chosen, folder: slot('folder-name', button)?.textContent ?? '' }));
+        });
+    }
+
+    /**
+     * The line of a picker of a list (design 13.4b–g): "Meerdere kiezen", pressed while it selects and off for a full
+     * list; what is chosen beside it; the messages of the moment above the tiles and the hint below them.
+     */
+    function drawStand() {
+        if (! stand.root || ! stand.hint) {
+            return;
+        }
+
+        const many = state.many;
+        const room = many?.room ?? null;
+        const fullList = many !== null && room !== null && room <= 1;
+        const count = state.selected.size;
+        const lower = (text) => String(text ?? '').toLocaleLowerCase();
+
+        stand.root.hidden = many === null;
+        stand.many.setAttribute('aria-pressed', String(state.selecting));
+        stand.many.setAttribute('aria-disabled', String(fullList));
+        stand.full.hidden = ! fullList;
+        stand.full.textContent = fullList ? format(texts.full, { list: many.list, count: many.count, max: many.max }) : '';
+
+        let status = '';
+
+        if (state.selecting) {
+            const here = state.folder === null || [...state.selected.values()].some((file) => (file.folder_id ?? null) === state.folder.id);
+
+            if (count === 0) {
+                status = room === null ? texts.status_none_open : format(texts.status_none, { room });
+            } else if (full()) {
+                status = format(texts.status_max, { count });
+            } else if (! here) {
+                status = format(texts.status_elsewhere, { count });
+            } else {
+                status = room === null ? format(texts.status_open, { count }) : format(texts.status, { count, left: room - count });
+            }
+        }
+
+        if (stand.status.textContent !== status) {
+            stand.status.textContent = status;
+        }
+
+        const notices = [];
+
+        if (state.selecting && state.started) {
+            notices.push(texts.started);
+        }
+
+        if (state.selecting && full()) {
+            notices.push(format(texts.limit, { list: many.list, max: many.max, items: lower(many.items) }));
+        }
+
+        if (state.over > 0) {
+            notices.push(format(state.over === 1 ? texts.over_one : texts.over_many, { count: state.over, list: many?.list ?? '' }));
+        }
+
+        if (stand.notices.dataset.texts !== JSON.stringify(notices)) {
+            stand.notices.dataset.texts = JSON.stringify(notices);
+            stand.notices.replaceChildren(...notices.map((text) => {
+                const notice = stand.notice.content.firstElementChild.cloneNode(true);
+
+                notice.querySelector('.melding-tekst').textContent = text;
+
+                return notice;
+            }));
+        }
+
+        stand.hint.textContent = many === null
+            ? texts.outside
+            : (fullList
+                ? format(texts.hint_full, { list: many.list, count: many.count, max: many.max, item: many.item })
+                : (state.selecting ? texts.hint_many : texts.hint_one));
+        countChosen();
     }
 
     /** The filters of the library are one group: every kind, a kind, or the images without an alt text. */
@@ -268,6 +390,7 @@ function browse(root) {
         }
 
         count(data.counts);
+        countChosen();
 
         if (library) {
             state.folderList = data.folders;
@@ -331,7 +454,7 @@ function browse(root) {
 
         pressFolders();
         trail();
-        upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
+        follow(folder);
         tell('made-cms:media-folder', { folder });
 
         if (library) {
@@ -341,6 +464,43 @@ function browse(root) {
         }
 
         load().then(remember);
+    }
+
+    /** Sends every upload field of the list into a folder, also the one out of sight, so it is there when it shows. */
+    function follow(folder) {
+        for (const field of uploads) {
+            field.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
+        }
+    }
+
+    /** Listens to an event of the upload field in sight; a field out of sight has nothing to tell the list. */
+    function hear(name, listener) {
+        for (const field of uploads) {
+            field.addEventListener(name, (event) => {
+                if (field === upload) {
+                    listener(event);
+                }
+            });
+        }
+    }
+
+    /**
+     * Shows the upload field of several photos for a picker that chooses several (many), else the field of one photo.
+     * A list with one field keeps it.
+     */
+    function showUpload(many) {
+        const wrappers = [...root.querySelectorAll('[data-picker-upload]')];
+        const shown = wrappers.find((wrapper) => wrapper.dataset.pickerUpload === (many ? 'many' : 'one')) ?? wrappers[0];
+
+        if (! shown) {
+            return;
+        }
+
+        for (const wrapper of wrappers) {
+            wrapper.hidden = wrapper !== shown;
+        }
+
+        upload = shown.querySelector('[data-upload]') ?? upload;
     }
 
     /** The list and its folders again, for the library whose folders count what it lists. */
@@ -445,15 +605,49 @@ function browse(root) {
     }
 
     function paint(tile, file) {
-        // While the library selects, a tile is pressed when it is selected; the chosen file waits until it stops.
+        // While the list selects, a tile is pressed when it is selected; the chosen file waits until it stops.
         const selected = state.selecting && state.selected.has(file.id);
         const chosen = ! state.selecting && state.chosen?.id === file.id;
 
         tile.setAttribute('aria-pressed', String(chosen || selected));
         tile.classList.toggle('gekozen', chosen);
         tile.classList.toggle('geselecteerd', selected);
+
+        // In the picker a selected file shows its place: the order of the items it becomes. Once the list of the item
+        // takes no more, the other files say so (not grey: grey would read as "no image").
+        const number = selected && ! library ? [...state.selected.keys()].indexOf(file.id) + 1 : 0;
+        const limited = ! library && state.selecting && ! selected && full();
+
+        if (number > 0) {
+            tile.dataset.number = String(number);
+        } else {
+            delete tile.dataset.number;
+        }
+
+        if (! library) {
+            const label = slot('tile-number', tile);
+
+            if (label) {
+                label.textContent = number > 0 ? String(number) : '';
+            }
+
+            tile.classList.toggle('vol', limited);
+
+            if (limited) {
+                tile.setAttribute('aria-disabled', 'true');
+            } else {
+                tile.removeAttribute('aria-disabled');
+            }
+
+            if (number > 0) {
+                tile.setAttribute('aria-label', format(texts.tile_number, { name: file.name, n: number }));
+            } else {
+                tile.removeAttribute('aria-label');
+            }
+        }
+
         // In the picker the check of the choice takes the place of the dot; the library keeps it.
-        slot('tile-no-alt', tile).hidden = (chosen && ! library) || file.kind !== 'image' || (file.alt ?? '') !== '';
+        slot('tile-no-alt', tile).hidden = ((chosen || selected) && ! library) || file.kind !== 'image' || (file.alt ?? '') !== '';
     }
 
     function tileOf(file) {
@@ -480,6 +674,18 @@ function browse(root) {
         slot('tile-extension', tile).textContent = file.extension ?? '';
         slot('tile-name', tile).textContent = file.name;
         slot('tile-meta', tile).textContent = file.meta ?? '';
+
+        // A photo uploaded in this picker says it is new.
+        if (! library && state.fresh.has(file.id)) {
+            const fresh = slot('tile-new', tile);
+
+            if (fresh) {
+                fresh.hidden = false;
+                fresh.textContent = texts.new ?? '';
+            }
+
+            slot('tile-meta', tile).textContent = format(texts.just, { meta: file.meta ?? '' });
+        }
 
         if (library) {
             const kindName = settings.kinds?.[file.kind] ?? '';
@@ -517,11 +723,12 @@ function browse(root) {
         }
 
         // A click on the file that is chosen changes nothing: the side column of the library keeps what the editor typed.
-        // While the library selects, or with Cmd/Ctrl or Shift, a click selects the file instead.
+        // While the list selects, or with Cmd/Ctrl or Shift, a click selects the file instead: in the library, and in a
+        // picker opened from an item of a list.
         tile.addEventListener('click', (event) => {
             const current = state.files.find((candidate) => candidate.id === file.id) ?? file;
 
-            if (library && (state.selecting || event.metaKey || event.ctrlKey || event.shiftKey)) {
+            if (selectable() && (state.selecting || event.metaKey || event.ctrlKey || event.shiftKey)) {
                 pickFile(current, event);
             } else if (state.chosen?.id !== file.id) {
                 choose(current);
@@ -603,17 +810,35 @@ function browse(root) {
         return Promise.all(waits).then((results) => results.every((result) => result !== false), () => false);
     }
 
+    /** Whether the list selects files: the library, and a picker opened from an item of a list that takes another. */
+    function selectable() {
+        return library || (state.many !== null && (state.many.room === null || state.many.room > 1));
+    }
+
+    /** Whether the selection holds as many files as the list of a picker still takes. */
+    function full() {
+        const room = state.many?.room ?? null;
+
+        return room !== null && state.selected.size >= room;
+    }
+
     function tellSelection() {
-        tell('made-cms:media-selection', { selecting: state.selecting, files: [...state.selected.values()] });
+        drawStand();
+        tell('made-cms:media-selection', { selecting: state.selecting, files: [...state.selected.values()], full: full() });
     }
 
     /**
-     * Starts or stops selecting. Selecting starts with the files given, else the chosen file when the list shows it.
-     * Stopping with one file selected chooses it; with more nothing is chosen, without any the choice stays.
+     * Starts or stops selecting. Selecting starts with the files given, else the chosen file: in the library when the
+     * list shows it, in the picker wherever it is (the photo the item has when the picker opens), as the first of the
+     * items. Stopping with one file selected chooses it; with more nothing is chosen, without any the choice stays.
      */
     async function selecting(on, start = null) {
         if (on === state.selecting) {
             return true;
+        }
+
+        if (on && ! selectable()) {
+            return false;
         }
 
         if (on) {
@@ -621,7 +846,9 @@ function browse(root) {
                 return false;
             }
 
-            const chosen = state.chosen && state.files.find((candidate) => candidate.id === state.chosen.id);
+            const chosen = library
+                ? state.chosen && state.files.find((candidate) => candidate.id === state.chosen.id)
+                : state.chosen;
 
             state.selecting = true;
             state.selected = new Map((start ?? (chosen ? [chosen] : [])).map((file) => [file.id, file]));
@@ -634,10 +861,11 @@ function browse(root) {
             state.selecting = false;
             state.selected = new Map();
             state.anchor = null;
+            state.started = false;
         }
 
         root.toggleAttribute('data-selecting', state.selecting);
-        shelf.select.setAttribute('aria-pressed', String(state.selecting));
+        shelf?.select.setAttribute('aria-pressed', String(state.selecting));
         repaint();
         tellSelection();
 
@@ -650,7 +878,11 @@ function browse(root) {
         return true;
     }
 
-    /** A click while selecting: the file in or out, with Shift the range from the file clicked before. */
+    /**
+     * A click while selecting: the file in or out, with Shift the range from the file clicked before, in the order of
+     * the list (a file in it that is selected keeps its place). In the picker nothing joins once the list of the item
+     * is full: the rest of a range is left out. An anchor the list does not show makes Shift-click a plain click.
+     */
     async function pickFile(file, event) {
         if (! state.selecting && ! await selecting(true)) {
             return;
@@ -659,20 +891,36 @@ function browse(root) {
         const ids = state.files.map((candidate) => candidate.id);
         const from = state.anchor === null ? -1 : ids.indexOf(state.anchor);
         const to = ids.indexOf(file.id);
+        let refused = false;
+        const join = (candidate) => {
+            if (state.selected.has(candidate.id) || ! full()) {
+                state.selected.set(candidate.id, candidate);
+            } else {
+                refused = true;
+            }
+        };
 
         if (event.shiftKey && from >= 0 && to >= 0) {
-            for (const candidate of state.files.slice(Math.min(from, to), Math.max(from, to) + 1)) {
-                state.selected.set(candidate.id, candidate);
-            }
+            const range = state.files.slice(Math.min(from, to), Math.max(from, to) + 1);
+
+            // In the picker the numbers follow the click: a range upwards counts upwards.
+            (to < from && ! library ? range.reverse() : range).forEach(join);
         } else if (state.selected.has(file.id)) {
             state.selected.delete(file.id);
         } else {
-            state.selected.set(file.id, file);
+            join(file);
         }
 
         state.anchor = file.id;
         repaint();
         tellSelection();
+
+        // A photo the list no longer takes says why again, so a click or Enter on it is never silent.
+        if (refused && stand.notices) {
+            stand.notices.dataset.texts = '';
+            stand.notices.replaceChildren();
+            window.setTimeout(drawStand, 50);
+        }
     }
 
     /**
@@ -830,7 +1078,7 @@ function browse(root) {
         // The open folder keeps its id: the trail, the upload field and the page hear its new name.
         state.folder = { id: data.folder.id, name: data.folder.name };
         trail();
-        upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder: state.folder } }));
+        follow(state.folder);
         tell('made-cms:media-folder', { folder: state.folder });
         notice(format(texts.folder_renamed, { folder: data.folder.name }));
         shelf.rename.focus();
@@ -1170,9 +1418,22 @@ function browse(root) {
 
     /** Draws a page of the list as its endpoint answers it, for the question of listing() when it was asked. */
     function draw(data, more = false, question = JSON.stringify(listing())) {
-        // The selection belongs to the list the editor sees: another folder, filter, search or order starts it again,
-        // and the same list loaded again (a file that came in, a folder renamed) keeps the files it still shows.
-        if (! more && state.selecting) {
+        // The selection of the picker is its result: it stays over another folder, filter or search, and a file it holds
+        // takes the form the list shows now.
+        if (! library && state.selecting) {
+            const shown = data.files.filter((file) => state.selected.has(file.id));
+
+            shown.forEach((file) => state.selected.set(file.id, file));
+
+            if (shown.length > 0) {
+                tellSelection();
+            }
+        }
+
+        // The selection of the library belongs to the list the editor sees: another folder, filter, search or order
+        // starts it again, and the same list loaded again (a file that came in, a folder renamed) keeps the files it
+        // still shows.
+        if (library && ! more && state.selecting) {
             const shown = new Map(data.files.map((file) => [file.id, file]));
             const before = state.selected.size;
 
@@ -1382,15 +1643,24 @@ function browse(root) {
 
     ui.more.addEventListener('click', () => load(true));
 
-    upload?.addEventListener('made-cms:upload', (event) => {
+    hear('made-cms:upload', (event) => {
         state.uploading = event.detail?.busy === true || (event.detail?.total ?? 0) > 0;
         show();
+
+        // More than one photo on its way for a picker of a list: they all join, as the next items. A photo that came in
+        // earlier and waits for its alt text is no part of this batch.
+        const coming = (event.detail?.total ?? 0) - (event.detail?.done ?? 0);
+
+        if (! library && selectable() && ! state.selecting && coming > 1) {
+            state.started = true;
+            selecting(true);
+        }
     });
 
     // A file uploaded in the picker is the choice, at the top of the list it is in. The library keeps its filter, search
     // and order, and shows a new file where they place it, without choosing it: a batch would make the side column
     // jump, and an editor working through a filter keeps it. The upload field shows every file while it comes in.
-    upload?.addEventListener('made-cms:uploaded', (event) => {
+    hear('made-cms:uploaded', (event) => {
         const file = event.detail?.file;
 
         if (! file) {
@@ -1404,6 +1674,29 @@ function browse(root) {
             return;
         }
 
+        // While the picker selects, a photo joins the selection as long as the list of the item takes it (else it is
+        // in Media only), and the list loads once the photos of a batch came in.
+        state.fresh.add(file.id);
+
+        if (state.selecting) {
+            if (! state.selected.has(file.id) && ! full()) {
+                state.selected.set(file.id, file);
+            } else if (! state.selected.has(file.id)) {
+                state.over++;
+            }
+
+            tellSelection();
+
+            window.clearTimeout(refreshing);
+            refreshing = window.setTimeout(() => {
+                reset();
+                load();
+                folders();
+            }, 150);
+
+            return;
+        }
+
         reset();
         choose(file);
         load();
@@ -1411,7 +1704,7 @@ function browse(root) {
     });
 
     // The alt text the editor gave the new file, and its name and crop from the crop step, as they are stored.
-    upload?.addEventListener('made-cms:upload-closed', (event) => {
+    hear('made-cms:upload-closed', (event) => {
         for (const file of event.detail?.files ?? []) {
             replace(file);
         }
@@ -1435,6 +1728,7 @@ function browse(root) {
 
         if (state.selected.has(file.id)) {
             state.selected.set(file.id, file);
+            tellSelection();
         }
 
         ui.grid.querySelector('.tegel[data-id="' + file.id + '"]')?.replaceWith(tileOf(file));
@@ -1479,9 +1773,39 @@ function browse(root) {
         });
     }
 
+    // In a picker opened from an item of a list, made-cms:media-select {on} or its button starts and stops selecting,
+    // and made-cms:media-deselect {id} takes a file out (the cross of its chip at the foot).
+    if (! library) {
+        root.addEventListener('made-cms:media-select', (event) => selecting(event.detail?.on === true));
+        stand.many?.addEventListener('click', () => {
+            if (stand.many.getAttribute('aria-disabled') !== 'true') {
+                selecting(! state.selecting);
+            }
+        });
+        root.addEventListener('made-cms:media-deselect', (event) => {
+            if (state.selecting && state.selected.delete(event.detail?.id)) {
+                repaint();
+                tellSelection();
+            }
+        });
+    }
+
     root.addEventListener('made-cms:media-load', (event) => {
         // A photo the server was still storing when the list was left asks no alt text any more: it is "later".
-        finished(upload);
+        uploads.forEach(finished);
+        state.many = event.detail?.many ?? null;
+        // The field of several photos only for a list that takes more than the photo of its item.
+        showUpload(selectable());
+        root.toggleAttribute('data-many', ! library && selectable());
+        state.selecting = false;
+        state.selected = new Map();
+        state.anchor = null;
+        state.started = false;
+        state.over = 0;
+        state.fresh = new Set();
+        root.removeAttribute('data-selecting');
+        shelf?.select.setAttribute('aria-pressed', 'false');
+        tellSelection();
         state.turn++;
         state.chosen = event.detail?.file ?? null;
         state.files = [];
@@ -1547,7 +1871,17 @@ function pick(dialog) {
         cancel: slot('cancel'),
         use: slot('use'),
     };
-    const upload = browser.querySelector('[data-upload]');
+    // The foot of a picker of a list while it selects: the number chosen, where they go, and a chip per file in order.
+    const foot = {
+        one: slot('one'),
+        selection: slot('selection'),
+        chosen: slot('chosen'),
+        where: slot('where'),
+        chips: slot('chips'),
+        chip: dialog.querySelector('template[data-picker-chip]'),
+    };
+    // The field of one photo and the field of several photos; the list shows one of them each time the picker opens.
+    const uploads = [...browser.querySelectorAll('[data-upload]')];
     const search = browser.querySelector('[data-slot="media-search"]');
 
     if (Object.values(ui).some((element) => element === null)) {
@@ -1556,27 +1890,89 @@ function pick(dialog) {
 
     let request = null;
     let chosen = null;
-    let sending = false;
+    // What the list selects in a picker opened from an item of a list: the files in the order of the items they become.
+    let selection = { selecting: false, files: [], full: false };
+    // The upload fields whose bytes still travel, so they can still be stopped.
+    const sending = new Set();
     let downOutside = false;
     // Waiting for the upload field to finish, so a second click does nothing.
     let finishing = false;
 
+    /** The files "Deze gebruiken" hands the side panel: the selection while the list selects, else the choice. */
+    function picked() {
+        if (selection.selecting) {
+            return selection.files;
+        }
+
+        return chosen ? [chosen] : [];
+    }
+
     function draw() {
-        const alt = chosen?.alt ?? '';
+        const files = picked();
+        const first = files[0] ?? null;
+        const alt = first?.alt ?? '';
 
-        ui.name.textContent = chosen ? chosen.name : texts.nothing;
-        ui.alt.textContent = chosen ? (alt === '' ? texts.no_alt : format(texts.alt, { alt })) : texts.nothing_hint;
-        ui.alt.dataset.alt = chosen ? (alt === '' ? 'missing' : 'set') : '';
-        ui.thumb.hidden = ! chosen?.image;
+        ui.name.textContent = files.length > 0 ? files.map((file) => file.name).join(', ') : texts.nothing;
+        ui.alt.textContent = files.length > 1 ? '' : (first ? (alt === '' ? texts.no_alt : format(texts.alt, { alt })) : texts.nothing_hint);
+        ui.alt.dataset.alt = files.length === 1 ? (alt === '' ? 'missing' : 'set') : '';
+        ui.thumb.hidden = ! first?.image;
 
-        const small = chosen?.thumb ?? chosen?.url;
+        const small = first?.thumb ?? first?.url;
 
-        if (chosen?.image && ui.thumb.getAttribute('src') !== small) {
+        if (first?.image && ui.thumb.getAttribute('src') !== small) {
             ui.thumb.src = small;
         }
 
-        ui.use.textContent = chosen ? texts.use : texts.choose_first;
-        ui.use.setAttribute('aria-disabled', String(! chosen));
+        ui.use.textContent = files.length === 0
+            ? texts.choose_first
+            : (selection.selecting && files.length > 1 ? format(texts.use_many, { count: files.length }) : texts.use);
+        ui.use.setAttribute('aria-disabled', String(files.length === 0));
+        drawSelection();
+    }
+
+    /** The foot while the list selects (design 13.4c): what is chosen and where it goes, a chip per file in order. */
+    function drawSelection() {
+        if (! foot.selection || ! foot.chips || ! foot.chip) {
+            return;
+        }
+
+        const files = selection.selecting ? selection.files : [];
+        const item = request?.many?.item ?? '';
+        const focused = foot.chips.contains(document.activeElement)
+            ? [...foot.chips.children].findIndex((chip) => chip.contains(document.activeElement))
+            : -1;
+
+        foot.one.hidden = selection.selecting;
+        foot.selection.hidden = ! selection.selecting;
+        foot.chosen.textContent = files.length === 0 ? texts.nothing : format(texts.chosen, { count: files.length });
+        foot.where.textContent = files.length === 0
+            ? texts.foot_none
+            : format(files.length === 1 ? texts.foot_one : texts.foot_many, { item });
+        foot.chips.replaceChildren(...files.map((file, index) => {
+            const chip = foot.chip.content.firstElementChild.cloneNode(true);
+            const thumb = chip.querySelector('[data-slot="media-picker-chip-thumb"]');
+            const remove = chip.querySelector('[data-slot="media-picker-chip-remove"]');
+
+            chip.title = file.name;
+            chip.querySelector('[data-slot="media-picker-chip-number"]').textContent = String(index + 1);
+
+            if (file.image) {
+                thumb.src = file.thumb ?? file.url;
+                thumb.hidden = false;
+            }
+
+            remove.setAttribute('aria-label', format(texts.chip_remove, { name: file.name }));
+            remove.addEventListener('click', () => browser.dispatchEvent(new CustomEvent('made-cms:media-deselect', { detail: { id: file.id } })));
+
+            return chip;
+        }));
+
+        // The cross of a chip that went gives the focus to the chip that took its place, else to the button.
+        if (focused >= 0) {
+            const next = foot.chips.children[Math.min(focused, foot.chips.children.length - 1)];
+
+            (next?.querySelector('[data-slot="media-picker-chip-remove"]') ?? ui.use).focus();
+        }
     }
 
     /** Tab goes round inside the dialog, never out to the browser. */
@@ -1617,7 +2013,7 @@ function pick(dialog) {
             dialog.showModal();
         }
 
-        browser.dispatchEvent(new CustomEvent('made-cms:media-load', { detail: { file: chosen } }));
+        browser.dispatchEvent(new CustomEvent('made-cms:media-load', { detail: { file: chosen, many: request.many ?? null } }));
         search?.focus();
     });
 
@@ -1626,15 +2022,38 @@ function pick(dialog) {
         draw();
     });
 
-    upload?.addEventListener('made-cms:upload', (event) => {
-        sending = event.detail?.sending === true;
+    browser.addEventListener('made-cms:media-selection', (event) => {
+        selection = {
+            selecting: event.detail?.selecting === true,
+            files: [...(event.detail?.files ?? [])],
+            full: event.detail?.full === true,
+        };
+        draw();
     });
 
+    for (const field of uploads) {
+        field.addEventListener('made-cms:upload', (event) => {
+            if (event.detail?.sending === true) {
+                sending.add(field);
+            } else {
+                sending.delete(field);
+            }
+        });
+    }
+
+    /** Stops the bytes that still travel: a file the server is storing already lands in Media. */
+    function stop() {
+        for (const field of sending) {
+            field.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
+        }
+    }
+
+    /** Finishes both upload fields; true unless one kept an alt text the server refused. */
     async function finish() {
         finishing = true;
 
         try {
-            return await finished(upload);
+            return (await Promise.all(uploads.map(finished))).every(Boolean);
         } finally {
             finishing = false;
         }
@@ -1642,18 +2061,19 @@ function pick(dialog) {
 
     /**
      * "Deze gebruiken": the upload field finishes first, so the choice holds the alt text the editor typed for a new
-     * photo (made-cms:media-chosen follows made-cms:upload-closed). An alt text the server refused keeps the dialog open.
+     * photo (made-cms:media-chosen and made-cms:media-selection follow made-cms:upload-closed). An alt text the server
+     * refused keeps the dialog open. The side panel gets the files in the order of the items they become.
      */
     async function use() {
-        if (! chosen || ! request || finishing || ! await finish() || ! chosen || ! request) {
+        if (picked().length === 0 || ! request || finishing || ! await finish() || picked().length === 0 || ! request) {
             return;
         }
 
-        const file = chosen;
+        const files = picked();
         const choose = request.choose;
 
         dialog.close();
-        choose?.(file);
+        choose?.(files);
     }
 
     /** Leaves without a choice: a photo whose bytes still travel stops, a typed alt text is stored, then it closes. */
@@ -1662,9 +2082,7 @@ function pick(dialog) {
             return;
         }
 
-        if (sending) {
-            upload?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
-        }
+        stop();
 
         if (await finish() && dialog.open) {
             dialog.close();
@@ -1702,11 +2120,8 @@ function pick(dialog) {
     // However it closed (the browser may close it on a second Escape without asking): a photo whose bytes still travel
     // stops, one the server is storing lands in Media, and a typed alt text is stored.
     dialog.addEventListener('close', () => {
-        if (sending) {
-            upload?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
-        }
-
-        finished(upload);
+        stop();
+        uploads.forEach(finished);
 
         const opener = request?.opener ?? null;
 

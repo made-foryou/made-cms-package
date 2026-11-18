@@ -1,13 +1,13 @@
 {{--
     The upload field of the CMS as a host includes it: the stylesheet of the CMS, the partial with what
-    UploadField::make() gives, and its script. The library, the picker and the edit shell do the same; the library hands
-    the photos of a batch to the crop step too.
+    UploadField::make() gives (UploadField::images() with ?fotos=1), and its script. The library, the picker and the edit
+    shell do the same; the library hands the photos of a batch to the crop step too.
 --}}
 @php
     use Made\CmsPackage\Http\Cms\UploadField;
     use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 
-    $upload = UploadField::make($folder);
+    $upload = $photos ? UploadField::images($folder) : UploadField::make($folder);
 @endphp
 <!DOCTYPE html>
 <html lang="nl">
@@ -31,7 +31,7 @@
         <header>
             <span class="eyebrow">Media / uploadveld</span>
             <h1>Eén veld, vijf momenten</h1>
-            <p class="intro">Hetzelfde veld staat in de bibliotheek, in de kiezer en in de bewerkmodus. Log eerst in als redacteur; met <code>?folder=</code> komen de bestanden in die map.</p>
+            <p class="intro">Hetzelfde veld staat in de bibliotheek, in de kiezer en in de bewerkmodus. Log eerst in als redacteur; met <code>?folder=</code> komen de bestanden in die map, met <code>?fotos=1</code> neemt het veld alleen foto’s, meer tegelijk.</p>
         </header>
 
         @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $upload])

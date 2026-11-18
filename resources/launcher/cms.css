@@ -2788,6 +2788,10 @@ ul.lijst {
     background: var(--made-oppervlak-verhoogd);
 }
 
+.lijstrij.nieuw {
+    border-color: var(--made-accent);
+}
+
 .lijstrij.fout {
     border-color: var(--made-alarm);
 }
@@ -2829,6 +2833,16 @@ ul.lijst {
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* An item the picker just added (design 13.4o). */
+.lijstrij-nieuw {
+    margin-left: 6px;
+    color: var(--made-link);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
 }
 
 .lijstrij-sub,
@@ -4362,6 +4376,247 @@ button.tekstlink.alarm {
 
 .tegel[aria-pressed="true"] .tegel-vink {
     display: flex;
+}
+
+/*
+ * A picker opened from an item of a list chooses several photos (design 13.4b–p): the round box of the library holds
+ * the number of a photo, an empty one invites a Cmd-click on hover and focus, and once the list takes no more the
+ * other photos get a dashed box, not grey (grey reads as "no image").
+ */
+.kiezer .tegel {
+    position: relative;
+}
+
+.kiezer .tegel-vakje {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 1;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    box-sizing: border-box;
+    border: 2px solid var(--made-krijt);
+    border-radius: 50%;
+    background: rgb(14 43 38 / .4);
+    color: var(--made-nachtgroen);
+    font: 800 12px/1 var(--font-kop);
+}
+
+.kiezer .tegel-vakje svg {
+    display: none;
+}
+
+.kiezer .mediabrowser[data-many] .tegel:hover .tegel-vakje,
+.kiezer .mediabrowser[data-many] .tegel:focus-visible .tegel-vakje,
+.kiezer .mediabrowser[data-selecting] .tegel-vakje {
+    display: flex;
+}
+
+.kiezer .mediabrowser[data-many] .tegel:hover:not(.geselecteerd):not(.vol) .tegel-vakje {
+    border-color: var(--made-amber-licht);
+    background: rgb(14 43 38 / .7);
+}
+
+.kiezer .tegel.geselecteerd .tegel-vakje {
+    border-color: var(--made-amber);
+    background: var(--made-amber);
+}
+
+/* While the picker selects, the number says the choice: no check at the top right. */
+.kiezer .mediabrowser[data-selecting] .tegel-vink {
+    display: none;
+}
+
+.kiezer .tegel.vol {
+    cursor: not-allowed;
+}
+
+.kiezer .tegel.vol .tegel-vakje {
+    border-style: dashed;
+    border-color: var(--made-rand-sterk);
+    background: transparent;
+}
+
+.kiezer .tegel.vol:hover .tegel-beeld {
+    border-color: transparent;
+    outline: 2px dashed var(--made-rand-sterk);
+    outline-offset: 2px;
+}
+
+.tegel-nieuw {
+    position: absolute;
+    right: 8px;
+    bottom: 6px;
+    color: var(--made-amber-licht);
+    font: 700 10px/1 var(--font-tekst);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+}
+
+.kmap-gekozen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: auto;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 800 11px/1 var(--font-kop);
+}
+
+.kmap-gekozen:not([hidden]) + .kmap-aantal {
+    margin-left: 6px;
+}
+
+.kiezer-stand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 14px;
+    min-height: 34px;
+}
+
+.kiezer-stand-tekst,
+.kiezer-vol {
+    font-size: 13px;
+    color: var(--made-inhoud-zwak);
+}
+
+.kiezer-vol {
+    color: var(--made-inhoud);
+}
+
+.kiezer-stand-knop {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.kiezer-meer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+}
+
+.kiezer-meer[aria-pressed="true"] {
+    border-color: var(--made-pil-vlak);
+    background: var(--made-pil-vlak);
+    color: var(--made-pil-tekst);
+}
+
+.kiezer-meer[aria-disabled="true"] {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+/* How to choose, below the tiles: it stays at the foot of the column while the tiles scroll. */
+.kiezer-hint {
+    position: sticky;
+    bottom: -22px;
+    margin: auto -26px -22px;
+    padding: 10px 26px 14px;
+    border-top: 1px solid var(--made-rand);
+    background: var(--made-oppervlak);
+    color: var(--made-inhoud-zwak);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.kiezer-selectie {
+    display: flex;
+    flex: 1 1 360px;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.kiezer-selectie > span {
+    display: flex;
+    flex-direction: column;
+}
+
+.kiezer-selectie-kop {
+    font: 700 14.5px/1.3 var(--font-kop);
+}
+
+.kiezer-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 6px 6px 0 0;
+    list-style: none;
+}
+
+.kiezer-chip {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 42px;
+    border-radius: 6px;
+    background: var(--made-nachtgroen);
+    color: #c7d2ea;
+}
+
+.kiezer-chip img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+.kiezer-chip-nummer {
+    position: absolute;
+    bottom: 3px;
+    left: 3px;
+    min-width: 17px;
+    height: 17px;
+    padding: 0 3px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 800 11px/17px var(--font-kop);
+    text-align: center;
+}
+
+.kiezer-chip-weg {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    box-sizing: border-box;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: 50%;
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.kiezer-chip-weg:hover,
+.kiezer-chip-weg:focus-visible {
+    border-color: var(--made-accent);
 }
 
 .tegel-tekst {

@@ -36,7 +36,7 @@ it('opens in the folder and shows the kind the host gives', function (): void {
         ->and($browser['script'])->toBe(LauncherAssetController::url('media.js'));
 });
 
-it('gives the picker of an image only images and the upload field of one photo, into the same folder', function (): void {
+it('gives the picker of an image only images and the upload fields of one photo and of several, into the same folder', function (): void {
     $teams = MediaFolder::factory()->create(['name' => 'Teams']);
 
     $picker = MediaBrowser::picker($teams);
@@ -45,6 +45,12 @@ it('gives the picker of an image only images and the upload field of one photo, 
         ->and($picker['browser']['upload']['one_image'] ?? null)->toBeTrue()
         ->and($picker['browser']['upload']['config']['crop'] ?? null)->toBeTrue()
         ->and($picker['browser']['upload']['config']['folder'] ?? null)->toBe(['id' => $teams->id, 'label' => 'de map Teams'])
+        // A picker opened from an item of a list takes several photos at once.
+        ->and($picker['browser']['upload_many']['one_image'] ?? null)->toBeFalse()
+        ->and($picker['browser']['upload_many']['config']['only_images'] ?? null)->toBeTrue()
+        ->and($picker['browser']['upload_many']['config']['crop'] ?? null)->toBeTrue()
+        ->and($picker['browser']['upload_many']['config']['folder'] ?? null)->toBe(['id' => $teams->id, 'label' => 'de map Teams'])
+        ->and(MediaBrowser::make()['upload_many'])->toBeNull()
         ->and($picker['config']['texts'])->toMatchArray([
             'for' => 'voor :field in :place',
             'use' => 'Deze gebruiken',
@@ -61,7 +67,11 @@ it('renders the picker as a modal dialog with the list, its folders, the upload 
         ->and($document->getElementById((string) $dialog?->getAttribute('aria-labelledby'))?->textContent)->toBe('Kies een afbeelding')
         ->and($document->getElementById((string) $dialog?->getAttribute('aria-describedby')))->not->toBeNull()
         ->and($dialog?->querySelector('[data-media] [data-slot="media-folders"] button[data-folder=""]')?->textContent)->toContain('Alle bestanden')
-        ->and($dialog?->querySelector('[data-media] [data-upload][data-one-image]'))->not->toBeNull()
+        // The field of one photo first, the field of several photos hidden until the picker opens from a list.
+        ->and(array_map(
+            static fn (Element $wrapper): array => [(string) $wrapper->getAttribute('data-picker-upload'), $wrapper->hasAttribute('hidden'), $wrapper->querySelector('[data-upload]')?->hasAttribute('data-one-image')],
+            iterator_to_array($dialog?->querySelectorAll('[data-media] [data-picker-upload]') ?? []),
+        ))->toBe([['one', false, true], ['many', true, false]])
         ->and($dialog?->querySelector('[data-slot="media-search"]')?->getAttribute('type'))->toBe('search')
         ->and($document->querySelector('label[for="'.$dialog?->querySelector('[data-slot="media-search"]')?->getAttribute('id').'"]')?->textContent)->toBe('Zoek in media')
         ->and($dialog?->querySelector('[data-slot="media-kind"]')?->textContent)->toBe('Afbeeldingen')

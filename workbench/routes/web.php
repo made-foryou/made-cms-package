@@ -7,9 +7,10 @@ use Made\CmsPackage\Content\Models\Page;
 
 // The upload field of the CMS on a page of its own, as a host includes it, to try its moments apart from the media
 // library (made-cms/media), which holds it with the crop step. Log in as an editor first; ?folder= sends the files
-// into that folder.
+// into that folder, ?fotos=1 gives the field of a list of images (only photos, several at once).
 Route::get('werkbank/uploadveld', fn (Request $request) => view('upload-field', [
     'folder' => MediaFolder::query()->find($request->integer('folder')),
+    'photos' => $request->boolean('fotos'),
 ]));
 
 // Routes of the site go above this line: the CMS pages take every address that is left.

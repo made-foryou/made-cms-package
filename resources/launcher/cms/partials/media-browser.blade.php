@@ -146,9 +146,16 @@
                 </li>
             </ul>
         </nav>
+        {{-- The field of one photo, or the field of several photos when the picker opens from an item of a list: the
+             script shows one of them each time the picker opens, so a field never changes while files are on their way. --}}
         @if ($browser['upload'] !== null)
-            <div class="mediabrowser-upload">
+            <div class="mediabrowser-upload" data-picker-upload="one">
                 @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $browser['upload']])
+            </div>
+        @endif
+        @if ($browser['upload_many'] !== null)
+            <div class="mediabrowser-upload" data-picker-upload="many" hidden>
+                @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $browser['upload_many']])
             </div>
         @endif
     </div>
@@ -169,11 +176,29 @@
             </div>
         </div>
 
+        @if ($browser['upload_many'] !== null)
+            {{-- A picker opened from an item of a list chooses several photos (design 13.4b–p): the button and what is
+                 chosen, the messages of the moment and, below the tiles, how to choose. media.js fills them in. --}}
+            <div class="kiezer-stand" data-slot="media-picker-stand" hidden>
+                <span class="kiezer-stand-tekst" role="status" data-slot="media-picker-status"></span>
+                <span class="kiezer-stand-knop">
+                    <span class="kiezer-vol" data-slot="media-picker-full" hidden></span>
+                    <button type="button" class="actie kiezer-meer" aria-pressed="false" data-slot="media-picker-many"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>{{ $browser['config']['texts']['many'] ?? '' }}</button>
+                </span>
+            </div>
+            <div class="meldingen kiezer-meldingen" data-slot="media-picker-notices"></div>
+            <template data-picker-notice>
+                <div class="melding let" role="status"><span class="bol let" aria-hidden="true"></span><span class="melding-tekst"></span></div>
+            </template>
+        @endif
         <p class="sr-only" role="status" data-slot="media-status"></p>
         <div class="mediabrowser-tegels" role="group" aria-label="{{ $t('files') }}" data-slot="media-grid"></div>
         <p class="mediabrowser-leeg" data-slot="media-empty" hidden>{{ $empty }}</p>
         <p class="veld-fout" data-slot="media-failed" hidden></p>
         <button type="button" class="actie mediabrowser-meer" data-slot="media-more" hidden>{{ $t('more') }}</button>
+        @if ($browser['upload_many'] !== null)
+            <p class="kiezer-hint" data-slot="media-picker-hint">{{ $browser['config']['texts']['outside'] ?? '' }}</p>
+        @endif
     </div>
 @endif
 
@@ -183,6 +208,7 @@
             <button type="button" class="kmap" aria-pressed="false">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
                 <span class="kmap-naam" data-slot="media-folder-name"></span>
+                <span class="kmap-gekozen" role="img" data-slot="media-folder-chosen" hidden></span>
                 <span class="kmap-aantal" data-slot="media-folder-count"></span>
             </button>
         </li>
@@ -191,11 +217,12 @@
     {{--
         A file of the list: its thumbnail (an icon for a document or a video) with the extension, a check on the choice
         in the picker and an amber dot without an alt text. The kind, the folder and the alt text show only as a row of
-        the list in the library, and the round box of a selection only while the library selects.
+        the list in the library, and the round box of a selection only while the library selects; in a picker of a
+        list it holds the number of the photo, and a photo uploaded there says it is new.
     --}}
     <template data-media-tile>
         <button type="button" class="tegel" aria-pressed="false">
-            <span class="tegel-vakje" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span>
+            <span class="tegel-vakje" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg><span class="tegel-nummer" data-slot="media-tile-number"></span></span>
             <span class="tegel-beeld">
                 <svg class="tegel-icoon tegel-icoon-image" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
                 <svg class="tegel-icoon tegel-icoon-document" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h5"/><path d="M10 17h5"/></svg>
@@ -204,6 +231,7 @@
                 <span class="beeldkaart-ext" data-slot="media-tile-extension"></span>
                 <span class="tegel-vink" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span>
                 <span class="beeldkaart-stip" role="img" aria-label="{{ $t('no_alt') }}" data-slot="media-tile-no-alt" hidden></span>
+                <span class="tegel-nieuw" data-slot="media-tile-new" hidden></span>
             </span>
             <span class="tegel-tekst">
                 <span class="tegel-naam" data-slot="media-tile-name"></span>

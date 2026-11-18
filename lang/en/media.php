@@ -354,6 +354,38 @@ return [
             'no_alt' => 'No alt text yet — set it in Media and it applies everywhere.',
             'use' => 'Use this one',
             'choose_first' => 'Choose an image first',
+            // In a picker opened from an item of a list, which chooses several photos.
+            'chosen' => ':count chosen',
+            'foot_none' => 'Click photos to choose them.',
+            'foot_one' => 'Number 1 goes into :item.',
+            'foot_many' => 'Number 1 goes into :item, the rest into new items after it.',
+            'use_many' => 'Use these :count',
+            'chip_remove' => 'Take :name out of the choice',
+        ],
+        // The list of a picker opened from an item of a list ({room, max, count, list, items, item} of made-cms:pick):
+        // the button, the line beside it, the messages above the tiles and the hint below them. Filled in by the script.
+        'list' => [
+            'many' => 'Choose several',
+            'chosen_list' => 'Chosen, in order',
+            'outside' => 'Choosing several photos at once works only for a list, like the photos of a gallery. Open the picker from an item of that list.',
+            'status_none' => 'Nothing chosen yet · :room fit',
+            'status_none_open' => 'Nothing chosen yet',
+            'status' => ':count chosen · :left more fit',
+            'status_open' => ':count chosen',
+            'status_max' => ':count chosen · this is the maximum',
+            'status_elsewhere' => ':count chosen · none in this folder',
+            'full' => ':list is full: :count of :max',
+            'limit' => 'No more fit: :list holds at most :max :items.',
+            'started' => 'Choose several is on: you dragged more than one photo. Every photo that is in gets the next number.',
+            'over_one' => '1 photo is in Media; it no longer fits in :list.',
+            'over_many' => ':count photos are in Media; they no longer fit in :list.',
+            'hint_one' => 'Cmd- or Ctrl-click adds a photo, Shift-click chooses a range from your choice. Just like in the library.',
+            'hint_many' => 'Click, Enter or space turns a photo on or off. Shift-click chooses a range. Escape closes without changes.',
+            'hint_full' => ':list is full (:count of :max), so you choose one photo for :item.',
+            'tile_number' => ':name, number :n',
+            'folder_chosen' => ':count chosen in :folder',
+            'new' => 'New',
+            'just' => 'just now · :meta',
         ],
     ],
 
@@ -439,6 +471,19 @@ return [
                 'drag_image' => 'It replaces :name',
                 'drag_document' => 'It replaces :name',
                 'drag_video' => 'It replaces :name',
+            ],
+        ],
+        // The field of a list of images in the picker: several photos at once; what is not here comes from above.
+        'images' => [
+            'label' => 'Upload photos',
+            'title' => 'Drag your photos here',
+            'rules' => 'You may choose more than one · go into :folder · up to :max',
+            'list' => 'Photos in this field',
+            'texts' => [
+                'drag_one' => '1 photo · it goes into :folder',
+                'drag_many' => ':count photos · they go into :folder',
+                'done_one' => '1 photo added to :folder',
+                'done_many' => ':count photos added to :folder',
             ],
         ],
         'single' => [

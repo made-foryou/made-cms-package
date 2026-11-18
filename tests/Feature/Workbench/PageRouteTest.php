@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -49,6 +51,26 @@ it('renders the strips of a workbench page with the strips component and the wor
         ->assertSee('Kom<br />', false)
         ->assertDontSee('data-cms-strip="verborgen"', false)
         ->assertDontSeeText('Verborgen');
+});
+
+it('renders the gallery of the workbench with a photo and a caption per item, and nothing for an item without a photo', function (): void {
+    Storage::fake('public');
+    $photo = Media::factory()->withAlt('Het eerste team')->create(['path' => 'media/01k9/teamfoto.webp', 'width' => 1600, 'height' => 1067]);
+
+    Page::factory()->published()->at('/')->withStrips([
+        storedStrip('gallery', ['fotos' => [
+            ['id' => 'f1', 'foto' => $photo->id, 'bijschrift' => 'Kampioen'],
+            ['id' => 'f2', 'foto' => null, 'bijschrift' => 'Nog zonder foto'],
+        ]], id: 'galerij'),
+    ])->create(['title' => 'Home']);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('data-cms-strip="galerij"', false)
+        ->assertSee('data-cms-items="fotos"', false)
+        ->assertSee('<img src="'.Storage::disk('public')->url('media/01k9/teamfoto.webp').'" alt="Het eerste team" width="1600" height="1067" data-cms-field="foto"', false)
+        ->assertSee('<figcaption data-cms-field="bijschrift">Kampioen</figcaption>', false)
+        ->assertSee('<figcaption data-cms-field="bijschrift">Nog zonder foto</figcaption>', false);
 });
 
 it('answers 404 for a draft page of the workbench', function (): void {

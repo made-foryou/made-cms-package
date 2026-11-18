@@ -24,6 +24,7 @@ use Made\CmsPackage\Support\Locale;
  *     t: Closure(string): string,
  *     kind: string|null,
  *     upload: Field|null,
+ *     upload_many: Field|null,
  *     library: bool,
  *     script: string,
  *     config: array{
@@ -52,9 +53,11 @@ final class MediaBrowser
      * @param  MediaFolder|null  $folder  the folder the list opens in; null for "Alle bestanden"
      * @param  MediaKind|null  $kind  the only kind the list shows; null for every kind
      * @param  Field|null  $upload  the upload field below the folders, which follows the folder the editor opens
+     * @param  Field|null  $uploadMany  in the picker, the upload field of several photos next to it, shown instead
+     *                                  when the picker opens from an item of a list
      * @return Browser
      */
-    public static function make(?MediaFolder $folder = null, ?MediaKind $kind = null, ?array $upload = null): array
+    public static function make(?MediaFolder $folder = null, ?MediaKind $kind = null, ?array $upload = null, ?array $uploadMany = null): array
     {
         $locale = Locale::launcher();
         $t = self::translator('browser', $locale);
@@ -64,6 +67,7 @@ final class MediaBrowser
             't' => $t,
             'kind' => $kind === null ? null : $t('kinds.'.$kind->value),
             'upload' => $upload,
+            'upload_many' => $uploadMany,
             'library' => false,
             'script' => LauncherAssetController::url('media.js'),
             'config' => [
@@ -82,8 +86,8 @@ final class MediaBrowser
 
     /**
      * The picker of an image: the list of the images in a dialog, with the upload field of one photo below the
-     * folders. It opens in the folder the editor chose last, and the upload field puts a photo there; a photo goes to
-     * the crop step once it is in.
+     * folders, or the upload field of several photos when it opens from an item of a list. It opens in the folder the
+     * editor chose last, and the upload field puts a photo there; a photo goes to the crop step once it is in.
      *
      * @return Picker
      */
@@ -91,9 +95,13 @@ final class MediaBrowser
     {
         $locale = Locale::launcher();
 
+        $browser = self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true), UploadField::images($folder, crop: true));
+        // The list says what a picker opened from an item of a list selects, beside its button and below its tiles.
+        $browser['config']['texts'] = [...$browser['config']['texts'], ...self::texts('picker.list', $locale)];
+
         return [
             't' => self::translator('picker', $locale),
-            'browser' => self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true)),
+            'browser' => $browser,
             'config' => ['texts' => self::texts('picker.texts', $locale)],
         ];
     }

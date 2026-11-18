@@ -57,6 +57,7 @@ const ui = {
     uploadLine: slot('upload-status-line'),
     uploadOpen: slot('upload-status-open'),
     uploadClose: slot('upload-status-close'),
+    uploadUndo: slot('upload-status-undo'),
 };
 
 // Every strip the editor opened keeps its state, so going back to it loses nothing that was not saved yet.
@@ -289,6 +290,12 @@ function followChanges(state, before, after) {
  * ------------------------------------------------------------------------------------------------------------ */
 
 function changed(state) {
+    // Another change of the strip: "Ongedaan maken" on the line would no longer take back what the picker added.
+    if (picked?.state === state) {
+        picked = null;
+        showUploads();
+    }
+
     state.dirty = true;
     state.failed = null;
     window.clearTimeout(state.timer);
@@ -638,6 +645,13 @@ const uploads = new Set();
 // strip or closes the line.
 let arrived = null;
 
+// The items the picker added to a list, said on the line at the foot of the panel with "Ongedaan maken" until the
+// editor chooses a strip, changes that strip again or closes the line: {state, text}.
+let picked = null;
+
+// The items the picker added, marked "Nieuw" in their list until the editor chooses a strip.
+let fresh = new WeakSet();
+
 // The upload whose failure the line shows, for "Open dat veld" and its cross.
 let shown = null;
 
@@ -725,6 +739,9 @@ function showUploads() {
     } else if (arrived) {
         text = format(texts.upload_done, { place: arrived });
         state = 'done';
+    } else if (picked) {
+        text = picked.text;
+        state = 'done';
     }
 
     // The line speaks only when its text changes, not with every percent.
@@ -735,6 +752,7 @@ function showUploads() {
     ui.uploadPercent.textContent = percent === null ? '' : format(texts.upload_percent, { percent });
     ui.uploadLine.style.width = (percent ?? 0) + '%';
     ui.uploadOpen.hidden = state !== 'failed' || where(failed) === null;
+    ui.uploadUndo.hidden = busy.length > 0 || failed !== null || arrived !== null || picked === null;
     ui.uploadClose.hidden = state !== 'failed' && state !== 'done';
     ui.uploadStatus.dataset.state = state;
     shown = failed;
@@ -977,7 +995,9 @@ function image(state, element, field, owner, path, set) {
     });
 
     // The picker opens with the photo of the field chosen; "Deze gebruiken" makes its choice the value of the field,
-    // wherever the field is now, and a photo of this field that still travels no longer overwrites it.
+    // wherever the field is now, and a photo of this field that still travels no longer overwrites it. Opened for an
+    // item of a list, it chooses several photos: the first is the value of this field, every next one a new item
+    // right after it, as long as the list takes them.
     pick.addEventListener('click', () => {
         const value = owner[key] ?? null;
         const file = value === null ? null : (media.get(value) ?? null);
@@ -990,13 +1010,14 @@ function image(state, element, field, owner, path, set) {
                 place: stripPlace(state, path),
                 hint: field.hint ?? null,
                 file: file?.image ? file : null,
+                many: manyFor(state, list, owner),
                 opener: pick,
-                choose: (chosen) => {
+                choose: (files) => {
                     const now = where(spot);
 
-                    media.set(chosen.id, chosen);
+                    files.forEach((chosen) => media.set(chosen.id, chosen));
 
-                    if (! now) {
+                    if (! now || files.length === 0) {
                         return;
                     }
 
@@ -1006,11 +1027,22 @@ function image(state, element, field, owner, path, set) {
                         travelling.superseded = true;
                     }
 
-                    now.owner[key] = chosen.id;
-                    liveInput(state, now.path, field, chosen.id);
+                    now.owner[key] = files[0].id;
+                    liveInput(state, now.path, field, files[0].id);
+
+                    const added = list === null ? [] : addItems(state, list, now.owner, key, files.slice(1));
+
                     changed(state);
                     leave(state, now.path);
                     draw();
+
+                    // Photos the list no longer took (it grew while the picker was open) are said, not dropped silently.
+                    const left = list === null ? 0 : files.length - 1 - added.length;
+
+                    if (added.length > 0 || left > 0) {
+                        itemPlace(state);
+                        tellPicked(state, list, now.owner, added, left);
+                    }
                 },
             },
         }));
@@ -1674,6 +1706,89 @@ function newItem(field) {
     return Object.fromEntries([['id', null], ...field.fields.map((sub) => [sub.key, clone(sub.default)])]);
 }
 
+/* How many photos a list takes from one of its items on: that item and the places left; null without a limit. */
+function roomIn(field, items) {
+    return field.max === null ? null : 1 + Math.max(0, field.max - items.length);
+}
+
+/*
+ * What the picker knows of the list of an image in one of its items, so it chooses several photos:
+ * {room, max, count, list, items, item}, with the name of the strip, the label of the list and the name of the item
+ * ("Fotogalerij", "Foto's", "Foto 2"). A room of 1 is a full list: the picker then chooses one photo. Null outside a
+ * list.
+ */
+function manyFor(state, key, owner) {
+    const field = key === null ? null : state.fields.find((candidate) => candidate.key === key);
+    const items = field ? state.values[key] : null;
+
+    if (! field || ! Array.isArray(items)) {
+        return null;
+    }
+
+    return {
+        room: roomIn(field, items),
+        max: field.max,
+        count: items.length,
+        list: state.label,
+        items: field.label,
+        item: format(texts.item, { item: field.item_label, n: items.indexOf(owner) + 1 }),
+    };
+}
+
+/*
+ * A new item for every photo, right after the item that holds the field, with the other fields at their default, as
+ * many as the list still takes. The items below move a place, so the errors of the list go (the next save gives them
+ * again), and the new items count as finished: a refusal shows on their rows.
+ */
+function addItems(state, key, item, fieldKey, files) {
+    const field = state.fields.find((candidate) => candidate.key === key);
+    const list = state.values[key];
+    const at = list.indexOf(item);
+    const room = roomIn(field, list);
+    const fitting = room === null ? files : files.slice(0, room - 1);
+
+    if (at < 0 || fitting.length === 0) {
+        return [];
+    }
+
+    const items = fitting.map((file) => ({ ...newItem(field), [fieldKey]: file.id }));
+
+    list.splice(at + 1, 0, ...items);
+    forgetErrorsOf(state, key);
+    state.touched.add(key);
+    for (let place = at + 1; place <= at + items.length; place++) {
+        state.touched.add('item:' + key + '.' + place);
+    }
+    liveInput(state, key, field, null);
+
+    return items;
+}
+
+/*
+ * Says on the line at the foot of the panel what the picker added (design 13.4n): "2 foto's toegevoegd na Foto 2.",
+ * the item in the words of the list (its label, the label of an item), with "Ongedaan maken"; marks the items new.
+ */
+function tellPicked(state, key, item, items, left = 0) {
+    const field = state.fields.find((candidate) => candidate.key === key);
+    const after = format(texts.item, { item: field.item_label, n: state.values[key].indexOf(item) + 1 });
+    const lower = (text) => String(text ?? '').toLocaleLowerCase();
+    const parts = [];
+
+    if (items.length > 0) {
+        parts.push(items.length === 1
+            ? format(texts.picked_one, { item: lower(field.item_label), after })
+            : format(texts.picked_many, { count: items.length, items: lower(field.label), after }));
+    }
+
+    if (left > 0) {
+        parts.push(format(left === 1 ? texts.picked_over_one : texts.picked_over_many, { count: left, list: state.label }));
+    }
+
+    items.forEach((added) => fresh.add(added));
+    picked = { state, text: parts.join(' ') };
+    showUploads();
+}
+
 function items(state, element, field, owner, path) {
     const rows = slot('rows', element);
     const add = slot('add', element);
@@ -1731,6 +1846,8 @@ function row(state, field, list, index, draw) {
     const failing = Object.keys(state.errors).some((path) => (path === prefix || path.startsWith(prefix + '.')) && errorShown(state, path));
 
     slot('title', element).textContent = title;
+    slot('fresh', element).hidden = ! fresh.has(list[index]);
+    element.classList.toggle('nieuw', fresh.has(list[index]));
     slot('sub', element).textContent = sub;
     slot('sub', element).hidden = sub === '';
     slot('error', element).hidden = ! failing;
@@ -1836,9 +1953,21 @@ function renderItem(state) {
     ui.crumbStrip.textContent = state.label;
     ui.crumbList.textContent = field.label;
     ui.crumbItem.textContent = itemTitle(field, item, index).title;
-    ui.itemPosition.textContent = format(texts.position, { n: index + 1, m: list.length });
-    ui.remove.disabled = field.min !== null && list.length <= field.min;
+    itemPlace(state);
     ui.itemFields.replaceChildren(...field.fields.map((sub) => control(state, sub, item, prefix + '.' + sub.key)));
+}
+
+/* The place of the open item in its list ("Item 2 van 5") and whether it can go, also after items were added. */
+function itemPlace(state) {
+    if (state !== current || ! state.item) {
+        return;
+    }
+
+    const field = state.fields.find((candidate) => candidate.key === state.item.key);
+    const list = state.values[field.key];
+
+    ui.itemPosition.textContent = format(texts.position, { n: state.item.index + 1, m: list.length });
+    ui.remove.disabled = field.min !== null && list.length <= field.min;
 }
 
 function closeItem(state) {
@@ -1896,6 +2025,12 @@ function undoable(state) {
 }
 
 async function setVisibility(state, visible, undoing = false) {
+    // Another step of the strip: "Ongedaan maken" on the line would take back this one, not what the picker added.
+    if (! undoing && picked?.state === state) {
+        picked = null;
+        showUploads();
+    }
+
     const { status, data } = await request('PUT', stripUrl(state.id, '/visibility'), { visible })
         .catch(() => ({ status: 0, data: null }));
 
@@ -2187,11 +2322,14 @@ function close() {
  * added, with where it went (added), or no strip at all.
  */
 async function select(id, errors, field, count, added = null) {
-    // The photo that came in was told about; choosing a strip moves on.
-    if (arrived !== null) {
+    // The photo that came in and the items the picker added were told about; choosing a strip moves on.
+    if (arrived !== null || picked !== null) {
         arrived = null;
+        picked = null;
         showUploads();
     }
+
+    fresh = new WeakSet();
 
     if (id === null) {
         close();
@@ -2327,11 +2465,23 @@ if (shell && ui.form) {
     ui.uploadClose.addEventListener('click', () => {
         if (shown) {
             shown.seen = true;
-        } else {
+        } else if (arrived !== null) {
             arrived = null;
+        } else {
+            picked = null;
         }
 
         showUploads();
+    });
+    ui.uploadUndo.addEventListener('click', () => {
+        const state = picked?.state;
+
+        picked = null;
+        showUploads();
+
+        if (state && states.get(state.id) === state) {
+            undo(state);
+        }
     });
     ui.uploadOpen.addEventListener('click', () => {
         const spot = shown ? where(shown) : null;

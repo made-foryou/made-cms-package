@@ -354,6 +354,38 @@ return [
             'no_alt' => 'Nog geen alt-tekst — zet die in Media, dan geldt hij overal.',
             'use' => 'Deze gebruiken',
             'choose_first' => 'Kies eerst een afbeelding',
+            // In a picker opened from an item of a list, which chooses several photos.
+            'chosen' => ':count gekozen',
+            'foot_none' => 'Klik op foto’s om ze te kiezen.',
+            'foot_one' => 'Nummer 1 komt in :item.',
+            'foot_many' => 'Nummer 1 komt in :item, de rest in nieuwe items erna.',
+            'use_many' => 'Deze :count gebruiken',
+            'chip_remove' => ':name uit de keuze halen',
+        ],
+        // The list of a picker opened from an item of a list ({room, max, count, list, items, item} of made-cms:pick):
+        // the button, the line beside it, the messages above the tiles and the hint below them. Filled in by the script.
+        'list' => [
+            'many' => 'Meerdere kiezen',
+            'chosen_list' => 'Gekozen, in volgorde',
+            'outside' => 'Meerdere foto’s tegelijk kiezen kan alleen bij een lijst, zoals de foto’s in een fotogalerij. Open de kiezer dan vanuit een item van die lijst.',
+            'status_none' => 'Nog niets gekozen · er passen er :room',
+            'status_none_open' => 'Nog niets gekozen',
+            'status' => ':count gekozen · er passen er nog :left bij',
+            'status_open' => ':count gekozen',
+            'status_max' => ':count gekozen · dit is het maximum',
+            'status_elsewhere' => ':count gekozen · geen in deze map',
+            'full' => ':list is vol: :count van :max',
+            'limit' => 'Er passen er niet meer bij: :list heeft maximaal :max :items.',
+            'started' => 'Meerdere kiezen staat aan: je sleepte meer dan één foto. Elke foto die binnen is, krijgt het volgende nummer.',
+            'over_one' => '1 foto staat in Media; hij past niet meer in :list.',
+            'over_many' => ':count foto’s staan in Media; ze passen niet meer in :list.',
+            'hint_one' => 'Cmd- of Ctrl-klik voegt een foto toe, Shift-klik kiest een reeks vanaf je keuze. Net als in de bibliotheek.',
+            'hint_many' => 'Klik, Enter of spatie zet een foto aan of uit. Shift-klik kiest een reeks. Met Escape sluit je zonder wijzigingen.',
+            'hint_full' => ':list is vol (:count van :max), dus je kiest één foto voor :item.',
+            'tile_number' => ':name, nummer :n',
+            'folder_chosen' => ':count gekozen in :folder',
+            'new' => 'Nieuw',
+            'just' => 'zojuist · :meta',
         ],
     ],
 
@@ -439,6 +471,19 @@ return [
                 'drag_image' => 'Hij vervangt :name',
                 'drag_document' => 'Het vervangt :name',
                 'drag_video' => 'Hij vervangt :name',
+            ],
+        ],
+        // The field of a list of images in the picker: several photos at once; what is not here comes from above.
+        'images' => [
+            'label' => 'Foto’s uploaden',
+            'title' => 'Sleep je foto’s hierheen',
+            'rules' => 'Je mag er meer dan één kiezen · komen in :folder · tot :max',
+            'list' => 'Foto’s in dit veld',
+            'texts' => [
+                'drag_one' => '1 foto · hij komt in :folder',
+                'drag_many' => ':count foto’s · ze komen in :folder',
+                'done_one' => '1 foto toegevoegd aan :folder',
+                'done_many' => ':count foto’s toegevoegd aan :folder',
             ],
         ],
         'single' => [

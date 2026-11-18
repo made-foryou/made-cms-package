@@ -76,7 +76,7 @@ it('adds a strip from the catalogue at the end, chooses it and opens its fields'
     $shell->click('[data-slot="structure-add"]')
         ->assertSeeIn('[data-slot="catalogue-place"]', 'Kaarten · wordt strook 3 van 3')
         ->assertSeeIn('[data-slot="catalogue-types"]', 'Grote kop met een korte introductie en knoppen.')
-        ->click('[data-slot="catalogue-types"] .soortkaart:first-child');
+        ->click('[data-slot="catalogue-types"] .soortkaart:nth-child(2)');
 
     expect($shell->script(waitUntil(slotSays('head-eyebrow', 'Nieuwe strook')." && document.querySelector('[data-path=\"kop\"] input') !== null && ".frameOutlines().'.length === 3')))->toBeTrue();
 
@@ -99,7 +99,7 @@ it('adds a strip between two strips through the insert point', function (): void
 
     $shell->click('[aria-label="Strook invoegen vóór Kaarten"]')
         ->assertSeeIn('[data-slot="catalogue-place"]', 'Hero · wordt strook 2 van 3')
-        ->click('[data-slot="catalogue-types"] .soortkaart:nth-child(2)');
+        ->click('[data-slot="catalogue-types"] .soortkaart:nth-child(3)');
 
     expect($shell->script(waitUntil(slotSays('head-position', 'Strook 2 van 3').' && '.frameOutlines().'.length === 3')))->toBeTrue();
 
@@ -223,7 +223,7 @@ it('invites to add the first strip to an empty page', function (): void {
         ->assertSeeIn('[data-slot="head-sub"]', 'Nog geen stroken.')
         ->click('[data-slot="structure-first"]')
         ->assertSeeIn('[data-slot="catalogue-place"]', 'Bovenaan · wordt strook 1 van 1')
-        ->click('[data-slot="catalogue-types"] .soortkaart:first-child');
+        ->click('[data-slot="catalogue-types"] .soortkaart:nth-child(2)');
 
     expect($shell->script(waitUntil(frameOutlines().'.length === 1 && '.slotSays('head-position', 'Strook 1 van 1'))))->toBeTrue()
         ->and(Page::query()->findOrFail($page->id)->draft_strips)->toHaveCount(1);

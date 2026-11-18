@@ -146,9 +146,16 @@
                 </li>
             </ul>
         </nav>
+        {{-- The field of one photo, or the field of several photos when the picker opens from an item of a list: the
+             script shows one of them each time the picker opens, so a field never changes while files are on their way. --}}
         @if ($browser['upload'] !== null)
-            <div class="mediabrowser-upload">
+            <div class="mediabrowser-upload" data-picker-upload="one">
                 @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $browser['upload']])
+            </div>
+        @endif
+        @if ($browser['upload_many'] !== null)
+            <div class="mediabrowser-upload" data-picker-upload="many" hidden>
+                @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $browser['upload_many']])
             </div>
         @endif
     </div>

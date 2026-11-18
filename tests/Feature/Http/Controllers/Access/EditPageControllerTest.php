@@ -309,11 +309,11 @@ it('gives the media element of the side panel the upload field for one photo, in
         ->and($upload['one_image'] ?? null)->toBeTrue()
         ->and($upload['folder'] ?? null)->toBe(['id' => null, 'label' => 'Alle bestanden'])
         ->and($upload['urls'] ?? null)->toBe(['upload' => '/made-cms/media', 'alt' => '/made-cms/media/:media/alt'])
-        // The only field on the page is the one of the picker.
+        // The only fields on the page are the two of the picker: one photo, or several from an item of a list.
         ->and(array_map(
             static fn (Element $field): bool => $field->closest('dialog[data-media-picker]') !== null,
             iterator_to_array($document->querySelectorAll('[data-upload]')),
-        ))->toBe([true])
+        ))->toBe([true, true])
         ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-upload"]')?->textContent)->toBe('Uploaden')
         ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-pick"]')?->textContent)->toBe('Kiezen uit media')
         ->and($document->querySelector('[data-slot="upload-status"] [role="status"][data-slot="upload-status-text"]'))->not->toBeNull()

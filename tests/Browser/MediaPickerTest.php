@@ -317,8 +317,8 @@ it('takes a photo uploaded in the picker as the choice, in the folder it remembe
 
     expect($shell->script(waitUntil(pickerShows(['training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
-    $shell->assertSeeIn('[data-media-picker] [data-slot="upload-rules"]', 'komt in de map Teams')
-        ->attach('[data-media-picker] [data-slot="upload-input"]', photo(1600, 1200, 'jpg', 'Kampioenen 2026.jpg'));
+    $shell->assertSeeIn('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-rules"]', 'komt in de map Teams')
+        ->attach('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-input"]', photo(1600, 1200, 'jpg', 'Kampioenen 2026.jpg'));
 
     expect($shell->script(waitUntil(pickerShows(['kampioenen-2026', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
@@ -330,7 +330,7 @@ it('takes a photo uploaded in the picker as the choice, in the folder it remembe
     expect($shell->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
 
     $shell->assertSeeIn('[data-slot="crop-eyebrow"]', 'Uploaden')
-        ->assertMissing('[data-media-picker] [data-slot="upload-row-alt-input"]')
+        ->assertMissing('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]')
         ->type('[data-slot="crop-alt"]', 'De kampioenen van 2026')
         ->click('[data-slot="crop-keep"]');
 
@@ -367,7 +367,7 @@ it('takes a photo uploaded in the picker as the choice, in the folder it remembe
  */
 function pickerUploadMoment(string $moment): string
 {
-    return "document.querySelector('[data-media-picker] [data-upload]').dataset.moment === '{$moment}'";
+    return "document.querySelector('[data-media-picker] [data-picker-upload=one] [data-upload]').dataset.moment === '{$moment}'";
 }
 
 /**
@@ -380,7 +380,7 @@ function uploadInPicker(mixed $shell, string $name, ?string $file = null): void
 
     expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
-    $shell->attach('[data-media-picker] [data-slot="upload-input"]', $file ?? mediaFixture('logo.svg', $name));
+    $shell->attach('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-input"]', $file ?? mediaFixture('logo.svg', $name));
 
     expect($shell->script(waitUntil(pickerUploadMoment('done'))))->toBeTrue();
 }
@@ -392,7 +392,7 @@ it('crops a photo uploaded in the picker to 16:9 in the crop step, and the media
 
     expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
-    $shell->attach('[data-media-picker] [data-slot="upload-input"]', quadrants(2400, 1600, 'jpg', 'Kampioenen 2026.jpg'));
+    $shell->attach('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-input"]', quadrants(2400, 1600, 'jpg', 'Kampioenen 2026.jpg'));
 
     expect($shell->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled")))->toBeTrue();
 
@@ -457,10 +457,10 @@ it('leaves a photo the server was still scaling down when the picker closed out 
     expect($shell->script(waitUntil(pickerShows(['clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue();
 
     $shell->script(holdAnswer());
-    $shell->attach('[data-media-picker] [data-slot="upload-input"]', quadrants(1600, 1200, 'jpg', 'Kampioenen 2026.jpg'));
+    $shell->attach('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-input"]', quadrants(1600, 1200, 'jpg', 'Kampioenen 2026.jpg'));
 
     // The bytes are in and the answer waits: the field says the photo is being scaled down.
-    expect($shell->script(waitUntil("typeof window.answer === 'function' && document.querySelector('[data-media-picker] [data-upload] li')?.dataset.state === 'processing'")))->toBeTrue();
+    expect($shell->script(waitUntil("typeof window.answer === 'function' && document.querySelector('[data-media-picker] [data-picker-upload=one] [data-upload] li')?.dataset.state === 'processing'")))->toBeTrue();
 
     $shell->keys('[data-media-picker] [data-slot="media-search"]', 'Escape');
 
@@ -491,8 +491,8 @@ it('asks the alt text in the upload field when the crop step does not take the p
 
     expect($shell->script("() => document.querySelector('[data-media-crop]').open"))->toBeFalse();
 
-    $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
-        ->keys('[data-media-picker] [data-slot="upload-row-alt-input"]', 'Escape');
+    $shell->type('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
+        ->keys('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]', 'Escape');
 
     expect($shell->script(waitUntil("! document.querySelector('[data-media-picker]').open")))->toBeTrue()
         ->and(Media::query()->where('name', 'kampioenen-2026')->sole()->alt)->toBe('De kampioenen van 2026');
@@ -504,7 +504,7 @@ it('stores the alt text typed for a photo uploaded in the picker when it is used
     uploadInPicker($shell, 'Kampioenen 2026.svg');
 
     // No "Alt-tekst opslaan": "Deze gebruiken" stores the text first.
-    $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
+    $shell->type('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
         ->click('[data-slot="media-picker-use"]');
 
     expect($shell->script(waitUntil(pickedState('foto', 'filled'))))->toBeTrue()
@@ -525,7 +525,7 @@ it('stores the alt text typed for a photo uploaded in the picker when it is used
     expect($shell->script(waitUntil(pickerShows(['kampioenen-2026', 'clubavond', 'training-dinsdag', 'teamfoto-merwestad']))))->toBeTrue()
         ->and($shell->script(pickerUploadMoment('rest')))->toBeTrue();
 
-    $shell->assertMissing('[data-media-picker] [data-slot="upload-row-alt-input"]')
+    $shell->assertMissing('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]')
         ->assertNoJavaScriptErrors();
 });
 
@@ -534,8 +534,8 @@ it('stores the alt text typed for a photo uploaded in the picker when the picker
 
     uploadInPicker($shell, 'Kampioenen 2026.svg');
 
-    $shell->type('[data-media-picker] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
-        ->keys('[data-media-picker] [data-slot="upload-row-alt-input"]', 'Escape');
+    $shell->type('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]', 'De kampioenen van 2026')
+        ->keys('[data-media-picker] [data-picker-upload="one"] [data-slot="upload-row-alt-input"]', 'Escape');
 
     expect($shell->script(waitUntil("! document.querySelector('[data-media-picker]').open")))->toBeTrue()
         ->and($shell->script(waitUntil("document.activeElement?.dataset.slot === 'image-pick'")))->toBeTrue()

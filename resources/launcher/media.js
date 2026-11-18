@@ -141,7 +141,12 @@ function browse(root) {
     const tileTemplate = root.querySelector('template[data-media-tile]');
     const noticeTemplate = root.querySelector('template[data-media-notice]');
     const all = ui.folders?.querySelector('button[data-folder=""]');
-    const upload = root.querySelector('[data-upload]');
+    // The upload fields of the list. The picker holds two ([data-picker-upload]): the field of one photo and the field
+    // of several photos for a picker opened from an item of a list; each time it opens one of them is in sight, so a
+    // field never changes while its files are on their way. Every field follows the open folder; the list hears only
+    // the field in sight.
+    const uploads = [...root.querySelectorAll('[data-upload]')];
+    let upload = uploads[0] ?? null;
 
     if (Object.values(ui).some((element) => element === null) || ! folderTemplate || ! tileTemplate || ! all) {
         return;
@@ -331,7 +336,7 @@ function browse(root) {
 
         pressFolders();
         trail();
-        upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
+        follow(folder);
         tell('made-cms:media-folder', { folder });
 
         if (library) {
@@ -341,6 +346,43 @@ function browse(root) {
         }
 
         load().then(remember);
+    }
+
+    /** Sends every upload field of the list into a folder, also the one out of sight, so it is there when it shows. */
+    function follow(folder) {
+        for (const field of uploads) {
+            field.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder } }));
+        }
+    }
+
+    /** Listens to an event of the upload field in sight; a field out of sight has nothing to tell the list. */
+    function hear(name, listener) {
+        for (const field of uploads) {
+            field.addEventListener(name, (event) => {
+                if (field === upload) {
+                    listener(event);
+                }
+            });
+        }
+    }
+
+    /**
+     * Shows the upload field of several photos for a picker opened from an item of a list (many), else the field of
+     * one photo. A list with one field keeps it.
+     */
+    function showUpload(many) {
+        const wrappers = [...root.querySelectorAll('[data-picker-upload]')];
+        const shown = wrappers.find((wrapper) => wrapper.dataset.pickerUpload === (many ? 'many' : 'one')) ?? wrappers[0];
+
+        if (! shown) {
+            return;
+        }
+
+        for (const wrapper of wrappers) {
+            wrapper.hidden = wrapper !== shown;
+        }
+
+        upload = shown.querySelector('[data-upload]') ?? upload;
     }
 
     /** The list and its folders again, for the library whose folders count what it lists. */
@@ -830,7 +872,7 @@ function browse(root) {
         // The open folder keeps its id: the trail, the upload field and the page hear its new name.
         state.folder = { id: data.folder.id, name: data.folder.name };
         trail();
-        upload?.dispatchEvent(new CustomEvent('made-cms:upload-folder', { detail: { folder: state.folder } }));
+        follow(state.folder);
         tell('made-cms:media-folder', { folder: state.folder });
         notice(format(texts.folder_renamed, { folder: data.folder.name }));
         shelf.rename.focus();
@@ -1382,7 +1424,7 @@ function browse(root) {
 
     ui.more.addEventListener('click', () => load(true));
 
-    upload?.addEventListener('made-cms:upload', (event) => {
+    hear('made-cms:upload', (event) => {
         state.uploading = event.detail?.busy === true || (event.detail?.total ?? 0) > 0;
         show();
     });
@@ -1390,7 +1432,7 @@ function browse(root) {
     // A file uploaded in the picker is the choice, at the top of the list it is in. The library keeps its filter, search
     // and order, and shows a new file where they place it, without choosing it: a batch would make the side column
     // jump, and an editor working through a filter keeps it. The upload field shows every file while it comes in.
-    upload?.addEventListener('made-cms:uploaded', (event) => {
+    hear('made-cms:uploaded', (event) => {
         const file = event.detail?.file;
 
         if (! file) {
@@ -1411,7 +1453,7 @@ function browse(root) {
     });
 
     // The alt text the editor gave the new file, and its name and crop from the crop step, as they are stored.
-    upload?.addEventListener('made-cms:upload-closed', (event) => {
+    hear('made-cms:upload-closed', (event) => {
         for (const file of event.detail?.files ?? []) {
             replace(file);
         }
@@ -1481,7 +1523,8 @@ function browse(root) {
 
     root.addEventListener('made-cms:media-load', (event) => {
         // A photo the server was still storing when the list was left asks no alt text any more: it is "later".
-        finished(upload);
+        uploads.forEach(finished);
+        showUpload(event.detail?.many ?? null);
         state.turn++;
         state.chosen = event.detail?.file ?? null;
         state.files = [];
@@ -1547,7 +1590,8 @@ function pick(dialog) {
         cancel: slot('cancel'),
         use: slot('use'),
     };
-    const upload = browser.querySelector('[data-upload]');
+    // The field of one photo and the field of several photos; the list shows one of them each time the picker opens.
+    const uploads = [...browser.querySelectorAll('[data-upload]')];
     const search = browser.querySelector('[data-slot="media-search"]');
 
     if (Object.values(ui).some((element) => element === null)) {
@@ -1556,7 +1600,8 @@ function pick(dialog) {
 
     let request = null;
     let chosen = null;
-    let sending = false;
+    // The upload fields whose bytes still travel, so they can still be stopped.
+    const sending = new Set();
     let downOutside = false;
     // Waiting for the upload field to finish, so a second click does nothing.
     let finishing = false;
@@ -1617,7 +1662,7 @@ function pick(dialog) {
             dialog.showModal();
         }
 
-        browser.dispatchEvent(new CustomEvent('made-cms:media-load', { detail: { file: chosen } }));
+        browser.dispatchEvent(new CustomEvent('made-cms:media-load', { detail: { file: chosen, many: request.many ?? null } }));
         search?.focus();
     });
 
@@ -1626,15 +1671,29 @@ function pick(dialog) {
         draw();
     });
 
-    upload?.addEventListener('made-cms:upload', (event) => {
-        sending = event.detail?.sending === true;
-    });
+    for (const field of uploads) {
+        field.addEventListener('made-cms:upload', (event) => {
+            if (event.detail?.sending === true) {
+                sending.add(field);
+            } else {
+                sending.delete(field);
+            }
+        });
+    }
 
+    /** Stops the bytes that still travel: a file the server is storing already lands in Media. */
+    function stop() {
+        for (const field of sending) {
+            field.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
+        }
+    }
+
+    /** Finishes both upload fields; true unless one kept an alt text the server refused. */
     async function finish() {
         finishing = true;
 
         try {
-            return await finished(upload);
+            return (await Promise.all(uploads.map(finished))).every(Boolean);
         } finally {
             finishing = false;
         }
@@ -1662,9 +1721,7 @@ function pick(dialog) {
             return;
         }
 
-        if (sending) {
-            upload?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
-        }
+        stop();
 
         if (await finish() && dialog.open) {
             dialog.close();
@@ -1702,11 +1759,8 @@ function pick(dialog) {
     // However it closed (the browser may close it on a second Escape without asking): a photo whose bytes still travel
     // stops, one the server is storing lands in Media, and a typed alt text is stored.
     dialog.addEventListener('close', () => {
-        if (sending) {
-            upload?.dispatchEvent(new CustomEvent('made-cms:upload-stop'));
-        }
-
-        finished(upload);
+        stop();
+        uploads.forEach(finished);
 
         const opener = request?.opener ?? null;
 

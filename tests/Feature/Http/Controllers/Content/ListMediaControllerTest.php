@@ -100,6 +100,17 @@ it('lists the files of a folder, of a kind, without an alt text or by name', fun
         ->and(listedMedia(['folder' => $teams->id, 'without_alt' => 1]))->toBe([$veld->id]);
 });
 
+it('lists the files of several kinds, for the picker of a file field, counted as files', function (): void {
+    $schema = Media::factory()->document()->create(['name' => 'schema']);
+    $samenvatting = Media::factory()->video()->create(['name' => 'samenvatting']);
+    Media::factory()->create(['name' => 'teamfoto']);
+
+    expect(listedMedia(['kinds' => ['document', 'video'], 'sort' => 'name']))->toBe([$samenvatting->id, $schema->id])
+        ->and(listedMedia(['kinds' => ['video']]))->toBe([$samenvatting->id])
+        ->and($this->getJson('made-cms/media/files?kinds[]=document&kinds[]=video')->json('summary'))->toBe('2 bestanden')
+        ->and($this->getJson('made-cms/media/files?kinds[]=document')->json('summary'))->toBe('1 document');
+});
+
 it('names the search in the count in words', function (): void {
     Media::factory()->create(['name' => 'teamfoto']);
     Media::factory()->document()->create(['name' => 'teamschema']);
@@ -144,6 +155,8 @@ it('refuses a filter it does not know', function (string $query, string $field):
     $this->getJson('made-cms/media/files?'.$query)->assertUnprocessable()->assertJsonValidationErrors($field);
 })->with([
     'a kind' => ['kind=foto', 'kind'],
+    'one of several kinds' => ['kinds[]=document&kinds[]=foto', 'kinds.1'],
+    'kinds that are no list' => ['kinds=document', 'kinds'],
     'an order' => ['sort=oldest', 'sort'],
     'a page' => ['page=0', 'page'],
     'a folder' => ['folder=teams', 'folder'],

@@ -106,7 +106,11 @@ final class MediaResponse
     public static function list(MediaList $list, MediaFilter $filter): array
     {
         $locale = Locale::launcher();
-        $count = $filter->withoutAlt ? 'without_alt' : ($filter->kind->value ?? 'all');
+        $count = match (true) {
+            $filter->withoutAlt => 'without_alt',
+            $filter->kinds !== [] => count($filter->kinds) === 1 ? $filter->kinds[0]->value : 'all',
+            default => $filter->kind->value ?? 'all',
+        };
         $summary = trans_choice('made-cms-package::media.browser.count.'.$count, $list->total, ['count' => $list->total], $locale);
         $search = trim($filter->search);
 
@@ -349,7 +353,7 @@ final class MediaResponse
     }
 
     /**
-     * The file as the CMS shows it (MediaDetails), with its kind, the name of the file a visitor opens and its size
+     * The file as the CMS shows it (MediaDetails), with the name of the file a visitor opens and its size
      * in bytes, so the field can say how much smaller a photo became. Never its place on the disk or its original.
      *
      * @return array<string, mixed>
@@ -358,7 +362,6 @@ final class MediaResponse
     {
         return [
             ...MediaDetails::of($file),
-            'kind' => $file->kind->value,
             'file' => basename((string) parse_url($file->url, PHP_URL_PATH)),
             'size' => $file->size,
         ];

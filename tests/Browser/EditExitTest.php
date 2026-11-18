@@ -519,7 +519,9 @@ it('keeps the status in view between 1101 and 1280 pixels, with a long name of t
 
     $shell = visit('/made-cms/pages/'.$this->page->id.'/edit')->resize($width, 800);
 
-    expect($shell->script(waitUntil(barSlotSays('bar-state', 'Concept · 1 wijziging'))))->toBeTrue()
+    // The widths are those of the font of the CMS: while it still loads, the fallback is wider and nothing fits.
+    expect($shell->script('() => document.fonts.ready.then(() => true)'))->toBeTrue()
+        ->and($shell->script(waitUntil(barSlotSays('bar-state', 'Concept · 1 wijziging'))))->toBeTrue()
         ->and($shell->script(<<<'JS'
             () => {
                 const links = document.querySelector('.bewerkbalk-links').getBoundingClientRect();

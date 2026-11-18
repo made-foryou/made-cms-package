@@ -306,7 +306,7 @@ it('gives the media element of the side panel the upload field for one photo, in
     $upload = json_decode((string) $field?->getAttribute('data-config'), true);
 
     expect($field?->getAttribute('aria-label'))->toBe('Foto uploaden')
-        ->and($upload['one_image'] ?? null)->toBeTrue()
+        ->and($upload['one'] ?? null)->toBeTrue()
         ->and($upload['folder'] ?? null)->toBe(['id' => null, 'label' => 'Alle bestanden'])
         ->and($upload['urls'] ?? null)->toBe(['upload' => '/made-cms/media', 'alt' => '/made-cms/media/:media/alt'])
         // The only fields on the page are the two of the picker: one photo, or several from an item of a list.

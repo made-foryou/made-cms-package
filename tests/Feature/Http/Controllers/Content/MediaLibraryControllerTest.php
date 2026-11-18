@@ -144,7 +144,7 @@ it('puts the upload field, which hands photos to the crop step, and the crop ste
     $document = HTMLDocument::createFromString(mediaLibrary(), LIBXML_NOERROR);
     $upload = json_decode((string) $document->querySelector('[data-media] [data-upload]')?->getAttribute('data-config'), true, flags: JSON_THROW_ON_ERROR);
 
-    expect($document->querySelector('[data-media] [data-upload]')?->hasAttribute('data-one-image'))->toBeFalse()
+    expect($document->querySelector('[data-media] [data-upload]')?->hasAttribute('data-one'))->toBeFalse()
         ->and($upload['crop'])->toBeTrue()
         ->and($document->querySelector('dialog[data-media-crop] [data-slot="crop-folder"]'))->not->toBeNull();
 });

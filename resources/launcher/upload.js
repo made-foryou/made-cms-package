@@ -6,8 +6,9 @@
  * template). Its fixed texts are in the markup (cms/partials/upload.blade.php), the ones filled in here come as JSON
  * on the field itself (data-config), like where a file goes and the largest file. Files go to the server one at a
  * time, so it never scales three photos down at once. An error belongs to its file: the others go on, and it stays
- * until the editor leaves the file out or tries again. The field of an image (one_image) takes one photo at a time; the
- * field of a list of images (only_images, UploadField::images()) takes several photos and, like it, no other kind.
+ * until the editor leaves the file out or tries again. The field of one file (config.one: an image, a file field) takes
+ * one file at a time; a field with config.kinds (an image, a list of images, a file field) refuses another kind before
+ * it travels.
  *
  * What a host hears on the field (the events bubble):
  * - made-cms:upload {busy, done, total, failed, percent, sending} after every change and while a file travels, for a
@@ -133,8 +134,8 @@ function start(field) {
     let wasBusy = false;
     // The photos of a batch in the crop step, until it gives them back.
     let stepping = null;
-    // The field of a new version takes one file at a time, like the field of an image.
-    const single = config.one_image === true || config.replace === true;
+    // The field of a new version takes one file at a time, like the field of an image or of a file field.
+    const single = config.one === true || config.replace === true;
     // The file a new version goes to: {id, kind, name}, from made-cms:upload-target.
     let target = null;
 
@@ -244,8 +245,8 @@ function start(field) {
         part('dismiss').hidden = ! failed;
         part('alt').hidden = ! describes(row);
 
-        // What the alt text of a document or a video is; the field of one photo keeps its own hint.
-        if (done && ! config.one_image) {
+        // What the alt text of a document or a video is; the field of one file keeps its own hint.
+        if (done && ! config.one) {
             const kind = result.kind === 'document' || result.kind === 'video' ? result.kind : 'image';
 
             part('alt-input').placeholder = texts['alt_placeholder_' + kind] ?? part('alt-input').placeholder;
@@ -559,9 +560,9 @@ function start(field) {
         ui.list.append(element);
 
         // A file the server refuses anyway never travels: the largest file is known here. The server checks again.
-        // A field of images takes no document or video, also not one that was dropped past the file chooser.
-        if ((config.one_image || config.only_images) && ! file.type.startsWith('image/')) {
-            fail(row, texts.not_image, false);
+        // A field of some kinds takes no other kind, also not one that was dropped past the file chooser.
+        if (Array.isArray(config.kinds) && ! config.kinds.includes(kindOf(file))) {
+            fail(row, texts.wrong_kind ?? texts.not_image, false);
         } else if (config.replace && kindOf(file) !== row.target.kind) {
             fail(row, texts['kind_' + row.target.kind] ?? texts.failed, false);
         } else if (file.size > (config.limits?.max_bytes ?? Infinity)) {

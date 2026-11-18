@@ -2325,39 +2325,39 @@ ul.lijst {
     align-self: stretch;
 }
 
-.upload[data-one-image] [data-slot="upload-summary"],
-.upload[data-one-image] .upload-kop,
-.upload[data-one-image][data-moment="busy"] .upload-vlak,
-.upload[data-one-image][data-moment="done"] .upload-vlak {
+.upload[data-one] [data-slot="upload-summary"],
+.upload[data-one] .upload-kop,
+.upload[data-one][data-moment="busy"] .upload-vlak,
+.upload[data-one][data-moment="done"] .upload-vlak {
     display: none;
 }
 
-.upload[data-one-image][data-moment="error"] .upload-vlak {
+.upload[data-one][data-moment="error"] .upload-vlak {
     border-color: var(--made-alarm);
 }
 
-.upload[data-one-image][data-moment="error"] .upload-lijst {
+.upload[data-one][data-moment="error"] .upload-lijst {
     order: -1;
 }
 
 /* In the narrow panel the buttons of a row go below its text. */
-.upload[data-one-image] .upload-rij-kop {
+.upload[data-one] .upload-rij-kop {
     flex-wrap: wrap;
 }
 
-.upload[data-one-image] .upload-rij-tekst {
+.upload[data-one] .upload-rij-tekst {
     flex: 1 1 180px;
 }
 
-.upload[data-one-image] .upload-rij[data-state="done"] {
+.upload[data-one] .upload-rij[data-state="done"] {
     padding: 0;
     border: 0;
     background: transparent;
 }
 
-.upload[data-one-image] .upload-rij[data-state="done"] .upload-mini,
-.upload[data-one-image] .upload-rij[data-state="done"] .upload-naam,
-.upload[data-one-image] .upload-rij[data-state="done"] [data-slot="upload-row-note"] {
+.upload[data-one] .upload-rij[data-state="done"] .upload-mini,
+.upload[data-one] .upload-rij[data-state="done"] .upload-naam,
+.upload[data-one] .upload-rij[data-state="done"] [data-slot="upload-row-note"] {
     display: none;
 }
 

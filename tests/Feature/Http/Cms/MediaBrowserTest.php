@@ -42,12 +42,12 @@ it('gives the picker of an image only images and the upload fields of one photo 
     $picker = MediaBrowser::picker($teams);
 
     expect($picker['browser']['config']['kind'])->toBe('image')
-        ->and($picker['browser']['upload']['one_image'] ?? null)->toBeTrue()
+        ->and($picker['browser']['upload']['one'] ?? null)->toBeTrue()
         ->and($picker['browser']['upload']['config']['crop'] ?? null)->toBeTrue()
         ->and($picker['browser']['upload']['config']['folder'] ?? null)->toBe(['id' => $teams->id, 'label' => 'de map Teams'])
         // A picker opened from an item of a list takes several photos at once.
-        ->and($picker['browser']['upload_many']['one_image'] ?? null)->toBeFalse()
-        ->and($picker['browser']['upload_many']['config']['only_images'] ?? null)->toBeTrue()
+        ->and($picker['browser']['upload_many']['one'] ?? null)->toBeFalse()
+        ->and($picker['browser']['upload_many']['config']['kinds'] ?? null)->toBe(['image'])
         ->and($picker['browser']['upload_many']['config']['crop'] ?? null)->toBeTrue()
         ->and($picker['browser']['upload_many']['config']['folder'] ?? null)->toBe(['id' => $teams->id, 'label' => 'de map Teams'])
         ->and(MediaBrowser::make()['upload_many'])->toBeNull()
@@ -69,7 +69,7 @@ it('renders the picker as a modal dialog with the list, its folders, the upload 
         ->and($dialog?->querySelector('[data-media] [data-slot="media-folders"] button[data-folder=""]')?->textContent)->toContain('Alle bestanden')
         // The field of one photo first, the field of several photos hidden until the picker opens from a list.
         ->and(array_map(
-            static fn (Element $wrapper): array => [(string) $wrapper->getAttribute('data-picker-upload'), $wrapper->hasAttribute('hidden'), $wrapper->querySelector('[data-upload]')?->hasAttribute('data-one-image')],
+            static fn (Element $wrapper): array => [(string) $wrapper->getAttribute('data-picker-upload'), $wrapper->hasAttribute('hidden'), $wrapper->querySelector('[data-upload]')?->hasAttribute('data-one')],
             iterator_to_array($dialog?->querySelectorAll('[data-media] [data-picker-upload]') ?? []),
         ))->toBe([['one', false, true], ['many', true, false]])
         ->and($dialog?->querySelector('[data-slot="media-search"]')?->getAttribute('type'))->toBe('search')

@@ -524,12 +524,15 @@ it('keeps the status in view between 1101 and 1280 pixels, with a long name of t
         ->and($shell->script(waitUntil(barSlotSays('bar-state', 'Concept · 1 wijziging'))))->toBeTrue()
         ->and($shell->script(<<<'JS'
             () => {
-                const links = document.querySelector('.bewerkbalk-links').getBoundingClientRect();
+                const container = document.querySelector('.bewerkbalk-links');
+                const links = container.getBoundingClientRect();
                 const status = document.querySelector('[data-slot="bar-page"]');
                 const rect = status.getBoundingClientRect();
                 const name = document.querySelector('.bewerkbalk-pagina').getBoundingClientRect();
 
-                return status.checkVisibility() && rect.width > 0 && rect.left >= links.left - 1 && rect.right <= links.right + 1 && name.width > 0;
+                // Nothing may be clipped: the names give way, so a font a few pixels wider cannot push the pill out.
+                return status.checkVisibility() && rect.width > 0 && rect.left >= links.left - 1 && rect.right <= links.right + 1
+                    && container.scrollWidth <= container.clientWidth && (innerWidth < 1280 || name.width > 0);
             }
             JS))->toBeTrue();
 })->with([1101, 1150, 1200, 1280]);

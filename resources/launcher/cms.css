@@ -1726,11 +1726,12 @@ ul.lijst {
     flex-shrink: 0;
 }
 
-/* The names give way before the status does: the pill (Live, Concept) always shows, the names get an ellipsis. */
+/* The names give way before the status does: the pill (Live, Concept) always shows, the names get an ellipsis and
+ * go altogether when even that does not fit (an ellipsis of three characters tells nothing). */
 .bewerkbalk-links > .bewerkbalk-site,
 .bewerkbalk-links > .bewerkbalk-pagina {
     flex-shrink: 1;
-    min-width: 3ch;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

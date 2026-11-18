@@ -94,19 +94,25 @@ function galleryNumbers(): string
 }
 
 /**
- * A script for $page->script() that hands svgs to the field of several photos of the picker, as a drop on it would.
+ * A script for $page->script() that hands files to the field of several photos of the picker, as a drop on it would.
  *
- * @param  list<string>  $names
+ * @param  array<string, string>  $files  the path of every file by the name it gets
  */
-function takeInGalleryPicker(array $names): string
+function takeInGalleryPicker(array $files): string
 {
-    $svg = base64_encode((string) file_get_contents(mediaFixture('logo.svg')));
-    $names = json_encode($names, JSON_THROW_ON_ERROR);
+    $specs = json_encode(array_map(static fn (string $name, string $path): array => [
+        'name' => $name,
+        'type' => (string) mime_content_type($path),
+        'data' => base64_encode((string) file_get_contents($path)),
+    ], array_keys($files), $files), JSON_THROW_ON_ERROR);
 
     return <<<JS
         () => {
-            const bytes = Uint8Array.from(atob('{$svg}'), (character) => character.charCodeAt(0));
-            const files = {$names}.map((name) => new File([bytes], name, { type: 'image/svg+xml' }));
+            const files = {$specs}.map((spec) => new File(
+                [Uint8Array.from(atob(spec.data), (character) => character.charCodeAt(0))],
+                spec.name,
+                { type: spec.type },
+            ));
 
             document.querySelector('[data-media-picker] [data-picker-upload=many] [data-upload]')
                 .dispatchEvent(new CustomEvent('made-cms:upload-take', { detail: { files } }));
@@ -278,7 +284,10 @@ it('lets several photos uploaded at once join the selection as the next items', 
     expect($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:true', 'many:false']);
 
     // Svgs: the crop step passes them by, so the field asks their alt texts itself.
-    $shell->script(takeInGalleryPicker(['Logo een.svg', 'Logo twee.svg']));
+    $shell->script(takeInGalleryPicker([
+        'Logo een.svg' => mediaFixture('logo.svg'),
+        'Logo twee.svg' => mediaFixture('logo.svg'),
+    ]));
 
     expect($shell->script(waitUntil("document.querySelector('[data-media-picker] [data-picker-upload=many] [data-upload]').dataset.moment === 'done'")))->toBeTrue();
 
@@ -294,6 +303,39 @@ it('lets several photos uploaded at once join the selection as the next items', 
         ->and(galleryPhotos($page))->toBe($logos);
 
     $shell->assertNoJavaScriptErrors();
+});
+
+it('runs photos uploaded at once through the crop step one after the other, and hands them on as the step stored them', function (): void {
+    $page = galleryPage([['id' => FOTO_EEN, 'foto' => null, 'bijschrift' => null]]);
+    $shell = openGalleryPicker($page, 0, 1);
+
+    $shell->script(takeInGalleryPicker([
+        'Kampioenen.jpg' => photo(1600, 1067, 'jpg'),
+        'Huldiging.jpg' => photo(1600, 1067, 'jpg'),
+    ]));
+
+    foreach (['De kampioenen', 'De huldiging'] as $alt) {
+        expect($shell->script(waitUntil("document.querySelector('[data-media-crop]').open && ! document.querySelector('[data-slot=\"crop-save\"]').disabled && document.querySelector('[data-slot=\"crop-alt\"]').value === ''")))->toBeTrue();
+
+        $shell->type('[data-slot="crop-alt"]', $alt)
+            ->click('[data-slot="crop-save"]');
+    }
+
+    expect($shell->script(waitUntil("! document.querySelector('[data-media-crop]').open")))->toBeTrue();
+
+    $photos = Media::query()->whereIn('name', ['kampioenen', 'huldiging'])->orderBy('id')->get();
+
+    expect($photos->pluck('alt')->all())->toBe(['De kampioenen', 'De huldiging'])
+        ->and($shell->script(waitUntil('('.galleryNumbers().')().length === 2')))->toBeTrue();
+
+    $shell->click('[data-slot="media-picker-use"]');
+
+    // The item holds the first photo with the alt text of the crop step, not the form it had when it came in.
+    expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and(galleryPhotos($page))->toBe($photos->pluck('id')->all());
+
+    $shell->assertSeeIn('[data-path="fotos.0.foto"] [data-slot="image-alt"]', 'Alt: De kampioenen')
+        ->assertNoJavaScriptErrors();
 });
 
 it('sends the field of several photos into the folder the editor opened in an earlier picker', function (): void {

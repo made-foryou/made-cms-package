@@ -76,9 +76,14 @@ Leaving these out is a feature. Each field is something an editor must understan
 
 ## Keys and naming
 
-- Follow the conventions of the host. If it has strips already, match their key style. For a new site the existing
-  sites and the scan use Dutch field keys (`kop`, `tekst`, `knoppen`, `kaarten`), and `key()` is lowercase letters,
-  digits and dashes.
+- **Field keys are Dutch** (`kop`, `tekst`, `knoppen`, `kaarten`, `foto`, `intro`, `label`). This is a decision of the
+  owner and matches the package's own examples, the scan and the sites already coupled. It is an exception to the rule
+  that code identifiers are English: a field key is stored content data and the default label an editor sees comes
+  from it (`gaat_naar` becomes "Gaat naar"), so it reads as the editor's language. Everything else in the strip class
+  (class names, methods, variables, comments) stays English.
+- Type keys (`key()`) are lowercase letters, digits and dashes, in Dutch too (`kaarten`, `cijfers`, `over-ons`), except
+  for established loanwords (`hero`, `cta`, `faq`, `logos`).
+- If the host already has strips with another key style, match the host and say so in the report.
 - A field `key` is stored with the content, so choose once and keep it. Do not use `id`, `type` or `visible`, and
   `id` inside an item.
 - Name fields after what the content is, not where it sits: `kop`, not `linkerkolom_titel`.

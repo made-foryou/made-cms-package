@@ -22,9 +22,9 @@ covers a whole marketing site, with variants instead of near-duplicates.
 
 ## The starter types
 
-These are suggestions to map onto, not a fixed list. Keep a field only when a section in the design uses it. Keys
-and field names below follow the Dutch convention of the scan and the existing sites; use the host's own convention
-when it differs.
+These are suggestions to map onto, not a fixed list. Keep a field only when a section in the design uses it. Type
+keys and field names are Dutch (see "Keys and naming" in `field-mapping.md`); the host's own convention wins when it
+differs.
 
 | Type (`key`) | Use for | Fields |
 |---|---|---|

@@ -2144,6 +2144,12 @@ ul.lijst {
     color: #c7d2ea;
 }
 
+/* A document or a video has no picture to judge: its preview is a short band with its icon and its extension. */
+.bestandkaart .beeldkaart-voorbeeld {
+    aspect-ratio: auto;
+    height: 64px;
+}
+
 .beeldkaart-voorbeeld img {
     position: absolute;
     inset: 0;

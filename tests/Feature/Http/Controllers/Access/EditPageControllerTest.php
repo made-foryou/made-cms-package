@@ -317,6 +317,10 @@ it('gives the media element of the side panel the upload field for one photo, in
         ))->toBe([true, true, true, true, true])
         ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-upload"]')?->textContent)->toBe('Uploaden')
         ->and($template('template[data-field="image"]')->querySelector('[data-slot="image-pick"]')?->textContent)->toBe('Kiezen uit media')
+        // A file field has a media element of its own and the upload field of one file of its kinds per stand.
+        ->and($template('template[data-field="file"]')->querySelector('[data-slot="file-empty"]')?->textContent)->toBe('Nog geen bestand')
+        ->and(json_decode((string) $template('template[data-part="upload-document"]')->querySelector('[data-upload]')?->getAttribute('data-config'), true)['kinds'] ?? null)->toBe(['document'])
+        ->and(json_decode((string) $template('template[data-part="upload-file"]')->querySelector('[data-upload]')?->getAttribute('data-config'), true)['kinds'] ?? null)->toBe(['document', 'video'])
         ->and($document->querySelector('[data-slot="upload-status"] [role="status"][data-slot="upload-status-text"]'))->not->toBeNull()
         ->and($document->querySelector('[data-slot="upload-status-close"]')?->getAttribute('aria-label'))->toBe('Melding sluiten')
         ->and(editShellConfig($html)['texts']['panel'])->toMatchArray([

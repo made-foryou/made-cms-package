@@ -31,6 +31,7 @@ use Made\CmsPackage\Content\Data\ScannedPage;
 use Made\CmsPackage\Content\Data\ScanResult;
 use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Scan\StripTypeSource;
@@ -314,6 +315,49 @@ function draftOf(Page $page, string $strip): array
 | Strip helpers
 |--------------------------------------------------------------------------
 */
+
+/**
+ * A JavaScript condition: the picker is open and shows these files, in this order.
+ *
+ * @param  list<string>  $names
+ */
+function pickerShows(array $names): string
+{
+    $quoted = json_encode($names, JSON_THROW_ON_ERROR);
+
+    return "document.querySelector('[data-media-picker]').open && ! document.querySelector('[data-media]').hasAttribute('data-loading') && JSON.stringify([...document.querySelectorAll('[data-media-picker] .tegel [data-slot=\"media-tile-name\"]')].map((name) => name.textContent)) === JSON.stringify({$quoted})";
+}
+
+/**
+ * A script for $page->script(): every folder of the picker with its number and whether it is open.
+ */
+function pickerFolders(): string
+{
+    return <<<'JS'
+        () => [...document.querySelectorAll('[data-media-picker] .kmap')].map((folder) => [
+            folder.querySelector('.kmap-naam').textContent.trim(),
+            folder.querySelector('.kmap-aantal').textContent,
+            folder.getAttribute('aria-pressed'),
+        ])
+        JS;
+}
+
+/**
+ * The selector of the tile of a file in the picker.
+ */
+function pickerTile(Media $media): string
+{
+    return '[data-media-picker] .tegel[data-id="'.$media->id.'"]';
+}
+
+/**
+ * The card of a strip type in the catalogue of the opbouw, by its name: the catalogue lists the types by label, so a
+ * new type of the workbench never moves the card a test clicks.
+ */
+function catalogueCard(string $name): string
+{
+    return '[data-slot="catalogue-types"] .soortkaart:has([data-slot="type-name"]:text-is("'.$name.'"))';
+}
 
 /**
  * Binds a catalogue with the fixture strip types "hero" and "cards".

@@ -9,6 +9,7 @@ use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Data\DraftChanges;
 use Made\CmsPackage\Content\Data\EditableStrips;
+use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
@@ -46,8 +47,14 @@ final class EditPageResponse
         $pagesUrl = PageLinks::show($page);
         $exits = EditExits::of($page)->toArray();
         $site = SiteAddress::of($page);
-        // The media element uploads a photo into the folder the editor chose last in the picker.
+        // The media element uploads a photo into the folder the editor chose last in the picker, the element of a file
+        // field a file of its kinds.
         $upload = UploadField::image($folder);
+        $uploadFiles = array_filter([
+            'document' => UploadField::file($folder, MediaKind::Document),
+            'video' => UploadField::file($folder, MediaKind::Video),
+            'file' => UploadField::file($folder, MediaKind::Document, MediaKind::Video),
+        ]);
 
         return Shell::respond('made-cms-package-launcher::cms.edit', $editor, $screens, Screen::Pages, [
             'page' => [
@@ -67,6 +74,7 @@ final class EditPageResponse
             'barScript' => LauncherAssetController::url('bar.js'),
             'structureScript' => LauncherAssetController::url('structure.js'),
             'upload' => $upload,
+            'uploadFiles' => $uploadFiles,
             'uploadScript' => $upload['script'],
             // "Kiezen uit media" opens the picker in the folder the editor chose last.
             'picker' => MediaBrowser::picker($folder),

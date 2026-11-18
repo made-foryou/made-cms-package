@@ -4985,19 +4985,29 @@ button.tekstlink.alarm {
 .tegel[data-kind="document"] .tegel-icoon-image,
 .tegel[data-kind="video"] .tegel-icoon-image,
 .bibliotheek-mini[data-kind="document"] .tegel-icoon-image,
-.bibliotheek-mini[data-kind="video"] .tegel-icoon-image {
+.bibliotheek-mini[data-kind="video"] .tegel-icoon-image,
+.kiezer-mini[data-kind="document"] .tegel-icoon-image,
+.kiezer-mini[data-kind="video"] .tegel-icoon-image,
+.beeldkaart[data-kind="document"] .tegel-icoon-image,
+.beeldkaart[data-kind="video"] .tegel-icoon-image {
     display: none;
 }
 
 .tegel[data-kind="document"] .tegel-icoon-document,
 .tegel[data-kind="video"] .tegel-icoon-video,
 .bibliotheek-mini[data-kind="document"] .tegel-icoon-document,
-.bibliotheek-mini[data-kind="video"] .tegel-icoon-video {
+.bibliotheek-mini[data-kind="video"] .tegel-icoon-video,
+.kiezer-mini[data-kind="document"] .tegel-icoon-document,
+.kiezer-mini[data-kind="video"] .tegel-icoon-video,
+.beeldkaart[data-kind="document"] .tegel-icoon-document,
+.beeldkaart[data-kind="video"] .tegel-icoon-video {
     display: block;
 }
 
 .tegel[data-kind="document"] .tegel-beeld,
-.bibliotheek-mini[data-kind="document"] {
+.bibliotheek-mini[data-kind="document"],
+.kiezer-mini[data-kind="document"],
+.beeldkaart[data-kind="document"] .beeldkaart-voorbeeld {
     border-color: var(--made-rand);
     background: #fbfaf5;
     color: #47564f;
@@ -5009,7 +5019,9 @@ button.tekstlink.alarm {
 }
 
 .tegel[data-kind="video"] .tegel-beeld,
-.bibliotheek-mini[data-kind="video"] {
+.bibliotheek-mini[data-kind="video"],
+.kiezer-mini[data-kind="video"],
+.beeldkaart[data-kind="video"] .beeldkaart-voorbeeld {
     background: #0a211c;
 }
 
@@ -5713,7 +5725,9 @@ button.tekstlink.alarm {
     }
 
     .tegel[data-kind="document"] .tegel-beeld,
-    .bibliotheek-mini[data-kind="document"] {
+    .bibliotheek-mini[data-kind="document"],
+    .kiezer-mini[data-kind="document"],
+    .beeldkaart[data-kind="document"] .beeldkaart-voorbeeld {
         background: #f3f1e8;
         color: #0e2b26;
     }

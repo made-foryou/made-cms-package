@@ -33,20 +33,24 @@
  * - made-cms:media-selection {selecting, files, full} in the library and in a picker opened from an item of a list,
  *   when it starts or stops selecting and when the selection changes (full: the list of the item takes no more);
  * - made-cms:media-changed {file} in the library for a file it moved that stays chosen.
- * A host loads the list with made-cms:media-load {file, many} on it: the folder it was in, no search, newest first,
- * with that file chosen and nothing selected; many ({room, max, count, list, items, item}) for a picker opened from an
- * item of a list, null outside one; made-cms:media-deselect {id} takes a file out of its selection. A list outside a
+ * A host loads the list with made-cms:media-load {file, many, kinds} on it: the folder it was in, no search, newest
+ * first, with that file chosen and nothing selected; many ({room, max, count, list, items, item}) for a picker opened
+ * from an item of a list, null outside one; kinds the kinds it shows (["document", "video"] for a file field), else
+ * the kind of its own; made-cms:media-deselect {id} takes a file out of its selection. A list outside a
  * dialog loads at once. In the library a host stops selecting with
  * made-cms:media-select {on: false}, and moves files with made-cms:media-move {files, folder, done(result)}: the ids,
  * the folder ({id, name}, null for "Alle bestanden"), and done gets {ok, error}; the list sets detail.taken.
  *
  * The picker ([data-media-picker]) is a modal <dialog> around a list. The side panel opens it with made-cms:pick on the
- * dialog, {field, place, hint, file, many, opener, choose(files)}; "Deze gebruiken" closes it and calls choose with
+ * dialog, {field, place, hint, file, many, kinds, opener, choose(files)}: kinds are those of a file field (its stand:
+ * a document, a video or both, with their title, hints and upload field), else it shows images; "Deze gebruiken"
+ * closes it and calls choose with
  * the chosen file, or, opened for an item of a list (many), with the files it selects, in the order of the items they
  * become. Escape, "Annuleren", the cross and a click beside it close it without a choice; the focus goes back to
  * opener. Both finish the upload fields first, so an alt text the editor typed for a new photo is stored and goes with
  * the choice, and the fields are at rest the next time the picker opens. The picker holds the upload field of one
- * photo and of several; each time it opens it shows the field of several photos when it chooses several files.
+ * photo, of several and of one file per stand of a file field; each time it opens it shows the one for what it chooses,
+ * so a field never changes while its files are on their way.
  */
 
 const HEADERS = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
@@ -180,8 +184,11 @@ function browse(root) {
         folder: settings.folder ?? null,
         // The folder the session holds, so it is only sent when it changes.
         remembered: settings.folder?.id ?? null,
-        // The kind the library lists, null for every kind; the picker has a fixed kind of its own (settings.kind).
+        // The kind the library lists, null for every kind.
         kind: filter.kind ?? null,
+        // The kinds a list outside the library shows: the picker of an image its own kind (settings.kind), the picker
+        // of a file field the kinds of that field (made-cms:media-load {kinds}); null for every kind.
+        kinds: settings.kind ? [settings.kind] : null,
         page: 1,
         files: [],
         total: 0,
@@ -225,7 +232,10 @@ function browse(root) {
         const target = new URL(address, window.location.href);
 
         for (const [key, value] of Object.entries(query)) {
-            if (value !== null && value !== undefined && value !== '') {
+            if (Array.isArray(value)) {
+                // A list goes as one parameter per value (kinds[]=document&kinds[]=video).
+                value.forEach((each) => target.searchParams.append(key + '[]', String(each)));
+            } else if (value !== null && value !== undefined && value !== '') {
                 target.searchParams.set(key, String(value));
             }
         }
@@ -233,9 +243,12 @@ function browse(root) {
         return target;
     }
 
-    const kind = () => settings.kind ?? state.kind;
+    const kind = () => state.kind;
     const search = () => ui.search.value.trim();
-    const withoutAlt = () => pressed(ui.withoutAlt);
+    // "Zonder alt-tekst" is a filter of images: out of sight in the stand of a file field, it filters nothing.
+    const withoutAlt = () => ! ui.withoutAlt.hidden && pressed(ui.withoutAlt);
+    // The stand of a list outside the library, by the kinds it shows: image, document, video, or file for both.
+    const mode = () => (state.kinds === null ? null : (state.kinds.length === 1 ? state.kinds[0] : 'file'));
 
     function pressFolders() {
         const open = String(state.folder?.id ?? '');
@@ -330,6 +343,8 @@ function browse(root) {
             }));
         }
 
+        // Several at once is for photos only: the stand of a file field says nothing about it.
+        stand.hint.hidden = (mode() ?? 'image') !== 'image';
         stand.hint.textContent = many === null
             ? texts.outside
             : (fullList
@@ -405,7 +420,7 @@ function browse(root) {
         try {
             const query = library
                 ? { kind: kind(), without_alt: withoutAlt() ? 1 : null, q: search() }
-                : { kind: settings.kind };
+                : { kinds: state.kinds };
             const response = await fetch(url(settings.urls.folders, query), { credentials: 'same-origin', headers: HEADERS });
 
             data = response.ok ? await response.json() : null;
@@ -485,14 +500,17 @@ function browse(root) {
     }
 
     /**
-     * Shows the upload field of several photos for a picker that chooses several (many), else the field of one photo.
-     * A list with one field keeps it.
+     * Shows the upload field of several photos for a picker that chooses several (many), the field of one file for the
+     * stand of a file field, else the field of one photo. A list with one field keeps it. A stand without a field of
+     * its own (the library takes none of its kinds) shows none: the editor only chooses.
      */
     function showUpload(many) {
         const wrappers = [...root.querySelectorAll('[data-picker-upload]')];
-        const shown = wrappers.find((wrapper) => wrapper.dataset.pickerUpload === (many ? 'many' : 'one')) ?? wrappers[0];
+        const current = mode() ?? 'image';
+        const wanted = many ? 'many' : (current === 'image' ? 'one' : current);
+        const shown = wrappers.find((wrapper) => wrapper.dataset.pickerUpload === wanted) ?? (current === 'image' ? wrappers[0] : null);
 
-        if (! shown) {
+        if (wrappers.length === 0) {
             return;
         }
 
@@ -500,7 +518,28 @@ function browse(root) {
             wrapper.hidden = wrapper !== shown;
         }
 
-        upload = shown.querySelector('[data-upload]') ?? upload;
+        upload = shown?.querySelector('[data-upload]') ?? null;
+    }
+
+    /**
+     * The words of the stand the list opened in (made-cms:media-load {kinds}): the fixed filter and the empty list; the
+     * filter of the images without an alt text only for images.
+     */
+    function drawMode() {
+        const words = settings.modes?.[mode() ?? ''];
+
+        if (! words) {
+            return;
+        }
+
+        const chip = slot('kind');
+
+        if (chip) {
+            chip.textContent = words.kind ?? chip.textContent;
+        }
+
+        ui.empty.textContent = words.empty ?? ui.empty.textContent;
+        ui.withoutAlt.hidden = mode() !== 'image';
     }
 
     /** The list and its folders again, for the library whose folders count what it lists. */
@@ -1410,7 +1449,8 @@ function browse(root) {
         return {
             folder: state.folder?.id,
             q: search(),
-            kind: kind(),
+            kind: library ? kind() : null,
+            kinds: library ? null : state.kinds,
             without_alt: withoutAlt() ? 1 : null,
             sort: pressed(ui.newest) ? 'newest' : 'name',
         };
@@ -1698,7 +1738,12 @@ function browse(root) {
         }
 
         reset();
-        choose(file);
+
+        // A file the server read as another kind than the stand shows lands in Media only.
+        if (state.kinds === null || state.kinds.includes(file.kind)) {
+            choose(file);
+        }
+
         load();
         folders();
     });
@@ -1794,6 +1839,11 @@ function browse(root) {
         // A photo the server was still storing when the list was left asks no alt text any more: it is "later".
         uploads.forEach(finished);
         state.many = event.detail?.many ?? null;
+        // The kinds the picker shows this time: those of the field it opens for, else the kind of its own.
+        const kinds = Array.isArray(event.detail?.kinds) ? event.detail.kinds.filter((each) => typeof each === 'string') : [];
+
+        state.kinds = kinds.length > 0 ? kinds : (settings.kind ? [settings.kind] : null);
+        drawMode();
         // The field of several photos only for a list that takes more than the photo of its item.
         showUpload(selectable());
         root.toggleAttribute('data-many', ! library && selectable());
@@ -1864,7 +1914,9 @@ function pick(dialog) {
     const slot = (name) => dialog.querySelector('[data-slot="media-picker-' + name + '"]');
     const ui = {
         for: slot('for'),
+        title: slot('title'),
         close: slot('close'),
+        mini: slot('mini'),
         thumb: slot('thumb'),
         name: slot('name'),
         alt: slot('alt'),
@@ -1890,6 +1942,10 @@ function pick(dialog) {
 
     let request = null;
     let chosen = null;
+    // The stand the picker opened in: image, or for a file field document, video or file (both).
+    let mode = 'image';
+    // A text of the stand, else the text of the picker of an image.
+    const said = (key) => settings.modes?.[mode]?.[key] ?? texts[key];
     // What the list selects in a picker opened from an item of a list: the files in the order of the items they become.
     let selection = { selecting: false, files: [], full: false };
     // The upload fields whose bytes still travel, so they can still be stopped.
@@ -1913,8 +1969,10 @@ function pick(dialog) {
         const alt = first?.alt ?? '';
 
         ui.name.textContent = files.length > 0 ? files.map((file) => file.name).join(', ') : texts.nothing;
-        ui.alt.textContent = files.length > 1 ? '' : (first ? (alt === '' ? texts.no_alt : format(texts.alt, { alt })) : texts.nothing_hint);
-        ui.alt.dataset.alt = files.length === 1 ? (alt === '' ? 'missing' : 'set') : '';
+        ui.alt.textContent = files.length > 1 ? '' : (first ? (alt === '' ? said('no_alt') : format(said('alt'), { alt })) : said('nothing_hint'));
+        // Only a photo without an alt text gets the amber dot; a document without a description is no task.
+        ui.alt.dataset.alt = files.length === 1 && mode === 'image' ? (alt === '' ? 'missing' : 'set') : '';
+        ui.mini.dataset.kind = first?.kind ?? (mode === 'file' ? 'document' : mode);
         ui.thumb.hidden = ! first?.image;
 
         const small = first?.thumb ?? first?.url;
@@ -1924,7 +1982,7 @@ function pick(dialog) {
         }
 
         ui.use.textContent = files.length === 0
-            ? texts.choose_first
+            ? said('choose_first')
             : (selection.selecting && files.length > 1 ? format(texts.use_many, { count: files.length }) : texts.use);
         ui.use.setAttribute('aria-disabled', String(files.length === 0));
         drawSelection();
@@ -2004,6 +2062,10 @@ function pick(dialog) {
     dialog.addEventListener('made-cms:pick', (event) => {
         request = event.detail ?? {};
         chosen = request.file ?? null;
+        const kinds = Array.isArray(request.kinds) && request.kinds.length > 0 ? request.kinds : ['image'];
+
+        mode = kinds.length === 1 ? kinds[0] : 'file';
+        ui.title.textContent = said('title') ?? ui.title.textContent;
         ui.for.textContent = [format(texts.for, { field: request.field ?? '', place: request.place ?? '' }), request.hint]
             .filter(Boolean)
             .join(' · ');
@@ -2013,7 +2075,7 @@ function pick(dialog) {
             dialog.showModal();
         }
 
-        browser.dispatchEvent(new CustomEvent('made-cms:media-load', { detail: { file: chosen, many: request.many ?? null } }));
+        browser.dispatchEvent(new CustomEvent('made-cms:media-load', { detail: { file: chosen, many: request.many ?? null, kinds } }));
         search?.focus();
     });
 

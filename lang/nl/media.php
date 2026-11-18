@@ -362,6 +362,36 @@ return [
             'use_many' => 'Deze :count gebruiken',
             'chip_remove' => ':name uit de keuze halen',
         ],
+        // The picker in the stand of a file field (made-cms:pick {kinds}): what differs from the picker of an image.
+        'modes' => [
+            'document' => [
+                'title' => 'Kies een document',
+                'kind' => 'Documenten',
+                'empty' => 'Geen documenten gevonden. Afbeeldingen en video’s kies je hier niet.',
+                'nothing_hint' => 'Klik op een document om het te kiezen.',
+                'choose_first' => 'Kies eerst een document',
+                'alt' => 'Omschrijving: :alt',
+                'no_alt' => 'Geen omschrijving — de site toont dan de naam van het bestand.',
+            ],
+            'video' => [
+                'title' => 'Kies een video',
+                'kind' => 'Video’s',
+                'empty' => 'Geen video’s gevonden. Afbeeldingen en documenten kies je hier niet.',
+                'nothing_hint' => 'Klik op een video om hem te kiezen.',
+                'choose_first' => 'Kies eerst een video',
+                'alt' => 'Omschrijving: :alt',
+                'no_alt' => 'Geen omschrijving — de site toont dan de naam van het bestand.',
+            ],
+            'file' => [
+                'title' => 'Kies een bestand',
+                'kind' => 'Documenten en video’s',
+                'empty' => 'Geen documenten of video’s gevonden. Afbeeldingen kies je hier niet.',
+                'nothing_hint' => 'Klik op een bestand om het te kiezen.',
+                'choose_first' => 'Kies eerst een bestand',
+                'alt' => 'Omschrijving: :alt',
+                'no_alt' => 'Geen omschrijving — de site toont dan de naam van het bestand.',
+            ],
+        ],
         // The list of a picker opened from an item of a list ({room, max, count, list, items, item} of made-cms:pick):
         // the button, the line beside it, the messages above the tiles and the hint below them. Filled in by the script.
         'list' => [

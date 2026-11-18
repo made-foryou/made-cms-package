@@ -25,6 +25,7 @@ use Made\CmsPackage\Support\Locale;
  *     kind: string|null,
  *     upload: Field|null,
  *     upload_many: Field|null,
+ *     upload_files: array<string, Field>,
  *     library: bool,
  *     script: string,
  *     config: array{
@@ -36,12 +37,13 @@ use Made\CmsPackage\Support\Locale;
  *         library?: true,
  *         folder_max?: int,
  *         kinds?: array<string, string>,
+ *         modes?: array<string, array{kind: string, empty: string}>,
  *         filter?: array{kind: string|null, without_alt: bool, q: string, sort: string},
  *         chosen?: int|null,
  *         initial?: array{files: array<string, mixed>, folders: array<string, mixed>},
  *     },
  * }
- * @phpstan-type Picker array{t: Closure(string): string, browser: Browser, config: array{texts: array<string, string>}}
+ * @phpstan-type Picker array{t: Closure(string): string, browser: Browser, config: array{texts: array<string, string>, modes: array<string, array<string, string>>}}
  */
 final class MediaBrowser
 {
@@ -55,9 +57,11 @@ final class MediaBrowser
      * @param  Field|null  $upload  the upload field below the folders, which follows the folder the editor opens
      * @param  Field|null  $uploadMany  in the picker, the upload field of several photos next to it, shown instead
      *                                  when the picker opens from an item of a list
+     * @param  array<string, Field>  $uploadFiles  in the picker, the upload field of one file per stand of a file field
+     *                                             (document, video, file), shown instead when it opens for one
      * @return Browser
      */
-    public static function make(?MediaFolder $folder = null, ?MediaKind $kind = null, ?array $upload = null, ?array $uploadMany = null): array
+    public static function make(?MediaFolder $folder = null, ?MediaKind $kind = null, ?array $upload = null, ?array $uploadMany = null, array $uploadFiles = []): array
     {
         $locale = Locale::launcher();
         $t = self::translator('browser', $locale);
@@ -68,6 +72,7 @@ final class MediaBrowser
             'kind' => $kind === null ? null : $t('kinds.'.$kind->value),
             'upload' => $upload,
             'upload_many' => $uploadMany,
+            'upload_files' => $uploadFiles,
             'library' => false,
             'script' => LauncherAssetController::url('media.js'),
             'config' => [
@@ -85,24 +90,50 @@ final class MediaBrowser
     }
 
     /**
-     * The picker of an image: the list of the images in a dialog, with the upload field of one photo below the
-     * folders, or the upload field of several photos when it opens from an item of a list. It opens in the folder the
-     * editor chose last, and the upload field puts a photo there; a photo goes to the crop step once it is in.
+     * The picker of the side panel: the list in a dialog, which shows only what the field it opens for takes. For an
+     * image the images, with the upload field of one photo below the folders, or the upload field of several photos
+     * when it opens from an item of a list; a photo goes to the crop step once it is in. For a file field
+     * (made-cms:pick {kinds}) its stand: the documents, the videos or both, with the upload field of one file of those
+     * kinds. It opens in the folder the editor chose last, and the upload field puts a file there.
+     *
+     * The texts that differ per stand come along as `modes`: the title, the hint and the button of the dialog in its
+     * config, the fixed filter and the empty list in the config of the list.
      *
      * @return Picker
      */
     public static function picker(?MediaFolder $folder = null): array
     {
         $locale = Locale::launcher();
+        $files = array_filter([
+            'document' => UploadField::file($folder, MediaKind::Document),
+            'video' => UploadField::file($folder, MediaKind::Video),
+            'file' => UploadField::file($folder, MediaKind::Document, MediaKind::Video),
+        ]);
 
-        $browser = self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true), UploadField::images($folder, crop: true));
+        $browser = self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true), UploadField::images($folder, crop: true), $files);
         // The list says what a picker opened from an item of a list selects, beside its button and below its tiles.
         $browser['config']['texts'] = [...$browser['config']['texts'], ...self::texts('picker.list', $locale)];
+        $t = self::translator('picker', $locale);
+        $browser['config']['modes'] = ['image' => ['kind' => (string) __('made-cms-package::media.browser.kinds.image', [], $locale), 'empty' => $t('empty')]];
+        $texts = self::texts('picker.texts', $locale);
+        $modes = ['image' => [
+            'title' => $t('title'),
+            'nothing_hint' => $texts['nothing_hint'] ?? '',
+            'choose_first' => $texts['choose_first'] ?? '',
+            'alt' => $texts['alt'] ?? '',
+            'no_alt' => $texts['no_alt'] ?? '',
+        ]];
+
+        foreach (['document', 'video', 'file'] as $mode) {
+            $own = self::texts('picker.modes.'.$mode, $locale);
+            $browser['config']['modes'][$mode] = ['kind' => $own['kind'] ?? '', 'empty' => $own['empty'] ?? ''];
+            $modes[$mode] = array_diff_key($own, ['kind' => true, 'empty' => true]);
+        }
 
         return [
-            't' => self::translator('picker', $locale),
+            't' => $t,
             'browser' => $browser,
-            'config' => ['texts' => self::texts('picker.texts', $locale)],
+            'config' => ['texts' => $texts, 'modes' => $modes],
         ];
     }
 

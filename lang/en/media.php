@@ -362,6 +362,36 @@ return [
             'use_many' => 'Use these :count',
             'chip_remove' => 'Take :name out of the choice',
         ],
+        // The picker in the stand of a file field (made-cms:pick {kinds}): what differs from the picker of an image.
+        'modes' => [
+            'document' => [
+                'title' => 'Choose a document',
+                'kind' => 'Documents',
+                'empty' => 'No documents found. Images and videos are not chosen here.',
+                'nothing_hint' => 'Click a document to choose it.',
+                'choose_first' => 'Choose a document first',
+                'alt' => 'Description: :alt',
+                'no_alt' => 'No description — the site then shows the name of the file.',
+            ],
+            'video' => [
+                'title' => 'Choose a video',
+                'kind' => 'Videos',
+                'empty' => 'No videos found. Images and documents are not chosen here.',
+                'nothing_hint' => 'Click a video to choose it.',
+                'choose_first' => 'Choose a video first',
+                'alt' => 'Description: :alt',
+                'no_alt' => 'No description — the site then shows the name of the file.',
+            ],
+            'file' => [
+                'title' => 'Choose a file',
+                'kind' => 'Documents and videos',
+                'empty' => 'No documents or videos found. Images are not chosen here.',
+                'nothing_hint' => 'Click a file to choose it.',
+                'choose_first' => 'Choose a file first',
+                'alt' => 'Description: :alt',
+                'no_alt' => 'No description — the site then shows the name of the file.',
+            ],
+        ],
         // The list of a picker opened from an item of a list ({room, max, count, list, items, item} of made-cms:pick):
         // the button, the line beside it, the messages above the tiles and the hint below them. Filled in by the script.
         'list' => [

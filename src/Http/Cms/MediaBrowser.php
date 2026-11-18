@@ -95,9 +95,13 @@ final class MediaBrowser
     {
         $locale = Locale::launcher();
 
+        $browser = self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true), UploadField::images($folder, crop: true));
+        // The list says what a picker opened from an item of a list selects, beside its button and below its tiles.
+        $browser['config']['texts'] = [...$browser['config']['texts'], ...self::texts('picker.list', $locale)];
+
         return [
             't' => self::translator('picker', $locale),
-            'browser' => self::make($folder, MediaKind::Image, UploadField::image($folder, crop: true), UploadField::images($folder, crop: true)),
+            'browser' => $browser,
             'config' => ['texts' => self::texts('picker.texts', $locale)],
         ];
     }

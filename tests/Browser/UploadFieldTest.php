@@ -170,7 +170,8 @@ it('takes several photos at once in the field of a list of images, and no docume
 
     $page = visit('/werkbank/uploadveld?fotos=1');
 
-    $page->assertSeeIn('[data-slot="upload-rules"]', 'Foto’s · tot 25 MB per bestand · komen in Alle bestanden')
+    $page->assertSeeIn('[data-slot="upload-title"]', 'Sleep je foto’s hierheen')
+        ->assertSeeIn('[data-slot="upload-rules"]', 'Je mag er meer dan één kiezen · komen in Alle bestanden · tot 25 MB')
         ->assertAttribute('[data-slot="upload-input"]', 'accept', implode(',', array_filter(
             config()->array('made-cms-package.media.allowed_mimes'),
             static fn (mixed $mime): bool => is_string($mime) && str_starts_with($mime, 'image/'),

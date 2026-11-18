@@ -105,9 +105,9 @@ final class UploadField
         // The field of one photo takes only images too.
         $takesOnlyImages = $onlyImages || $oneImage;
         $locale = Locale::launcher();
-        // The field for one photo speaks in the singular where its texts differ (upload.single), the field of a new
-        // version in its own words (upload.replace).
-        $own = $replace ? 'replace' : ($oneImage ? 'single' : null);
+        // The field for one photo speaks in the singular where its texts differ (upload.single), the field of a list of
+        // images of photos (upload.images), the field of a new version in its own words (upload.replace).
+        $own = $replace ? 'replace' : ($oneImage ? 'single' : ($onlyImages ? 'images' : null));
         $t = static function (string $key, array $replace = []) use ($locale, $own): string {
             $special = 'made-cms-package::media.upload.'.$own.'.'.$key;
 
@@ -158,6 +158,7 @@ final class UploadField
                 'texts' => [
                     ...self::texts('upload.texts', $locale),
                     ...($oneImage ? self::texts('upload.single.texts', $locale) : []),
+                    ...($onlyImages && ! $oneImage ? self::texts('upload.images.texts', $locale) : []),
                     ...($replace ? self::replaceTexts($limits, $locale) : []),
                     'processing_image' => (string) __('made-cms-package::media.upload.texts.processing_image', [
                         'format' => config()->string('made-cms-package.media.image.format'),

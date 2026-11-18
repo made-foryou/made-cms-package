@@ -145,13 +145,14 @@ it('takes several photos at once for a list of images, and only images', functio
 
     expect($upload['one_image'])->toBeFalse()
         ->and($upload['accept'])->toBe('image/jpeg,image/svg+xml')
-        ->and($upload['rules'])->toBe('Foto’s · tot 25 MB per bestand · komen in Alle bestanden')
+        ->and($upload['rules'])->toBe('Je mag er meer dan één kiezen · komen in Alle bestanden · tot 25 MB')
         ->and($upload['config']['one_image'])->toBeFalse()
         ->and($upload['config']['only_images'])->toBeTrue()
         ->and($upload['config']['crop'])->toBeTrue()
         ->and($upload['config']['texts'])->toMatchArray([
             'not_image' => 'Dit veld neemt alleen foto’s. Dit bestand is niet geüpload; sleep een foto hierheen, of kies er een op je computer.',
-            'drag_many' => ':count bestanden · ze komen in :folder',
+            'drag_many' => ':count foto’s · ze komen in :folder',
+            'done_one' => '1 foto toegevoegd aan :folder',
         ])
         ->and(UploadField::image()['config']['only_images'])->toBeTrue()
         ->and(UploadField::make()['config']['only_images'])->toBeFalse()
@@ -166,9 +167,11 @@ it('renders the field of several photos with a choice of several files', functio
     $input = $document->querySelector('input[type="file"][data-slot="upload-input"]');
 
     expect($document->querySelector('[data-upload]')?->hasAttribute('data-one-image'))->toBeFalse()
+        ->and($document->querySelector('[data-upload]')?->getAttribute('aria-label'))->toBe('Foto’s uploaden')
+        ->and($document->querySelector('[data-slot="upload-title"]')?->textContent)->toBe('Sleep je foto’s hierheen')
         ->and($input?->hasAttribute('multiple'))->toBeTrue()
         ->and($input?->getAttribute('accept'))->toBe($upload['accept'])
-        ->and($document->querySelector('[data-slot="upload-rules"]')?->textContent)->toBe('Foto’s · tot 25 MB per bestand · komen in de map Teams');
+        ->and($document->querySelector('[data-slot="upload-rules"]')?->textContent)->toBe('Je mag er meer dan één kiezen · komen in de map Teams · tot 25 MB');
 });
 
 it('renders the field for one photo without a choice of several files', function (): void {

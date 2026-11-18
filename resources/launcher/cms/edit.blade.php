@@ -195,7 +195,7 @@
                 <span class="paneel-upload-ring" aria-hidden="true"></span>
                 <span class="paneel-upload-teken goed" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M5 12l5 5L20 7"/></svg></span>
                 <span class="paneel-upload-teken fout" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
-                <span class="paneel-upload-tekst"><span role="status" data-slot="upload-status-text"></span><span aria-hidden="true" data-slot="upload-status-percent"></span> <button type="button" class="tekstlink" data-slot="upload-status-open" hidden>{{ $t('cms.edit.upload_status_open') }}</button></span>
+                <span class="paneel-upload-tekst"><span role="status" data-slot="upload-status-text"></span><span aria-hidden="true" data-slot="upload-status-percent"></span> <button type="button" class="tekstlink" data-slot="upload-status-open" hidden>{{ $t('cms.edit.upload_status_open') }}</button><button type="button" class="tekstlink" data-slot="upload-status-undo" hidden>{{ $t('cms.edit.upload_status_undo') }}</button></span>
                 <button type="button" class="paneel-upload-sluit" aria-label="{{ $t('cms.edit.upload_status_close') }}" data-slot="upload-status-close" hidden><span aria-hidden="true">×</span></button>
             </div>
             <p class="sr-only" aria-live="polite" data-slot="announce"></p>
@@ -403,7 +403,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><circle cx="9" cy="6" r="1.8"/><circle cx="15" cy="6" r="1.8"/><circle cx="9" cy="12" r="1.8"/><circle cx="15" cy="12" r="1.8"/><circle cx="9" cy="18" r="1.8"/><circle cx="15" cy="18" r="1.8"/></svg>
         </button>
         <span class="lijstrij-tekst">
-            <span class="lijstrij-titel" data-slot="title"></span>
+            <span class="lijstrij-titel"><span data-slot="title"></span><span class="lijstrij-nieuw" data-slot="fresh" hidden>{{ $t('cms.edit.fresh') }}</span></span>
             <span class="lijstrij-sub" data-slot="sub"></span>
             <span class="lijstrij-fout" data-slot="error" hidden>{{ $t('cms.edit.panel_texts.item_error') }}</span>
         </span>

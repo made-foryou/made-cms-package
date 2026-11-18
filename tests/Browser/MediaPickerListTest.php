@@ -123,6 +123,14 @@ function takeInGalleryPicker(array $files): string
 }
 
 /**
+ * A script for $page->script(): the text of a slot, '' when it is hidden.
+ */
+function pickerSays(string $slot): string
+{
+    return "() => { const element = document.querySelector('[data-slot=\"{$slot}\"]'); return element?.checkVisibility() ? element.textContent.trim() : ''; }";
+}
+
+/**
  * The photo of every item of the gallery as it is stored now, in order.
  *
  * @return list<int|null>
@@ -139,28 +147,62 @@ it('fills a gallery with three photos at once: the first in the open item, the r
     ]);
     $shell = openGalleryPicker($page, 0, 2);
 
+    // Before: one photo at a time, with the button and how to choose more.
+    expect($shell->script(pickerSays('media-picker-status')))->toBe('')
+        ->and($shell->script(pickerSays('media-picker-hint')))->toBe('Cmd- of Ctrl-klik voegt een foto toe, Shift-klik kiest een reeks vanaf je keuze. Net als in de bibliotheek.')
+        ->and($shell->script(pickerSays('media-picker-full')))->toBe('');
+
+    $shell->assertAttribute('[data-slot="media-picker-many"]', 'aria-pressed', 'false');
+
     // Cmd-click starts selecting; the order of clicking is the order of the items.
     $shell->script(clickGalleryTileWith($this->toernooi, 'metaKey'));
     $shell->click(galleryTile($this->teamfoto))
         ->click(galleryTile($this->clubavond));
 
-    expect($shell->script(galleryNumbers()))->toBe([$this->toernooi->id, $this->teamfoto->id, $this->clubavond->id]);
+    expect($shell->script(galleryNumbers()))->toBe([$this->toernooi->id, $this->teamfoto->id, $this->clubavond->id])
+        ->and($shell->script(pickerSays('media-picker-status')))->toBe('3 gekozen · er passen er nog 4 bij')
+        ->and($shell->script(pickerSays('media-picker-hint')))->toBe('Klik, Enter of spatie zet een foto aan of uit. Shift-klik kiest een reeks. Met Escape sluit je zonder wijzigingen.')
+        ->and($shell->script(pickerSays('media-picker-chosen')))->toBe('3 gekozen')
+        ->and($shell->script(pickerSays('media-picker-where')))->toBe('Nummer 1 komt in Foto 1, de rest in nieuwe items erna.')
+        ->and($shell->script("() => [...document.querySelectorAll('[data-slot=\"media-picker-chips\"] li')].map((chip) => chip.title + ':' + chip.querySelector('[data-slot=\"media-picker-chip-number\"]').textContent)"))->toBe(['toernooi:1', 'teamfoto:2', 'clubavond:3'])
+        // A folder says how many of its photos are chosen.
+        ->and($shell->script("() => [...document.querySelectorAll('[data-media-picker] .kmap')].map((folder) => folder.querySelector('.kmap-naam').textContent.trim() + ':' + (folder.querySelector('.kmap-gekozen')?.checkVisibility() ? folder.querySelector('.kmap-gekozen').textContent : ''))"))->toBe(['Alle bestanden:', 'Nieuws:1', 'Teams:2']);
+
+    $shell->assertAttribute('[data-slot="media-picker-many"]', 'aria-pressed', 'true')
+        ->assertAttribute(galleryTile($this->toernooi), 'aria-label', 'toernooi, nummer 1')
+        ->assertSeeIn('[data-slot="media-picker-use"]', 'Deze 3 gebruiken');
+
+    // The cross of a chip takes its photo out; the numbers follow.
+    $shell->click('[data-slot="media-picker-chips"] li:nth-child(2) [data-slot="media-picker-chip-remove"]');
+
+    expect($shell->script(galleryNumbers()))->toBe([$this->toernooi->id, $this->clubavond->id])
+        ->and($shell->script('() => document.activeElement?.closest("li")?.title'))->toBe('clubavond');
+
+    $shell->click(galleryTile($this->teamfoto));
+
+    expect($shell->script(galleryNumbers()))->toBe([$this->toernooi->id, $this->clubavond->id, $this->teamfoto->id]);
 
     $shell->assertAttribute(galleryTile($this->training), 'aria-pressed', 'false')
         ->assertAttribute('[data-slot="media-picker-use"]', 'aria-disabled', 'false')
         ->click('[data-slot="media-picker-use"]');
 
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
-        ->and(galleryPhotos($page))->toBe([$this->toernooi->id, $this->teamfoto->id, $this->clubavond->id, null])
+        ->and(galleryPhotos($page))->toBe([$this->toernooi->id, $this->clubavond->id, $this->teamfoto->id, null])
         ->and(array_column(draftOf($page, 'galerij')['values']['fotos'], 'bijschrift'))->toBe(['Eerste', null, null, 'Laatste'])
         ->and(draftOf($page, 'galerij')['values']['fotos'][0]['id'])->toBe(FOTO_EEN);
 
     // The panel stays in the item, says where it is now, and the focus is back on "Kiezen uit media".
     $shell->assertSeeIn('[data-slot="item-position"]', 'Item 1 van 4');
 
-    expect($shell->script(waitUntil("document.querySelector('[data-slot=\"announce\"]').textContent === 'Foto 2 tot en met Foto 3 zijn toegevoegd, na Foto 1.'")))->toBeTrue()
+    expect($shell->script(pickerSays('upload-status-text')))->toBe('2 foto’s toegevoegd na Foto 1.')
+        ->and($shell->script(pickerSays('upload-status-undo')))->toBe('Ongedaan maken')
         ->and($shell->script('() => document.activeElement?.dataset.slot'))->toBe('image-pick')
         ->and($shell->script(waitUntil("document.querySelector('.bewerkframe').contentDocument?.querySelectorAll('[data-cms-items=\"fotos\"] img').length === 3")))->toBeTrue();
+
+    // In the list the new items say they are new.
+    $shell->click('[data-slot="back"]');
+
+    expect($shell->script("() => [...document.querySelectorAll('[data-path=\"fotos\"] [data-slot=\"rows\"] > li')].map((row) => row.querySelector('[data-slot=\"fresh\"]').checkVisibility())"))->toBe([false, true, true, false]);
 
     $shell->assertNoJavaScriptErrors();
 });
@@ -179,10 +221,15 @@ it('selects a range with Shift and takes a photo out with Ctrl, keeping the orde
 
     expect($shell->script(galleryNumbers()))->toBe([$this->clubavond->id, $this->training->id]);
 
+    // A range upwards counts upwards: from training back to the photo above it.
+    $shell->script(clickGalleryTileWith($this->toernooi, 'shiftKey'));
+
+    expect($shell->script(galleryNumbers()))->toBe([$this->clubavond->id, $this->training->id, $this->toernooi->id]);
+
     $shell->click('[data-slot="media-picker-use"]');
 
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
-        ->and(galleryPhotos($page))->toBe([$this->clubavond->id, $this->training->id]);
+        ->and(galleryPhotos($page))->toBe([$this->clubavond->id, $this->training->id, $this->toernooi->id]);
 
     $shell->assertNoJavaScriptErrors();
 });
@@ -221,9 +268,14 @@ it('takes no more photos than the list holds', function (): void {
     // The range from clubavond to teamfoto holds four photos; the fourth is left out.
     expect($shell->script(galleryNumbers()))->toBe([$this->clubavond->id, $this->toernooi->id, $this->training->id])->and($shell->script("() => document.querySelector('".galleryTile($this->teamfoto)."').getAttribute('aria-pressed')"))->toBe('false');
 
-    $shell->click(galleryTile($this->teamfoto));
+    // A tile beyond the limit is off: a click on it changes nothing.
+    $shell->script("() => document.querySelector('".galleryTile($this->teamfoto)."').click()");
 
-    expect($shell->script(galleryNumbers()))->toHaveCount(3);
+    expect($shell->script(galleryNumbers()))->toHaveCount(3)
+        ->and($shell->script(pickerSays('media-picker-status')))->toBe('3 gekozen · dit is het maximum')
+        ->and($shell->script("() => [...document.querySelectorAll('[data-slot=\"media-picker-notices\"] .melding-tekst')].map((text) => text.textContent)"))->toBe(['Er passen er niet meer bij: Fotogalerij heeft maximaal 8 foto’s.']);
+
+    $shell->assertAttribute(galleryTile($this->teamfoto), 'aria-disabled', 'true');
 
     $shell->click('[data-slot="media-picker-use"]');
 
@@ -242,7 +294,14 @@ it('chooses one photo for a list that is full, and outside a list', function ():
     $shell->script(clickGalleryTileWith($this->training, 'metaKey'));
 
     expect($shell->script(galleryNumbers()))->toBe([])
-        ->and($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:false', 'many:true']);
+        ->and($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:false', 'many:true'])
+        ->and($shell->script(pickerSays('media-picker-full')))->toBe('Fotogalerij is vol: 8 van 8')
+        ->and($shell->script(pickerSays('media-picker-hint')))->toBe('Fotogalerij is vol (8 van 8), dus je kiest één foto voor Foto 1.');
+
+    $shell->assertAttribute('[data-slot="media-picker-many"]', 'aria-disabled', 'true')
+        ->script("() => document.querySelector('[data-slot=\"media-picker-many\"]').click()");
+
+    expect($shell->script(galleryNumbers()))->toBe([]);
 
     $shell->assertAttribute(galleryTile($this->training), 'aria-pressed', 'true')
         ->click('[data-slot="media-picker-use"]');
@@ -266,8 +325,8 @@ it('takes back the whole choice with one step of "Ongedaan maken"', function ():
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
         ->and(galleryPhotos($page))->toBe([$this->teamfoto->id, $this->clubavond->id, $this->toernooi->id]);
 
-    $shell->click('[data-slot="back"]')
-        ->click('[data-slot="undo"]');
+    // "Ongedaan maken" on the line at the foot of the panel.
+    $shell->click('[data-slot="upload-status-undo"]');
 
     // One step back takes the page back to what visitors see.
     expect($shell->script(waitUntil("document.querySelectorAll('[data-path=\"fotos\"] [data-slot=\"rows\"] > li').length === 1 && document.querySelector('[data-slot=\"bar-state\"]').textContent === 'Geen wijzigingen'")))->toBeTrue()
@@ -295,12 +354,35 @@ it('lets several photos uploaded at once join the selection as the next items', 
 
     expect($logos)->toHaveCount(2)
         ->and($shell->script(waitUntil('('.galleryNumbers().')().length === 2')))->toBeTrue()
-        ->and($shell->script(galleryNumbers()))->toBe([$logos[0], $logos[1]]);
+        ->and($shell->script(galleryNumbers()))->toBe([$logos[0], $logos[1]])
+        ->and($shell->script("() => [...document.querySelectorAll('[data-slot=\"media-picker-notices\"] .melding-tekst')].map((text) => text.textContent)"))->toBe(['Meerdere kiezen staat aan: je sleepte meer dan één foto. Elke foto die binnen is, krijgt het volgende nummer.'])
+        ->and($shell->script(waitUntil("document.querySelector('".galleryTile(Media::query()->findOrFail($logos[0]))." [data-slot=\"media-tile-new\"]')?.checkVisibility() === true")))->toBeTrue();
+
+    $shell->assertSeeIn(galleryTile(Media::query()->findOrFail($logos[0])).' [data-slot="media-tile-meta"]', 'zojuist · ');
 
     $shell->click('[data-slot="media-picker-use"]');
 
     expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
         ->and(galleryPhotos($page))->toBe($logos);
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('says which photos uploaded at once no longer fit in the list, and leaves them in Media', function (): void {
+    // Seven of eight: from the last item two photos fit.
+    $page = galleryPage(array_map(static fn (int $n): array => ['foto' => null, 'bijschrift' => 'Foto '.$n], range(1, 7)));
+    $shell = openGalleryPicker($page, 6, 7);
+
+    $shell->script(takeInGalleryPicker([
+        'Logo een.svg' => mediaFixture('logo.svg'),
+        'Logo twee.svg' => mediaFixture('logo.svg'),
+        'Logo drie.svg' => mediaFixture('logo.svg'),
+    ]));
+
+    expect($shell->script(waitUntil("document.querySelector('[data-media-picker] [data-picker-upload=many] [data-upload]').dataset.moment === 'done'")))->toBeTrue()
+        ->and(Media::query()->where('name', 'like', 'logo-%')->count())->toBe(3)
+        ->and($shell->script(waitUntil("[...document.querySelectorAll('[data-slot=\"media-picker-notices\"] .melding-tekst')].some((text) => text.textContent === '1 foto staat in Media; hij past niet meer in Fotogalerij.')")))->toBeTrue()
+        ->and($shell->script(waitUntil('('.galleryNumbers().')().length === 2')))->toBeTrue();
 
     $shell->assertNoJavaScriptErrors();
 });
@@ -348,7 +430,10 @@ it('sends the field of several photos into the folder the editor opened in an ea
     $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"foto\"] [data-slot=\"image-pick\"]') !== null");
     $shell->click('[data-path="foto"] [data-slot="image-pick"]');
 
-    expect($shell->script(waitUntil("document.querySelector('[data-media-picker]').open")))->toBeTrue();
+    expect($shell->script(waitUntil("document.querySelector('[data-media-picker]').open")))->toBeTrue()
+        // Outside a list there is no button: the hint says where several photos are chosen.
+        ->and($shell->script(pickerSays('media-picker-many')))->toBe('')
+        ->and($shell->script(pickerSays('media-picker-hint')))->toBe('Meerdere foto’s tegelijk kiezen kan alleen bij een lijst, zoals de foto’s in een fotogalerij. Open de kiezer dan vanuit een item van die lijst.');
 
     $shell->click('[data-media-picker] .kmap:has-text("Nieuws")');
 

@@ -46,5 +46,10 @@ return [
         'image' => 'Choose an image from Media for :attribute.',
         'image_missing' => 'The chosen image for :attribute no longer exists.',
         'image_kind' => 'The chosen file for :attribute is not an image.',
+        'file' => 'Choose a file from Media for :attribute.',
+        'file_missing' => 'The chosen file for :attribute no longer exists.',
+        'file_kind_document' => 'The chosen file for :attribute is not a document.',
+        'file_kind_video' => 'The chosen file for :attribute is not a video.',
+        'file_kind_file' => 'The chosen file for :attribute is not a document or a video.',
     ],
 ];

@@ -34,7 +34,7 @@ final class MediaDetails
             'url' => $file->url,
             'thumb' => $file->thumb,
             'name' => $file->name,
-            'extension' => self::extension($file->url),
+            'extension' => $file->extension(),
             'meta' => implode(' · ', [...$meta, self::size($file->size)]),
             'folder' => $file->folder,
             'folder_id' => $file->folderId,
@@ -42,14 +42,6 @@ final class MediaDetails
             'image' => $file->kind === MediaKind::Image ? $file->image() : null,
             'croppable' => $file->croppable,
         ];
-    }
-
-    /**
-     * The extension of the file a visitor opens, in small letters: the type of what the site serves.
-     */
-    private static function extension(string $url): string
-    {
-        return strtolower(pathinfo((string) parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION));
     }
 
     /**

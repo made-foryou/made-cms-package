@@ -27,6 +27,7 @@ use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Support\Locale;
+use Made\CmsPackage\Support\MediaLink;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -384,7 +385,7 @@ final class MediaResponse
     {
         return $file->key === null
             ? null
-            : route('made-cms-package.media.link', ['ulid' => $file->key, 'name' => $file->name]);
+            : MediaLink::url($file->key, $file->name);
     }
 
     /**

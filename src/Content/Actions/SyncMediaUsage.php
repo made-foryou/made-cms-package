@@ -12,7 +12,7 @@ use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
-use Made\CmsPackage\Content\Strips\Fields\Image;
+use Made\CmsPackage\Content\Strips\MediaChoice;
 use Made\CmsPackage\Content\Strips\StripTypes;
 
 /**
@@ -102,7 +102,7 @@ final class SyncMediaUsage
 
     /**
      * The files of a strip whose type left the catalogue: at every place its rows in either version know, the file its
-     * values hold there, read as an image field stores the id of a file. Such a strip cannot change while its type is
+     * values hold there, read as a field that holds a file stores its id. Such a strip cannot change while its type is
      * gone, but publishing hands the values of its draft to the published version.
      *
      * @param  Collection<int, MediaUsage>  $stored
@@ -117,7 +117,7 @@ final class SyncMediaUsage
                 continue;
             }
 
-            $files[$usage->field] = Image::make('file')->normalize(self::valueAt($strip->values, $usage->field));
+            $files[$usage->field] = MediaChoice::id(self::valueAt($strip->values, $usage->field));
         }
 
         return array_filter($files, static fn (?int $media): bool => $media !== null);

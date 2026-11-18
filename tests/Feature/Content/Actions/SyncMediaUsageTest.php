@@ -6,6 +6,7 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Actions\AddStrip;
+use Made\CmsPackage\Content\Actions\DeleteMedia;
 use Made\CmsPackage\Content\Actions\DiscardDraft;
 use Made\CmsPackage\Content\Actions\MoveStrip;
 use Made\CmsPackage\Content\Actions\PublishPage;
@@ -18,6 +19,8 @@ use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Downloads;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -91,6 +94,20 @@ describe('through the Actions that change the draft', function (): void {
             "draft {$strip->id} kaarten.{$one}.icoon {$a->id}",
             "draft {$strip->id} kaarten.{$three}.icoon {$b->id}",
         ])->sort()->values()->all());
+    });
+
+    it('records the place of a document in a file field, so the library keeps it', function (): void {
+        app()->instance(StripTypes::class, new StripTypes([new Downloads]));
+        $schema = Media::factory()->document()->create();
+        $page = Page::factory()->create();
+        $strip = AddStrip::run($page, 'downloads', 0);
+
+        UpdateStrip::run($page, $strip->id, ['bestanden' => [['titel' => 'Schema', 'bestand' => $schema->id]]], chooseLevels: true);
+        $item = PageStrips::fromArray(Page::query()->findOrFail($page->id)->draft_strips ?? [])->find($strip->id)->values['bestanden'][0]['id'];
+
+        expect(usageRows($page))->toBe(["draft {$strip->id} bestanden.{$item}.bestand {$schema->id}"])
+            ->and(DeleteMedia::run([$schema->id])->deleted)->toBe([])
+            ->and(Media::query()->find($schema->id))->not->toBeNull();
     });
 
     it('moves the places to the published version after publishing', function (): void {

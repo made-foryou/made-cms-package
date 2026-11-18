@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Exceptions\DuplicateStripType;
 use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\File;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
@@ -94,6 +96,10 @@ it('refuses a definition that breaks the rules', function (string $key, Closure 
     'a default level outside its levels in an item' => ['hero', fn (): array => [Items::make('kaarten', [Heading::make('titel')->tag('h3')->tags(['h2'])])], 'field [titel] has the default level [h3] outside its levels'],
     'an image with a default' => ['hero', fn (): array => [Image::make('foto')->default(12)], 'field [foto] is an image and cannot have a default'],
     'an image with a default in an item' => ['hero', fn (): array => [Items::make('kaarten', [Image::make('icoon')->default(12)])], 'field [icoon] is an image and cannot have a default'],
+    'a file with a default' => ['downloads', fn (): array => [File::make('bestand')->default(12)], 'field [bestand] is a file and cannot have a default'],
+    'a file with a default in an item' => ['downloads', fn (): array => [Items::make('bestanden', [File::make('bestand')->default(12)])], 'field [bestand] is a file and cannot have a default'],
+    'a file without kinds' => ['downloads', fn (): array => [File::make('bestand')->kinds()], 'field [bestand] is a file that takes no kind or an image'],
+    'a file that takes images' => ['downloads', fn (): array => [File::make('bestand')->kinds(MediaKind::Document, MediaKind::Image)], 'field [bestand] is a file that takes no kind or an image'],
     'a list with a default that holds a file' => ['hero', fn (): array => [Items::make('fotos', [Image::make('foto')])->default([['foto' => 7]])], 'field [fotos] has a default that holds a file of the media library'],
 ]);
 

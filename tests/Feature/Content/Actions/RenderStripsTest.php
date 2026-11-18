@@ -5,11 +5,15 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Content\Actions\RenderStrips;
+use Made\CmsPackage\Content\Actions\ReplaceMedia;
+use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\EditMode;
+use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
+use Made\CmsPackage\Tests\Fixtures\Strips\Downloads;
 use Made\CmsPackage\Tests\Fixtures\Strips\Teaser;
 
 beforeEach(function (): void {
@@ -214,6 +218,57 @@ it('renders an image whose file is gone or is no image as null, so the site show
         return $media->id;
     }],
     'a document' => [fn (): int => Media::factory()->document()->create()->id],
+]);
+
+it('renders a document as its lasting link, name, extension, kind, type, size and description', function (): void {
+    Storage::fake('public');
+    config(['app.url' => 'https://ttvmerwestad.nl']);
+    app()->instance(StripTypes::class, new StripTypes([new Downloads]));
+    $schema = Media::factory()->document()->withAlt('Wedstrijdschema najaar (pdf)')->create(['name' => 'wedstrijdschema', 'size' => 1_240_000]);
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('downloads', ['bestanden' => [['id' => 'b1', 'titel' => 'Schema', 'bestand' => $schema->id]]], id: 'a'),
+    ])->create();
+
+    expect(RenderStrips::run($page)->strips[0]->bestanden[0]['bestand'])->toBe([
+        'url' => "https://ttvmerwestad.nl/made-cms/file/{$schema->ulid}/wedstrijdschema",
+        'name' => 'wedstrijdschema',
+        'extension' => 'pdf',
+        'kind' => 'document',
+        'mime' => 'application/pdf',
+        'size' => 1_240_000,
+        'description' => 'Wedstrijdschema najaar (pdf)',
+    ]);
+});
+
+it('renders a link to a document that still leads to it after a new version with a new name', function (): void {
+    Storage::fake('public');
+    app()->instance(StripTypes::class, new StripTypes([new Downloads]));
+    $schema = UploadMedia::run(new UploadedMedia(mediaFixture('wedstrijdschema.pdf'), 'wedstrijdschema.pdf', null));
+    $page = Page::factory()->published()->withStrips([
+        storedStrip('downloads', ['bestanden' => [['id' => 'b1', 'bestand' => $schema->id]]], id: 'a'),
+    ])->create();
+    $shared = (string) (RenderStrips::run($page)->strips[0]->bestanden[0]['bestand']['url'] ?? '');
+
+    $schema = ReplaceMedia::run($schema, new UploadedMedia(mediaFixture('wedstrijdschema.pdf', 'schema-voorjaar.pdf'), 'schema-voorjaar.pdf', null));
+
+    expect(RenderStrips::run($page)->strips[0]->bestanden[0]['bestand'])->toMatchArray([
+        'url' => "http://localhost/made-cms/file/{$schema->ulid}/schema-voorjaar",
+        'name' => 'schema-voorjaar',
+    ]);
+
+    $this->get($shared)->assertRedirect(Storage::disk('public')->url($schema->path));
+});
+
+it('renders a file that is gone or of a kind its field does not take as null', function (Closure $media): void {
+    Storage::fake('public');
+    app()->instance(StripTypes::class, new StripTypes([new Downloads]));
+    $page = Page::factory()->published()->withStrips([storedStrip('downloads', ['video' => $media()], id: 'a')])->create();
+
+    expect(RenderStrips::run($page)->strips[0]->video)->toBeNull();
+})->with([
+    'a file that is gone' => [fn (): int => 999],
+    'a document for a video' => [fn (): int => Media::factory()->document()->create()->id],
+    'an image' => [fn (): int => Media::factory()->create()->id],
 ]);
 
 it('renders an svg without a size', function (): void {

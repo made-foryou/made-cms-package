@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Strips\Fields;
 
-use Closure;
 use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Data\MediaFiles;
 use Made\CmsPackage\Content\Enums\MediaKind;
-use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Strips\MediaChoice;
 
 /**
  * An image of the media library, stored as the id of its file, so a file changes everywhere it is used.
@@ -33,7 +32,7 @@ final class Image extends Field
 
     public function rules(string $path): array
     {
-        return [$path => [$this->presence(), self::file()]];
+        return [$path => [$this->presence(), MediaChoice::rule([MediaKind::Image], 'image', 'image_missing', 'image_kind')]];
     }
 
     /**
@@ -41,12 +40,12 @@ final class Image extends Field
      */
     public function normalize(mixed $value): ?int
     {
-        return self::id($value);
+        return MediaChoice::id($value);
     }
 
     public function places(mixed $value, string $path): array
     {
-        $id = self::id($value);
+        $id = MediaChoice::id($value);
 
         return $id === null ? [] : [$path => $id];
     }
@@ -56,49 +55,8 @@ final class Image extends Field
      */
     public function render(mixed $value, ?MediaFiles $media = null): ?array
     {
-        $id = self::id($value);
+        $id = MediaChoice::id($value);
 
         return $id === null ? null : $media?->image($id)?->image();
-    }
-
-    /**
-     * The rule that wants the id of an image in the library: a number of a file that is still there and is an image.
-     */
-    private static function file(): Closure
-    {
-        return static function (string $attribute, mixed $value, Closure $fail): void {
-            $id = self::id($value);
-
-            if ($id === null) {
-                $fail(self::message('image'));
-
-                return;
-            }
-
-            $kind = Media::query()->whereKey($id)->value('kind');
-
-            if ($kind === null) {
-                $fail(self::message('image_missing'));
-            } elseif ($kind !== MediaKind::Image) {
-                $fail(self::message('image_kind'));
-            }
-        };
-    }
-
-    /**
-     * The id of a file: a whole number above zero, also as text.
-     */
-    private static function id(mixed $value): ?int
-    {
-        if (is_string($value) && ctype_digit($value)) {
-            $value = (int) $value;
-        }
-
-        return is_int($value) && $value > 0 ? $value : null;
-    }
-
-    private static function message(string $key): string
-    {
-        return (string) __('made-cms-package::strips.validation.'.$key);
     }
 }

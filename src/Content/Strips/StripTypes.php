@@ -6,11 +6,13 @@ namespace Made\CmsPackage\Content\Strips;
 
 use FilesystemIterator;
 use Illuminate\Container\Container;
+use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Exceptions\DuplicateStripType;
 use Made\CmsPackage\Content\Exceptions\InvalidStripType;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Strips\Fields\Choice;
 use Made\CmsPackage\Content\Strips\Fields\Field;
+use Made\CmsPackage\Content\Strips\Fields\File;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
@@ -190,6 +192,10 @@ final class StripTypes
                 throw InvalidStripType::imageDefault($type, $key);
             }
 
+            if ($field instanceof File) {
+                self::checkFile($type, $field);
+            }
+
             if ($field instanceof Items) {
                 self::checkItems($type, $field, $inItems);
 
@@ -197,6 +203,22 @@ final class StripTypes
                     throw InvalidStripType::defaultWithMedia($type, $key);
                 }
             }
+        }
+    }
+
+    /**
+     * @throws InvalidStripType
+     */
+    private static function checkFile(string $type, File $file): void
+    {
+        $key = $file->getKey();
+
+        if ($file->getDefault() !== null) {
+            throw InvalidStripType::fileDefault($type, $key);
+        }
+
+        if ($file->getKinds() === [] || in_array(MediaKind::Image, $file->getKinds(), true)) {
+            throw InvalidStripType::fileKinds($type, $key);
         }
     }
 

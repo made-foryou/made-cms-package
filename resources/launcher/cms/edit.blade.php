@@ -15,30 +15,56 @@
 <div class="bewerkschil" data-edit-shell>
     <header class="bewerkbalk" role="region" aria-label="{{ $t('cms.edit.bar') }}">
         <div class="bewerkbalk-links">
-            <a class="bewerkbalk-merk" href="{{ $startUrl }}" aria-label="{{ $t('cms.edit.start') }}">
+            <a class="bewerkbalk-merk" href="{{ $startUrl }}" title="{{ $t('cms.edit.start') }}" aria-label="{{ $t('cms.edit.start') }}">
                 <svg viewBox="0 0 120 120" width="28" height="28" aria-hidden="true" focusable="false"><rect width="120" height="120" rx="34" fill="#f3f1e8"/><path d="M45 92 L75 28" fill="none" stroke="#be8a1c" stroke-width="21" stroke-linecap="round"/></svg>
             </a>
+            {{-- A plain link, so it works without script too; bar.js waits for the side panel to save first. --}}
+            <a class="bewerkbalk-terug" data-slot="bar-pages" href="{{ $pagesUrl }}" aria-label="{{ $t('cms.edit.pages_label') }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6"/></svg>
+                <span class="wachtstreep" data-slot="bar-pages-wait" aria-hidden="true" hidden></span>
+                <span data-slot="bar-pages-text">{{ $t('cms.edit.pages') }}</span>
+            </a>
+            <span class="bewerkbalk-streep" aria-hidden="true"></span>
             <span class="bewerkbalk-site">{{ $site }}</span>
             <span class="bewerkbalk-slash" aria-hidden="true">/</span>
             <span class="bewerkbalk-pagina">{{ $page['title'] }}</span>
             <span class="status{{ $page['live'] ? ' live' : '' }}" data-slot="bar-page">{{ $t('pages.status.'.$page['status']) }}</span>
         </div>
-        {{-- bar.js keeps the state of the draft up to date and publishes or discards it. --}}
+        {{-- bar.js keeps the state of the draft up to date, publishes or discards it and leaves the shell. --}}
         <div class="bewerkbalk-rechts">
             <span class="bewerkbalk-stand" role="status" data-slot="bar-state">{{ $draft['label'] }}</span>
+            <button type="button" class="bewerkbalk-link" data-slot="bar-stay" aria-label="{{ $t('cms.edit.bar_texts.stay_label') }}" hidden>{{ $t('cms.edit.bar_texts.stay') }}</button>
             <details class="bevestig bewerkbalk-weggooien" data-slot="bar-discard"{{ $draft['discardable'] ? '' : ' hidden' }}>
-                <summary class="bewerkbalk-link">{{ $t('cms.edit.discard') }}</summary>
+                <summary class="bewerkbalk-link" aria-label="{{ $t('cms.edit.discard') }}"><span class="lang">{{ $t('cms.edit.discard') }}</span><span class="kort" aria-hidden="true">{{ $t('cms.edit.discard_short') }}</span></summary>
                 <div class="bewerkbalk-vlak">
                     <p data-slot="bar-discard-text">{{ $draft['discard_text'] }}</p>
                     <button type="button" class="knop gevaar" data-slot="bar-discard-confirm">{{ $t('cms.edit.discard_confirm') }}</button>
                 </div>
             </details>
             @if ($previewUrl !== null)
-                <a class="bewerkbalk-link" href="{{ $previewUrl }}" target="_blank" rel="noopener">{{ $t('cms.edit.preview') }}</a>
+                <a class="bewerkbalk-link" href="{{ $previewUrl }}" target="_blank" rel="noopener">{{ $t('cms.edit.preview') }}<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg><span class="sr-only"> {{ $t('cms.edit.new_tab') }}</span></a>
             @endif
+            <span class="bewerkbalk-anker">
+                <a class="bewerkbalk-stop" data-slot="bar-stop" href="{{ $stopUrl }}">
+                    <span class="wachtstreep" data-slot="bar-stop-wait" aria-hidden="true" hidden></span>
+                    <span data-slot="bar-stop-text">{{ $t('cms.edit.stop') }}</span>
+                </a>
+                <div class="bewerkbalk-vlak bewerkbalk-keuze" role="dialog" aria-labelledby="bar-stop-title" data-slot="bar-stop-choice" hidden>
+                    <strong id="bar-stop-title" data-slot="bar-stop-title">{{ $draft['stop_title'] }}</strong>
+                    <p data-slot="bar-stop-text-choice">{{ $draft['stop_text'] }}</p>
+                    <div class="bewerkbalk-keuze-knoppen">
+                        <button type="button" class="knop stil" data-slot="bar-stop-leave">{{ $t('cms.edit.stop_leave') }}</button>
+                        <button type="button" class="knop" data-slot="bar-stop-publish">{{ $t('cms.edit.publish') }}</button>
+                    </div>
+                    <p class="bewerkbalk-keuze-hint">{{ $t('cms.edit.stop_escape') }}</p>
+                </div>
+            </span>
             <button type="button" class="bewerkbalk-knop" data-slot="bar-publish"{{ $draft['publishable'] ? '' : ' disabled' }}>{{ $t('cms.edit.publish') }}</button>
             <span class="avatar" aria-hidden="true">{{ $editor['initial'] ?? '' }}</span>
         </div>
+        {{-- The full text of a refusal of the bar ("Niet opgeslagen: Hero — …"), on a line of its own under the bar. --}}
+        <p class="bewerkbalk-melding" role="status" data-slot="bar-notice" hidden></p>
+        <span class="bewerkbalk-voortgang" data-slot="bar-progress" aria-hidden="true" hidden></span>
     </header>
     <div class="bewerkromp">
         @if ($frameUrl !== null)

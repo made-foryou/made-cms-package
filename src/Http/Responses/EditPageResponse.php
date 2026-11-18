@@ -16,8 +16,11 @@ use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\CropStep;
+use Made\CmsPackage\Http\Cms\EditExits;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
+use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
+use Made\CmsPackage\Http\Cms\SiteAddress;
 use Made\CmsPackage\Http\Cms\UploadField;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Http\Middleware\ResolvePage;
@@ -38,9 +41,11 @@ final class EditPageResponse
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
-        $path = $page->route?->path;
         $base = request()->getBaseUrl();
-        $draft = DraftResponse::data($changes);
+        $draft = DraftResponse::data($changes, $page);
+        $pagesUrl = PageLinks::show($page);
+        $exits = EditExits::of($page)->toArray();
+        $site = SiteAddress::of($page);
         // The media element uploads a photo into the folder the editor chose last in the picker.
         $upload = UploadField::image($folder);
 
@@ -52,9 +57,11 @@ final class EditPageResponse
             ],
             'draft' => $draft,
             'counts' => PageStripsResponse::counts($strips),
+            'pagesUrl' => $pagesUrl,
+            'stopUrl' => $exits['stop'],
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
-            'frameUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
-            'previewUrl' => $path === null ? null : $base.$path.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
+            'frameUrl' => $site === null ? null : $site.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,
+            'previewUrl' => $site === null ? null : $site.'?'.ResolvePage::QUERY.'='.ResolvePage::PREVIEW,
             'editScript' => LauncherAssetController::url('edit.js'),
             'panelScript' => LauncherAssetController::url('panel.js'),
             'barScript' => LauncherAssetController::url('bar.js'),
@@ -76,7 +83,11 @@ final class EditPageResponse
                     'strip' => $base.route('made-cms-package.pages.strips.show', ['page' => $page, 'strip' => ':strip'], false),
                     'draft' => $base.route('made-cms-package.pages.draft.show', ['page' => $page], false),
                     'publish' => $base.route('made-cms-package.pages.publish', ['page' => $page], false),
+                    'pages' => $pagesUrl,
                 ],
+                // Where "Bewerken stoppen" leads: the page as visitors see it (never the edit mode), or the pages screen
+                // when visitors do not see it; after publishing, the page is on the site.
+                'exits' => $exits,
                 'draft' => $draft,
                 // Every strip of the working copy in its stored order: its place is the position the endpoints take.
                 'strips' => PageStripsResponse::strips($strips),

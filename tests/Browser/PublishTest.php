@@ -109,7 +109,7 @@ it('names the strip that stops the publication and shows its error at the field'
 
     $shell->click('[data-slot="bar-publish"]');
 
-    expect($shell->script(waitUntil(barSays('bar-state', 'Niet gepubliceerd: Hero — Vul Kop in.'))))->toBeTrue()
+    expect($shell->script(waitUntil(barSays('bar-notice', 'Niet gepubliceerd: Hero — Vul Kop in.'))))->toBeTrue()
         ->and($shell->script(waitUntil("document.querySelector('[data-path=\"kop\"] > [data-slot=\"error\"]')?.textContent === 'Vul Kop in.'")))->toBeTrue();
 
     $shell->assertSeeIn('[data-slot="head-name"]', 'Hero');

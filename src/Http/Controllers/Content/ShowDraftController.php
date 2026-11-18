@@ -16,6 +16,6 @@ final class ShowDraftController
 {
     public function __invoke(Page $page): JsonResponse
     {
-        return DraftResponse::state(CompareDraft::run($page));
+        return DraftResponse::state(CompareDraft::run($page), $page);
     }
 }

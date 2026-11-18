@@ -7,6 +7,8 @@ namespace Made\CmsPackage\Http\Responses;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Content\Data\DraftChanges;
+use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Cms\EditExits;
 use Made\CmsPackage\Support\Locale;
 
 /**
@@ -14,9 +16,9 @@ use Made\CmsPackage\Support\Locale;
  */
 final class DraftResponse
 {
-    public static function state(DraftChanges $changes): JsonResponse
+    public static function state(DraftChanges $changes, Page $page): JsonResponse
     {
-        $response = new JsonResponse(['draft' => self::data($changes)]);
+        $response = new JsonResponse(['draft' => self::data($changes, $page)]);
         $response->headers->set('Cache-Control', 'no-store, private');
 
         return $response;
@@ -34,16 +36,20 @@ final class DraftResponse
     }
 
     /**
-     * The state with its texts, so the script of the bar never builds a plural itself.
+     * The state with its texts, so the script of the bar never builds a plural itself, and the addresses it leaves for:
+     * they change when the page is published, so every answer holds them.
      *
-     * @return array{live: bool, changes: int, publishable: bool, discardable: bool, label: string, discard_text: string}
+     * @return array{live: bool, changes: int, publishable: bool, discardable: bool, label: string, discard_text: string, short_label: string, stop_title: string, stop_text: string, exits: array{stop: string, publish: string}}
      */
-    public static function data(DraftChanges $changes): array
+    public static function data(DraftChanges $changes, Page $page): array
     {
         $locale = Locale::launcher();
         $count = $changes->count();
         $t = static fn (string $key): string => (string) __('made-cms-package::cms.edit.'.$key, [], $locale);
         $choice = static fn (string $key): string => trans_choice('made-cms-package::cms.edit.'.$key, $count, [], $locale);
+        $exits = EditExits::of($page);
+        // What stopping with a draft tells: visitors see it only after publishing, and where the editor lands.
+        $stopText = $changes->live ? $choice('stop_text') : $t('stop_text_new');
 
         return [
             'live' => $changes->live,
@@ -52,6 +58,11 @@ final class DraftResponse
             'discardable' => $changes->discardable,
             'label' => $count === 0 && ! $changes->live ? $t('unpublished') : $choice('changes'),
             'discard_text' => $changes->live ? $choice('discard_text').' '.$t('discard_live') : $choice('discard_text'),
+            // On a narrow bar the label drops the word "Concept".
+            'short_label' => $count === 0 && ! $changes->live ? $t('unpublished_short') : $choice('changes_short'),
+            'stop_title' => $changes->live ? $t('stop_title') : $t('stop_title_new'),
+            'stop_text' => $exits->stopsAtPages ? $stopText.' '.$t('stop_to_pages') : $stopText,
+            'exits' => $exits->toArray(),
         ];
     }
 }

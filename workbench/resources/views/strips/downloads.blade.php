@@ -11,7 +11,7 @@
             <li>
                 @if ($item['bestand'])
                     <a href="{{ $item['bestand']['url'] }}" data-cms-field="bestand">{{ $item['titel'] ?: ($item['bestand']['description'] ?? $item['bestand']['name']) }}</a>
-                    <small>{{ strtoupper($item['bestand']['extension']) }} · {{ \Illuminate\Support\Number::fileSize($item['bestand']['size'], precision: 1) }}</small>
+                    <small>{{ strtoupper($item['bestand']['extension']) }} · {{ \Illuminate\Support\Number::fileSize($item['bestand']['size'], maxPrecision: 1) }}</small>
                 @endif
             </li>
         @endforeach

@@ -38,6 +38,7 @@ differs.
 | `faq` | Question and answer list | `kop`, `vragen` (Items: `vraag` Text, `antwoord` RichText) |
 | `citaten` | Testimonials, quotes | `kop`, `citaten` (Items: `tekst` LongText, `naam` Text, `functie` Text, `foto` Image) |
 | `logos` | Partner or client logos | `kop`, `logos` (Items: `logo` Image, `link` Link) |
+| `downloads` | Documents to download: forms, schedules, reports | `kop`, `bestanden` (Items: `bestand` File `kinds(MediaKind::Document)`, `titel` Text for the link text) |
 | `contact` | Contact details next to a form | `kop`, `intro`, `gegevens` (RichText); the form itself stays in the site code |
 | `nieuws` | Latest posts, events, products from the database | `kop`, `aantal` (Choice); the items come from `with()`, not from fields |
 

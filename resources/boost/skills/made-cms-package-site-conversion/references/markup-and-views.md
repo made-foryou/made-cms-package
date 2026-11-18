@@ -23,7 +23,8 @@ render; the view only has to print it in the right elements.
 - React or Vue: pass `RenderStrips::run($page)->toArray()` as a prop and map `strip.type` to a component of your own.
   Keep one registry object from `key()` to component, and render nothing for an unknown type.
 - Rendered values are `{id, type, ...fields}`: a `Link` is a url or `null`, a `Button` is `{text, url}` or `null`, a
-  `Heading` is `{text, tag}` or `null`, an `Image` is `{url, alt, width, height, focal}` or `null`, `Items` is always a
+  `Heading` is `{text, tag}` or `null`, an `Image` is `{url, alt, width, height, focal}` or `null`, a `File` is
+  `{url, name, extension, kind, mime, size, description}` or `null` (the url is the lasting link), `Items` is always a
   list in which every item has an `id` and every field, and `RichText` is cleaned HTML.
 
 ## The markup contract
@@ -49,6 +50,7 @@ element that holds exactly that value.
 | `Link` | An element with the address in `href`. |
 | `Button` | Holds only the text and has the address in `href`. Show it only when the rendered value is not `null`. |
 | `Heading` | The element of its level, holding only the text. In Blade use `<x-made-cms::heading :heading="$strip->kop" field="kop" class="…" />`; in React or Vue use the tag from the value (`const Kop = strip.kop?.tag`, `<component :is="strip.kop.tag">`). |
+| `File` | The `<a>` with the url in its `href` and the link text (a `Text` of the item, else `description`, else `name`). Not patched: the frame reloads, which is fine. |
 | `Image` | The `<img>` that shows it, without `srcset` and not inside `<picture>`; size an icon with css. A background-image is not patched: the frame reloads, which is fine. Use `focal` as `object-position` with `object-fit: cover`. |
 | `Choice`, `Items` | Not patched; the frame reloads. Still put `data-cms-items` on the list. |
 

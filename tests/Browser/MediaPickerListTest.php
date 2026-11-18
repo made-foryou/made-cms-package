@@ -244,6 +244,16 @@ it('keeps the selection in another folder, with the photo the item has as the fi
     expect($shell->script(waitUntil("! document.querySelector('[data-media]').hasAttribute('data-loading') && ! document.querySelector('".galleryTile($this->clubavond)."')")))->toBeTrue();
 
     $shell->script(clickGalleryTileWith($this->training, 'metaKey'));
+
+    // Without training, nothing chosen is in Teams: the line says so.
+    $shell->script(clickGalleryTileWith($this->training, 'ctrlKey'));
+
+    expect($shell->script(pickerSays('media-picker-status')))->toBe('1 gekozen · geen in deze map');
+
+    $shell->script(clickGalleryTileWith($this->training, 'ctrlKey'));
+
+    expect($shell->script(pickerSays('media-picker-status')))->toBe('2 gekozen · er passen er nog 6 bij');
+
     $shell->click('[data-media-picker] .kmap:has-text("Alle bestanden")');
 
     expect($shell->script(waitUntil("document.querySelector('".galleryTile($this->clubavond)."')?.dataset.number === '1'")))->toBeTrue()
@@ -273,7 +283,8 @@ it('takes no more photos than the list holds', function (): void {
 
     expect($shell->script(galleryNumbers()))->toHaveCount(3)
         ->and($shell->script(pickerSays('media-picker-status')))->toBe('3 gekozen · dit is het maximum')
-        ->and($shell->script("() => [...document.querySelectorAll('[data-slot=\"media-picker-notices\"] .melding-tekst')].map((text) => text.textContent)"))->toBe(['Er passen er niet meer bij: Fotogalerij heeft maximaal 8 foto’s.']);
+        // The click on a photo that no longer fits says why again.
+        ->and($shell->script(waitUntil("[...document.querySelectorAll('[data-slot=\"media-picker-notices\"] .melding-tekst')].map((text) => text.textContent).join() === 'Er passen er niet meer bij: Fotogalerij heeft maximaal 8 foto’s.'")))->toBeTrue();
 
     $shell->assertAttribute(galleryTile($this->teamfoto), 'aria-disabled', 'true');
 
@@ -332,6 +343,27 @@ it('takes back the whole choice with one step of "Ongedaan maken"', function ():
     expect($shell->script(waitUntil("document.querySelectorAll('[data-path=\"fotos\"] [data-slot=\"rows\"] > li').length === 1 && document.querySelector('[data-slot=\"bar-state\"]').textContent === 'Geen wijzigingen'")))->toBeTrue()
         ->and($shell->script("() => document.querySelector('[data-slot=\"undo\"]').disabled"))->toBeTrue()
         ->and(galleryPhotos($page))->toBe([$this->teamfoto->id]);
+
+    $shell->assertNoJavaScriptErrors();
+});
+
+it('takes "Ongedaan maken" off the line once the strip changes again, so it never undoes another step', function (): void {
+    $page = galleryPage([['id' => FOTO_EEN, 'foto' => null, 'bijschrift' => null]]);
+    $shell = openGalleryPicker($page, 0, 1);
+
+    $shell->script(clickGalleryTileWith($this->clubavond, 'metaKey'));
+    $shell->click(galleryTile($this->toernooi))
+        ->click('[data-slot="media-picker-use"]');
+
+    expect($shell->script(waitUntil(savedAsDraft())))->toBeTrue()
+        ->and($shell->script(pickerSays('upload-status-undo')))->toBe('Ongedaan maken');
+
+    // The strip goes out of sight: the line no longer offers to take back the photos.
+    $shell->click('[data-slot="back"]')
+        ->click('[data-slot="visible"]');
+
+    expect($shell->script(waitUntil("document.querySelector('[data-slot=\"upload-status-undo\"]').hidden")))->toBeTrue()
+        ->and($shell->script(pickerSays('upload-status-text')))->toBe('');
 
     $shell->assertNoJavaScriptErrors();
 });

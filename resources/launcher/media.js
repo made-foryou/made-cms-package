@@ -891,9 +891,12 @@ function browse(root) {
         const ids = state.files.map((candidate) => candidate.id);
         const from = state.anchor === null ? -1 : ids.indexOf(state.anchor);
         const to = ids.indexOf(file.id);
+        let refused = false;
         const join = (candidate) => {
             if (state.selected.has(candidate.id) || ! full()) {
                 state.selected.set(candidate.id, candidate);
+            } else {
+                refused = true;
             }
         };
 
@@ -911,6 +914,13 @@ function browse(root) {
         state.anchor = file.id;
         repaint();
         tellSelection();
+
+        // A photo the list no longer takes says why again, so a click or Enter on it is never silent.
+        if (refused && stand.notices) {
+            stand.notices.dataset.texts = '';
+            stand.notices.replaceChildren();
+            window.setTimeout(drawStand, 50);
+        }
     }
 
     /**
@@ -1637,8 +1647,11 @@ function browse(root) {
         state.uploading = event.detail?.busy === true || (event.detail?.total ?? 0) > 0;
         show();
 
-        // More than one photo for a picker of a list: they all join, as the next items.
-        if (! library && selectable() && ! state.selecting && (event.detail?.total ?? 0) > 1) {
+        // More than one photo on its way for a picker of a list: they all join, as the next items. A photo that came in
+        // earlier and waits for its alt text is no part of this batch.
+        const coming = (event.detail?.total ?? 0) - (event.detail?.done ?? 0);
+
+        if (! library && selectable() && ! state.selecting && coming > 1) {
             state.started = true;
             selecting(true);
         }

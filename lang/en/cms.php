@@ -83,6 +83,8 @@ return [
             'added' => ':item was added.',
             'picked_one' => '1 :item added after :after.',
             'picked_many' => ':count :items added after :after.',
+            'picked_over_one' => '1 chosen photo no longer fits in :list; it is in Media.',
+            'picked_over_many' => ':count chosen photos no longer fit in :list; they are in Media.',
             'removed' => ':item was removed.',
             'item_error' => 'Needs a fix',
             'page' => 'Page of your site: :title (:path)',

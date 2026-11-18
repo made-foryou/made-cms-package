@@ -83,6 +83,8 @@ return [
             'added' => ':item is toegevoegd.',
             'picked_one' => '1 :item toegevoegd na :after.',
             'picked_many' => ':count :items toegevoegd na :after.',
+            'picked_over_one' => '1 gekozen foto past niet meer in :list; hij staat in Media.',
+            'picked_over_many' => ':count gekozen foto’s passen niet meer in :list; ze staan in Media.',
             'removed' => ':item is verwijderd.',
             'item_error' => 'Klopt nog niet',
             'page' => 'Pagina van je site: :title (:path)',

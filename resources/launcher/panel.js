@@ -1036,9 +1036,12 @@ function image(state, element, field, owner, path, set) {
                     leave(state, now.path);
                     draw();
 
-                    if (added.length > 0) {
+                    // Photos the list no longer took (it grew while the picker was open) are said, not dropped silently.
+                    const left = list === null ? 0 : files.length - 1 - added.length;
+
+                    if (added.length > 0 || left > 0) {
                         itemPlace(state);
-                        tellPicked(state, list, now.owner, added);
+                        tellPicked(state, list, now.owner, added, left);
                     }
                 },
             },
@@ -1765,18 +1768,24 @@ function addItems(state, key, item, fieldKey, files) {
  * Says on the line at the foot of the panel what the picker added (design 13.4n): "2 foto's toegevoegd na Foto 2.",
  * the item in the words of the list (its label, the label of an item), with "Ongedaan maken"; marks the items new.
  */
-function tellPicked(state, key, item, items) {
+function tellPicked(state, key, item, items, left = 0) {
     const field = state.fields.find((candidate) => candidate.key === key);
     const after = format(texts.item, { item: field.item_label, n: state.values[key].indexOf(item) + 1 });
     const lower = (text) => String(text ?? '').toLocaleLowerCase();
+    const parts = [];
+
+    if (items.length > 0) {
+        parts.push(items.length === 1
+            ? format(texts.picked_one, { item: lower(field.item_label), after })
+            : format(texts.picked_many, { count: items.length, items: lower(field.label), after }));
+    }
+
+    if (left > 0) {
+        parts.push(format(left === 1 ? texts.picked_over_one : texts.picked_over_many, { count: left, list: state.label }));
+    }
 
     items.forEach((added) => fresh.add(added));
-    picked = {
-        state,
-        text: items.length === 1
-            ? format(texts.picked_one, { item: lower(field.item_label), after })
-            : format(texts.picked_many, { count: items.length, items: lower(field.label), after }),
-    };
+    picked = { state, text: parts.join(' ') };
     showUploads();
 }
 
@@ -2016,6 +2025,12 @@ function undoable(state) {
 }
 
 async function setVisibility(state, visible, undoing = false) {
+    // Another step of the strip: "Ongedaan maken" on the line would take back this one, not what the picker added.
+    if (! undoing && picked?.state === state) {
+        picked = null;
+        showUploads();
+    }
+
     const { status, data } = await request('PUT', stripUrl(state.id, '/visibility'), { visible })
         .catch(() => ({ status: 0, data: null }));
 

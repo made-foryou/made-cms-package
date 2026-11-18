@@ -305,7 +305,7 @@ it('chooses one photo for a list that is full, and outside a list', function ():
     $shell->script(clickGalleryTileWith($this->training, 'metaKey'));
 
     expect($shell->script(galleryNumbers()))->toBe([])
-        ->and($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:false', 'many:true'])
+        ->and($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:false', 'many:true', 'document:true', 'video:true', 'file:true'])
         ->and($shell->script(pickerSays('media-picker-full')))->toBe('Fotogalerij is vol: 8 van 8')
         ->and($shell->script(pickerSays('media-picker-hint')))->toBe('Fotogalerij is vol (8 van 8), dus je kiest één foto voor Foto 1.');
 
@@ -372,7 +372,7 @@ it('lets several photos uploaded at once join the selection as the next items', 
     $page = galleryPage([['id' => FOTO_EEN, 'foto' => null, 'bijschrift' => null]]);
     $shell = openGalleryPicker($page, 0, 1);
 
-    expect($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:true', 'many:false']);
+    expect($shell->script("() => [...document.querySelectorAll('[data-media-picker] [data-picker-upload]')].map((wrapper) => wrapper.dataset.pickerUpload + ':' + wrapper.hidden)"))->toBe(['one:true', 'many:false', 'document:true', 'video:true', 'file:true']);
 
     // Svgs: the crop step passes them by, so the field asks their alt texts itself.
     $shell->script(takeInGalleryPicker([

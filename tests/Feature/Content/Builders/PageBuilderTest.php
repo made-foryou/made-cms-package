@@ -142,6 +142,23 @@ it('stores whether a page is in the menu', function (): void {
     expect($page->refresh()->in_menu)->toBeFalse();
 });
 
+it('keeps a new page visible to visitors', function (): void {
+    $page = Page::query()->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
+    expect($page->refresh()->hidden)->toBeFalse();
+});
+
+it('stores whether a page is hidden from visitors', function (): void {
+    $page = Page::factory()->hidden()->create();
+
+    expect($page->refresh()->hidden)->toBeTrue();
+
+    $page->hidden = false;
+    $page->save();
+
+    expect($page->refresh()->hidden)->toBeFalse();
+});
+
 it('refuses to remove a parent that still has children for good', function (): void {
     $parent = Page::factory()->create();
     Page::factory()->under($parent)->create();

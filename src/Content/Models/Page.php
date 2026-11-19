@@ -29,6 +29,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property string $slug the last segment of the address
  * @property int $position the place among the pages with the same parent, 0 for the first
  * @property bool $in_menu
+ * @property bool $hidden whether visitors only reach the page through its address, outside the menu, the sitemap and Google
  * @property string|null $meta_title the whole title in Google; null gives the name of the page with the site name
  * @property string|null $meta_description the description in Google; null lets Google take a piece of the page
  * @property bool $in_sitemap whether the sitemap of the site lists the page
@@ -61,6 +62,7 @@ class Page extends Model
         'slug',
         'position',
         'in_menu',
+        'hidden',
         'meta_title',
         'meta_description',
         'in_sitemap',
@@ -76,6 +78,7 @@ class Page extends Model
         'strips' => '[]',
         'position' => 0,
         'in_menu' => true,
+        'hidden' => false,
         'in_sitemap' => true,
         'indexable' => true,
     ];
@@ -89,6 +92,7 @@ class Page extends Model
             'parent_id' => 'integer',
             'position' => 'integer',
             'in_menu' => 'boolean',
+            'hidden' => 'boolean',
             'in_sitemap' => 'boolean',
             'indexable' => 'boolean',
             'status' => PageStatus::class,

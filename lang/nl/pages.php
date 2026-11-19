@@ -204,6 +204,7 @@ return [
         'title_required' => 'Geef de pagina een naam.',
         'title_long' => 'Houd de naam korter dan 120 tekens.',
         'slug_invalid' => 'Een adres bestaat uit kleine letters, cijfers en streepjes, zoals over-ons.',
+        'slug_long' => 'Houd het adres op hooguit 120 tekens. Een letter als ß of щ telt daarin als meer tekens.',
         'path_taken' => 'Dat adres heeft al een andere pagina.',
         'parent_invalid' => 'Onder die pagina kan hij niet liggen: kies een pagina die niet onder deze pagina ligt.',
         'home_protected' => 'De homepagina houdt haar adres en blijft bovenaan.',

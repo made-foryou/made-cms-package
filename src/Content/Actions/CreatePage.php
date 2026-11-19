@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Data\PageSlug;
 use Made\CmsPackage\Content\Events\PageCreated;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
 use Made\CmsPackage\Content\Models\Page;
@@ -27,6 +28,7 @@ final class CreatePage
      * @throws ParentPageNotFound
      * @throws ParentPageDeleted
      * @throws InvalidPageSlug
+     * @throws PageSlugTooLong
      * @throws PagePathTaken
      */
     public function handle(NewPage $new): Page

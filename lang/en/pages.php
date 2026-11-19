@@ -204,6 +204,7 @@ return [
         'title_required' => 'Give the page a name.',
         'title_long' => 'Keep the name shorter than 120 characters.',
         'slug_invalid' => 'An address consists of lowercase letters, digits and dashes, like about-us.',
+        'slug_long' => 'Keep the address to 120 characters at most. A letter like ß or щ counts as more characters in it.',
         'path_taken' => 'Another page already has that address.',
         'parent_invalid' => 'It cannot live under that page: choose a page that does not lie under this page.',
         'home_protected' => 'The home page keeps its address and stays at the top.',

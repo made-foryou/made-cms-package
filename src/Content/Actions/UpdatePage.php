@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
 use Made\CmsPackage\Content\Models\Page;
@@ -30,6 +31,7 @@ final class UpdatePage
      * @throws ParentPageNotFound
      * @throws ParentPageDeleted
      * @throws InvalidPageSlug
+     * @throws PageSlugTooLong
      * @throws HomePageProtected
      * @throws CircularPageMove
      * @throws PagePathTaken

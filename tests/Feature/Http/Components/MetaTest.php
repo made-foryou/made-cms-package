@@ -43,6 +43,12 @@ it('keeps a page google may not show out of the search results', function (): vo
     expect(metaHtml($page))->toContain('<meta name="robots" content="noindex">');
 });
 
+it('keeps a hidden page out of the search results', function (): void {
+    $page = Page::factory()->published()->hidden()->at('/privacy')->create(['title' => 'Privacy']);
+
+    expect(metaHtml($page))->toContain('<meta name="robots" content="noindex">');
+});
+
 it('writes no robots tag for a page google may show', function (): void {
     $page = Page::factory()->published()->at('/teams')->create();
 

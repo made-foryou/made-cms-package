@@ -40,6 +40,13 @@ it('says when google may not show the page', function (): void {
     expect(DescribePageMeta::run($page)->indexable)->toBeFalse();
 });
 
+it('keeps a hidden page out of google, whatever its own switch says', function (): void {
+    $page = Page::factory()->published()->hidden()->at('/privacy')->create();
+
+    expect($page->indexable)->toBeTrue()
+        ->and(DescribePageMeta::run($page)->indexable)->toBeFalse();
+});
+
 it('builds the canonical address from the url of the site, also in a subdirectory', function (): void {
     config(['app.url' => 'https://example.com/club/']);
     $home = Page::factory()->at('/')->create();

@@ -21,7 +21,8 @@ final class DescribePageMeta
     /**
      * What the head of a page tells Google. The canonical address comes from the url of the site, never from the Host of
      * the request, so every form of the address (with or without www, http) leads Google to the same one. The page the
-     * request serves keeps the prefix of its route group in it ("/nl/over-ons").
+     * request serves keeps the prefix of its route group in it ("/nl/over-ons"). A hidden page is never for Google,
+     * whatever its own switch says; the switch counts again once visitors see the page.
      */
     public function handle(Page $page): PageMeta
     {
@@ -31,7 +32,7 @@ final class DescribePageMeta
             title: $page->meta_title ?? MakeFallbackTitle::run($page),
             description: $page->meta_description,
             canonical: $path === null ? null : Site::url($path),
-            indexable: $page->indexable,
+            indexable: $page->indexable && ! $page->hidden,
         );
     }
 }

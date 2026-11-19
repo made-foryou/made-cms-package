@@ -102,6 +102,7 @@ it('serves a hidden page of the workbench at its address', function (): void {
 
     $this->get('privacy')
         ->assertOk()
+        ->assertSee('<meta name="robots" content="noindex">', false)
         ->assertSeeText('Je gegevens');
 });
 

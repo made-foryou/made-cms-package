@@ -1548,6 +1548,11 @@ ul.lijst {
     margin-bottom: 14px;
 }
 
+/* "Verbergen" next to "Verwijderen" in the card Weghalen stays at the top when the confirmation opens below. */
+.knoppen.weghalen {
+    align-items: flex-start;
+}
+
 /* One page and the wizard */
 
 .kruimel {

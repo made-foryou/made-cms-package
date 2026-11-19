@@ -930,7 +930,7 @@ It reads each photo from the media disk, skips a photo that has a thumbnail, and
 
 ### Where a file is used
 
-The table `cms_media_usages` holds a row for every place a file is used: a field of a strip in the published version of a page, and in its draft while there is one. A hidden strip counts, an image or a file in an item of a list counts by its own place, and a deleted page keeps its rows while it can be restored. Every change of the strips through the Content Actions (saving, adding, moving, hiding, removing and restoring a strip, publishing, discarding the draft) brings the rows of the page up to date in the same transaction, so the host never writes them.
+The table `cms_media_usages` holds a row for every place a file is used: a field of a strip in the published version of a page, and in its draft while there is one, and a place of the page itself, outside its strips and its draft: its share image (`UsageVersion::Page`, `PagePlace::ShareImage`, without a strip). A hidden strip counts, an image or a file in an item of a list counts by its own place, and a deleted page keeps its rows while it can be restored. Every change of the strips through the Content Actions (saving, adding, moving, hiding, removing and restoring a strip, publishing, discarding the draft) and of the share image (`SetPageShareImage`) brings the rows of the page up to date in the same transaction, so the host never writes them.
 
 ```php
 use Made\CmsPackage\Content\Actions\ListMediaPlaces;
@@ -943,12 +943,12 @@ $places = ListMediaPlaces::run($media);         // load a list with Media::query
 
 $places->pageCount();                           // "Gebruikt op 2 pagina's"
 $places->places[0]->pageTitle;                  // "Onze teams"
-$places->places[0]->where;                      // "Hero › Achtergrondfoto", or "Fotorij › Foto 3 › Afbeelding" in a list
+$places->places[0]->where;                      // "Hero › Achtergrondfoto", "Fotorij › Foto 3 › Afbeelding" in a list, or "Deelafbeelding"
 ```
 
-`where` comes from the labels of the strip type and its fields (an item of a list by its `itemLabel()` and number); when the type left the catalogue or no longer has the field it is the keys, `hero › foto`. A place has the page, the strip, the path of the field (`fotos.2.afbeelding`), the versions it is in (`$place->in(UsageVersion::Published)`) and whether its page is deleted. A file that is used cannot be deleted: the foreign key of the table refuses it.
+`where` comes from the labels of the strip type and its fields (an item of a list by its `itemLabel()` and number); when the type left the catalogue or no longer has the field it is the keys, `hero › foto`. The share image of a page is named "Deelafbeelding" and comes before the places of its strips. A place has the page, the strip, the path of the field (`fotos.2.afbeelding`), the versions it is in (`$place->in(UsageVersion::Published)`, `$place->ofPage()` for the share image), whether its page is deleted and whether visitors get the file there now (`$place->shownOnSite()`). A file that is used cannot be deleted: the foreign key of the table refuses it.
 
-Content written without the Actions (a seeder with the page factory, an import) has no rows yet. Build them from the strips of every page with:
+Content written without the Actions (a seeder with the page factory, an import) has no rows yet. Build them from the strips and the share image of every page with:
 
 ```bash
 php artisan made-cms:media-usage

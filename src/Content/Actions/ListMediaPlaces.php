@@ -8,6 +8,8 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\MediaPlace;
 use Made\CmsPackage\Content\Data\MediaPlaces;
 use Made\CmsPackage\Content\Data\PageStrips;
+use Made\CmsPackage\Content\Enums\PagePlace;
+use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
@@ -33,7 +35,9 @@ final class ListMediaPlaces
      * the strips of its working copy and of the fields and items in a strip. A place is named from the catalogue
      * ("Hero › Achtergrondfoto", "Fotorij › Foto 3 › Afbeelding", the number of an item from the version the place
      * is in, the working copy first), and by its keys ("hero › foto") when the type left the catalogue or no longer
-     * has the field. A deleted page that can still be restored counts, marked as deleted.
+     * has the field. A place of the page itself (its share image) is named by its PagePlace ("Deelafbeelding") and
+     * comes before the places of the strips of its page. A deleted page that can still be restored counts, marked as
+     * deleted.
      *
      * It reads the places the file was loaded with (MediaBuilder::withUsage()), else it loads them once.
      */
@@ -52,13 +56,18 @@ final class ListMediaPlaces
             }
 
             $pages[$page->id] ??= self::strips($page);
-            $key = "{$usage->page_id}\0{$usage->strip_id}\0{$usage->field}";
+            $kind = $usage->version === UsageVersion::Page ? 'page' : 'strip';
+            $key = "{$usage->page_id}\0{$kind}\0{$usage->strip_id}\0{$usage->field}";
 
             $places[$key] ??= ['usage' => $usage, 'page' => $page, 'versions' => []];
             $places[$key]['versions'][] = $usage->version;
         }
 
         $places = array_map(function (array $place) use ($pages): array {
+            if ($place['usage']->version === UsageVersion::Page) {
+                return [...$place, 'position' => -1, 'order' => 0, 'where' => self::ownPlace($place['usage'])];
+            }
+
             $strips = $pages[$place['page']->id];
             $stripId = $place['usage']->strip_id;
             $values = in_array(UsageVersion::Draft, $place['versions'], true)
@@ -92,6 +101,7 @@ final class ListMediaPlaces
             )),
             pageDeleted: $place['page']->trashed(),
             pageHasDraft: $place['page']->draft_strips !== null,
+            pagePublished: $place['page']->status === PageStatus::Published,
         ), $places));
     }
 
@@ -139,6 +149,14 @@ final class ListMediaPlaces
         }
 
         return $usage->strip_type.self::SEPARATOR.$usage->field;
+    }
+
+    /**
+     * The name of a place of the page itself, or its key when it is no place the package knows.
+     */
+    private static function ownPlace(MediaUsage $usage): string
+    {
+        return PagePlace::tryFrom($usage->field)?->label() ?? $usage->field;
     }
 
     /**

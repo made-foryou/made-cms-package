@@ -85,6 +85,40 @@ it('says it of a place when the places of a page differ', function (): void {
     ]);
 });
 
+it('names the share image of a page without a note, and leads to its card when the page holds the file nowhere else', function (): void {
+    $media = Media::factory()->create();
+    $about = Page::factory()->published()->withShareImage($media)->withStrips([])
+        ->withDraft([storedStrip('hero', ['foto' => $media->id], id: 'h')])
+        ->create(['title' => 'Over ons']);
+    $teams = Page::factory()->published()->withShareImage($media)->withDraft([])->create(['title' => 'Onze teams']);
+    SyncMediaUsage::run($about);
+    SyncMediaUsage::run($teams);
+
+    $response = $this->getJson('made-cms/media/'.$media->id)->assertOk();
+
+    expect($response->json('heading'))->toBe('Gebruikt op 2 pagina’s')
+        ->and($response->json('pages'))->toBe([
+            [
+                'title' => 'Onze teams',
+                'url' => '/made-cms/pages/'.$teams->id.'#made-cms-share',
+                'deleted' => false,
+                'note' => null,
+                'places' => [['where' => 'Deelafbeelding', 'note' => null]],
+            ],
+            [
+                'title' => 'Over ons',
+                'url' => '/made-cms/pages/'.$about->id.'/edit',
+                'deleted' => false,
+                'note' => null,
+                'places' => [
+                    ['where' => 'Deelafbeelding', 'note' => null],
+                    ['where' => 'Hero › Foto', 'note' => 'Alleen in het concept'],
+                ],
+            ],
+        ])
+        ->and($response->json('removal.allowed'))->toBeFalse();
+});
+
 it('gives a deleted page without a link and leaves it out of the count', function (): void {
     $media = Media::factory()->create();
     $page = Page::factory()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'h')])->create(['title' => 'Oud nieuws']);

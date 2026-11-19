@@ -61,6 +61,70 @@ it('names a place by its keys when its type left the catalogue or no longer has 
     expect(placeLines($media))->toBe(['Over ons: hero › logo', 'Over ons: oud › beeld']);
 });
 
+it('names the share image of a page as a place of the page itself, before the places of its strips', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->published()->withShareImage($media)
+        ->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'h')])
+        ->create(['title' => 'Over ons']);
+    SyncMediaUsage::run($page);
+
+    $places = ListMediaPlaces::run($media)->places;
+
+    expect(placeLines($media))->toBe(['Over ons: Deelafbeelding', 'Over ons: Hero › Foto'])
+        ->and($places[0])->toEqual(new MediaPlace(
+            page: $page->id,
+            pageTitle: 'Over ons',
+            where: 'Deelafbeelding',
+            strip: '',
+            field: 'share_image',
+            versions: [UsageVersion::Page],
+            pageDeleted: false,
+            pagePublished: true,
+        ))
+        ->and($places[0]->ofPage())->toBeTrue()
+        ->and($places[1]->ofPage())->toBeFalse();
+});
+
+it('never takes a strip without an id for the share image of its page', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->withShareImage($media)->create(['title' => 'Over ons']);
+    MediaUsage::factory()->for($media)->for($page)->shareImage()->create();
+    MediaUsage::factory()->for($media)->for($page)->create(['strip_id' => '', 'strip_type' => 'oud', 'field' => 'share_image']);
+
+    expect(placeLines($media))->toBe(['Over ons: Deelafbeelding', 'Over ons: oud › share_image']);
+});
+
+it('says whether the page of a place is on the site, for the places of the page itself', function (string $state, bool $shown): void {
+    $media = Media::factory()->create();
+    $page = match ($state) {
+        'published' => Page::factory()->published(),
+        'draft' => Page::factory(),
+        'deleted' => Page::factory()->published()->state(['deleted_at' => now()]),
+    };
+    $page = $page->withShareImage($media)->create();
+    MediaUsage::factory()->for($media)->for($page)->shareImage()->create();
+
+    expect(ListMediaPlaces::run($media)->places[0]->shownOnSite())->toBe($shown);
+})->with([
+    'a published page' => ['published', true],
+    'a page that was never published' => ['draft', false],
+    'a page in the bin' => ['deleted', false],
+]);
+
+it('says a place in the published version of a page in the bin is not on the site', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->published()->create(['deleted_at' => now()]);
+    MediaUsage::factory()->for($media)->for($page)->create();
+    $live = Page::factory()->published()->create();
+    MediaUsage::factory()->for($media)->for($live)->create();
+
+    $places = ListMediaPlaces::run($media)->places;
+    $shown = array_map(static fn (MediaPlace $place): bool => $place->shownOnSite(), $places);
+
+    expect(array_combine(array_map(static fn (MediaPlace $place): int => $place->page, $places), $shown))
+        ->toEqual([$page->id => false, $live->id => true]);
+});
+
 it('gives a place in both versions once, with the versions it is in', function (): void {
     $media = Media::factory()->create();
     $strip = storedStrip('hero', ['foto' => $media->id], id: 'h');

@@ -58,6 +58,18 @@ it('keeps a file a page uses, in either version, hidden or in the bin', function
         ->and(Media::query()->find($media->id))->not->toBeNull();
 })->with(['published', 'draft', 'deleted']);
 
+it('keeps a file a page shares as its image, also a page in the bin', function (bool $deleted): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->withShareImage($media)->create($deleted ? ['deleted_at' => now()] : []);
+    MediaUsage::factory()->for($media)->for($page)->shareImage()->create();
+
+    $result = DeleteMedia::run([$media->id]);
+
+    expect($result->deleted)->toBe([])
+        ->and(idsOf($result->kept))->toBe([$media->id])
+        ->and(Media::query()->find($media->id))->not->toBeNull();
+})->with(['on the site' => false, 'in the bin' => true]);
+
 it('deletes what can go and keeps the rest, and says which ids were gone', function (): void {
     [$free, $used, $alsoFree] = Media::factory()->count(3)->create()->all();
     MediaUsage::factory()->for($used)->create();

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Data\Strip;
+use Made\CmsPackage\Content\Enums\PagePlace;
 use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
@@ -27,15 +28,16 @@ final class SyncMediaUsage
     ) {}
 
     /**
-     * Brings the rows of a page in cms_media_usages in step with its strips: a row for every place a file of the
-     * library is in the published strips, and in the draft while there is one. A hidden strip counts, a deleted page
-     * too. The fields say which values are files (StripType::places()); the id of a file that is not in the library
+     * Brings the rows of a page in cms_media_usages in step with its strips and itself: a row for every place a file
+     * of the library is in the published strips, and in the draft while there is one, and for every place of the page
+     * itself (its share image, version Page, outside the draft). A hidden strip counts, a deleted page too. The fields say which values are files (StripType::places()); the id of a file that is not in the library
      * gets no row. The catalogue no longer says which values of a strip whose type left it are files, so its rows in
      * either version say it: every such place holds the file its values in this version hold there, so publishing
      * the draft of such a strip moves the file of the draft to the published version. Only what changed is written.
      *
-     * The caller holds the row of the page locked (ChangeDraft, RebuildMediaUsage), so two changes never write the
-     * rows of a page at the same time.
+     * The caller holds the row of the page locked (ChangeDraft, RebuildMediaUsage, SetPageShareImage), so two changes
+     * never write the rows of a page at the same time. The places of the page itself follow the attributes of the model
+     * it hands, saved or not, so SetPageShareImage gives a file its place before it stores the column.
      */
     public function handle(Page $page): void
     {
@@ -46,6 +48,8 @@ final class SyncMediaUsage
         if ($page->draft_strips !== null) {
             $wanted = [...$wanted, ...$this->places($page, UsageVersion::Draft, PageStrips::fromArray($page->draft_strips), $stored)];
         }
+
+        $wanted = [...$wanted, ...self::own($page)];
 
         $wanted = $this->inLibrary($wanted);
         $stale = [];
@@ -101,6 +105,29 @@ final class SyncMediaUsage
     }
 
     /**
+     * The places of the page itself, outside its strips: one row each, without a strip.
+     *
+     * @return array<string, Place>
+     */
+    private static function own(Page $page): array
+    {
+        if ($page->share_image_id === null) {
+            return [];
+        }
+
+        $field = PagePlace::ShareImage->value;
+
+        return [self::key(UsageVersion::Page->value, '', $field) => [
+            'media_id' => $page->share_image_id,
+            'page_id' => $page->id,
+            'version' => UsageVersion::Page->value,
+            'strip_id' => '',
+            'strip_type' => '',
+            'field' => $field,
+        ]];
+    }
+
+    /**
      * The files of a strip whose type left the catalogue: at every place its rows in either version know, the file its
      * values hold there, read as a field that holds a file stores its id. Such a strip cannot change while its type is
      * gone, but publishing hands the values of its draft to the published version.
@@ -113,7 +140,7 @@ final class SyncMediaUsage
         $files = [];
 
         foreach ($stored as $usage) {
-            if ($usage->strip_id !== $strip->id || $usage->strip_type !== $strip->type || array_key_exists($usage->field, $files)) {
+            if ($usage->version === UsageVersion::Page || $usage->strip_id !== $strip->id || $usage->strip_type !== $strip->type || array_key_exists($usage->field, $files)) {
                 continue;
             }
 

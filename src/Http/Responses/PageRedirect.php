@@ -17,6 +17,9 @@ final class PageRedirect
     /** The card "Hoe Google hem ziet" on the screen of a page, where saving it and a refusal go back to. */
     public const string GOOGLE = 'made-cms-google';
 
+    /** The card "Hoe je link gedeeld wordt" on the screen of a page, where saving it and a refusal go back to. */
+    public const string SHARE = 'made-cms-share';
+
     /** The flash that makes the page show once that it is ready, right after the wizard. */
     private const string CREATED = 'made-cms-package.page_created';
 

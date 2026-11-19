@@ -310,6 +310,81 @@ describe('a strip whose type left the catalogue', function (): void {
     });
 });
 
+describe('the share image of a page', function (): void {
+    it('gives the share image a place of the page itself, next to the places of its strips', function (): void {
+        [$a, $b] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->withShareImage($b)->withStrips([storedStrip('hero', ['foto' => $a->id], id: 'h')])->create();
+
+        SyncMediaUsage::run($page);
+
+        expect(usageRows($page))->toBe([
+            "page  share_image {$b->id}",
+            "published h foto {$a->id}",
+        ])->and(MediaUsage::query()->where('version', 'page')->value('strip_type'))->toBe('');
+    });
+
+    it('drops the place once the page has no share image of its own', function (): void {
+        $page = Page::factory()->create();
+        MediaUsage::factory()->for($page)->shareImage()->create();
+
+        SyncMediaUsage::run($page);
+
+        expect(usageRows($page))->toBe([]);
+    });
+
+    it('keeps the place when a strip of the page changes', function (): void {
+        [$a, $b] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->withShareImage($b)->withStrips([storedStrip('hero', ['foto' => $a->id], id: 'h')])->create();
+        SyncMediaUsage::run($page);
+
+        SetStripVisibility::run($page, 'h', false);
+
+        expect(usageRows($page))->toBe([
+            "draft h foto {$a->id}",
+            "page  share_image {$b->id}",
+            "published h foto {$a->id}",
+        ]);
+    });
+
+    it('keeps the place next to a strip whose type left the catalogue', function (): void {
+        $a = Media::factory()->create();
+        $page = Page::factory()->withShareImage($a)->withStrips([storedStrip('oud', ['beeld' => $a->id], id: '')])->create();
+        MediaUsage::factory()->for($a)->for($page)->shareImage()->create();
+
+        SyncMediaUsage::run($page);
+
+        expect(usageRows($page))->toBe(["page  share_image {$a->id}"]);
+    });
+
+    it('gives no place to a share image that is not in the library', function (): void {
+        $page = Page::factory()->create();
+        $page->share_image_id = 999_999;
+
+        SyncMediaUsage::run($page);
+
+        expect(usageRows($page))->toBe([]);
+    });
+
+    it('reads the share image through the same shared lock as the files of the strips', function (): void {
+        [$a, $b] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->withShareImage($a)->withStrips([storedStrip('hero', ['foto' => $b->id], id: 'h')])->create();
+        $reads = [];
+        $files = 'from '.quoted('cms_media');
+
+        DB::listen(static function (QueryExecuted $query) use (&$reads, $files): void {
+            if (str_starts_with($query->sql, 'select') && str_contains($query->sql, $files)) {
+                $reads[] = $query->sql;
+            }
+        });
+
+        SyncMediaUsage::run($page);
+
+        expect($reads)->toHaveCount(1)
+            ->and($reads[0])->toContain('order by '.quoted('id').' asc')
+            ->and(usageRows($page))->toHaveCount(2);
+    });
+});
+
 it('leaves the places of other pages alone', function (): void {
     $a = Media::factory()->create();
     $other = Page::factory()->withStrips([cardsStrip('c', [$card = iconCard($a->id)])])->create();

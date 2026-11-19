@@ -74,6 +74,13 @@ it('finds files by the title of a page they are used on, in its draft or its pub
     expect(Media::query()->search('TEAMS')->orderBy('id')->pluck('id')->all())->toBe([$published->id, $draft->id]);
 });
 
+it('finds the share image of a page by the title of the page', function (): void {
+    $media = Media::factory()->create(['name' => 'deelfoto']);
+    MediaUsage::factory()->shareImage()->for($media)->for(Page::factory()->state(['title' => 'Over ons']))->create();
+
+    expect(Media::query()->search('over ons')->pluck('id')->all())->toBe([$media->id]);
+});
+
 it('never finds a file by the title of a deleted page', function (): void {
     $media = Media::factory()->create(['name' => 'teamfoto']);
     MediaUsage::factory()->for($media)->for(Page::factory()->deletedAt(now())->state(['title' => 'Oud nieuws']))->create();
@@ -112,6 +119,13 @@ it('returns the files in use somewhere, in a draft, a published version or on a 
     Media::factory()->create();
 
     expect(Media::query()->inUse()->orderBy('id')->pluck('id')->all())->toBe([$published, $draft, $deleted]);
+});
+
+it('counts the share image of a page as in use', function (): void {
+    $shared = MediaUsage::factory()->shareImage()->create()->media_id;
+    Media::factory()->create();
+
+    expect(Media::query()->inUse()->pluck('id')->all())->toBe([$shared]);
 });
 
 it('counts a file in use once, whatever the number of places', function (): void {

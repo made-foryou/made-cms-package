@@ -71,6 +71,15 @@ it('counts the pages the photo is on, without the deleted ones', function (): vo
     expect(DescribeMediaCrop::run($media)->pages)->toBe(2);
 });
 
+it('counts a page that shares the photo as its image once, also when a strip holds it too', function (): void {
+    $media = Media::factory()->create();
+    $page = Page::factory()->withShareImage($media)->withStrips([storedStrip('hero', ['foto' => $media->id])])->create();
+    SyncMediaUsage::run($page);
+    SyncMediaUsage::run(Page::factory()->withShareImage($media)->create());
+
+    expect(DescribeMediaCrop::run($media)->pages)->toBe(2);
+});
+
 it('describes no file that cannot be cropped', function (Closure $media): void {
     DescribeMediaCrop::run($media());
 })->with([

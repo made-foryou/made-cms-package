@@ -3890,8 +3890,13 @@ button.tekstlink.alarm {
         margin-left: calc(var(--boom-inspring) * 2);
     }
 
+    .boomrij-acties {
+        flex-wrap: wrap;
+    }
+
     .boomrij-verplaats {
         position: static;
+        flex-basis: 100%;
         padding: 0;
         background: none;
         opacity: 1;

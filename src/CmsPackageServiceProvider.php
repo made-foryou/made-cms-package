@@ -26,7 +26,9 @@ use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\ServedAddress;
+use Made\CmsPackage\Content\Data\SitemapSources;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Sitemap\PageSitemapSource;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
@@ -50,6 +52,8 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->registerStripTypes();
 
         $this->registerPageRequestState();
+
+        $this->registerSitemap();
 
         // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
         // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
@@ -160,6 +164,14 @@ class CmsPackageServiceProvider extends ServiceProvider
     {
         $this->app->scoped(EditMode::class, static fn (): EditMode => EditMode::off());
         $this->app->scoped(ServedAddress::class, static fn (): ServedAddress => ServedAddress::none());
+    }
+
+    /**
+     * What the sitemap lists, in this order: the pages. Collections and images add a source of their own later.
+     */
+    private function registerSitemap(): void
+    {
+        $this->app->bind(SitemapSources::class, static fn (): SitemapSources => new SitemapSources([new PageSitemapSource]));
     }
 
     /**

@@ -62,7 +62,8 @@
                 @error('parent_id')
                     <p class="veld-fout" role="alert">{{ $message }}</p>
                 @enderror
-                @include('made-cms-package-launcher::cms.pages.partials.in-menu', [
+                @include('made-cms-package-launcher::cms.pages.partials.switch', [
+                    'name' => 'in_menu',
                     'label' => $t('pages.new.place.in_menu'),
                     'hint' => $t('pages.new.place.in_menu_hint'),
                     'checked' => true,

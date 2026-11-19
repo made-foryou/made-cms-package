@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -162,3 +163,66 @@ it('says once that a new page is ready', function (): void {
 
     expect(pageScreen($page))->not->toContain('staat klaar');
 });
+
+it('shows how google sees a page without a title or a description of its own', function (): void {
+    $page = Page::factory()->published()->at('/over-ons/team')->create(['title' => 'Ons team']);
+
+    expect(pageScreen($page))
+        ->toContain('<h2 id="made-cms-google-kop">Hoe Google hem ziet</h2>')
+        ->toContain('<span class="google-adres">localhost › over-ons › team</span>')
+        ->toContain('<span class="google-titel" data-meta-preview="title">Ons team · TTV Merwestad</span>')
+        ->toContain('<span class="google-tekst leeg" data-meta-preview="description">Google kiest nu zelf een stukje tekst van de pagina, omdat de omschrijving leeg is.</span>')
+        ->toContain('name="meta_title" value="" placeholder="Ons team · TTV Merwestad"')
+        ->toContain('data-meta-count="title">24 van 60 tekens · standaardtitel</p>')
+        ->toContain('<p class="veld-hint veld-teller ontbreekt" id="made-cms-meta_description-teller" data-meta-count="description">Ontbreekt · 0 van 155 tekens</p>')
+        ->toContain('id="made-cms-in_sitemap" name="in_sitemap" value="1" checked')
+        ->toContain('id="made-cms-indexable" name="indexable" value="1" checked')
+        ->toContain('<span class="veld-hint" id="made-cms-in_sitemap-hint">Uit betekent: niet in de sitemap. De pagina blijft bereikbaar en Google vindt hem nog via links.</span>');
+});
+
+it('shows the title and the description of its own, and counts them', function (): void {
+    $page = Page::factory()->published()->withMeta('Tafeltennis in Dordrecht', 'Van de jeugd tot de eredivisie.')->at('/teams')->create(['title' => 'Onze teams']);
+
+    expect(pageScreen($page))
+        ->toContain('<span class="google-titel" data-meta-preview="title">Tafeltennis in Dordrecht</span>')
+        ->toContain('<span class="google-tekst" data-meta-preview="description">Van de jeugd tot de eredivisie.</span>')
+        ->toContain('name="meta_title" value="Tafeltennis in Dordrecht" placeholder="Onze teams · TTV Merwestad"')
+        ->toContain('data-meta-count="title">24 van 60 tekens</p>')
+        ->toContain('data-meta-count="description">31 van 155 tekens</p>')
+        ->toContain('>Van de jeugd tot de eredivisie.</textarea>');
+});
+
+it('says when google cuts a title off', function (): void {
+    $page = Page::factory()->withMeta(str_repeat('Tafeltennis ', 6))->at('/teams')->create();
+
+    expect(pageScreen($page))
+        ->toContain('<p class="veld-hint veld-teller te-lang" id="made-cms-meta_title-teller" data-meta-count="title">71 van 60 tekens · Google kapt hem af</p>');
+});
+
+it('names the home page in google after the site alone', function (): void {
+    $home = Page::factory()->published()->at('/')->create(['title' => 'Home']);
+
+    expect(pageScreen($home))
+        ->toContain('<span class="google-adres">localhost</span>')
+        ->toContain('<span class="google-titel" data-meta-preview="title">TTV Merwestad</span>');
+});
+
+it('says that a page google may not show never goes into the sitemap', function (): void {
+    $page = Page::factory()->noindex()->outOfSitemap()->at('/bedankt')->create();
+
+    expect(pageScreen($page))
+        ->toContain('id="made-cms-in_sitemap" name="in_sitemap" value="1" aria-describedby')
+        ->toContain('id="made-cms-indexable" name="indexable" value="1" aria-describedby')
+        ->toContain('<span class="veld-hint" id="made-cms-in_sitemap-hint">Een pagina die Google niet mag tonen, komt nooit in de sitemap.</span>');
+});
+
+it('links to the meta overview only for an editor who opens it', function (Role $role, bool $linked): void {
+    $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+    $page = Page::factory()->at('/teams')->create();
+
+    expect(str_contains(pageScreen($page), '<a class="tekstlink klein" href="/made-cms/meta-tags">Alle pagina’s in Meta-overzicht</a>'))->toBe($linked);
+})->with([
+    'the seo specialist' => [Role::SeoSpecialist, true],
+    'an admin' => [Role::Admin, true],
+    'the content manager' => [Role::ContentManager, false],
+]);

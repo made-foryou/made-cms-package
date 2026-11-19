@@ -7,9 +7,11 @@ namespace Made\CmsPackage\Http\Controllers\Content;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Actions\ListScreens;
+use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Actions\ListMenuPages;
 use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\ListParentOptions;
+use Made\CmsPackage\Content\Actions\MakeFallbackTitle;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Responses\PageCreatedResponse;
@@ -17,7 +19,7 @@ use Made\CmsPackage\Http\Responses\PageRedirect;
 use Made\CmsPackage\Http\Responses\ShowPageResponse;
 
 /**
- * One page: its basics, the pages under it and removing it. Right after the wizard: that it is ready.
+ * One page: its basics, how Google sees it, the pages under it and removing it. Right after the wizard: that it is ready.
  */
 final class ShowPageController
 {
@@ -31,6 +33,16 @@ final class ShowPageController
             return PageCreatedResponse::make($editor, $screens, $page, $pages);
         }
 
-        return ShowPageResponse::make($editor, $screens, $page, $pages, ListParentOptions::run($page), ListMenuPages::run());
+        return ShowPageResponse::make(
+            editor: $editor,
+            screens: $screens,
+            page: $page,
+            pages: $pages,
+            parents: ListParentOptions::run($page),
+            menu: ListMenuPages::run(),
+            meta: DescribePageMeta::run($page),
+            fallbackTitle: MakeFallbackTitle::run($page),
+            metaSaved: PageRedirect::justSavedMeta($request, $page),
+        );
     }
 }

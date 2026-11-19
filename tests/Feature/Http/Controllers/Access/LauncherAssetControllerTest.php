@@ -28,6 +28,7 @@ it('serves the launcher assets with their content type', function (string $asset
     ['media.js', 'text/javascript; charset=utf-8'],
     ['crop.js', 'text/javascript; charset=utf-8'],
     ['library.js', 'text/javascript; charset=utf-8'],
+    ['pages.js', 'text/javascript; charset=utf-8'],
     ['nunito-700.woff2', 'font/woff2'],
     ['instrument-sans.woff2', 'font/woff2'],
 ]);
@@ -70,6 +71,7 @@ it('versions each asset url with a hash of its contents', function (string $asse
     ['media.js', 'media.js'],
     ['crop.js', 'crop.js'],
     ['library.js', 'library.js'],
+    ['pages.js', 'pages.js'],
     ['nunito-700.woff2', 'fonts/nunito-700.woff2'],
     ['instrument-sans.woff2', 'fonts/instrument-sans.woff2'],
 ]);

@@ -55,12 +55,45 @@ it('lists the pages in the order of the menu, the pages under a page indented be
 
     $html = pagesScreen();
 
-    expect($html)->toContain('<li class="boomrij concept" data-diepte="1">')
+    expect($html)->toContain('<li class="boomrij concept" data-diepte="1" data-page="'.$team->id.'" data-parent="'.$about->id.'" data-depth="1" data-move="/made-cms/pages/'.$team->id.'/position">')
         ->and(strpos($html, '>Home</a>'))->toBeLessThan(strpos($html, '>Over ons</a>'))
         ->and(strpos($html, '>Over ons</a>'))->toBeLessThan(strpos($html, '>Team</a>'))
         ->and($html)->toContain('<span class="boomrij-pad">/over-ons/team</span>')
         ->toContain('href="/made-cms/pages/'.$team->id.'" aria-label="Overzicht van Team">Overzicht</a>')
         ->toContain('href="/made-cms/pages/'.$team->id.'/edit" aria-label="Team bewerken op de site">Bewerken op de site</a>');
+});
+
+it('gives every page but the home page a grip and the buttons that move it', function (): void {
+    $home = Page::factory()->atPosition(0)->at('/')->create(['title' => 'Home']);
+    $about = Page::factory()->atPosition(1)->at('/over-ons')->create(['title' => 'Over ons']);
+
+    $html = pagesScreen();
+    $homeRow = str($html)->after('data-page="'.$home->id.'"')->before('</li>')->value();
+    $aboutRow = str($html)->after('data-page="'.$about->id.'"')->before('</li>')->value();
+
+    expect($html)->toContain('<li class="boomrij concept" data-page="'.$home->id.'" data-parent="" data-depth="0" data-home="">')
+        ->and($homeRow)->not->toContain('class="greep"')->not->toContain('data-move-to')
+        ->and($aboutRow)->toContain('<span class="greep" aria-hidden="true">')
+        ->toContain('role="group" aria-label="Over ons verplaatsen"')
+        ->toContain('data-move-to="up" aria-label="Over ons een plek omhoog"')
+        ->toContain('data-move-to="down" aria-label="Over ons een plek omlaag"')
+        ->toContain('data-move-to="indent" aria-label="Over ons onder de vorige pagina hangen"')
+        ->toContain('data-move-to="outdent" aria-label="Over ons een niveau omhoog"');
+});
+
+it('tells how to move a page and hands the tree what it needs to move one', function (): void {
+    Page::factory()->at('/')->create(['title' => 'Home']);
+
+    $html = pagesScreen();
+    $config = json_decode(htmlspecialchars_decode(str($html)->after('<ul class="boom" data-tree data-config="')->before('"')->value()), true);
+
+    expect($html)->toContain('Sleep een pagina om de volgorde te veranderen; sleep hem naar rechts om hem onder een andere te hangen.')
+        ->toContain('<div class="boom-meldplek" role="status" data-slot="tree-notice"></div>')
+        ->toContain('<p class="sr-only" aria-live="polite" data-slot="tree-announce"></p>')
+        ->toMatch('#<script type="module" src="[^"]*/pages\.js[^"]*"#')
+        ->and($config)->toMatchArray(['depth' => 3])
+        ->and($config['csrf_token'])->toBeString()->not->toBe('')
+        ->and($config['texts'])->toHaveKeys(['moved', 'moved_under', 'moved_top', 'place_top', 'place_under', 'too_deep', 'failed', 'expired']);
 });
 
 it('tells per page what still needs doing', function (): void {

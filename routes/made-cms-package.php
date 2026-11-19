@@ -37,6 +37,7 @@ use Made\CmsPackage\Http\Controllers\Content\MediaLibraryController;
 use Made\CmsPackage\Http\Controllers\Content\MediaLinkController;
 use Made\CmsPackage\Http\Controllers\Content\MoveManyMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveMediaController;
+use Made\CmsPackage\Http\Controllers\Content\MovePageController;
 use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
@@ -126,7 +127,8 @@ Route::prefix($prefix)
             }
 
             // The pages screen: the pages in the order of the menu, a page with its basics, a new page, deleting and
-            // restoring. Plain forms; a refusal goes back to the form with the error.
+            // restoring. Plain forms; a refusal goes back to the form with the error. The tree moves a page with JSON,
+            // because it reads the screen again afterwards and keeps the focus where the editor is.
             Route::middleware(EnsureScreenAccess::using(Screen::Pages))->group(function (): void {
                 Route::get('pages', PagesController::class)->name('screens.pages');
                 Route::get('pages/new', NewPageController::class)->name('pages.create');
@@ -134,6 +136,7 @@ Route::prefix($prefix)
                 Route::get('pages/{page}', ShowPageController::class)->whereNumber('page')->name('pages.show');
                 Route::put('pages/{page}', UpdatePageController::class)->whereNumber('page')->name('pages.update');
                 Route::put('pages/{page}/meta', UpdatePageMetaController::class)->whereNumber('page')->name('pages.meta');
+                Route::put('pages/{page}/position', MovePageController::class)->whereNumber('page')->name('pages.position');
                 Route::delete('pages/{page}', DeletePageController::class)->whereNumber('page')->name('pages.destroy');
                 Route::post('pages/{page}/restore', RestorePageController::class)
                     ->whereNumber('page')

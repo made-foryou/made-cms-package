@@ -8,6 +8,7 @@ use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
+    config(['app.name' => 'Made CMS Workbench', 'app.url' => 'http://127.0.0.1:8000']);
     useWorkbenchSite();
 });
 
@@ -16,7 +17,8 @@ it('serves the published pages of the workbench through the macro', function ():
 
     $this->get('/')
         ->assertOk()
-        ->assertSee('<title>Home · Made CMS Workbench</title>', false)
+        ->assertSee('<title>Made CMS Workbench</title>', false)
+        ->assertSee('<link rel="canonical" href="http://127.0.0.1:8000/">', false)
         ->assertSee('data-cms-strip=', false)
         ->assertSeeText('Welkom');
 });

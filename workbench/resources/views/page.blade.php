@@ -7,7 +7,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $page->title }} · Made CMS Workbench</title>
+    <x-made-cms::meta :page="$page" />
 
     {{--
         A site rendered in the browser (Inertia, React without ssr) has no strips yet when the page has loaded, and then

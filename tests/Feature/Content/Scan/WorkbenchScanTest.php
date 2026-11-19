@@ -19,6 +19,7 @@ use Made\CmsPackage\Content\Scan\Html;
 */
 
 beforeEach(function (): void {
+    config(['app.name' => 'Made CMS Workbench', 'app.url' => 'http://127.0.0.1:8000']);
     useWorkbenchSite();
 
     $card = static fn (string $title, string $url): array => ['titel' => $title, 'tekst' => "Regel een\nRegel twee", 'link' => ['url' => $url]];
@@ -73,7 +74,7 @@ it('proposes the hero and the cards, with the cards on both pages as one type', 
 
     expect(array_map(static fn (ScanType $type): array => [$type->key, $type->count], $scan->types))->toBe([['strook-1', 1], ['strook-2', 2]])
         ->and(array_map(static fn ($page): array => [$page->url, $page->title, array_column($page->toArray()['strips'], 'type')], $scan->pages))->toBe([
-            ['/', 'Home · Made CMS Workbench', ['strook-1', 'strook-2']],
+            ['/', 'Made CMS Workbench', ['strook-1', 'strook-2']],
             ['/over-ons', 'Over ons · Made CMS Workbench', ['strook-2']],
         ]);
 });

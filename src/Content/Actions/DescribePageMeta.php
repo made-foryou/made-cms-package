@@ -19,10 +19,11 @@ final class DescribePageMeta
     ) {}
 
     /**
-     * What the head of a page tells Google. The canonical address comes from the url of the site, never from the Host of
+     * What the head of a page tells Google and an app that shows a shared link to it. The canonical address comes from the url of the site, never from the Host of
      * the request, so every form of the address (with or without www, http) leads Google to the same one. The page the
      * request serves keeps the prefix of its route group in it ("/nl/over-ons"). A hidden page is never for Google,
-     * whatever its own switch says; the switch counts again once visitors see the page.
+     * whatever its own switch says; the switch counts again once visitors see the page. The image of a shared link
+     * (DescribeShareImage) holds for every page, also one Google may not show: sharing is apart from search.
      */
     public function handle(Page $page): PageMeta
     {
@@ -33,6 +34,8 @@ final class DescribePageMeta
             description: $page->meta_description,
             canonical: $path === null ? null : Site::url($path),
             indexable: $page->indexable && ! $page->hidden,
+            image: DescribeShareImage::run($page)->shown(),
+            siteName: Site::name(),
         );
     }
 }

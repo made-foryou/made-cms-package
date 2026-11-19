@@ -121,6 +121,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Meta
+    |--------------------------------------------------------------------------
+    |
+    | share_image is the image a shared link shows (og:image) for a page
+    | without one of its own: an absolute address, or an address from the
+    | root of the site such as /images/share.jpg. Give its width, height and
+    | alt text when you know them; apps show a link sooner with the size.
+    | Without a url a page without an image of its own is shared without one.
+    |
+    */
+
+    'meta' => [
+        'share_image' => [
+            'url' => env('MADE_CMS_SHARE_IMAGE'),
+            'width' => null,
+            'height' => null,
+            'alt' => null,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Sitemap and robots.txt
     |--------------------------------------------------------------------------
     |

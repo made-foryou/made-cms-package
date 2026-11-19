@@ -166,6 +166,8 @@ return [
         'parent_deleted' => 'The page it lived under is deleted too. Restore that one first.',
         'restore_path_taken' => 'Another page has the old address by now. Give that page another address first.',
         'not_deleted' => 'This page is on the site already.',
+        'position_invalid' => 'That place is gone. The tree now shows how the pages are.',
+        'move_path_taken' => 'There it would get the address of another page. Give one of them another address first.',
         'meta_title_long' => 'Keep the title in Google to 120 characters at most. Google shows about 60.',
         'meta_description_long' => 'Keep the description in Google to 320 characters at most. Google shows about 155.',
     ],

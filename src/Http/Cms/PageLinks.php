@@ -41,6 +41,14 @@ final class PageLinks
         return self::url('made-cms-package.pages.meta', ['page' => $page->id]);
     }
 
+    /**
+     * Where the tree of the pages screen moves a page.
+     */
+    public static function move(Page|int $page): string
+    {
+        return self::url('made-cms-package.pages.position', ['page' => self::id($page)]);
+    }
+
     public static function destroy(Page $page): string
     {
         return self::url('made-cms-package.pages.destroy', ['page' => $page->id]);

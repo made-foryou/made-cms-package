@@ -166,6 +166,8 @@ return [
         'parent_deleted' => 'De pagina waar deze onder lag, is ook verwijderd. Zet die eerst terug.',
         'restore_path_taken' => 'Een andere pagina heeft het oude adres inmiddels. Geef die eerst een ander adres.',
         'not_deleted' => 'Deze pagina staat al op de site.',
+        'position_invalid' => 'Die plek is er niet meer. De boom laat nu zien hoe de pagina’s staan.',
+        'move_path_taken' => 'Daar krijgt hij het adres van een andere pagina. Geef een van beide eerst een ander adres.',
         'meta_title_long' => 'Houd de titel in Google op hooguit 120 tekens. Google toont er ongeveer 60.',
         'meta_description_long' => 'Houd de omschrijving in Google op hooguit 320 tekens. Google toont er ongeveer 155.',
     ],

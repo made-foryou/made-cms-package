@@ -106,8 +106,10 @@ the odd places as `<em>`.
 
 - Put the header, the menu (from `ListMenuPages::run()`, `->roots` for one level, `$item->path?->value` for the link),
   and the footer in the layout, outside the strips.
-- Name the page in the edit bar with `<meta name="made-cms:page" content="...">`. A fixed header can offset itself
-  with the `--made-cms-bar-height` css variable.
+- Print the head with `<x-made-cms::meta :page="$page" />` (with Inertia: `DescribePageMeta::run($page)->toArray()`
+  in `<Head>`), not a `<title>` of your own: it writes the title and description editors set for Google, the
+  canonical address and `noindex`, and names the page in the edit bar. A fixed header can offset itself with the
+  `--made-cms-bar-height` css variable.
 - The edit mode loads the site in an iframe of the same origin. Do not send `X-Frame-Options: DENY` or
   `frame-ancestors 'none'`, and do not let a full-page cache store `?made-cms=edit` or `?made-cms=preview`.
 - Print one `h1` per page, the page's, usually the `hero` heading; do not leave an empty heading element in the layout.

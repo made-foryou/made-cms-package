@@ -6,6 +6,7 @@ namespace Made\CmsPackage;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Kernel;
@@ -27,6 +28,7 @@ use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\ServedAddress;
 use Made\CmsPackage\Content\Data\SitemapSources;
+use Made\CmsPackage\Content\Data\SitePrefixes;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Sitemap\PageSitemapSource;
 use Made\CmsPackage\Content\Strips\StripTypes;
@@ -34,6 +36,7 @@ use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Routing\RouterMixin;
+use Made\CmsPackage\Http\Routing\SiteRoutes;
 use Made\CmsPackage\Http\Session\LoginSession;
 use Made\CmsPackage\Support\PublishedMigrations;
 use Symfony\Component\HttpFoundation\IpUtils;
@@ -167,11 +170,15 @@ class CmsPackageServiceProvider extends ServiceProvider
     }
 
     /**
-     * What the sitemap lists, in this order: the pages. Collections and images add a source of their own later.
+     * What the sitemap lists, in this order: the pages (collections and images add a source of their own later), and
+     * the route groups that serve them, one sitemap each.
      */
     private function registerSitemap(): void
     {
         $this->app->bind(SitemapSources::class, static fn (): SitemapSources => new SitemapSources([new PageSitemapSource]));
+
+        // Read from the routes each time it is needed, never at boot: the routes of the site load after this provider.
+        $this->app->bind(SitePrefixes::class, static fn (Application $app): SitePrefixes => SiteRoutes::prefixes($app->make(Router::class)));
     }
 
     /**

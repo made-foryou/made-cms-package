@@ -121,6 +121,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Sitemap and robots.txt
+    |--------------------------------------------------------------------------
+    |
+    | Route::madeCms() serves sitemap.xml and, in a group without a prefix,
+    | robots.txt. robots holds the Disallow rules of the developer, the paths
+    | per user agent, as Google reads them: * for any characters, $ for the
+    | end. For example ['*' => ['/api/'], 'Googlebot' => ['/zoeken$']]. A
+    | page a rule for * or Googlebot keeps away stays out of the sitemap.
+    | Keep a page out of Google with its own switch instead: noindex.
+    |
+    */
+
+    'sitemap' => [
+        'robots' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Strips
     |--------------------------------------------------------------------------
     |

@@ -28,4 +28,11 @@ return [
         'missing' => 'Geen miniatuur voor :name (#:id): het bestand staat niet op de media-disk.',
         'unreadable' => 'Geen miniatuur voor :name (#:id): het bestand is geen foto die te lezen is.',
     ],
+    'sitemap' => [
+        'built' => ':address: :addresses, :errors.',
+        'unchanged' => ':address is niet veranderd: :addresses, :errors.',
+        'addresses' => '{0} geen adressen|{1} 1 adres|[2,*] :count adressen',
+        'errors' => '{0} geen fouten|{1} 1 fout|[2,*] :count fouten',
+        'no_routes' => 'Geen sitemap gemaakt: de routes van de site hebben nog geen Route::madeCms().',
+    ],
 ];

@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Foundation\Http\Kernel as FoundationKernel;
+use Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
@@ -16,6 +20,14 @@ use Illuminate\View\Compilers\BladeCompiler;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\CmsPackageServiceProvider;
 use Made\CmsPackage\Content\Data\EditMode;
+use Made\CmsPackage\Content\Events\PageDeleted;
+use Made\CmsPackage\Content\Events\PageMetaUpdated;
+use Made\CmsPackage\Content\Events\PageMoved;
+use Made\CmsPackage\Content\Events\PagePublished;
+use Made\CmsPackage\Content\Events\PageRestored;
+use Made\CmsPackage\Content\Events\PageUpdated;
+use Made\CmsPackage\Content\Events\PageVisibilityChanged;
+use Made\CmsPackage\Content\Listeners\RebuildSitemaps;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
@@ -118,12 +130,52 @@ it('registers the prune command and runs it every day', function (): void {
         ->and($events->first()?->expression)->toBe('0 0 * * *');
 });
 
+it('registers the command that builds the sitemaps again', function (): void {
+    expect(Artisan::all())->toHaveKey('made-cms:sitemap');
+});
+
+it('builds the sitemaps again after every change of a page that can change them', function (string $event): void {
+    EventFacade::fake();
+
+    EventFacade::assertListening($event, RebuildSitemaps::class);
+})->with([
+    PagePublished::class,
+    PageUpdated::class,
+    PageMoved::class,
+    PageDeleted::class,
+    PageRestored::class,
+    PageVisibilityChanged::class,
+    PageMetaUpdated::class,
+]);
+
+it('makes sure work deferred until after the answer runs, also with a kernel of the site that lacks it', function (): void {
+    expect(app(Kernel::class)->hasMiddleware(InvokeDeferredCallbacks::class))->toBeTrue();
+
+    app()->singleton(Kernel::class, fn (Application $app): Kernel => new class($app, $app->make(Router::class)) extends FoundationKernel
+    {
+        /**
+         * A kernel of its own keeps its own list of global middleware.
+         *
+         * @param  array<int, class-string|string>  $middleware
+         */
+        public function setGlobalMiddleware(array $middleware): static
+        {
+            return $this;
+        }
+    });
+
+    /** @var FoundationKernel $kernel */
+    $kernel = app(Kernel::class);
+
+    expect($kernel->getGlobalMiddleware())->toBe([InvokeDeferredCallbacks::class]);
+});
+
 it('keeps deleted pages for thirty days', function (): void {
     expect(config('made-cms-package.pages.keep_deleted_days'))->toBe(30);
 });
 
 it('appends the launcher middleware to the web middleware group', function (): void {
-    /** @var Illuminate\Foundation\Http\Kernel $kernel */
+    /** @var FoundationKernel $kernel */
     $kernel = app(Kernel::class);
 
     expect($kernel->getMiddlewareGroups()['web'])->toContain(InjectLauncher::class)
@@ -156,7 +208,7 @@ it('ships every translation in Dutch and English', function (string $file): void
     $english = require __DIR__."/../../lang/en/{$file}.php";
 
     expect(array_keys(Arr::dot($english)))->toBe(array_keys(Arr::dot($dutch)));
-})->with(['pages', 'launcher', 'console', 'mail', 'strips', 'scan', 'media', 'cms']);
+})->with(['pages', 'launcher', 'console', 'mail', 'strips', 'scan', 'media', 'cms', 'sitemap']);
 
 it('registers the view namespace', function (): void {
     expect(app('view')->getFinder()->getHints())->toHaveKey('made-cms-package');
@@ -180,7 +232,7 @@ it('registers the publish tags promised in the README', function (string $tag): 
 
 it('ships the migrations for every context', function (string $table): void {
     expect(Schema::hasTable($table))->toBeTrue();
-})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes', 'cms_media_folders', 'cms_media', 'cms_media_usages']);
+})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes', 'cms_media_folders', 'cms_media', 'cms_media_usages', 'cms_sitemaps']);
 
 it('maps the page model to a morph alias without forcing a map on the host', function (): void {
     expect(Relation::getMorphedModel('cms_page'))->toBe(Page::class)

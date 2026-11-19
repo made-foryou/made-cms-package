@@ -28,4 +28,11 @@ return [
         'missing' => 'No thumbnail for :name (#:id): the file is not on the media disk.',
         'unreadable' => 'No thumbnail for :name (#:id): the file is no photo that can be read.',
     ],
+    'sitemap' => [
+        'built' => ':address: :addresses, :errors.',
+        'unchanged' => ':address did not change: :addresses, :errors.',
+        'addresses' => '{0} no addresses|{1} 1 address|[2,*] :count addresses',
+        'errors' => '{0} no errors|{1} 1 error|[2,*] :count errors',
+        'no_routes' => 'No sitemap built: the routes of the site have no Route::madeCms() yet.',
+    ],
 ];

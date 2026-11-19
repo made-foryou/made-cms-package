@@ -10,6 +10,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Kernel;
+use Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
@@ -25,10 +26,19 @@ use Made\CmsPackage\Console\Commands\CreateEditorCommand;
 use Made\CmsPackage\Console\Commands\MediaThumbnailsCommand;
 use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
+use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\ServedAddress;
 use Made\CmsPackage\Content\Data\SitemapSources;
 use Made\CmsPackage\Content\Data\SitePrefixes;
+use Made\CmsPackage\Content\Events\PageDeleted;
+use Made\CmsPackage\Content\Events\PageMetaUpdated;
+use Made\CmsPackage\Content\Events\PageMoved;
+use Made\CmsPackage\Content\Events\PagePublished;
+use Made\CmsPackage\Content\Events\PageRestored;
+use Made\CmsPackage\Content\Events\PageUpdated;
+use Made\CmsPackage\Content\Events\PageVisibilityChanged;
+use Made\CmsPackage\Content\Listeners\RebuildSitemaps;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Sitemap\PageSitemapSource;
 use Made\CmsPackage\Content\Strips\StripTypes;
@@ -85,6 +95,17 @@ class CmsPackageServiceProvider extends ServiceProvider
         // Synchronous on purpose: the event carries the plain code, which must never end up in a queue payload.
         Event::listen(LoginCodeIssued::class, SendLoginCode::class);
 
+        // Every change of a page that can change the sitemap builds it again, once the answer is sent.
+        Event::listen([
+            PagePublished::class,
+            PageUpdated::class,
+            PageMoved::class,
+            PageDeleted::class,
+            PageRestored::class,
+            PageVisibilityChanged::class,
+            PageMetaUpdated::class,
+        ], RebuildSitemaps::class);
+
         $this->registerRateLimiters();
 
         // A short alias instead of the class name in cms_routes, so moving the model never breaks an address.
@@ -97,6 +118,12 @@ class CmsPackageServiceProvider extends ServiceProvider
             if ($kernel instanceof Kernel && array_key_exists('web', $kernel->getMiddlewareGroups())) {
                 $kernel->appendMiddlewareToGroup('web', InjectLauncher::class);
             }
+
+            // The sitemap is built after the answer (defer()). A kernel of its own, or global middleware the site
+            // replaced, may lack the middleware that runs deferred work; without it the sitemap would never follow.
+            if ($kernel instanceof Kernel && ! $kernel->hasMiddleware(InvokeDeferredCallbacks::class)) {
+                $kernel->prependMiddleware(InvokeDeferredCallbacks::class);
+            }
         });
 
         if (! $this->app->runningInConsole()) {
@@ -106,6 +133,7 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->commands([
             CreateEditorCommand::class,
             PrunePagesCommand::class,
+            SitemapCommand::class,
             MediaUsageCommand::class,
             MediaThumbnailsCommand::class,
         ]);

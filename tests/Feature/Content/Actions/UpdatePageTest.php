@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
@@ -225,5 +226,25 @@ it('refuses an address another request stores at the same moment, as a taken add
 
     expect($stored->title)->toBe('Over ons')
         ->and($stored->route?->path)->toBe('/over-ons');
+    Event::assertNotDispatched(PageUpdated::class);
+});
+
+it('refuses a parent that went under the page at the same moment', function (): void {
+    Event::fake([PageUpdated::class]);
+    $a = Page::factory()->atPosition(0)->at('/a')->create(['title' => 'A', 'slug' => 'a']);
+    $b = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b']);
+    // Another request hangs B under A after this one found B, and commits before this one starts writing.
+    $competing = true;
+    DB::connection()->beforeStartingTransaction(static function () use (&$competing, $a, $b): void {
+        if ($competing) {
+            $competing = false;
+            DB::table('cms_pages')->where('id', $b->id)->update(['parent_id' => $a->id]);
+        }
+    });
+
+    expect(fn (): Page => UpdatePage::run($a, new PageChanges(title: 'A', slug: 'a', parentId: $b->id, inMenu: true)))
+        ->toThrow(CircularPageMove::class);
+
+    expect(Page::query()->findOrFail($a->id)->parent_id)->toBeNull();
     Event::assertNotDispatched(PageUpdated::class);
 });

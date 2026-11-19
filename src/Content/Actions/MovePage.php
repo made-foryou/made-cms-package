@@ -42,7 +42,6 @@ final class MovePage
     {
         $page->loadMissing('route');
         $parent = FindParentPage::run($parentId);
-        CheckPageParent::run($page, $parent);
 
         $siblings = Page::query()->childrenOf($parent)->inMenuOrder()->get()->map(static fn (Page $sibling): int => $sibling->id)->all();
         $others = array_values(array_filter($siblings, static fn (int $id): bool => $id !== $page->id));
@@ -63,6 +62,8 @@ final class MovePage
 
         try {
             DB::transaction(function () use ($page, $parent, $position, $others, $sameParent, $from, $to): void {
+                CheckPageParent::run($page, $parent);
+
                 if ($to != $from && Route::query()->atPath($to)->exists()) {
                     throw PagePathTaken::at($to);
                 }

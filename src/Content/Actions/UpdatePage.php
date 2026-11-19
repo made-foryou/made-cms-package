@@ -51,11 +51,6 @@ final class UpdatePage
 
         $moving = $changes->parentId !== $page->parent_id;
         $parent = $moving ? FindParentPage::run($changes->parentId) : $page->parent;
-
-        if ($moving) {
-            CheckPageParent::run($page, $parent);
-        }
-
         $from = PagePath::fromString((string) $page->route?->path);
         $to = $home ? $from : PagePath::fromString((string) $parent?->route?->path)->child($slug->value);
 
@@ -70,6 +65,10 @@ final class UpdatePage
         try {
             DB::transaction(function () use ($page, $parent, $moving, $changed, $hidden, $from, $to): void {
                 if ($changed) {
+                    if ($moving) {
+                        CheckPageParent::run($page, $parent);
+                    }
+
                     if ($to != $from && Route::query()->atPath($to)->exists()) {
                         throw PagePathTaken::at($to);
                     }

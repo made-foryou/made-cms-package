@@ -222,5 +222,9 @@ return [
         'move_path_long' => 'There the address of this page or a page under it gets longer than 255 characters. Choose a place higher in the tree.',
         'meta_title_long' => 'Keep the title in Google to 120 characters at most. Google shows about 60.',
         'meta_description_long' => 'Keep the description in Google to 320 characters at most. Google shows about 155.',
+        'share_image_invalid' => 'Choose an image from Media.',
+        'share_image_gone' => 'This image is no longer in Media. Choose another one.',
+        'share_image_kind' => 'This file is not an image. Choose a photo.',
+        'share_image_svg' => 'Apps show no svg with a shared link. Choose a photo, such as a jpg, png or webp.',
     ],
 ];

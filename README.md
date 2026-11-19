@@ -212,7 +212,7 @@ $team = CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about-
 MovePage::run($team, parentId: null, position: 0); // /team, first in the menu
 ```
 
-`UpdatePage`, `SetPageVisibility`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageVisibilityChanged`, `PageMoved`, `PageDeleted` and `PageRestored`. Read the pages visitors see with `Page::query()->visible()`, the hidden ones with `->hidden()`.
+`UpdatePage`, `SetPageVisibility`, `SetPageShareImage`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageVisibilityChanged`, `PageShareImageChanged`, `PageMoved`, `PageDeleted` and `PageRestored`. Read the pages visitors see with `Page::query()->visible()`, the hidden ones with `->hidden()`.
 
 ### The menu of the site
 

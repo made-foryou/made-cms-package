@@ -222,5 +222,9 @@ return [
         'move_path_long' => 'Daar wordt het adres van deze pagina of een pagina eronder langer dan 255 tekens. Kies een plek hoger in de boom.',
         'meta_title_long' => 'Houd de titel in Google op hooguit 120 tekens. Google toont er ongeveer 60.',
         'meta_description_long' => 'Houd de omschrijving in Google op hooguit 320 tekens. Google toont er ongeveer 155.',
+        'share_image_invalid' => 'Kies een afbeelding uit Media.',
+        'share_image_gone' => 'Deze afbeelding staat niet meer in Media. Kies een andere.',
+        'share_image_kind' => 'Dit bestand is geen afbeelding. Kies een foto.',
+        'share_image_svg' => 'Apps tonen geen svg bij een gedeelde link. Kies een foto, bijvoorbeeld jpg, png of webp.',
     ],
 ];

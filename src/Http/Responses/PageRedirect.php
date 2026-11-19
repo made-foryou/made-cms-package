@@ -26,6 +26,9 @@ final class PageRedirect
     /** The flash that makes the card "Hoe Google hem ziet" say once that it is saved. */
     private const string META_SAVED = 'made-cms-package.page_meta_saved';
 
+    /** The flash that makes the card "Hoe je link gedeeld wordt" say once that it is saved. */
+    private const string SHARE_SAVED = 'made-cms-package.page_share_saved';
+
     public static function created(Page $page): RedirectResponse
     {
         return redirect()->route('made-cms-package.pages.show', ['page' => $page->id])->with(self::CREATED, $page->id);
@@ -55,6 +58,21 @@ final class PageRedirect
     public static function justSavedMeta(Request $request, Page $page): bool
     {
         return $request->hasSession() && $request->session()->get(self::META_SAVED) === $page->id;
+    }
+
+    /**
+     * Back to the card of the share image, which says it is saved.
+     */
+    public static function shareSaved(Page $page): RedirectResponse
+    {
+        return redirect()->route('made-cms-package.pages.show', ['page' => $page->id])
+            ->withFragment(self::SHARE)
+            ->with(self::SHARE_SAVED, $page->id);
+    }
+
+    public static function justSavedShare(Request $request, Page $page): bool
+    {
+        return $request->hasSession() && $request->session()->get(self::SHARE_SAVED) === $page->id;
     }
 
     public static function visibilityChanged(Page $page): RedirectResponse

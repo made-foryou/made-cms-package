@@ -35,6 +35,8 @@ PublishPage::run($page);
 - Validation runs through `UpdateStrip` and `PublishPage`; a `ValidationException` names the field path. Fix the
   values, do not loosen the field.
 - Child pages: `CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about->id))`.
+- A page the site only links to (a privacy statement, the thank-you page after a form) is hidden after publishing:
+  `SetPageVisibility::run($page, hidden: true)`. Its address keeps working, but the menu and Google leave it out.
 - Use the design's own copy so the result can be compared with it, and list in the report what you invented.
 - Make the seeder safe to run again: find what it made before and replace or skip it, rather than adding a second copy.
 - After writing strips without the Actions (a factory, an import), run `php artisan made-cms:media-usage`.

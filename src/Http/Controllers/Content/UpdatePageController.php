@@ -10,6 +10,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
@@ -32,6 +33,8 @@ final class UpdatePageController
             $request->reject('slug', 'slug_long');
         } catch (PagePathTaken) {
             $request->reject('slug', 'path_taken');
+        } catch (PagePathTooLong) {
+            $request->reject('slug', 'path_long');
         } catch (HomePageProtected) {
             $request->reject('slug', 'home_protected');
         } catch (CircularPageMove|ParentPageNotFound|ParentPageDeleted) {

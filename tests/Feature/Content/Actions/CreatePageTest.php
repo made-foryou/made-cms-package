@@ -5,10 +5,12 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\CreatePage;
 use Made\CmsPackage\Content\Data\NewPage;
+use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PageCreated;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
 use Made\CmsPackage\Content\Models\Page;
@@ -133,4 +135,24 @@ it('dispatches an event with the new page', function (): void {
     $page = CreatePage::run(new NewPage(title: 'Jeugd', slug: null, parentId: null));
 
     Event::assertDispatched(PageCreated::class, fn (PageCreated $event): bool => $event->page->is($page));
+});
+
+it('creates a page at an address of the longest length', function (): void {
+    $parent = Page::factory()->at('/'.str_repeat('a', 120).'/'.str_repeat('b', 120))->create(['slug' => str_repeat('b', 120)]);
+
+    $page = CreatePage::run(new NewPage(title: str_repeat('c', 12), slug: null, parentId: $parent->id));
+
+    expect(mb_strlen((string) $page->route?->path))->toBe(PagePath::MAX_LENGTH);
+});
+
+it('refuses an address longer than the longest length and creates nothing', function (): void {
+    Event::fake([PageCreated::class]);
+    $parent = Page::factory()->at('/'.str_repeat('a', 120).'/'.str_repeat('b', 120))->create(['slug' => str_repeat('b', 120)]);
+
+    expect(fn (): Page => CreatePage::run(new NewPage(title: str_repeat('c', 13), slug: null, parentId: $parent->id)))
+        ->toThrow(PagePathTooLong::class);
+
+    expect(Page::query()->count())->toBe(1)
+        ->and(Route::query()->count())->toBe(1);
+    Event::assertNotDispatched(PageCreated::class);
 });

@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Data\PageSlug;
 use Made\CmsPackage\Content\Events\PageCreated;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
@@ -29,6 +30,7 @@ final class CreatePage
      * @throws ParentPageDeleted
      * @throws InvalidPageSlug
      * @throws PageSlugTooLong
+     * @throws PagePathTooLong
      * @throws PagePathTaken
      */
     public function handle(NewPage $new): Page
@@ -36,6 +38,10 @@ final class CreatePage
         $parent = FindParentPage::run($new->parentId);
         $slug = PageSlug::fromString(trim((string) $new->slug) !== '' ? (string) $new->slug : $new->title);
         $path = PagePath::fromString((string) $parent?->route?->path)->child($slug->value);
+
+        if (! $path->fits()) {
+            throw PagePathTooLong::at($path);
+        }
 
         if (Route::query()->atPath($path)->exists()) {
             throw PagePathTaken::at($path);

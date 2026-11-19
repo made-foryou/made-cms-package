@@ -10,6 +10,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPagePosition;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
@@ -224,4 +225,42 @@ it('leaves every address as it was when rewriting fails', function (): void {
     expect($team->refresh()->parent_id)->toBe($about->id)
         ->and(Route::query()->where('routable_id', $team->id)->value('path'))->toBe('/over-ons/team')
         ->and($youth->refresh()->route?->path)->toBe('/over-ons/team/jeugd');
+});
+
+/**
+ * A page "/m" with a page under it of 123 characters, and a parent of 121 + 1 + $length characters to move it under.
+ *
+ * @return array{Page, Page, Page}
+ */
+function deepMove(int $length): array
+{
+    $deep = Page::factory()->atPosition(0)->at('/'.str_repeat('t', 120))->create(['slug' => str_repeat('t', 120)]);
+    $parent = Page::factory()->under($deep)->at('/'.str_repeat('t', 120).'/'.str_repeat('u', $length))->create(['slug' => str_repeat('u', $length)]);
+    $page = Page::factory()->atPosition(1)->at('/m')->create(['slug' => 'm']);
+    $child = Page::factory()->under($page)->at('/m/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+
+    return [$parent, $page, $child];
+}
+
+it('moves a page where the address of a page under it gets the longest length', function (): void {
+    [$parent, $page, $child] = deepMove(10);
+
+    MovePage::run($page, $parent->id);
+
+    expect(mb_strlen((string) $child->refresh()->route?->path))->toBe(255);
+});
+
+it('refuses a place where the address of a page under it gets too long and moves nothing', function (): void {
+    Event::fake([PageMoved::class]);
+    [$parent, $page, $child] = deepMove(11);
+
+    expect(fn (): Page => MovePage::run($page, $parent->id))->toThrow(PagePathTooLong::class);
+
+    $stored = Page::query()->with('route')->findOrFail($page->id);
+
+    expect($stored->parent_id)->toBeNull()
+        ->and($stored->position)->toBe(1)
+        ->and($stored->route?->path)->toBe('/m')
+        ->and($child->refresh()->route?->path)->toBe('/m/'.str_repeat('c', 120));
+    Event::assertNotDispatched(PageMoved::class);
 });

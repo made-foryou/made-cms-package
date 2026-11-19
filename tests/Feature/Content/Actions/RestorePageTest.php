@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\DeletePage;
+use Made\CmsPackage\Content\Actions\MovePage;
 use Made\CmsPackage\Content\Actions\RestorePage;
 use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
 use Made\CmsPackage\Content\Events\PageRestored;
 use Made\CmsPackage\Content\Exceptions\PageNotDeleted;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -96,4 +98,17 @@ it('dispatches an event with the page and its address', function (): void {
     RestorePage::run($page);
 
     Event::assertDispatched(PageRestored::class, fn (PageRestored $event): bool => $event->page->is($page) && $event->path->value === '/over-ons');
+});
+
+it('refuses an address that got too long meanwhile and leaves the page deleted', function (): void {
+    $above = Page::factory()->atPosition(0)->at('/'.str_repeat('b', 120))->create(['slug' => str_repeat('b', 120)]);
+    $parent = Page::factory()->atPosition(1)->at('/'.str_repeat('a', 120))->create(['slug' => str_repeat('a', 120)]);
+    $page = deletedPage(Page::factory()->under($parent)->at('/'.str_repeat('a', 120).'/'.str_repeat('d', 13))->create(['slug' => str_repeat('d', 13)]));
+
+    // The parent moves to 242 characters, so the page would be 256.
+    MovePage::run($parent, $above->id);
+
+    expect(fn (): Page => RestorePage::run($page))->toThrow(PagePathTooLong::class);
+
+    expect(Page::query()->withTrashed()->findOrFail($page->id)->trashed())->toBeTrue();
 });

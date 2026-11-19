@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Made\CmsPackage\Content\Actions\CreatePage;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
@@ -29,6 +30,8 @@ final class StorePageController
             $request->reject('slug', 'slug_long');
         } catch (PagePathTaken) {
             $request->reject('slug', 'path_taken');
+        } catch (PagePathTooLong) {
+            $request->reject('slug', 'path_long');
         } catch (ParentPageNotFound|ParentPageDeleted) {
             $request->reject('parent_id', 'parent_invalid');
         }

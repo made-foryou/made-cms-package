@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Models\Page;
 
 it('changes the title and the menu flag without touching the address', function (): void {
@@ -190,4 +191,24 @@ it('changes nothing of the home page when it is asked to hide it', function (): 
         ->toThrow(HomePageProtected::class);
     expect($home->refresh()->title)->toBe('Home')
         ->and($home->hidden)->toBeFalse();
+});
+
+it('refuses a slug that makes the address of a page under it too long and changes nothing', function (): void {
+    Event::fake([PageUpdated::class]);
+    $page = Page::factory()->at('/'.str_repeat('p', 10))->create(['title' => 'Pagina', 'slug' => str_repeat('p', 10)]);
+    $child = Page::factory()->under($page)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+    $grandchild = Page::factory()->under($child)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120))->create(['slug' => str_repeat('g', 120)]);
+
+    // The grandchild is 253 characters now; a slug of 13 makes it 256.
+    expect(fn (): Page => UpdatePage::run($page, new PageChanges(title: 'Langer', slug: str_repeat('p', 13), parentId: null, inMenu: true)))
+        ->toThrow(PagePathTooLong::class);
+
+    $stored = Page::query()->with('route')->findOrFail($page->id);
+
+    expect($stored->title)->toBe('Pagina')
+        ->and($stored->slug)->toBe(str_repeat('p', 10))
+        ->and($stored->route?->path)->toBe('/'.str_repeat('p', 10))
+        ->and($child->refresh()->route?->path)->toBe('/'.str_repeat('p', 10).'/'.str_repeat('c', 120))
+        ->and($grandchild->refresh()->route?->path)->toBe('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120));
+    Event::assertNotDispatched(PageUpdated::class);
 });

@@ -65,6 +65,18 @@ it('refuses an address that gets longer than 120 characters once it is made', fu
         ->and($page->route?->path)->toBe('/over-ons');
 });
 
+it('refuses an address that makes the address of a page under it longer than 255 characters', function (): void {
+    $page = Page::factory()->at('/'.str_repeat('p', 10))->create(['title' => 'Pagina', 'slug' => str_repeat('p', 10)]);
+    $child = Page::factory()->under($page)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+    Page::factory()->under($child)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120))->create(['slug' => str_repeat('g', 120)]);
+
+    $this->from('/made-cms/pages/'.$page->id)
+        ->put('made-cms/pages/'.$page->id, ['title' => 'Pagina', 'slug' => str_repeat('p', 13), 'parent_id' => '', 'in_menu' => '1'])
+        ->assertSessionHasErrors(['slug' => 'Het hele adres wordt dan langer dan 255 tekens, bij deze pagina of een pagina eronder. Kies een korter adres.']);
+
+    expect($page->refresh()->route?->path)->toBe('/'.str_repeat('p', 10));
+});
+
 it('keeps the address of the home page when the form has no address', function (): void {
     $home = Page::factory()->at('/')->create(['title' => 'Home', 'slug' => 'home']);
 

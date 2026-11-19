@@ -44,3 +44,10 @@ it('gives the address of a child', function (string $parent, string $slug, strin
     'uppercase' => ['/over-ons', 'TEAM', '/over-ons/team'],
     'with slashes' => ['/over-ons', '/team/', '/over-ons/team'],
 ]);
+
+it('fits an address of at most 255 characters', function (int $length, bool $fits): void {
+    expect(PagePath::fromString('/'.str_repeat('é', $length - 1))->fits())->toBe($fits);
+})->with([
+    'the longest' => [255, true],
+    'one more' => [256, false],
+]);

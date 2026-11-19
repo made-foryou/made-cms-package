@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPagePosition;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
 use Made\CmsPackage\Content\Models\Page;
@@ -34,6 +35,7 @@ final class MovePage
      * @throws CircularPageMove
      * @throws InvalidPagePosition
      * @throws PagePathTaken
+     * @throws PagePathTooLong when the address of the page or of a page under it gets too long
      */
     public function handle(Page $page, ?int $parentId, ?int $position = null): Page
     {

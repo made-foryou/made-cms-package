@@ -15,6 +15,11 @@ final readonly class PagePath
 {
     public const string HOME = '/';
 
+    /**
+     * The length of cms_routes.path, in characters as MySQL and PostgreSQL count a varchar.
+     */
+    public const int MAX_LENGTH = 255;
+
     private function __construct(public string $value) {}
 
     /**
@@ -32,6 +37,15 @@ final readonly class PagePath
         $segments = array_filter(explode('/', mb_strtolower(trim($path))), static fn (string $segment): bool => $segment !== '');
 
         return new self(self::HOME.implode('/', $segments));
+    }
+
+    /**
+     * Whether the address fits in cms_routes.path. A longer one can still be read (the address a deleted page would
+     * get back), but no Action stores it.
+     */
+    public function fits(): bool
+    {
+        return mb_strlen($this->value) <= self::MAX_LENGTH;
     }
 
     public function isHome(): bool

@@ -10,6 +10,7 @@ use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Events\PageRestored;
 use Made\CmsPackage\Content\Exceptions\PageNotDeleted;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
@@ -24,6 +25,7 @@ final class RestorePage
      *
      * @throws PageNotDeleted
      * @throws ParentPageDeleted
+     * @throws PagePathTooLong
      * @throws PagePathTaken
      */
     public function handle(Page $page): Page
@@ -39,6 +41,10 @@ final class RestorePage
         }
 
         $path = PagePath::fromString((string) $parent?->route?->path)->child($page->slug);
+
+        if (! $path->fits()) {
+            throw PagePathTooLong::at($path);
+        }
 
         if (Route::query()->atPath($path)->exists()) {
             throw PagePathTaken::at($path);

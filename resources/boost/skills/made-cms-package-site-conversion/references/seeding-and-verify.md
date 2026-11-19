@@ -40,6 +40,7 @@ PublishPage::run($page);
 - Use the design's own copy so the result can be compared with it, and list in the report what you invented.
 - Make the seeder safe to run again: find what it made before and replace or skip it, rather than adding a second copy.
 - After writing strips without the Actions (a factory, an import), run `php artisan made-cms:media-usage`.
+- The sitemap follows the Actions by itself; after writing pages without them, run `php artisan made-cms:sitemap`.
 
 ## The home page
 
@@ -90,4 +91,5 @@ UpdateAltText::run($media, 'Het team in clubshirts in de sporthal');
 - [ ] Layout (header, menu from `ListMenuPages`, footer) sits outside the strips.
 - [ ] Content images are in the media library with alt texts; design images are in the site's assets.
 - [ ] The seeder can run twice without duplicating pages or images.
+- [ ] `/sitemap.xml` lists the published pages and `/robots.txt` names it; `public/` holds no `sitemap.xml` or `robots.txt`.
 - [ ] The report lists the catalogue, merges, what stays in code, what was invented and the open questions.

@@ -320,6 +320,7 @@ The macro registers a `GET` route for every address that no route above it claim
 - It returns the route without a name, so you can chain `->name('page')` or `->middleware(...)` and use the macro more than once. It works with `php artisan route:cache`.
 - The route parameter is called `path`. Call the parameter of your responder anything else (`$page`), or implicit route binding looks the page up by id and answers 404.
 - A `POST` to an address without a route answers 405 instead of 404, like any catch-all route.
+- Before the pages it serves `sitemap.xml` of its group and, in a group without a prefix, `robots.txt`; see [Sitemap and robots.txt](#sitemap-and-robotstxt).
 - Every page has one address. A `GET` or `HEAD` for another form of it (`/Over-Ons`, `/over-ons/`, `//over-ons`) answers a `301` to the canonical address `/over-ons`, under the prefix of the group (`/nl/over-ons`) and with the query string. An address without a page answers 404, not a redirect. Laravel's `.htaccess` already redirected a trailing slash on Apache; now nginx and Herd do the same. `/index.php/over-ons` is left to the web server.
 
 The address of a page is in `$page->route->path`. Addresses live in their own table (`cms_routes`), unique across the site; a page that is not published keeps its address. An address is lowercase, without a trailing slash: `/Over-Ons/` redirects to `/over-ons`. Store a path through `PagePath::fromString($path)->value`, so it matches what visitors ask for. Find the page a visitor sees with `FindPublishedPage::run(PagePath::fromString('/over-ons'))`, or query with `Page::query()->published()->atPath(PagePath::fromString('/over-ons'))`. `FindPage::run($path)` finds the page at an address whatever its status.
@@ -458,8 +459,44 @@ With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a pr
 - A title of its own is the whole title: nothing is added after it. Without one the title is the name of the page and the name of the site (`app.name`), "Onze teams · TTV Merwestad Dordrecht", and for the home page the name of the site alone.
 - Without a description there is no description tag, and Google takes a piece of the page itself.
 - The canonical address is absolute, from `app.url` and never from the Host of the request, so `http://`, `www.` and any other address the site answers on lead Google to the same one. Set `app.url` to the address the site should be found at. Under a route group with a prefix it keeps the prefix (`https://ttvmerwestad.nl/nl/over-ons`); `DescribePageMeta` knows the prefix only for the page the request serves.
-- "Mag Google hem tonen" off writes `<meta name="robots" content="noindex">`: the page stays reachable, but leaves the search results. A page hidden from visitors gets noindex too, whatever that switch says; the switch counts again once the page is shown. The edit mode sends `X-Robots-Tag: noindex, nofollow` on top of that for every page. "Staat in de sitemap" is stored for the sitemap the package will serve.
+- "Mag Google hem tonen" off writes `<meta name="robots" content="noindex">`: the page stays reachable, but leaves the search results. A page hidden from visitors gets noindex too, whatever that switch says; the switch counts again once the page is shown. The edit mode sends `X-Robots-Tag: noindex, nofollow` on top of that for every page. "Staat in de sitemap" off keeps the page out of the [sitemap](#sitemap-and-robotstxt).
 - The component also names the page in the edit bar (`<meta name="made-cms:page">`), so the bar keeps the name of the page when its title in Google says something else.
+
+## Sitemap and robots.txt
+
+`Route::madeCms()` serves the sitemap and robots.txt of the site as well, so there is nothing to set up. **Delete `public/sitemap.xml` and `public/robots.txt`**: the web server serves those files before Laravel, so robots would never read the ones of the CMS. `CheckPublicSiteFiles::run()` tells whether they are still there.
+
+- `/sitemap.xml` lists every published page visitors see whose "Mag Google hem tonen" and "Staat in de sitemap" are on, at its canonical address (absolute from `app.url`, with the prefix of the route group), with `lastmod` the moment it was last published. A page under a hidden page is listed when its own switches say so, as its meta does. The answer is `application/xml; charset=UTF-8` with `Last-Modified`; a robot that has it already gets a 304.
+- The sitemap is stored (`cms_sitemaps`, the last 10 of each route group), so it survives a deploy and every server serves the same one. It is built again after every change of a page that can change it, once the answer is sent (Laravel's `defer()`), and at the first request when there is none yet. After an import that did not go through the Actions of the CMS, run `php artisan made-cms:sitemap`.
+- What belongs in it but stays out is stored as an error with its path and reason: a page without an address (`no_address`), a page a rule of robots.txt for `*` or Googlebot keeps away (`blocked`), and the addresses after the 50,000 or 50 MB Google reads in one sitemap (`full`).
+- `/robots.txt` lets every robot in and names the sitemap of every route group at the bottom. Add rules of your own in config, per user agent, with `*` and `$` as Google reads them:
+
+```php
+// config/made-cms-package.php
+'sitemap' => [
+    'robots' => [
+        '*' => ['/api/'],
+        'Googlebot' => ['/zoeken$'],
+    ],
+],
+```
+
+```
+User-agent: *
+# Ingesteld door de developer
+Disallow: /api/
+
+User-agent: Googlebot
+# Ingesteld door de developer
+Disallow: /zoeken$
+
+Sitemap: https://ttvmerwestad.nl/sitemap.xml
+```
+
+- Keep a page out of Google with its own switch ("Mag Google hem tonen", noindex), never with a Disallow: Google has to read a page to see its noindex.
+- In a route group with a prefix the sitemap lives under the prefix (`/nl/sitemap.xml`, one per group), but robots.txt does not: robots only read the one at the root. A site that serves its pages only under a prefix serves its own `robots.txt` at the root, with a `Sitemap:` line for `https://…/nl/sitemap.xml`.
+- A route of the site for `sitemap.xml` or `robots.txt` above `Route::madeCms()` stays the site's own.
+- Another source of addresses (a collection, later) implements `Content\Sitemap\SitemapSource`; the package binds the sources in `SitemapSources`.
 
 ## Rendering strips
 
@@ -1001,12 +1038,13 @@ src/
 │   ├── Data/       immutable data objects
 │   ├── Events/
 │   └── Models/     plain table representations
-├── Content/    pages, strips, publishing and the media library
+├── Content/    pages, strips, publishing, the media library and the sitemap
 │   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
+│   ├── Sitemap/    the sources of the sitemap, its xml and the patterns of robots.txt
 │   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render, and UploadMedia
 │   └── ...
 ├── Console/    technical layer: artisan commands
-├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro, the <x-made-cms::strips>, <x-made-cms::heading> and <x-made-cms::emphasis> components, controllers grouped per context, the login session
+├── Http/       technical layer: middleware (the launcher, page lookup), the Route::madeCms() macro (pages, sitemap.xml, robots.txt), the <x-made-cms::strips>, <x-made-cms::heading> and <x-made-cms::emphasis> components, controllers grouped per context, the login session
 ├── Support/    context-free helpers: site name and url, launcher locale, QR code
 └── CmsPackageServiceProvider.php
 ```

@@ -2,56 +2,11 @@
 
 declare(strict_types=1);
 
-use Illuminate\Routing\CompiledRouteCollection;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Str;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Middleware\ResolvePage;
 use Made\CmsPackage\Tests\Fixtures\Http\ShowPage;
-
-/**
- * Registers the page routes the way a site does: the macro as the last line of its web routes.
- */
-function servePages(Closure|string|null $responder = null): Illuminate\Routing\Route
-{
-    $route = null;
-
-    Route::middleware('web')->group(function () use ($responder, &$route): void {
-        $route = Route::madeCms($responder ?? static fn (Page $page): string => 'Pagina: '.$page->title);
-    });
-
-    /** @var Illuminate\Routing\Route $route */
-    return $route;
-}
-
-/**
- * Does what `php artisan route:cache` does and loads the result back, without a separate process.
- */
-function cacheRoutes(): void
-{
-    $router = app('router');
-    $routes = $router->getRoutes();
-    $routes->refreshNameLookups();
-    $routes->refreshActionLookups();
-
-    foreach ($routes->getRoutes() as $route) {
-        $route->prepareForSerialization();
-    }
-
-    $file = sys_get_temp_dir().'/made-cms-routes-'.Str::random(16).'.php';
-    file_put_contents($file, '<?php return '.var_export($routes->compile(), true).';');
-
-    try {
-        /** @var array{compiled: array<mixed>, attributes: array<string, mixed>} $compiled */
-        $compiled = require $file;
-        $router->setCompiledRoutes($compiled);
-    } finally {
-        unlink($file);
-    }
-
-    expect($router->getRoutes())->toBeInstanceOf(CompiledRouteCollection::class);
-}
 
 it('registers a get and head catch-all that looks up the page', function (): void {
     $route = servePages();

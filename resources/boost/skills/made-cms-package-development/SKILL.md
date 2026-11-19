@@ -119,6 +119,13 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - the bar of the shell shows "Concept · n wijzigingen" (`CompareDraft`), publishes with "Publiceren" (`PublishPage`; a strip that breaks its definition is named and chosen instead), throws the draft away with "Concept weggooien" (`DiscardDraft`) and opens "Voorvertoning"; every editor who opens `Screen::Pages` may publish; its JSON routes (`made-cms-package.pages.draft.show`, `.draft.destroy`, `made-cms-package.pages.publish`) need no code in the app
 - a page link is the path in `cms_routes` without the prefix of a route group; a site under `/nl` adds that itself
 
+### 8b. Sitemap and robots.txt
+
+- `Route::madeCms()` serves `/sitemap.xml` of its route group and, in a group without a prefix, `/robots.txt`; the app needs no code for them, but **delete `public/sitemap.xml` and `public/robots.txt`** (the web server serves them before Laravel); `CheckPublicSiteFiles::run()` tells whether they are still there
+- the sitemap lists every published page visitors see whose "Mag Google hem tonen" and "Staat in de sitemap" are on, at its canonical address (absolute from `app.url`, with the prefix of the group), with `lastmod` the moment it was last published; it is stored (`cms_sitemaps`) and built again after every change of a page through the Actions, once the answer is sent (`defer()`); after writing pages without the Actions (a seeder with the page factory, an import) run `php artisan made-cms:sitemap`
+- add Disallow rules in config: `'sitemap' => ['robots' => ['*' => ['/api/'], 'Googlebot' => ['/zoeken$']]]` (`*` and `$` as Google reads them); a page such a rule for `*` or Googlebot keeps away stays out of the sitemap as an error
+- in a group with a prefix the sitemap lives under it (`/nl/sitemap.xml`), robots.txt does not: a site that serves its pages only under a prefix serves its own `robots.txt` at the root with `Sitemap: https://…/nl/sitemap.xml`; a route of the site for `sitemap.xml` or `robots.txt` above `Route::madeCms()` stays the site's own
+
 ## Rules, References, and Templates
 
 Read before executing:
@@ -144,6 +151,7 @@ Read before executing:
 - do not derive `key()` from the class name or change it once content uses it; the key is stored with every strip
 - do not nest `Items` inside `Items`; one list level is supported
 - do not put routes of the site below `Route::madeCms()`; they are never reached
+- do not keep a `public/sitemap.xml` or `public/robots.txt`, and do not keep a page out of Google with a Disallow rule; switch "Mag Google hem tonen" off (noindex), which Google can only read when it may fetch the page
 - do not call the responder's parameter `$path`; the route parameter has that name and implicit binding would look the page up by id
 - do not chain `Route::middleware(...)->madeCms()`; wrap the macro in `->group()` instead
 - do not look pages up by `cms_pages.slug`; an address lives in `cms_routes`

@@ -206,3 +206,12 @@ it('orders deleted pages by the most recent deletion first', function (): void {
 
     expect(Page::query()->onlyTrashed()->recentlyDeleted()->pluck('id')->all())->toBe([$newest->id, $older->id]);
 });
+
+it('finds the pages google may show and the pages that may be in the sitemap', function (): void {
+    $about = Page::factory()->create();
+    $search = Page::factory()->noindex()->create();
+    $privacy = Page::factory()->outOfSitemap()->create();
+
+    expect(Page::query()->indexable()->pluck('id')->all())->toBe([$about->id, $privacy->id])
+        ->and(Page::query()->inSitemap()->pluck('id')->all())->toBe([$about->id, $search->id]);
+});

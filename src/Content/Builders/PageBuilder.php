@@ -42,6 +42,22 @@ final class PageBuilder extends Builder
     }
 
     /**
+     * The pages Google may show, as far as their own switch goes; a hidden page gets noindex whatever it says.
+     */
+    public function indexable(): self
+    {
+        return $this->where('indexable', true);
+    }
+
+    /**
+     * The pages whose switch keeps them in the sitemap; a page Google may not show or a hidden page stays out anyway.
+     */
+    public function inSitemap(): self
+    {
+        return $this->where('in_sitemap', true);
+    }
+
+    /**
      * The page whose address is the given path.
      */
     public function atPath(PagePath $path): self

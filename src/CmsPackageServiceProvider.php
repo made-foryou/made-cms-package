@@ -6,9 +6,11 @@ namespace Made\CmsPackage;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\Kernel;
+use Illuminate\Foundation\Http\Middleware\InvokeDeferredCallbacks;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
@@ -24,14 +26,27 @@ use Made\CmsPackage\Console\Commands\CreateEditorCommand;
 use Made\CmsPackage\Console\Commands\MediaThumbnailsCommand;
 use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
+use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\ServedAddress;
+use Made\CmsPackage\Content\Data\SitemapSources;
+use Made\CmsPackage\Content\Data\SitePrefixes;
+use Made\CmsPackage\Content\Events\PageDeleted;
+use Made\CmsPackage\Content\Events\PageMetaUpdated;
+use Made\CmsPackage\Content\Events\PageMoved;
+use Made\CmsPackage\Content\Events\PagePublished;
+use Made\CmsPackage\Content\Events\PageRestored;
+use Made\CmsPackage\Content\Events\PageUpdated;
+use Made\CmsPackage\Content\Events\PageVisibilityChanged;
+use Made\CmsPackage\Content\Listeners\RebuildSitemaps;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Sitemap\PageSitemapSource;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
 use Made\CmsPackage\Http\Routing\RouterMixin;
+use Made\CmsPackage\Http\Routing\SiteRoutes;
 use Made\CmsPackage\Http\Session\LoginSession;
 use Made\CmsPackage\Support\PublishedMigrations;
 use Symfony\Component\HttpFoundation\IpUtils;
@@ -50,6 +65,8 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->registerStripTypes();
 
         $this->registerPageRequestState();
+
+        $this->registerSitemap();
 
         // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
         // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
@@ -78,6 +95,17 @@ class CmsPackageServiceProvider extends ServiceProvider
         // Synchronous on purpose: the event carries the plain code, which must never end up in a queue payload.
         Event::listen(LoginCodeIssued::class, SendLoginCode::class);
 
+        // Every change of a page that can change the sitemap builds it again, once the answer is sent.
+        Event::listen([
+            PagePublished::class,
+            PageUpdated::class,
+            PageMoved::class,
+            PageDeleted::class,
+            PageRestored::class,
+            PageVisibilityChanged::class,
+            PageMetaUpdated::class,
+        ], RebuildSitemaps::class);
+
         $this->registerRateLimiters();
 
         // A short alias instead of the class name in cms_routes, so moving the model never breaks an address.
@@ -90,6 +118,12 @@ class CmsPackageServiceProvider extends ServiceProvider
             if ($kernel instanceof Kernel && array_key_exists('web', $kernel->getMiddlewareGroups())) {
                 $kernel->appendMiddlewareToGroup('web', InjectLauncher::class);
             }
+
+            // The sitemap is built after the answer (defer()). A kernel of its own, or global middleware the site
+            // replaced, may lack the middleware that runs deferred work; without it the sitemap would never follow.
+            if ($kernel instanceof Kernel && ! $kernel->hasMiddleware(InvokeDeferredCallbacks::class)) {
+                $kernel->prependMiddleware(InvokeDeferredCallbacks::class);
+            }
         });
 
         if (! $this->app->runningInConsole()) {
@@ -99,6 +133,7 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->commands([
             CreateEditorCommand::class,
             PrunePagesCommand::class,
+            SitemapCommand::class,
             MediaUsageCommand::class,
             MediaThumbnailsCommand::class,
         ]);
@@ -160,6 +195,18 @@ class CmsPackageServiceProvider extends ServiceProvider
     {
         $this->app->scoped(EditMode::class, static fn (): EditMode => EditMode::off());
         $this->app->scoped(ServedAddress::class, static fn (): ServedAddress => ServedAddress::none());
+    }
+
+    /**
+     * What the sitemap lists, in this order: the pages (collections and images add a source of their own later), and
+     * the route groups that serve them, one sitemap each.
+     */
+    private function registerSitemap(): void
+    {
+        $this->app->bind(SitemapSources::class, static fn (): SitemapSources => new SitemapSources([new PageSitemapSource]));
+
+        // Read from the routes each time it is needed, never at boot: the routes of the site load after this provider.
+        $this->app->bind(SitePrefixes::class, static fn (Application $app): SitePrefixes => SiteRoutes::prefixes($app->make(Router::class)));
     }
 
     /**

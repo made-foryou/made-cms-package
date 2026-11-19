@@ -45,6 +45,9 @@ Work in this order. Do not write classes before the inventory and the catalogue 
   before creating. Never overwrite an existing class or view.
 - Is `Route::madeCms(...)` the last line of `routes/web.php`, are the migrations run, does an editor exist? If not,
   follow `made-cms-package-development` first.
+- Does `public/` hold a `sitemap.xml` or `robots.txt` of the former site? The package serves both from
+  `Route::madeCms()`; name them in the report, so they are deleted, and move any Disallow rule into config
+  (`made-cms-package.sitemap.robots`).
 - Read the project's own `CLAUDE.md` and match its code style, language and naming.
 
 ### 2. Read the design into an inventory

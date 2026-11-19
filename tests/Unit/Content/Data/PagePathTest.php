@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Data\PagePath;
+use Made\CmsPackage\Content\Exceptions\InvalidPagePath;
 
 it('normalises an address to lowercase with one leading slash and no trailing slash', function (string $raw, string $expected): void {
     expect(PagePath::fromString($raw)->value)->toBe($expected);
@@ -17,6 +18,17 @@ it('normalises an address to lowercase with one leading slash and no trailing sl
     'surrounding whitespace' => [' /over-ons ', '/over-ons'],
     'uppercase' => ['/Over-Ons/TEAM', '/over-ons/team'],
     'uppercase with accents' => ['/CAFÉ', '/café'],
+]);
+
+it('refuses an address with a control character or that is no UTF-8', function (string $raw): void {
+    expect(fn (): PagePath => PagePath::fromString($raw))->toThrow(InvalidPagePath::class);
+})->with([
+    'nul byte' => ["/over\0ons"],
+    'nul byte at the end' => ["/over-ons\0"],
+    'tab' => ["/over\tons"],
+    'line break' => ["/over\nons"],
+    'delete' => ["/over\x7Fons"],
+    'no utf-8' => ["/over\xFFons"],
 ]);
 
 it('knows the home address', function (): void {

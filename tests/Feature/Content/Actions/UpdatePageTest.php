@@ -7,6 +7,7 @@ use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PageUpdated;
+use Made\CmsPackage\Content\Events\PageVisibilityChanged;
 use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
@@ -145,4 +146,48 @@ it('dispatches an event with the old and the new address', function (): void {
     Event::assertDispatched(PageUpdated::class, fn (PageUpdated $event): bool => $event->page->is($page)
         && $event->from->value === '/oud'
         && $event->to->value === '/nieuw');
+});
+
+it('hides the page from visitors together with the other changes', function (): void {
+    Event::fake([PageUpdated::class, PageVisibilityChanged::class]);
+    $page = Page::factory()->published()->at('/privacy')->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Privacyverklaring', slug: 'privacy', parentId: null, inMenu: false, hidden: true));
+
+    expect($page->refresh()->title)->toBe('Privacyverklaring')
+        ->and($page->in_menu)->toBeFalse()
+        ->and($page->hidden)->toBeTrue();
+    Event::assertDispatchedTimes(PageUpdated::class, 1);
+    Event::assertDispatchedTimes(PageVisibilityChanged::class, 1);
+});
+
+it('only tells that visitors see the page again when nothing else changed', function (): void {
+    Event::fake([PageUpdated::class, PageVisibilityChanged::class]);
+    $page = Page::factory()->hidden()->at('/privacy')->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Privacy', slug: 'privacy', parentId: null, inMenu: true, hidden: false));
+
+    expect($page->refresh()->hidden)->toBeFalse();
+    Event::assertNotDispatched(PageUpdated::class);
+    Event::assertDispatchedTimes(PageVisibilityChanged::class, 1);
+});
+
+it('keeps whether visitors see the page when the changes leave it out', function (): void {
+    Event::fake([PageVisibilityChanged::class]);
+    $page = Page::factory()->hidden()->at('/privacy')->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Privacyverklaring', slug: 'privacy', parentId: null, inMenu: true));
+
+    expect($page->refresh()->title)->toBe('Privacyverklaring')
+        ->and($page->hidden)->toBeTrue();
+    Event::assertNotDispatched(PageVisibilityChanged::class);
+});
+
+it('changes nothing of the home page when it is asked to hide it', function (): void {
+    $home = Page::factory()->at('/')->create(['title' => 'Home', 'slug' => 'home']);
+
+    expect(fn (): Page => UpdatePage::run($home, new PageChanges(title: 'Welkom', slug: 'home', parentId: null, inMenu: true, hidden: true)))
+        ->toThrow(HomePageProtected::class);
+    expect($home->refresh()->title)->toBe('Home')
+        ->and($home->hidden)->toBeFalse();
 });

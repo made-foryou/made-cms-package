@@ -193,6 +193,7 @@ The pages screen at `/made-cms/pages` lists every page of the site in the order 
 
 - **New page** (`/made-cms/pages/new`) asks one question per step: the name, from which the address follows, and the place: at the top or under another page. The page starts as an empty draft, last in the menu, and opens on the site to be filled.
 - **One page** (`/made-cms/pages/{page}`) changes the name, the address, the parent and whether the page is in the menu. The pages under it move along, and their addresses follow. The switch says the place of the page in the menu of the site, counting only what the site shows there: a draft says where it comes once published.
+- **How Google sees it**, a card of its own on that screen, changes the title and the description in Google, with counters that follow the typing and the result as Google shows it, and the switches "Staat in de sitemap" and "Mag Google hem tonen". It saves on its own and holds for the site at once; see [Page meta](#page-meta) for printing it. `UpdatePageMeta` stores it, `MeasureMeta` counts a text as Google gets it (60 characters of a title, 155 of a description).
 - **Deleting** hides the page from visitors and editors and frees its address. It stays under "Verwijderde pagina’s" for 30 days (`pages.keep_deleted_days`) and comes back with "Terugzetten". The package schedules `made-cms:prune` daily to remove older deleted pages for good, so the host only needs the scheduler (`php artisan schedule:run` every minute).
 
 The address of a page is the address of its parent plus its slug; a page at the top or under the home page gets `/` plus its slug. The home page keeps `/`, stays at the top and cannot be deleted. A page with pages under it is deleted after they are moved or deleted.
@@ -293,6 +294,7 @@ Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namesp
 Every page lives at an address of the site (`/` for the home page, `/over-ons/team` for a nested one). Serve the pages with one line, as the **last** line of `routes/web.php`:
 
 ```php
+use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Actions\RenderStrips;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -301,7 +303,7 @@ Route::madeCms(fn (Page $page) => view('page', ['page' => $page]));
 
 // Inertia (React or Vue)
 Route::madeCms(fn (Page $page) => Inertia::render('Page', [
-    'title' => $page->title,
+    'meta' => DescribePageMeta::run($page)->toArray(),
     'strips' => RenderStrips::run($page)->toArray(),
 ]));
 
@@ -411,6 +413,51 @@ Choosing a strip shows its fields, built from its strip type, with the values of
 
   A position is the place of a strip among all strips of the draft, also hidden ones and strips of a type that left the catalogue. Every answer of the strip endpoints that changes the order holds the whole list again.
 
+
+## Page meta
+
+Every page has a title and a description in Google, edited in the card "Hoe Google hem ziet" on its screen in the CMS, and two switches: "Staat in de sitemap" and "Mag Google hem tonen". They hold for the site at once: they are no part of the draft. Print them in the `<head>` of your layout.
+
+```blade
+{{-- resources/views/page.blade.php --}}
+<head>
+    <meta charset="utf-8">
+    <x-made-cms::meta :page="$page" />
+</head>
+```
+
+```html
+<title>Onze teams · TTV Merwestad Dordrecht</title>
+<meta name="description" content="Van de jeugd tot de eredivisie.">
+<link rel="canonical" href="https://ttvmerwestad.nl/teams">
+<meta name="made-cms:page" content="Onze teams">
+```
+
+With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a prop (see [Serving pages](#serving-pages)): `{title, description, canonical, indexable}`. Print it with the `<Head>` of Inertia:
+
+```tsx
+<Head>
+  <title>{meta.title}</title>
+  {meta.description && <meta name="description" content={meta.description} />}
+  {meta.canonical && <link rel="canonical" href={meta.canonical} />}
+  {!meta.indexable && <meta name="robots" content="noindex" />}
+</Head>
+```
+
+```vue
+<Head>
+  <title>{{ meta.title }}</title>
+  <meta v-if="meta.description" name="description" :content="meta.description" />
+  <link v-if="meta.canonical" rel="canonical" :href="meta.canonical" />
+  <meta v-if="!meta.indexable" name="robots" content="noindex" />
+</Head>
+```
+
+- A title of its own is the whole title: nothing is added after it. Without one the title is the name of the page and the name of the site (`app.name`), "Onze teams · TTV Merwestad Dordrecht", and for the home page the name of the site alone.
+- Without a description there is no description tag, and Google takes a piece of the page itself.
+- The canonical address is absolute, from `app.url` and never from the Host of the request, so `http://`, `www.` and any other address the site answers on lead Google to the same one. Set `app.url` to the address the site should be found at. Under a route group with a prefix it keeps the prefix (`https://ttvmerwestad.nl/nl/over-ons`); `DescribePageMeta` knows the prefix only for the page the request serves.
+- "Mag Google hem tonen" off writes `<meta name="robots" content="noindex">`: the page stays reachable, but leaves the search results. The edit mode sends `X-Robots-Tag: noindex, nofollow` on top of that for every page. "Staat in de sitemap" is stored for the sitemap the package will serve.
+- The component also names the page in the edit bar (`<meta name="made-cms:page">`), so the bar keeps the name of the page when its title in Google says something else.
 
 ## Rendering strips
 
@@ -932,7 +979,7 @@ All CMS routes live under `routes.prefix` (default `made-cms`): the login page, 
 
 Config keys: `routes.prefix`, `auth.guard`, `auth.remember_days`, `login_code.length`, `login_code.ttl_minutes`, `login_code.max_attempts`, `mail.from_name`, `mail.help_url`, `two_factor.window` and `two_factor.recovery_codes`.
 
-The edit bar names the page after its `<title>` without the site name. Set a name of your own with:
+The edit bar names the page after its `<title>` without the site name; `<x-made-cms::meta>` sets the name of the page for it. Set a name of your own with:
 
 ```html
 <meta name="made-cms:page" content="Trainingstijden">

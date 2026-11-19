@@ -33,6 +33,10 @@ final class PageFactory extends Factory
             'slug' => Str::slug($title),
             'position' => 0,
             'in_menu' => true,
+            'meta_title' => null,
+            'meta_description' => null,
+            'in_sitemap' => true,
+            'indexable' => true,
             'status' => PageStatus::Draft,
             'strips' => [],
             'draft_strips' => null,
@@ -64,6 +68,27 @@ final class PageFactory extends Factory
     public function inMenu(bool $inMenu = true): self
     {
         return $this->state(fn (): array => ['in_menu' => $inMenu]);
+    }
+
+    /**
+     * Gives the page a title and a description in Google of its own.
+     */
+    public function withMeta(?string $title, ?string $description = null): self
+    {
+        return $this->state(fn (): array => ['meta_title' => $title, 'meta_description' => $description]);
+    }
+
+    /**
+     * Keeps the page out of Google: noindex.
+     */
+    public function noindex(): self
+    {
+        return $this->state(fn (): array => ['indexable' => false]);
+    }
+
+    public function outOfSitemap(): self
+    {
+        return $this->state(fn (): array => ['in_sitemap' => false]);
     }
 
     /**

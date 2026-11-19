@@ -77,6 +77,33 @@ return [
             'button' => 'Delete',
             'confirm' => 'Yes, delete :title',
         ],
+        'meta' => [
+            'heading' => 'How Google sees it',
+            'overview' => 'All pages in the meta overview',
+            'preview' => 'How Google shows the page, roughly',
+            'preview_empty' => 'Google now picks a piece of text from the page itself, because the description is empty.',
+            'title' => [
+                'label' => 'Title in Google',
+            ],
+            'description' => [
+                'label' => 'Description in Google',
+                'placeholder' => 'Two sentences about this page, with the words people search for.',
+            ],
+            'count' => ':count of :limit characters',
+            'count_fallback' => ':count of :limit characters · default title',
+            'count_missing' => 'Missing · :count of :limit characters',
+            'count_long' => ':count of :limit characters · Google cuts it off',
+            'in_sitemap' => [
+                'label' => 'In the sitemap',
+                'hint' => 'Off means: not in the sitemap. The page stays reachable and Google still finds it through links.',
+                'noindex' => 'A page Google may not show never goes into the sitemap.',
+            ],
+            'indexable' => [
+                'label' => 'Google may show it',
+                'hint' => 'Off means noindex: the page stays reachable, but leaves the search results.',
+            ],
+            'saved' => 'Saved. The site shows it at once; Google takes it over on its next visit.',
+        ],
     ],
     'new' => [
         'title' => 'New page',
@@ -139,5 +166,7 @@ return [
         'parent_deleted' => 'The page it lived under is deleted too. Restore that one first.',
         'restore_path_taken' => 'Another page has the old address by now. Give that page another address first.',
         'not_deleted' => 'This page is on the site already.',
+        'meta_title_long' => 'Keep the title in Google to 120 characters at most. Google shows about 60.',
+        'meta_description_long' => 'Keep the description in Google to 320 characters at most. Google shows about 155.',
     ],
 ];

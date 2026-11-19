@@ -103,7 +103,8 @@ a:hover {
 
 button,
 input,
-select {
+select,
+textarea {
     font: inherit;
     color: inherit;
     margin: 0;
@@ -1221,7 +1222,8 @@ ul.lijst {
 }
 
 .veld input,
-.veld select {
+.veld select,
+.veld textarea {
     width: 100%;
     padding: 13px 15px;
     border: 2px solid var(--made-rand-sterk);
@@ -1231,19 +1233,39 @@ ul.lijst {
 }
 
 .veld input:focus,
-.veld select:focus {
+.veld select:focus,
+.veld textarea:focus {
     border-color: var(--made-accent);
 }
 
 .veld.fout input,
-.veld.fout select {
+.veld.fout select,
+.veld.fout textarea {
     border-color: var(--made-alarm);
+}
+
+.veld textarea {
+    min-height: 96px;
+    line-height: 1.45;
+    resize: vertical;
 }
 
 .veld-hint {
     font-size: 13px;
     line-height: 1.45;
     color: var(--made-inhoud-subtiel);
+}
+
+/* The counter under a text for Google: "Ontbreekt" asks for attention, "Google kapt hem af" is too long. Neither is a
+   refusal, so the field keeps its border; red stays for what the server refused. */
+.veld-teller.ontbreekt {
+    font-weight: 600;
+    color: var(--made-link);
+}
+
+.veld-teller.te-lang {
+    font-weight: 600;
+    color: var(--made-alarm);
 }
 
 .veld-fout {
@@ -1284,6 +1306,75 @@ ul.lijst {
 
 .schakel:checked {
     background: radial-gradient(circle at 32px 50%, var(--made-krijt) 8px, transparent 8.5px), var(--made-accent);
+}
+
+.schakels {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* The result in Google (design 15.2): the look of Google itself, so light in the dark too (16.2). The title stays on
+   one line and the description on two, about where Google cuts them off. */
+.google {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding: 16px 18px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: #fff;
+    color: #47564f;
+    font-family: Arial, sans-serif;
+}
+
+.google-adres {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.google-adres::before {
+    content: '';
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #dedbcd;
+}
+
+.google-titel {
+    max-width: 600px;
+    overflow: hidden;
+    color: #1a0dab;
+    font-size: 19px;
+    line-height: 1.3;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.google-tekst {
+    display: -webkit-box;
+    max-width: 600px;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.google-tekst.leeg {
+    font-style: italic;
+}
+
+@media (prefers-color-scheme: dark) {
+    .google {
+        background: #fbfaf5;
+    }
 }
 
 .bevestig summary {

@@ -126,7 +126,7 @@
     "pages": [
         {
             "url": "/",
-            "title": "Home · Made CMS Workbench",
+            "title": "Made CMS Workbench",
             "strips": [
                 {
                     "type": "strook-1",

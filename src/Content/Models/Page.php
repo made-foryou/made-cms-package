@@ -29,6 +29,10 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property string $slug the last segment of the address
  * @property int $position the place among the pages with the same parent, 0 for the first
  * @property bool $in_menu
+ * @property string|null $meta_title the whole title in Google; null gives the name of the page with the site name
+ * @property string|null $meta_description the description in Google; null lets Google take a piece of the page
+ * @property bool $in_sitemap whether the sitemap of the site lists the page
+ * @property bool $indexable whether Google may show the page; off is noindex
  * @property PageStatus $status
  * @property list<StoredStrip> $strips the published strips, in order
  * @property list<StoredStrip>|null $draft_strips the draft editors work on; null when there is none
@@ -57,6 +61,10 @@ class Page extends Model
         'slug',
         'position',
         'in_menu',
+        'meta_title',
+        'meta_description',
+        'in_sitemap',
+        'indexable',
         'status',
         'strips',
         'draft_strips',
@@ -68,6 +76,8 @@ class Page extends Model
         'strips' => '[]',
         'position' => 0,
         'in_menu' => true,
+        'in_sitemap' => true,
+        'indexable' => true,
     ];
 
     /**
@@ -79,6 +89,8 @@ class Page extends Model
             'parent_id' => 'integer',
             'position' => 'integer',
             'in_menu' => 'boolean',
+            'in_sitemap' => 'boolean',
+            'indexable' => 'boolean',
             'status' => PageStatus::class,
             'strips' => 'array',
             'draft_strips' => 'array',

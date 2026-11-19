@@ -51,7 +51,8 @@
                         </div>
                     @endunless
                 </div>
-                @include('made-cms-package-launcher::cms.pages.partials.in-menu', [
+                @include('made-cms-package-launcher::cms.pages.partials.switch', [
+                    'name' => 'in_menu',
                     'label' => $t('pages.show.in_menu.label'),
                     'hint' => $menuPlace === null ? $t('pages.show.in_menu.hidden') : $t('pages.show.in_menu.'.$menuPlace['hint'], $menuPlace['replace']),
                     'checked' => $page['inMenu'],
@@ -61,6 +62,8 @@
                 </div>
             </form>
         </section>
+
+        @include('made-cms-package-launcher::cms.pages.partials.google')
 
         <section class="kaart" aria-labelledby="made-cms-hieronder">
             <div class="sectiekop">

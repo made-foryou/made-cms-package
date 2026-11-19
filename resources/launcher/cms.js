@@ -217,3 +217,59 @@ if (wizard) {
     sync();
     show(Number(failed?.closest('[data-stap]')?.dataset.stap ?? 1), false);
 }
+
+/*
+ * The card "Hoe Google hem ziet" on the screen of a page (design 15.2): the counters under the title and the
+ * description, the result in Google and the hint of the sitemap switch follow what the editor types. The server counts
+ * the same way (MeasureMeta): the text on one line, in characters, missing before too long before the default title.
+ * Without this script the card shows what is stored and saves the same. The texts come from data-config.
+ */
+
+const metaForm = document.querySelector('form[data-meta]');
+
+if (metaForm) {
+    const config = JSON.parse(metaForm.dataset.config ?? '{}');
+    const texts = config.texts ?? {};
+    const title = metaForm.querySelector('[data-meta-field="title"]');
+    const description = metaForm.querySelector('[data-meta-field="description"]');
+    const titlePreview = metaForm.querySelector('[data-meta-preview="title"]');
+    const descriptionPreview = metaForm.querySelector('[data-meta-preview="description"]');
+    const indexable = metaForm.querySelector('input[type="checkbox"][name="indexable"]');
+    const sitemapHint = metaForm.querySelector('#made-cms-in_sitemap-hint');
+
+    const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
+
+    const count = (name, text, fallback) => {
+        const counter = metaForm.querySelector(`[data-meta-count="${name}"]`);
+        const limit = config.limits?.[name] ?? 0;
+        const length = [...text].length;
+        const missing = length === 0;
+        const tooLong = length > limit;
+        const template = (missing && texts.missing) || (tooLong && texts.long) || (fallback && texts.fallback) || texts.count || '';
+
+        counter.textContent = template.replace(':count', String(length)).replace(':limit', String(limit));
+        counter.classList.toggle('ontbreekt', missing);
+        counter.classList.toggle('te-lang', tooLong);
+    };
+
+    const sync = () => {
+        const own = oneLine(title.value);
+        const shown = own || config.fallback || '';
+        const about = oneLine(description.value);
+
+        count('title', shown, own === '');
+        count('description', about, false);
+
+        titlePreview.textContent = shown;
+        descriptionPreview.textContent = about || texts.empty || '';
+        descriptionPreview.classList.toggle('leeg', about === '');
+
+        if (indexable && sitemapHint) {
+            sitemapHint.textContent = indexable.checked ? texts.sitemap : texts.sitemap_noindex;
+        }
+    };
+
+    metaForm.addEventListener('input', sync);
+    metaForm.addEventListener('change', sync);
+    sync();
+}

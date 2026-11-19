@@ -77,6 +77,33 @@ return [
             'button' => 'Verwijderen',
             'confirm' => 'Ja, verwijder :title',
         ],
+        'meta' => [
+            'heading' => 'Hoe Google hem ziet',
+            'overview' => 'Alle pagina’s in Meta-overzicht',
+            'preview' => 'Zo toont Google de pagina, ongeveer',
+            'preview_empty' => 'Google kiest nu zelf een stukje tekst van de pagina, omdat de omschrijving leeg is.',
+            'title' => [
+                'label' => 'Titel in Google',
+            ],
+            'description' => [
+                'label' => 'Omschrijving in Google',
+                'placeholder' => 'Twee zinnen over deze pagina, met de woorden waarop mensen zoeken.',
+            ],
+            'count' => ':count van :limit tekens',
+            'count_fallback' => ':count van :limit tekens · standaardtitel',
+            'count_missing' => 'Ontbreekt · :count van :limit tekens',
+            'count_long' => ':count van :limit tekens · Google kapt hem af',
+            'in_sitemap' => [
+                'label' => 'Staat in de sitemap',
+                'hint' => 'Uit betekent: niet in de sitemap. De pagina blijft bereikbaar en Google vindt hem nog via links.',
+                'noindex' => 'Een pagina die Google niet mag tonen, komt nooit in de sitemap.',
+            ],
+            'indexable' => [
+                'label' => 'Mag Google hem tonen',
+                'hint' => 'Uit betekent noindex: de pagina blijft bereikbaar, maar verdwijnt uit de zoekresultaten.',
+            ],
+            'saved' => 'Opgeslagen. De site toont het meteen; Google neemt het over bij zijn volgende bezoek.',
+        ],
     ],
     'new' => [
         'title' => 'Nieuwe pagina',
@@ -139,5 +166,7 @@ return [
         'parent_deleted' => 'De pagina waar deze onder lag, is ook verwijderd. Zet die eerst terug.',
         'restore_path_taken' => 'Een andere pagina heeft het oude adres inmiddels. Geef die eerst een ander adres.',
         'not_deleted' => 'Deze pagina staat al op de site.',
+        'meta_title_long' => 'Houd de titel in Google op hooguit 120 tekens. Google toont er ongeveer 60.',
+        'meta_description_long' => 'Houd de omschrijving in Google op hooguit 320 tekens. Google toont er ongeveer 155.',
     ],
 ];

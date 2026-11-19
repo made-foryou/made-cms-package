@@ -36,6 +36,11 @@ final class PageLinks
         return self::url('made-cms-package.pages.update', ['page' => $page->id]);
     }
 
+    public static function meta(Page $page): string
+    {
+        return self::url('made-cms-package.pages.meta', ['page' => $page->id]);
+    }
+
     public static function destroy(Page $page): string
     {
         return self::url('made-cms-package.pages.destroy', ['page' => $page->id]);

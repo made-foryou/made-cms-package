@@ -69,7 +69,7 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | Een link kiezen in het zijpaneel | `Screen::Pages` | Hoort bij een pagina bewerken. | #75 |
 | De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
 | Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop"), en de weergave "Koppen" naast de Opbouw | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De weergave Koppen toont daarvoor alle koppen van de pagina met de signalen; ze is alleen UI. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2 en 3), #126, #127 |
-| Meta en "Staat in de sitemap" van één pagina | `Screen::Pages` | De paginadetail; de Vindbaarheid-schermen tonen dezelfde gegevens voor alle pagina's tegelijk. | #65, #87 (besluit 7) |
+| Titel en omschrijving in Google, "Staat in de sitemap" en "Mag Google hem tonen" van één pagina (`PUT made-cms/pages/{page}/meta`) | `Screen::Pages` | De kaart "Hoe Google hem ziet" op de paginadetail; de Vindbaarheid-schermen tonen dezelfde gegevens voor alle pagina's tegelijk. De link naar het Meta-overzicht staat er alleen voor wie dat scherm opent. | #65 (gebouwd), #87 (besluit 7) |
 | Een redirect bij het weghalen van een pagina | `Screen::Pages` | Hoort bij verwijderen. | #94 |
 | Automatisch doorsturen bij verhuizen | geen | Een Content-Action doet dit; Content kijkt nooit naar rollen. | #94 |
 | Robots-regels | `Screen::Sitemap` | Staan in het scherm Sitemap. | #97 |

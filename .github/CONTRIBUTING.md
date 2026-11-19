@@ -41,3 +41,11 @@ Run all tests:
 ```bash
 composer test
 ```
+
+The tests run on SQLite in memory. To run them on MySQL or PostgreSQL, name the server with `DB_CONNECTION` (`mysql`, `mariadb` or `pgsql`), `DB_HOST`, `DB_PORT`, `DB_USERNAME` and `DB_PASSWORD`:
+
+```bash
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_USERNAME=root DB_PASSWORD= composer test:unit
+```
+
+The tests create a database of their own on that server, `made_cms_package_test` (`made_cms_package_test_1`, `_2`, … for the parallel workers), migrate it and wipe it whenever they need to. They never read `DB_DATABASE` or `DB_URL`, so your own databases stay untouched; drop the `made_cms_package_test*` databases when you no longer need them.

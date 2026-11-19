@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\DeletePage;
 use Made\CmsPackage\Content\Actions\MovePage;
@@ -111,4 +112,34 @@ it('refuses an address that got too long meanwhile and leaves the page deleted',
     expect(fn (): Page => RestorePage::run($page))->toThrow(PagePathTooLong::class);
 
     expect(Page::query()->withTrashed()->findOrFail($page->id)->trashed())->toBeTrue();
+});
+
+it('refuses an address another request stores at the same moment, as a taken address', function (): void {
+    Event::fake([PageRestored::class]);
+    $page = deletedPage(Page::factory()->at('/over-ons')->create(['slug' => 'over-ons']));
+    claimAddressFirst();
+
+    expect(fn (): Page => RestorePage::run($page))->toThrow(PagePathTaken::class, 'There is already a page at [/over-ons].');
+
+    expect(Page::query()->withTrashed()->findOrFail($page->id)->trashed())->toBeTrue();
+    Event::assertNotDispatched(PageRestored::class);
+});
+
+it('refuses a page another request restored at the same moment', function (): void {
+    Event::fake([PageRestored::class]);
+    $page = deletedPage(Page::factory()->at('/over-ons')->create(['slug' => 'over-ons']));
+    // The other request restores the page after this one read it, and commits before this one starts writing.
+    $competing = true;
+    DB::connection()->beforeStartingTransaction(static function () use (&$competing, $page): void {
+        if ($competing) {
+            $competing = false;
+            DB::table('cms_pages')->where('id', $page->id)->update(['deleted_at' => null]);
+            DB::table('cms_routes')->insert(['path' => '/over-ons', 'routable_type' => 'cms_page', 'routable_id' => $page->id, 'created_at' => now(), 'updated_at' => now()]);
+        }
+    });
+
+    expect(fn (): Page => RestorePage::run($page))->toThrow(PageNotDeleted::class);
+
+    expect(Page::query()->with('route')->findOrFail($page->id)->route?->path)->toBe('/over-ons');
+    Event::assertNotDispatched(PageRestored::class);
 });

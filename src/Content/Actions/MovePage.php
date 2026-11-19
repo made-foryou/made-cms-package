@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PagePath;
@@ -60,25 +61,32 @@ final class MovePage
         $from = PagePath::fromString((string) $page->route?->path);
         $to = $sameParent ? $from : PagePath::fromString((string) $parent?->route?->path)->child($page->slug);
 
-        if ($to != $from && Route::query()->atPath($to)->exists()) {
+        try {
+            DB::transaction(function () use ($page, $parent, $position, $others, $sameParent, $from, $to): void {
+                if ($to != $from && Route::query()->atPath($to)->exists()) {
+                    throw PagePathTaken::at($to);
+                }
+
+                $leaving = $sameParent ? [] : Page::query()->childrenOf($page->parent)->inMenuOrder()->get()->map(static fn (Page $sibling): int => $sibling->id)->all();
+
+                $page->parent_id = $parent?->id;
+                $page->position = $position;
+                $page->save();
+
+                array_splice($others, $position, 0, [$page->id]);
+                RenumberPages::run($others);
+                RenumberPages::run(array_values(array_filter($leaving, static fn (int $id): bool => $id !== $page->id)));
+
+                if ($to != $from) {
+                    RewritePagePaths::run($page, $to);
+                }
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Another request stored a page at the address after the check, or a page under this one lands on an
+            // address made outside the tree: the unique index of cms_routes is the last guard, and the only one this
+            // transaction writes. Caught outside it, so it has been rolled back.
             throw PagePathTaken::at($to);
         }
-
-        DB::transaction(function () use ($page, $parent, $position, $others, $sameParent, $from, $to): void {
-            $leaving = $sameParent ? [] : Page::query()->childrenOf($page->parent)->inMenuOrder()->get()->map(static fn (Page $sibling): int => $sibling->id)->all();
-
-            $page->parent_id = $parent?->id;
-            $page->position = $position;
-            $page->save();
-
-            array_splice($others, $position, 0, [$page->id]);
-            RenumberPages::run($others);
-            RenumberPages::run(array_values(array_filter($leaving, static fn (int $id): bool => $id !== $page->id)));
-
-            if ($to != $from) {
-                RewritePagePaths::run($page, $to);
-            }
-        });
 
         $page->unsetRelation('parent');
         PageMoved::dispatch($page, $from, $to);

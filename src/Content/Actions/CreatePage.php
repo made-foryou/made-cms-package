@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\NewPage;
@@ -43,24 +44,30 @@ final class CreatePage
             throw PagePathTooLong::at($path);
         }
 
-        if (Route::query()->atPath($path)->exists()) {
+        try {
+            $page = DB::transaction(function () use ($new, $parent, $slug, $path): Page {
+                if (Route::query()->atPath($path)->exists()) {
+                    throw PagePathTaken::at($path);
+                }
+
+                $last = Page::query()->childrenOf($parent)->max('position');
+
+                $page = Page::query()->create([
+                    'parent_id' => $parent?->id,
+                    'title' => trim($new->title),
+                    'slug' => $slug->value,
+                    'position' => is_numeric($last) ? (int) $last + 1 : 0,
+                    'in_menu' => $new->inMenu,
+                ]);
+                $page->route()->create(['path' => $path->value]);
+
+                return $page->load('route');
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Another request stored a page at the address after the check: the unique index of cms_routes is the
+            // last guard, and the only one this transaction writes. Caught outside it, so it has been rolled back.
             throw PagePathTaken::at($path);
         }
-
-        $page = DB::transaction(function () use ($new, $parent, $slug, $path): Page {
-            $last = Page::query()->childrenOf($parent)->max('position');
-
-            $page = Page::query()->create([
-                'parent_id' => $parent?->id,
-                'title' => trim($new->title),
-                'slug' => $slug->value,
-                'position' => is_numeric($last) ? (int) $last + 1 : 0,
-                'in_menu' => $new->inMenu,
-            ]);
-            $page->route()->create(['path' => $path->value]);
-
-            return $page->load('route');
-        });
 
         PageCreated::dispatch($page);
 

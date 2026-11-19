@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\MovePage;
 use Made\CmsPackage\Content\Events\PageMoved;
@@ -213,14 +212,14 @@ it('dispatches an event with the same address for a new place among the siblings
     Event::assertDispatched(PageMoved::class, fn (PageMoved $event): bool => $event->from->value === '/b' && $event->to->value === '/b');
 });
 
-it('leaves every address as it was when rewriting fails', function (): void {
+it('refuses as a taken address when a page under it would land on an address made by hand, and leaves every address as it was', function (): void {
     $about = Page::factory()->atPosition(0)->at('/over-ons')->create(['slug' => 'over-ons']);
     $team = Page::factory()->under($about)->at('/over-ons/team')->create(['slug' => 'team']);
     $youth = Page::factory()->under($team)->at('/over-ons/team/jeugd')->create(['slug' => 'jeugd']);
     // An address made by hand, outside the tree, where the page under the moving page would go.
     Page::factory()->atPosition(1)->at('/team/jeugd')->create(['slug' => 'los']);
 
-    expect(fn (): Page => MovePage::run($team, null))->toThrow(QueryException::class);
+    expect(fn (): Page => MovePage::run($team, null))->toThrow(PagePathTaken::class);
 
     expect($team->refresh()->parent_id)->toBe($about->id)
         ->and(Route::query()->where('routable_id', $team->id)->value('path'))->toBe('/over-ons/team')
@@ -262,5 +261,22 @@ it('refuses a place where the address of a page under it gets too long and moves
         ->and($stored->position)->toBe(1)
         ->and($stored->route?->path)->toBe('/m')
         ->and($child->refresh()->route?->path)->toBe('/m/'.str_repeat('c', 120));
+    Event::assertNotDispatched(PageMoved::class);
+});
+
+it('refuses an address another request stores at the same moment, as a taken address', function (): void {
+    Event::fake([PageMoved::class]);
+    $about = Page::factory()->atPosition(0)->at('/over-ons')->create(['slug' => 'over-ons']);
+    $team = Page::factory()->atPosition(1)->at('/team')->create(['slug' => 'team']);
+    claimAddressFirst();
+
+    expect(fn (): Page => MovePage::run($team, $about->id))
+        ->toThrow(PagePathTaken::class, 'There is already a page at [/over-ons/team].');
+
+    $stored = Page::query()->with('route')->findOrFail($team->id);
+
+    expect($stored->parent_id)->toBeNull()
+        ->and($stored->position)->toBe(1)
+        ->and($stored->route?->path)->toBe('/team');
     Event::assertNotDispatched(PageMoved::class);
 });

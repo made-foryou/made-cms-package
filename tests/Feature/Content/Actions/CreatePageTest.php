@@ -156,3 +156,15 @@ it('refuses an address longer than the longest length and creates nothing', func
         ->and(Route::query()->count())->toBe(1);
     Event::assertNotDispatched(PageCreated::class);
 });
+
+it('refuses an address another request stores at the same moment, as a taken address', function (): void {
+    Event::fake([PageCreated::class]);
+    claimAddressFirst();
+
+    expect(fn (): Page => CreatePage::run(new NewPage(title: 'Jeugd', slug: null, parentId: null)))
+        ->toThrow(PagePathTaken::class, 'There is already a page at [/jeugd].');
+
+    expect(Page::query()->count())->toBe(0)
+        ->and(Route::query()->count())->toBe(0);
+    Event::assertNotDispatched(PageCreated::class);
+});

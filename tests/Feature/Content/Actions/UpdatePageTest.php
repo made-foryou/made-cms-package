@@ -212,3 +212,18 @@ it('refuses a slug that makes the address of a page under it too long and change
         ->and($grandchild->refresh()->route?->path)->toBe('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120));
     Event::assertNotDispatched(PageUpdated::class);
 });
+
+it('refuses an address another request stores at the same moment, as a taken address', function (): void {
+    Event::fake([PageUpdated::class]);
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+    claimAddressFirst();
+
+    expect(fn (): Page => UpdatePage::run($page, new PageChanges(title: 'Vereniging', slug: 'vereniging', parentId: null, inMenu: true)))
+        ->toThrow(PagePathTaken::class, 'There is already a page at [/vereniging].');
+
+    $stored = Page::query()->with('route')->findOrFail($page->id);
+
+    expect($stored->title)->toBe('Over ons')
+        ->and($stored->route?->path)->toBe('/over-ons');
+    Event::assertNotDispatched(PageUpdated::class);
+});

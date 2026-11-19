@@ -103,7 +103,8 @@ a:hover {
 
 button,
 input,
-select {
+select,
+textarea {
     font: inherit;
     color: inherit;
     margin: 0;

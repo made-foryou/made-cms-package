@@ -89,7 +89,8 @@ it('keeps the result in google light in the dark colours of the system', functio
                 colour('.google', 'backgroundColor'),
                 colour('.google-titel', 'color'),
                 colour('#made-cms-meta_description', 'backgroundColor'),
+                colour('#made-cms-meta_description', 'fontFamily').includes('Instrument Sans'),
             ];
         }
-        JS))->toBe(['rgb(251, 250, 245)', 'rgb(26, 13, 171)', 'rgb(27, 61, 54)']);
+        JS))->toBe(['rgb(251, 250, 245)', 'rgb(26, 13, 171)', 'rgb(27, 61, 54)', true]);
 });

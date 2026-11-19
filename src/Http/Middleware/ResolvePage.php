@@ -15,6 +15,7 @@ use Made\CmsPackage\Content\Actions\FindPage;
 use Made\CmsPackage\Content\Actions\FindPublishedPage;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\PagePath;
+use Made\CmsPackage\Content\Data\ServedAddress;
 use Made\CmsPackage\Http\Launcher\Visitor;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -78,6 +79,7 @@ final class ResolvePage
         }
 
         $route->setParameter(self::PARAMETER, $page);
+        app()->instance(ServedAddress::class, ServedAddress::of($page->id, $canonical));
 
         $response = $next($request);
 
@@ -97,6 +99,7 @@ final class ResolvePage
     public function terminate(Request $request, Response $response): void
     {
         app()->instance(EditMode::class, EditMode::off());
+        app()->instance(ServedAddress::class, ServedAddress::none());
     }
 
     /**

@@ -25,6 +25,7 @@ use Made\CmsPackage\Console\Commands\MediaThumbnailsCommand;
 use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Content\Data\EditMode;
+use Made\CmsPackage\Content\Data\ServedAddress;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
@@ -48,7 +49,7 @@ class CmsPackageServiceProvider extends ServiceProvider
 
         $this->registerStripTypes();
 
-        $this->registerEditMode();
+        $this->registerPageRequestState();
 
         // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
         // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
@@ -152,12 +153,13 @@ class CmsPackageServiceProvider extends ServiceProvider
     }
 
     /**
-     * Off for every request, until the page route switches it on for an editor. Scoped, so a long-running worker
-     * (Octane, queue) forgets it with the other per-request instances.
+     * Off for every request, until the page route switches it on for an editor, and no page served yet, until the page
+     * route serves one. Scoped, so a long-running worker (Octane, queue) forgets them with the other per-request instances.
      */
-    private function registerEditMode(): void
+    private function registerPageRequestState(): void
     {
         $this->app->scoped(EditMode::class, static fn (): EditMode => EditMode::off());
+        $this->app->scoped(ServedAddress::class, static fn (): ServedAddress => ServedAddress::none());
     }
 
     /**

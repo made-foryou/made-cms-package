@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Data\PageMeta;
 use Made\CmsPackage\Content\Models\Page;
@@ -52,4 +53,33 @@ it('gives no canonical address to a page without an address', function (): void 
     $page = Page::factory()->create();
 
     expect(DescribePageMeta::run($page)->canonical)->toBeNull();
+});
+
+it('takes the prefix of the route group that serves the page into its canonical address', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->create();
+    $other = Page::factory()->published()->at('/teams')->create();
+
+    Route::middleware('web')->prefix('nl')->group(function () use ($other): void {
+        Route::madeCms(static fn (Page $page): array => [
+            'served' => DescribePageMeta::run($page)->canonical,
+            'other' => DescribePageMeta::run($other)->canonical,
+        ]);
+    });
+
+    $this->get('nl/over-ons')->assertExactJson([
+        'served' => 'https://ttvmerwestad.nl/nl/over-ons',
+        'other' => 'https://ttvmerwestad.nl/teams',
+    ]);
+
+    expect(DescribePageMeta::run($page)->canonical)->toBe('https://ttvmerwestad.nl/over-ons');
+});
+
+it('keeps the host of the url of the site, whatever host the request names', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->create();
+
+    Route::middleware('web')->group(function (): void {
+        Route::madeCms(static fn (Page $page): array => ['canonical' => DescribePageMeta::run($page)->canonical]);
+    });
+
+    $this->get('http://www.elders.example/over-ons')->assertExactJson(['canonical' => 'https://ttvmerwestad.nl/over-ons']);
 });

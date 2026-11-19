@@ -18,6 +18,25 @@ it('finds nothing for an unknown e-mail address', function (): void {
     expect(Editor::query()->forEmail('iemand@example.com')->exists())->toBeFalse();
 });
 
+it('finds the editor with exactly the typed address, in lower case and without surrounding spaces', function (): void {
+    $editor = Editor::factory()->create(['email' => 'jose@example.com']);
+    Editor::factory()->create();
+
+    expect(Editor::query()->firstWithEmail(' Jose@Example.COM ')?->is($editor))->toBeTrue()
+        ->and(Editor::query()->firstWithEmail('iemand@example.com'))->toBeNull();
+});
+
+it('finds no editor for an address that differs only in an accent or a sharp s, which a collation may ignore', function (string $typed): void {
+    Editor::factory()->create(['email' => 'jose@example.com']);
+    Editor::factory()->create(['email' => 'jesse@example.com']);
+
+    expect(Editor::query()->firstWithEmail($typed))->toBeNull();
+})->with([
+    'accent in the domain' => 'jose@exämple.com',
+    'accent before the @' => 'JOSÉ@example.com',
+    'sharp s' => 'jeße@example.com',
+]);
+
 it('reads the stored roles back as roles', function (): void {
     $editor = Editor::factory()->withRoles(Role::SeoSpecialist, Role::Owner)->create();
 

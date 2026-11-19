@@ -40,7 +40,7 @@ final class LogInWithPassword
 
     private function attempt(PasswordLogin $login): LoginResult
     {
-        $editor = Editor::query()->forEmail($login->email)->first();
+        $editor = Editor::query()->firstWithEmail($login->email);
         $hash = $editor?->password;
 
         // Exactly one check on every path, so an unknown address or an account without a password costs as much

@@ -104,6 +104,14 @@ it('rejects a code when the account was removed in the meantime', function (): v
         ->and(auth('made-cms')->check())->toBeFalse();
 });
 
+it('never logs in an editor whose address differs from the one the code went to only in an accent', function (): void {
+    Editor::factory()->create(['email' => 'jose@example.com']);
+    LoginCode::factory()->create(['email' => 'jose@exämple.com']);
+
+    expect(fn () => LogInWithCode::run(codeLogin(email: 'jose@exämple.com')))->toThrow(LoginCodeRejected::class)
+        ->and(auth('made-cms')->check())->toBeFalse();
+});
+
 it('checks the code without the slow password hasher', function (string $code): void {
     LoginCode::factory()->create(['email' => 'menno@made-foryou.nl']);
     $hasher = countHashing();

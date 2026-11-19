@@ -61,6 +61,15 @@ it('refuses an expired, used or unknown link', function (string $state, string $
     'unknown' => ['', 'another-token'],
 ]);
 
+it('never logs in an editor whose address differs from the one the link went to only in an accent', function (): void {
+    Editor::factory()->create(['email' => 'jose@example.com']);
+    loginCodeWithLink(['email' => 'jose@exämple.com']);
+
+    expect(fn () => LogInWithLink::run(new LinkLogin(token: 'the-link-token', binding: LoginCodeFactory::BINDING)))
+        ->toThrow(LoginLinkRejected::class)
+        ->and(auth('made-cms')->check())->toBeFalse();
+});
+
 it('works only once', function (): void {
     loginCodeWithLink();
     LogInWithLink::run(new LinkLogin(token: 'the-link-token', binding: LoginCodeFactory::BINDING));

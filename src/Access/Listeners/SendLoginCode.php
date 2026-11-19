@@ -21,7 +21,7 @@ final class SendLoginCode
     public function handle(LoginCodeIssued $event): void
     {
         $issued = $event->issued;
-        $editor = Editor::query()->forEmail($issued->loginCode->email)->first();
+        $editor = Editor::query()->firstWithEmail($issued->loginCode->email);
 
         $notification = new LoginCodeNotification(
             code: $issued->code,

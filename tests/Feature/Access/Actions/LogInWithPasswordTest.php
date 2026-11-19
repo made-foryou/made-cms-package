@@ -56,6 +56,7 @@ it('remembers the editor when asked', function (): void {
 
 it('rejects a wrong password, an unknown address and an account without a password alike', function (string $email, string $password): void {
     Editor::factory()->create(['email' => 'menno@made-foryou.nl']);
+    Editor::factory()->create(['email' => 'jose@example.com']);
     Editor::factory()->withoutPassword()->create(['email' => 'code@made-foryou.nl']);
 
     expect(fn () => LogInWithPassword::run(passwordLogin(password: $password, email: $email)))->toThrow(CredentialsRejected::class)
@@ -66,6 +67,7 @@ it('rejects a wrong password, an unknown address and an account without a passwo
     'wrong password' => ['menno@made-foryou.nl', 'verkeerd'],
     'unknown address' => ['iemand@example.com', EditorFactory::PASSWORD],
     'no password' => ['code@made-foryou.nl', ''],
+    'the address of another with an accent' => ['jose@exämple.com', EditorFactory::PASSWORD],
 ]);
 
 function rejectUnknownAddress(): void

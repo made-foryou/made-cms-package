@@ -14,11 +14,27 @@ use Made\CmsPackage\Access\Models\Editor;
 final class EditorBuilder extends Builder
 {
     /**
-     * E-mail addresses are stored trimmed and in lower case, so the typed address is matched the same way.
+     * E-mail addresses are stored trimmed and in lower case, so the typed address is matched the same way. The
+     * database compares by its collation, which may treat two addresses as one: use it for whether an address is
+     * taken, and firstWithEmail() for who an address is.
      */
     public function forEmail(string $email): self
     {
         return $this->where('email', mb_strtolower(trim($email)));
+    }
+
+    /**
+     * The editor with exactly this address, trimmed and in lower case. A collation such as MySQL's
+     * utf8mb4_unicode_ci ignores accents ("é" is "e", "ß" is "ss"), so the database may return the editor of another
+     * address: whoever owns that address would get the editor's login. Its answer is compared once more here.
+     */
+    public function firstWithEmail(string $email): ?Editor
+    {
+        $email = mb_strtolower(trim($email));
+
+        return $this->forEmail($email)
+            ->get()
+            ->first(static fn (Editor $editor): bool => mb_strtolower(trim($editor->email)) === $email);
     }
 
     /**

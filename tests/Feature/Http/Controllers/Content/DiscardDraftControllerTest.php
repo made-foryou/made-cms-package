@@ -19,7 +19,7 @@ it('throws the draft away and keeps the published strips', function (): void {
     $stored = $page->refresh();
 
     expect($stored->draft_strips)->toBeNull()
-        ->and($stored->strips)->toBe($published)
+        ->and($stored->strips)->toBeStoredAs($published)
         ->and($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
 });
 

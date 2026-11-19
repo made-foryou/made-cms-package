@@ -33,7 +33,7 @@ it('refuses a folder that holds files, with their number', function (): void {
 });
 
 it('answers 404 for a folder that is gone', function (): void {
-    $this->deleteJson('made-cms/media/folders/999')->assertNotFound();
+    $this->deleteJson('made-cms/media/folders/'.missingId())->assertNotFound();
 });
 
 it('opens only for an editor who opens the media library', function (Role $role, int $status): void {

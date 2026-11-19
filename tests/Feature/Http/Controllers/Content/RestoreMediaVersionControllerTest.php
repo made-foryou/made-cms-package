@@ -44,7 +44,7 @@ it('refuses a file without a version that waits, keyed by version', function ():
 });
 
 it('answers 404 for a file that is gone', function (): void {
-    $this->postJson('made-cms/media/999/restore')->assertNotFound();
+    $this->postJson('made-cms/media/'.missingId().'/restore')->assertNotFound();
 });
 
 it('opens only for an editor who opens the media library', function (Role $role, int $status): void {

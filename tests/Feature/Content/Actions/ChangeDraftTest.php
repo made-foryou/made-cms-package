@@ -113,7 +113,7 @@ it('stores nothing when the change throws', function (): void {
         throw new RuntimeException('Refused.');
     }))->toThrow(RuntimeException::class, 'Refused.');
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs($draft);
 });
 
 it('reads the page inside its transaction', function (): void {

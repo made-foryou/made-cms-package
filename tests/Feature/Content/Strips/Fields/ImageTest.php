@@ -29,7 +29,7 @@ it('accepts an image of the library, also by an id as text', function (): void {
 });
 
 it('refuses a file that does not exist', function (): void {
-    expect(imageErrors(['foto' => 999]))->toBe(['foto' => ['De gekozen afbeelding bij Achtergrondfoto bestaat niet meer.']]);
+    expect(imageErrors(['foto' => missingId()]))->toBe(['foto' => ['De gekozen afbeelding bij Achtergrondfoto bestaat niet meer.']]);
 });
 
 it('refuses a file that is no image', function (Closure $media): void {
@@ -59,7 +59,7 @@ it('checks an image in every item of a list', function (): void {
     $field = Items::make('kaarten', [Text::make('titel'), Image::make('icoon')]);
 
     $errors = Validator::make(
-        ['kaarten' => [['titel' => 'Een', 'icoon' => $media->id], ['titel' => 'Twee', 'icoon' => 999]]],
+        ['kaarten' => [['titel' => 'Een', 'icoon' => $media->id], ['titel' => 'Twee', 'icoon' => missingId()]]],
         $field->rules('kaarten'),
         [],
         $field->attributes('kaarten'),

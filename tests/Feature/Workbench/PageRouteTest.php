@@ -84,7 +84,7 @@ it('renders the downloads of the workbench as links to the lasting link of each 
         storedStrip('downloads', ['kop' => 'Voor de competitie', 'bestanden' => [
             ['id' => 'b1', 'bestand' => $schema->id, 'titel' => null],
             ['id' => 'b2', 'bestand' => $form->id, 'titel' => 'Inschrijven'],
-            ['id' => 'b3', 'bestand' => 999, 'titel' => 'Weg'],
+            ['id' => 'b3', 'bestand' => missingId(), 'titel' => 'Weg'],
         ]], id: 'downloads'),
     ])->create(['title' => 'Home']);
 

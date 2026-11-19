@@ -18,7 +18,7 @@ it('moves a strip in the draft', function (): void {
     $stored = Page::query()->findOrFail($page->id);
 
     expect(array_column($stored->draft_strips ?? [], 'id'))->toBe(['b', 'c', 'a'])
-        ->and($stored->strips)->toBe($published);
+        ->and($stored->strips)->toBeStoredAs($published);
 });
 
 it('dispatches an event with the old and new position', function (): void {
@@ -68,5 +68,5 @@ it('moves a strip of a type that no longer exists', function (): void {
 
     MoveStrip::run($page, 'old', 0);
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips[0] ?? null)->toBe($old);
+    expect(Page::query()->findOrFail($page->id)->draft_strips[0] ?? null)->toBeStoredAs($old);
 });

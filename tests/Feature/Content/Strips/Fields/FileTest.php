@@ -34,7 +34,7 @@ it('accepts a document or a video of the library, also by an id as text', functi
 });
 
 it('refuses a file that does not exist', function (): void {
-    expect(fileErrors(['bestand' => 999]))->toBe(['bestand' => ['Het gekozen bestand bij Document bestaat niet meer.']]);
+    expect(fileErrors(['bestand' => missingId()]))->toBe(['bestand' => ['Het gekozen bestand bij Document bestaat niet meer.']]);
 });
 
 it('refuses a file of a kind it does not take, in the words of the kinds it takes', function (array $kinds, Closure $media, string $error): void {
@@ -65,7 +65,7 @@ it('checks a file in every item of a list', function (): void {
     $field = Items::make('bestanden', [Text::make('titel'), File::make('bestand')]);
 
     $errors = Validator::make(
-        ['bestanden' => [['titel' => 'Een', 'bestand' => $media->id], ['titel' => 'Twee', 'bestand' => 999]]],
+        ['bestanden' => [['titel' => 'Een', 'bestand' => $media->id], ['titel' => 'Twee', 'bestand' => missingId()]]],
         $field->rules('bestanden'),
         [],
         $field->attributes('bestanden'),

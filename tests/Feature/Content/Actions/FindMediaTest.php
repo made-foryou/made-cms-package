@@ -95,7 +95,7 @@ it('finds documents and videos too, which are no image', function (): void {
 it('leaves out the files that are gone', function (): void {
     $media = Media::factory()->create();
 
-    expect(array_keys(FindMedia::run([$media->id, 999])->files))->toBe([$media->id]);
+    expect(array_keys(FindMedia::run([$media->id, missingId()])->files))->toBe([$media->id]);
 });
 
 it('finds every file with one query for the files and one for their folders', function (): void {

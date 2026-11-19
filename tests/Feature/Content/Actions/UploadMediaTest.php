@@ -266,8 +266,8 @@ it('refuses a file that is too large, of an unknown type or unreadable, and stor
 ]);
 
 it('refuses a folder that does not exist, and stores nothing', function (): void {
-    expect(fn (): Media => upload(mediaFixture('wedstrijdschema.pdf'), folderId: 999))
-        ->toThrow(MediaFolderNotFound::class, 'There is no media folder [999].');
+    expect(fn (): Media => upload(mediaFixture('wedstrijdschema.pdf'), folderId: missingId()))
+        ->toThrow(MediaFolderNotFound::class, 'There is no media folder ['.missingId().'].');
 
     expect(mediaOnDisk())->toBe([]);
 });
@@ -314,7 +314,7 @@ it('stores nothing on a disk a visitor cannot open', function (): void {
 });
 
 it('takes its files off the disk again when the row cannot be stored', function (): void {
-    expect(fn (): Media => upload(photo(400, 300), uploadedBy: 999))->toThrow(QueryException::class);
+    expect(fn (): Media => upload(photo(400, 300), uploadedBy: missingId()))->toThrow(QueryException::class);
 
     expect(Media::query()->count())->toBe(0)
         ->and(mediaOnDisk())->toBe([]);

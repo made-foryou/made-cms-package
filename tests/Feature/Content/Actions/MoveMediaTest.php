@@ -48,7 +48,7 @@ it('leaves out a file that is gone', function (): void {
     $folder = MediaFolder::factory()->create();
     $media = Media::factory()->create();
 
-    $moved = MoveMedia::run([$media->id, 999], $folder->id);
+    $moved = MoveMedia::run([$media->id, missingId()], $folder->id);
 
     expect(array_map(static fn (Media $media): int => $media->id, $moved))->toBe([$media->id])
         ->and(Media::query()->findOrFail($media->id)->folder_id)->toBe($folder->id);
@@ -59,7 +59,7 @@ it('refuses a folder that is gone and leaves every file where it was', function 
     $first = Media::factory()->in($folder)->create();
     $second = Media::factory()->create();
 
-    expect(fn (): array => MoveMedia::run([$first->id, $second->id], 999))->toThrow(MediaFolderNotFound::class)
+    expect(fn (): array => MoveMedia::run([$first->id, $second->id], missingId()))->toThrow(MediaFolderNotFound::class)
         ->and(Media::query()->findOrFail($first->id)->folder_id)->toBe($folder->id)
         ->and(Media::query()->findOrFail($second->id)->folder_id)->toBeNull();
 });

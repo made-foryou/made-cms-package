@@ -118,7 +118,7 @@ it('stores a page outside the menu', function (): void {
 });
 
 it('refuses a parent that does not exist', function (): void {
-    expect(fn (): Page => CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: 999)))->toThrow(ParentPageNotFound::class);
+    expect(fn (): Page => CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: missingId())))->toThrow(ParentPageNotFound::class);
 });
 
 it('refuses a deleted parent', function (): void {

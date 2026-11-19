@@ -18,7 +18,7 @@ it('hides and shows a strip in the draft', function (): void {
 
     expect($hidden->visible)->toBeFalse()
         ->and($stored->draft_strips[0]['visible'] ?? null)->toBeFalse()
-        ->and($stored->strips)->toBe($published);
+        ->and($stored->strips)->toBeStoredAs($published);
 
     $shown = SetStripVisibility::run($stored, 'a', true);
 
@@ -75,5 +75,5 @@ it('hides a strip of a type that no longer exists without touching its values', 
 
     SetStripVisibility::run($page, 'old', false);
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe([storedStrip('oud', ['x' => 1], visible: false, id: 'old')]);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs([storedStrip('oud', ['x' => 1], visible: false, id: 'old')]);
 });

@@ -54,7 +54,7 @@ it('sends a guest to the login page', function (): void {
 
 it('answers 404 for a page that does not exist', function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->get('made-cms/pages/999/edit')
+        ->get('made-cms/pages/'.missingId().'/edit')
         ->assertNotFound();
 });
 

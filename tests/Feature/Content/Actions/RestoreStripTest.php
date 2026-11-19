@@ -44,7 +44,7 @@ it('puts a removed strip back in its place with its id, values and visibility', 
     $strip = RestoreStrip::run($page, removedHero(), 1, chooseLevels: true);
 
     expect($strip->toArray())->toBe(removedHero()->toArray())
-        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([
+        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs([
             storedStrip(id: 'a'),
             removedHero()->toArray(),
             storedStrip(id: 'b'),
@@ -119,7 +119,7 @@ it('puts back the published copy of a strip whose type left the catalogue, whate
     $strip = RestoreStrip::run($page, new Strip('old', 'oud', true, ['x' => 'iets anders']), 0, chooseLevels: true);
 
     expect($strip->toArray())->toBe($old)
-        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$old, storedStrip(id: 'a'), storedStrip(id: 'new')]);
+        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs([$old, storedStrip(id: 'a'), storedStrip(id: 'new')]);
 });
 
 it('refuses a strip of an unknown type that the published page does not hold', function (): void {

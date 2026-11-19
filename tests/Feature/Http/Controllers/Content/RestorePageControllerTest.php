@@ -39,5 +39,5 @@ it('refuses a page whose parent is deleted and says why', function (): void {
 });
 
 it('answers 404 for a page that does not exist', function (): void {
-    $this->post('made-cms/pages/999/restore')->assertNotFound();
+    $this->post('made-cms/pages/'.missingId().'/restore')->assertNotFound();
 });

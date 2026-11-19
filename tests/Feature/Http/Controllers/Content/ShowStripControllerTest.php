@@ -146,13 +146,13 @@ it('names the type of a file by the extension of its address, in small letters',
 it('hands the side panel no files for a strip without images, and none for a file that is gone', function (): void {
     $page = Page::factory()->withDraft([
         storedStrip('hero', ['kop' => 'Zonder foto'], id: 'a'),
-        storedStrip('hero', ['foto' => 999], id: 'b'),
+        storedStrip('hero', ['foto' => missingId()], id: 'b'),
     ])->create();
     $editor = Editor::factory()->create();
 
     $this->actingAs($editor, 'made-cms')->getJson('made-cms/pages/'.$page->id.'/strips/a')->assertJsonPath('strip.media', []);
     $this->actingAs($editor, 'made-cms')->getJson('made-cms/pages/'.$page->id.'/strips/b')
-        ->assertJsonPath('strip.values.foto', 999)
+        ->assertJsonPath('strip.values.foto', missingId())
         ->assertJsonPath('strip.media', []);
 });
 
@@ -189,7 +189,7 @@ it('answers 404 for a strip of a type that is no longer in the catalogue', funct
 
 it('answers 404 for a page that does not exist', function (): void {
     $this->actingAs(Editor::factory()->create(), 'made-cms')
-        ->getJson('made-cms/pages/999/strips/a')
+        ->getJson('made-cms/pages/'.missingId().'/strips/a')
         ->assertNotFound();
 });
 

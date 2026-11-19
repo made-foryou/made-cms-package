@@ -84,9 +84,9 @@ it('locks the files in the order of their ids before it reads where they are use
     DeleteMedia::run([$b->id, $a->id]);
 
     expect($queries[0][0])->toBe($outside + 1)
-        ->and($queries[0][1])->toContain('from "cms_media"')
-        ->and($queries[0][1])->toEndWith('order by "id" asc')
-        ->and($queries[1][1])->toContain('from "cms_media_usages"');
+        ->and($queries[0][1])->toContain('from '.quoted('cms_media'))
+        ->and($queries[0][1])->toContain('order by '.quoted('id').' asc')
+        ->and($queries[1][1])->toContain('from '.quoted('cms_media_usages'));
 });
 
 it('tells every deleted file once the change is committed', function (): void {

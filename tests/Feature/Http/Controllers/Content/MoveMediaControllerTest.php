@@ -42,7 +42,7 @@ it('refuses a folder that is gone or no folder', function (array $body, string $
         ->assertUnprocessable()
         ->assertJsonPath('errors.folder.0', $message);
 })->with([
-    'gone' => [['folder' => 999], 'Deze map bestaat niet meer. Herlaad de pagina en kies een andere map.'],
+    'gone' => [['folder' => missingId()], 'Deze map bestaat niet meer. Herlaad de pagina en kies een andere map.'],
     'a text' => [['folder' => 'Teams'], 'Kies de map waar het bestand in komt.'],
     'missing' => [[], 'Kies de map waar het bestand in komt.'],
 ]);

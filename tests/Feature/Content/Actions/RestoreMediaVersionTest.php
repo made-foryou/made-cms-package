@@ -70,8 +70,9 @@ it('makes the version it puts back public before the row points at it, and the o
     $media = photoWithTwoVersions();
     $first = MediaVersion::waiting($media);
     $second = MediaVersion::current($media);
-    DB::listen(static function (QueryExecuted $query) use ($disk): void {
-        if (str_starts_with($query->sql, 'update "cms_media"')) {
+    $update = 'update '.quoted('cms_media');
+    DB::listen(static function (QueryExecuted $query) use ($disk, $update): void {
+        if (str_starts_with($query->sql, $update)) {
             $disk->note('update');
         }
     });

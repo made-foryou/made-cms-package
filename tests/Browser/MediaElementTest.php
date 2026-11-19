@@ -222,7 +222,7 @@ it('offers no crop for an image without an original to cut from', function (): v
 });
 
 it('says that the file of a field left Media and lets the editor take it away', function (): void {
-    $this->page->update(['strips' => [storedStrip('hero', ['kop' => 'Onze teams', 'foto' => 999], id: 'hero'), $this->page->strips[1]]]);
+    $this->page->update(['strips' => [storedStrip('hero', ['kop' => 'Onze teams', 'foto' => missingId()], id: 'hero'), $this->page->strips[1]]]);
 
     $shell = openStrip($this->page, 'hero', mediaState('foto', 'gone'));
 

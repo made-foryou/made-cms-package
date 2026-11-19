@@ -37,7 +37,7 @@ it('refuses a name it cannot take', function (array $body, string $message): voi
 ]);
 
 it('answers 404 for a folder that is gone', function (): void {
-    $this->putJson('made-cms/media/folders/999', ['name' => 'Teams'])->assertNotFound();
+    $this->putJson('made-cms/media/folders/'.missingId(), ['name' => 'Teams'])->assertNotFound();
 });
 
 it('opens only for an editor who opens the media library', function (Role $role, int $status): void {

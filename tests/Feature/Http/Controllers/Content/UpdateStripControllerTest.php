@@ -94,7 +94,7 @@ it('refuses values that break the strip type, with a message per field', functio
     'text: too long' => [['label' => str_repeat('a', 256)], 'label', 'Label mag niet langer zijn dan 255 tekens.'],
     'long text: not text' => [['intro' => ['a']], 'intro', 'Intro moet tekst zijn.'],
     'rich text: too long' => [['tekst' => str_repeat('a', 65536)], 'tekst', 'Tekst mag niet langer zijn dan 65535 tekens.'],
-    'link: unknown page' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['page' => 999]]]], 'knoppen.0.gaat_naar', 'De gekozen pagina bij Gaat naar bestaat niet.'],
+    'link: unknown page' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['page' => missingId()]]]], 'knoppen.0.gaat_naar', 'De gekozen pagina bij Gaat naar bestaat niet.'],
     'link: invalid address' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['url' => 'javascript:alert(1)']]]], 'knoppen.0.gaat_naar', 'Het adres bij Gaat naar is ongeldig. Begin met https://, mailto:, tel:, / of #.'],
     'button: no text' => [['actie' => ['link' => ['url' => '/']]], 'actie.text', 'Vul Tekst in.'],
     'choice: outside the options' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['url' => '/'], 'stijl' => 'groot']]], 'knoppen.0.stijl', 'Kies bij Stijl een van de mogelijkheden.'],
@@ -169,7 +169,7 @@ it('stores the text of a heading but keeps its level for an editor who does not 
         ->assertJsonPath('strip.values.kop', ['text' => 'Welkom bij de club', 'tag' => 'h3'])
         ->assertJsonPath('strip.values.kaarten.0.titel', ['text' => 'Spelen en trainen', 'tag' => 'h2']);
 
-    expect($page->refresh()->draft_strips[0]['values']['kop'] ?? null)->toBe(['text' => 'Welkom bij de club', 'tag' => 'h3']);
+    expect($page->refresh()->draft_strips[0]['values']['kop'] ?? null)->toBeStoredAs(['text' => 'Welkom bij de club', 'tag' => 'h3']);
 })->with([
     'content manager' => [Role::ContentManager],
     'webmaster' => [Role::Webmaster],

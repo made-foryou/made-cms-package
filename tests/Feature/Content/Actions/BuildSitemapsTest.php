@@ -20,7 +20,7 @@ it('builds the sitemap of every route group of the site', function (): void {
     expect(array_map(fn (BuiltSitemap $sitemap): array => [$sitemap->prefix, $sitemap->addresses, $sitemap->errors, $sitemap->changed], $built))->toBe([
         ['', 1, 1, true],
         ['en', 1, 1, true],
-    ])->and(Sitemap::query()->pluck('prefix')->all())->toBe(['', 'en']);
+    ])->and(Sitemap::query()->orderBy('prefix')->pluck('prefix')->all())->toBe(['', 'en']);
 });
 
 it('says when a sitemap stayed the same', function (): void {

@@ -17,13 +17,13 @@ it('deletes the files no page uses and says what it did in words', function (): 
     [$one, $two, $used] = Media::factory()->count(3)->create()->all();
     MediaUsage::factory()->for($used)->create();
 
-    $this->postJson('made-cms/media/delete', ['files' => [$one->id, $two->id, $used->id, 999]])
+    $this->postJson('made-cms/media/delete', ['files' => [$one->id, $two->id, $used->id, missingId()]])
         ->assertOk()
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertExactJson([
             'deleted' => [$one->id, $two->id],
             'kept' => [$used->id],
-            'missing' => [999],
+            'missing' => [missingId()],
             'notice' => '2 bestanden verwijderd.',
             'refusal' => basename($used->path).' staat nog op een pagina en blijft staan.',
         ]);
@@ -44,11 +44,11 @@ it('names a single deleted file, and the files it kept in one list', function ()
 });
 
 it('tells nothing when nothing was deleted or kept', function (): void {
-    $this->postJson('made-cms/media/delete', ['files' => [999]])
+    $this->postJson('made-cms/media/delete', ['files' => [missingId()]])
         ->assertOk()
         ->assertJsonPath('notice', null)
         ->assertJsonPath('refusal', null)
-        ->assertJsonPath('missing', [999]);
+        ->assertJsonPath('missing', [missingId()]);
 });
 
 it('refuses a list of files it cannot take', function (mixed $files): void {

@@ -210,7 +210,7 @@ it('renders an image whose file is gone or is no image as null, so the site show
 
     expect(RenderStrips::run($page)->strips[0]->foto)->toBeNull();
 })->with([
-    'a file that is gone' => [fn (): int => 999],
+    'a file that is gone' => [fn (): int => missingId()],
     'a file that was deleted' => [function (): int {
         $media = Media::factory()->create();
         $media->delete();
@@ -266,7 +266,7 @@ it('renders a file that is gone or of a kind its field does not take as null', f
 
     expect(RenderStrips::run($page)->strips[0]->video)->toBeNull();
 })->with([
-    'a file that is gone' => [fn (): int => 999],
+    'a file that is gone' => [fn (): int => missingId()],
     'a document for a video' => [fn (): int => Media::factory()->document()->create()->id],
     'an image' => [fn (): int => Media::factory()->create()->id],
 ]);
@@ -290,7 +290,8 @@ it('finds the images of every strip of a page with one query for the files', fun
 
     DB::enableQueryLog();
     $strips = RenderStrips::run($page);
-    $queries = array_filter(DB::getQueryLog(), static fn (array $query): bool => str_contains($query['query'], 'cms_media"'));
+    $files = quoted('cms_media');
+    $queries = array_filter(DB::getQueryLog(), static fn (array $query): bool => str_contains($query['query'], $files));
 
     expect($queries)->toHaveCount(1)
         ->and($strips->strips[1]->foto)->not->toBeNull()

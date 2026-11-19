@@ -89,7 +89,7 @@ it('answers 404 for a file that cannot be cropped or is not in the library', fun
     $this->getJson('made-cms/media/'.$id().'/crop')->assertNotFound();
 })->with([
     'a document' => [fn (): int => Media::factory()->document()->create()->id],
-    'gone' => [fn (): string => '999'],
+    'gone' => [fn (): string => (string) missingId()],
     'no number' => [fn (): string => 'teamfoto'],
 ]);
 

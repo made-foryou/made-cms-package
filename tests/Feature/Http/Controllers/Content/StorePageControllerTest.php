@@ -61,7 +61,7 @@ it('refuses a slug that leaves nothing', function (): void {
 });
 
 it('refuses a parent that does not exist', function (): void {
-    $this->from('/made-cms/pages/new')->post('made-cms/pages', ['title' => 'Jeugd', 'parent_id' => '999'])
+    $this->from('/made-cms/pages/new')->post('made-cms/pages', ['title' => 'Jeugd', 'parent_id' => (string) missingId()])
         ->assertSessionHasErrors('parent_id');
 });
 

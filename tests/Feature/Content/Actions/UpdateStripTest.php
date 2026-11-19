@@ -53,8 +53,8 @@ it('stores the validated and cleaned values in the draft', function (): void {
             'knoppen' => [['id' => $itemId, 'tekst' => 'Lid worden', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary']],
             'foto' => null,
         ])
-        ->and($stored->draft_strips)->toBe([$strip->toArray()])
-        ->and($stored->strips)->toBe($published);
+        ->and($stored->draft_strips)->toBeStoredAs([$strip->toArray()])
+        ->and($stored->strips)->toBeStoredAs($published);
 });
 
 /**
@@ -83,8 +83,8 @@ it('changes one field and leaves the other fields of the strip alone', function 
 
     $strip = UpdateStrip::run($page, 'a', ['kop' => 'Welkom bij TTV'], chooseLevels: true);
 
-    expect($strip->values)->toBe([...storedHeroValues(), 'kop' => 'Welkom bij TTV'])
-        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$strip->toArray()]);
+    expect($strip->values)->toBeStoredAs([...storedHeroValues(), 'kop' => 'Welkom bij TTV'])
+        ->and(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs([$strip->toArray()]);
 });
 
 it('starts from the published strip when the page has no draft', function (): void {
@@ -93,8 +93,8 @@ it('starts from the published strip when the page has no draft', function (): vo
 
     $strip = UpdateStrip::run($page, 'a', ['intro' => 'Sinds 1962.'], chooseLevels: true);
 
-    expect($strip->values)->toBe([...storedHeroValues(), 'intro' => 'Sinds 1962.'])
-        ->and(Page::query()->findOrFail($page->id)->strips)->toBe($published);
+    expect($strip->values)->toBeStoredAs([...storedHeroValues(), 'intro' => 'Sinds 1962.'])
+        ->and(Page::query()->findOrFail($page->id)->strips)->toBeStoredAs($published);
 });
 
 it('drops the draft once a field is changed back', function (): void {
@@ -123,8 +123,8 @@ it('answers the strip as the published page holds it once the draft falls away',
     $stored = Page::query()->findOrFail($page->id);
 
     expect($stored->draft_strips)->toBeNull()
-        ->and($stored->strips)->toBe($published)
-        ->and($strip->toArray())->toBe($published[0]);
+        ->and($stored->strips)->toBeStoredAs($published)
+        ->and($strip->toArray())->toBeStoredAs($published[0]);
 });
 
 it('clears a field that it gets as null', function (): void {
@@ -150,7 +150,7 @@ it('merges the items of a list by their id', function (): void {
 
     expect($knoppen[0]['id'] ?? null)->toBeUuid()
         ->and($knoppen[0]['id'] ?? null)->not->toBeIn(['0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', '1b4f6c0d-2e3a-4b7c-9d8e-0f1a2b3c4d5e'])
-        ->and($knoppen)->toBe([
+        ->and($knoppen)->toBeStoredAs([
             ['id' => $knoppen[0]['id'] ?? null, 'tekst' => 'Agenda', 'gaat_naar' => ['url' => '/agenda']],
             ['id' => '0a3e5b9c-1d2f-4a6b-8c7d-9e0f1a2b3c4d', 'tekst' => 'Word lid', 'gaat_naar' => ['url' => '/lid-worden'], 'stijl' => 'primary'],
         ]);
@@ -162,7 +162,7 @@ it('keeps the ids of the items when other fields change', function (): void {
 
     $second = UpdateStrip::run($page, 'a', ['kop' => 'Nieuw'], chooseLevels: true);
 
-    expect($second->values['knoppen'])->toBe($first->values['knoppen']);
+    expect($second->values['knoppen'])->toBeStoredAs($first->values['knoppen']);
 });
 
 it('checks the merged values, also the fields it does not get', function (): void {
@@ -177,7 +177,7 @@ it('checks the merged values, also the fields it does not get', function (): voi
         expect($exception->errors())->toHaveKey('kop')->not->toHaveKey('intro');
     }
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs($draft);
     Event::assertNotDispatched(StripUpdated::class);
 });
 
@@ -220,14 +220,14 @@ it('refuses values that break the definition', function (array $change, string $
         expect($exception->errors())->toHaveKey($path);
     }
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs($draft);
     Event::assertNotDispatched(StripUpdated::class);
 })->with([
     'a required field is missing' => [['kop' => null], 'kop'],
     'too few items' => [['knoppen' => []], 'knoppen'],
     'too many items' => [['knoppen' => array_fill(0, 3, ['tekst' => 'Ga', 'gaat_naar' => ['url' => '/']])], 'knoppen'],
     'a choice outside the options' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['url' => '/'], 'stijl' => 'groot']]], 'knoppen.0.stijl'],
-    'a page that does not exist' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['page' => 999]]]], 'knoppen.0.gaat_naar'],
+    'a page that does not exist' => [['knoppen' => [['tekst' => 'Ga', 'gaat_naar' => ['page' => missingId()]]]], 'knoppen.0.gaat_naar'],
 ]);
 
 it('labels the fields in the validation messages', function (): void {
@@ -272,7 +272,7 @@ it('refuses to change a strip of a type that no longer exists and keeps its data
 
     expect(fn (): mixed => UpdateStrip::run($page, 'old', ['x' => 2], chooseLevels: true))->toThrow(UnknownStripType::class);
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs($draft);
     Event::assertNotDispatched(StripUpdated::class);
 });
 
@@ -301,7 +301,7 @@ it('refuses a level its heading does not offer', function (array $values, string
         expect(array_keys($exception->errors()))->toBe([$path]);
     }
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs($draft);
 })->with([
     'its own heading' => [['kop' => ['text' => 'Welkom', 'tag' => 'h4']], 'kop.tag'],
     'a heading in a card' => [['kaarten' => [['titel' => ['text' => 'Spelen', 'tag' => 'h1']]]], 'kaarten.0.titel.tag'],
@@ -334,7 +334,7 @@ it('keeps the stored level of every heading for an editor who does not choose le
     expect($strip->values['kop'])->toBe(['text' => 'Welkom bij de club', 'tag' => 'h3'])
         ->and($strip->values['kaarten'][0])->toBe(['id' => $card, 'titel' => ['text' => 'Spelen en trainen', 'tag' => 'h2']])
         ->and($strip->values['kaarten'][1]['titel'])->toBe(['text' => 'Nieuw', 'tag' => 'h3'])
-        ->and(Page::query()->findOrFail($page->id)->draft_strips[0]['values']['kop'] ?? null)->toBe(['text' => 'Welkom bij de club', 'tag' => 'h3']);
+        ->and(Page::query()->findOrFail($page->id)->draft_strips[0]['values']['kop'] ?? null)->toBeStoredAs(['text' => 'Welkom bij de club', 'tag' => 'h3']);
 });
 
 it('keeps a level that is not the default level when an editor who does not choose levels empties a heading', function (): void {
@@ -350,7 +350,7 @@ it('ignores a level the heading does not offer from an editor who does not choos
 
     $strip = UpdateStrip::run($page, 'a', ['kop' => ['text' => 'Welkom', 'tag' => 'h6']], chooseLevels: false);
 
-    expect($strip->values['kop'])->toBe(['text' => 'Welkom', 'tag' => 'h3']);
+    expect($strip->values['kop'])->toBeStoredAs(['text' => 'Welkom', 'tag' => 'h3']);
 });
 
 it('changes the level of a heading for an editor who chooses levels, also in a list', function (): void {
@@ -388,5 +388,5 @@ it('refuses an image whose file is gone, also when another field changes', funct
         expect($exception->errors())->toBe(['foto' => ['De gekozen afbeelding bij Foto bestaat niet meer.']]);
     }
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs($draft);
 });

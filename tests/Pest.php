@@ -9,6 +9,7 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Routing\CompiledRouteCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -44,6 +45,7 @@ use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
+use Pest\Expectation;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Process\Process;
 
@@ -71,6 +73,61 @@ pest()->extend(TestCase::class)->use(RefreshDatabase::class)->in('Browser');
 // The longest a browser action or assertion waits; a passing test takes no longer for it. The Windows runner in CI
 // serves the first pages of a run slowly enough (cold PHP server, views compiled on first use) to pass the default 5 s.
 pest()->browser()->timeout(15_000);
+
+/*
+|--------------------------------------------------------------------------
+| Databases
+|--------------------------------------------------------------------------
+|
+| The tests run on SQLite, MySQL and PostgreSQL (tests/Fixtures/Database).
+| They never count on what only one of them does: the order of the keys of
+| stored JSON, the quotes in the text of a query, or an id that no row has.
+|
+*/
+
+/**
+ * A value read back from a JSON column, compared as toBe() does but without the order of the keys of an object:
+ * MySQL stores those sorted (by length, then alphabetically), SQLite and PostgreSQL as they were written. A list
+ * keeps its order.
+ */
+expect()->extend('toBeStoredAs', function (mixed $expected): Expectation {
+    expect(withSortedKeys($this->value))->toBe(withSortedKeys($expected));
+
+    return $this;
+});
+
+function withSortedKeys(mixed $value): mixed
+{
+    if (! is_array($value)) {
+        return $value;
+    }
+
+    $value = array_map(withSortedKeys(...), $value);
+
+    if (! array_is_list($value)) {
+        ksort($value, SORT_STRING);
+    }
+
+    return $value;
+}
+
+/**
+ * A table or column as the grammar of the connection quotes it in a query: "cms_media" on SQLite and PostgreSQL,
+ * `cms_media` on MySQL.
+ */
+function quoted(string $identifier): string
+{
+    return DB::getQueryGrammar()->wrap($identifier);
+}
+
+/**
+ * An id no row has. MySQL and PostgreSQL keep counting ids after a test rolls back, so a small number such as 999
+ * can belong to a row a later test creates; the tests never create this many.
+ */
+function missingId(): int
+{
+    return 2_000_000_000;
+}
 
 /*
 |--------------------------------------------------------------------------

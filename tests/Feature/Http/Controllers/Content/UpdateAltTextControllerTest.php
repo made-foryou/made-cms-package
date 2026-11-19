@@ -51,7 +51,7 @@ it('refuses an alt text that is too long or no text', function (mixed $alt, stri
 
 it('answers 404 for a file that is not in the library', function (string $id): void {
     $this->putJson('made-cms/media/'.$id.'/alt', ['alt' => 'Tekst'])->assertNotFound();
-})->with(['gone' => ['999'], 'no number' => ['teamfoto']]);
+})->with(['gone' => [(string) missingId()], 'no number' => ['teamfoto']]);
 
 it('opens for every editor who opens the pages or the media library', function (Role $role): void {
     $media = Media::factory()->create();

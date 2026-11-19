@@ -47,7 +47,7 @@ it('refuses a name without letters or digits, or no text', function (mixed $name
 ]);
 
 it('answers 404 for a file that is not in the library', function (): void {
-    $this->putJson('made-cms/media/999/name', ['name' => 'teamfoto'])->assertNotFound();
+    $this->putJson('made-cms/media/'.missingId().'/name', ['name' => 'teamfoto'])->assertNotFound();
 });
 
 it('opens for every editor who opens the pages or the media library', function (Role $role): void {

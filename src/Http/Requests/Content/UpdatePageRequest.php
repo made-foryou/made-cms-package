@@ -9,8 +9,8 @@ use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
- * The basics of a page: its name, its slug, its parent and whether it is in the menu. The form of the home page has
- * no slug and no parent, so the page keeps those.
+ * The basics of a page: its name, its slug, its parent, whether it is in the menu and whether visitors see it. The
+ * form of the home page has no slug, no parent and no switch for visitors, so the page keeps those.
  */
 final class UpdatePageRequest extends LauncherRequest
 {
@@ -46,6 +46,7 @@ final class UpdatePageRequest extends LauncherRequest
             slug: $this->has('slug') ? ($this->filled('slug') ? $this->string('slug')->toString() : null) : $page->slug,
             parentId: $this->has('parent_id') ? ($this->filled('parent_id') ? $this->integer('parent_id') : null) : $page->parent_id,
             inMenu: $this->boolean('in_menu'),
+            hidden: $this->has('visible') ? ! $this->boolean('visible') : null,
         );
     }
 

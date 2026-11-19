@@ -62,6 +62,7 @@ use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateAltTextController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageMetaController;
+use Made\CmsPackage\Http\Controllers\Content\UpdatePageVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateStripController;
 use Made\CmsPackage\Http\Controllers\Content\UploadMediaController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
@@ -136,6 +137,7 @@ Route::prefix($prefix)
                 Route::get('pages/{page}', ShowPageController::class)->whereNumber('page')->name('pages.show');
                 Route::put('pages/{page}', UpdatePageController::class)->whereNumber('page')->name('pages.update');
                 Route::put('pages/{page}/meta', UpdatePageMetaController::class)->whereNumber('page')->name('pages.meta');
+                Route::put('pages/{page}/visibility', UpdatePageVisibilityController::class)->whereNumber('page')->name('pages.visibility');
                 Route::put('pages/{page}/position', MovePageController::class)->whereNumber('page')->name('pages.position');
                 Route::delete('pages/{page}', DeletePageController::class)->whereNumber('page')->name('pages.destroy');
                 Route::post('pages/{page}/restore', RestorePageController::class)

@@ -1,7 +1,8 @@
 {{--
     The card "Hoe Google hem ziet" (design 15.2): the result in Google, the title and the description in Google with
-    their counters, and the switches for the sitemap and noindex. It saves on its own and holds for the site at once;
-    cms.js keeps the counters, the result and the hint of the sitemap up to date while the editor types.
+    their counters, and the switches for the sitemap and noindex, which a hidden page overrules. It saves on its own and
+    holds for the site at once; cms.js keeps the counters, the result and the hint of the sitemap up to date while the
+    editor types.
 --}}
 @php
     $titleValue = (string) old('meta_title', $meta['title']);
@@ -48,6 +49,9 @@
                 @enderror
             </div>
         </div>
+        @if ($meta['hidden'])
+            <p class="kaart-tekst">{{ $t('pages.show.meta.hidden') }}</p>
+        @endif
         <div class="schakels">
             @include('made-cms-package-launcher::cms.pages.partials.switch', [
                 'name' => 'in_sitemap',

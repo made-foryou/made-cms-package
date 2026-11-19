@@ -48,7 +48,7 @@
                             <a class="boomrij-naam" href="{{ $row['showUrl'] }}">{{ $row['title'] }}</a>
                             <span class="boomrij-pad">{{ $row['path'] ?? '–' }}</span>
                         </span>
-                        <span class="status{{ $row['live'] ? ' live' : '' }}">{{ $t('pages.status.'.$row['status']) }}</span>
+                        <span class="status{{ $row['state'] === 'live' ? ' live' : '' }}">{{ $t('pages.state.'.$row['state']) }}</span>
                         <span class="boomrij-noot">{{ $row['note'] }}</span>
                         <span class="boomrij-datum">{{ $t('pages.index.modified', ['date' => $row['modified']]) }}</span>
                         <span class="boomrij-acties">

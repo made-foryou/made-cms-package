@@ -63,3 +63,25 @@ it('keeps the address of the home page when the form has no address', function (
     expect($home->refresh()->title)->toBe('Welkom')
         ->and($home->route?->path)->toBe('/');
 });
+
+it('hides the page with the switch for visitors and shows it again', function (): void {
+    $page = Page::factory()->published()->at('/privacy')->create(['title' => 'Privacy', 'slug' => 'privacy']);
+    $basics = ['title' => 'Privacy', 'slug' => 'privacy', 'parent_id' => '', 'in_menu' => '1'];
+
+    $this->put('made-cms/pages/'.$page->id, [...$basics, 'visible' => '0'])->assertRedirect('/made-cms/pages/'.$page->id);
+
+    expect($page->refresh()->hidden)->toBeTrue();
+
+    $this->put('made-cms/pages/'.$page->id, [...$basics, 'visible' => '1']);
+
+    expect($page->refresh()->hidden)->toBeFalse();
+});
+
+it('keeps whether visitors see the page when the form has no switch for it', function (): void {
+    $page = Page::factory()->published()->hidden()->at('/privacy')->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
+    $this->put('made-cms/pages/'.$page->id, ['title' => 'Privacyverklaring', 'slug' => 'privacy', 'parent_id' => '', 'in_menu' => '1']);
+
+    expect($page->refresh()->title)->toBe('Privacyverklaring')
+        ->and($page->hidden)->toBeTrue();
+});

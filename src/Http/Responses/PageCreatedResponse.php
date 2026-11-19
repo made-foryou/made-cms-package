@@ -31,7 +31,7 @@ final class PageCreatedResponse
             'text' => $t('text', [
                 'path' => (string) $page->route?->path,
                 'place' => $parent === null ? $t('root') : $t('under', ['parent' => $parent->title]),
-                'menu' => $page->in_menu ? $t('in_menu') : $t('hidden'),
+                'menu' => $page->in_menu ? $t('in_menu') : $t('out_of_menu'),
             ]),
             'indexUrl' => PageLinks::index(),
             'showUrl' => PageLinks::show($page),

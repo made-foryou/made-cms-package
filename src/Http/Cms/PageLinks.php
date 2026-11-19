@@ -49,6 +49,14 @@ final class PageLinks
         return self::url('made-cms-package.pages.position', ['page' => self::id($page)]);
     }
 
+    /**
+     * Where the card Weghalen hides a page from visitors or shows it again.
+     */
+    public static function visibility(Page $page): string
+    {
+        return self::url('made-cms-package.pages.visibility', ['page' => $page->id]);
+    }
+
     public static function destroy(Page $page): string
     {
         return self::url('made-cms-package.pages.destroy', ['page' => $page->id]);

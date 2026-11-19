@@ -11,6 +11,7 @@ use Made\CmsPackage\Content\Data\DeletedPage;
 use Made\CmsPackage\Content\Data\DeletedPages;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PageTree;
+use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
@@ -46,7 +47,7 @@ final class PagesResponse
                 'moveUrl' => PageLinks::move($node->id),
                 'title' => $node->title,
                 'path' => $node->path?->value,
-                'status' => $node->status->value,
+                'state' => PageState::of($node->status, $node->hidden)->value,
                 'live' => $node->status === PageStatus::Published,
                 'note' => self::note($node),
                 'modified' => $node->updatedAt->settings(['locale' => $locale])->isoFormat('D MMM YYYY'),
@@ -85,19 +86,25 @@ final class PagesResponse
     }
 
     /**
-     * What still needs doing on a page, in a few words.
+     * What still needs doing on a page, in a few words, and what the pill leaves out: a hidden page is out of the menu
+     * and the sitemap, and a draft that is hidden stays hidden once it is published.
      */
     private static function note(PageNode $node): string
     {
+        $published = $node->status === PageStatus::Published;
         $notes = [];
 
-        if ($node->status === PageStatus::Published) {
+        if ($published) {
             $notes[] = $node->hasDraft ? 'draft_changes' : null;
         } else {
             $notes[] = $node->isEmpty ? 'empty' : 'unpublished';
         }
 
-        $notes[] = $node->inMenu ? null : 'hidden';
+        if ($node->hidden) {
+            $notes[] = $published ? 'unlisted' : 'hidden';
+        } else {
+            $notes[] = $node->inMenu ? null : 'out_of_menu';
+        }
 
         return implode(', ', array_map(
             static fn (string $note): string => (string) __('made-cms-package::pages.notes.'.$note),

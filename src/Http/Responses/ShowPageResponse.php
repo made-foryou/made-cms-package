@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\PageTree;
 use Made\CmsPackage\Content\Enums\MetaField;
+use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Cms\Menu;
@@ -57,10 +58,11 @@ final class ShowPageResponse
                 'title' => $page->title,
                 'slug' => $page->slug,
                 'path' => $path,
-                'status' => $page->status->value,
+                'state' => PageState::of($page->status, $page->hidden)->value,
                 'live' => $page->status === PageStatus::Published,
                 'home' => $path === PagePath::HOME,
                 'inMenu' => $page->in_menu,
+                'hidden' => $page->hidden,
                 'parentId' => $page->parent_id,
             ],
             'address' => $path === null ? null : Site::host().($path === PagePath::HOME ? '' : $path),
@@ -69,6 +71,7 @@ final class ShowPageResponse
             'editUrl' => PageLinks::edit($page),
             'updateUrl' => PageLinks::update($page),
             'destroyUrl' => PageLinks::destroy($page),
+            'visibilityUrl' => PageLinks::visibility($page),
             'childCreateUrl' => PageLinks::create($page->id),
             'parents' => array_map(static fn (PageNode $option): array => [
                 'id' => $option->id,
@@ -78,8 +81,7 @@ final class ShowPageResponse
             'children' => array_map(static fn (PageNode $child): array => [
                 'title' => $child->title,
                 'path' => $child->path?->value,
-                'status' => $child->status->value,
-                'live' => $child->status === PageStatus::Published,
+                'state' => PageState::of($child->status, $child->hidden)->value,
                 'showUrl' => PageLinks::show($child->id),
             ], $node->children ?? []),
             'menuPlace' => self::menuPlace($pages, $menu, $node),
@@ -107,6 +109,7 @@ final class ShowPageResponse
             'shownTitle' => $meta->title,
             'inSitemap' => $page->in_sitemap,
             'indexable' => $page->indexable,
+            'hidden' => $page->hidden,
             'address' => self::googleAddress($meta->canonical),
             'titleCount' => self::counter(MeasureMeta::run(MetaField::Title, $meta->title), fallback: $page->meta_title === null),
             'descriptionCount' => self::counter(MeasureMeta::run(MetaField::Description, $meta->description), fallback: false),
@@ -160,15 +163,19 @@ final class ShowPageResponse
 
     /**
      * What the menu switch says about the place of the page in the menu of the site; null for a page outside the menu.
-     * Only the pages the site shows in its menu count: a draft gets the place it takes once published, and a page under
-     * a page the menu of the site leaves out names that page.
+     * Only the pages the site shows in its menu count: a hidden page has no place while it is hidden, a draft gets the
+     * place it takes once published, and a page under a page the menu of the site leaves out names that page.
      *
-     * @return array{hint: 'position'|'publish'|'parent', replace: array<string, int|string>}|null
+     * @return array{hint: 'position'|'publish'|'parent'|'while_hidden', replace: array<string, int|string>}|null
      */
     private static function menuPlace(PageTree $pages, PageTree $menu, ?PageNode $node): ?array
     {
         if ($node === null || ! $node->inMenu) {
             return null;
+        }
+
+        if ($node->hidden) {
+            return ['hint' => 'while_hidden', 'replace' => []];
         }
 
         $shown = array_fill_keys(array_map(static fn (PageNode $item): int => $item->id, $menu->flatten()), true);

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Data\Strip;
 use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 /**
@@ -38,6 +39,7 @@ final class PageFactory extends Factory
             'meta_description' => null,
             'in_sitemap' => true,
             'indexable' => true,
+            'share_image_id' => null,
             'status' => PageStatus::Draft,
             'strips' => [],
             'draft_strips' => null,
@@ -93,6 +95,14 @@ final class PageFactory extends Factory
     public function noindex(): self
     {
         return $this->state(fn (): array => ['indexable' => false]);
+    }
+
+    /**
+     * Gives the page a share image of its own; the place in cms_media_usages follows from SyncMediaUsage.
+     */
+    public function withShareImage(Media|int $media): self
+    {
+        return $this->state(fn (): array => ['share_image_id' => $media instanceof Media ? $media->id : $media]);
     }
 
     public function outOfSitemap(): self

@@ -9,6 +9,10 @@ return [
         'video' => 'Video',
     ],
 
+    'places' => [
+        'share_image' => 'Share image',
+    ],
+
     'errors' => [
         'too_large' => 'Too large: a file may be :max.',
         'too_large_video' => 'Too large: a file may be :max. Put the video on YouTube or Vimeo and paste the link in a video block; that loads faster for visitors too.',

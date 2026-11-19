@@ -13,15 +13,16 @@ use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Database\Factories\Content\MediaUsageFactory;
 
 /**
- * One place a file of the media library is used: a field of a strip in the draft or the published version of a page.
+ * One place a file of the media library is used: a field of a strip in the draft or the published version of a page,
+ * or a place of the page itself (version Page, field a PagePlace, without a strip).
  *
  * @property int $id
  * @property int $media_id
  * @property int $page_id
  * @property UsageVersion $version
- * @property string $strip_id
- * @property string $strip_type the key of the strip type; it may no longer be in the catalogue
- * @property string $field the path of the field in the strip: "foto", or "kaarten.{id}.foto" in an item of a list
+ * @property string $strip_id empty for a place of the page itself
+ * @property string $strip_type the key of the strip type; it may no longer be in the catalogue. Empty for a place of the page itself
+ * @property string $field the path of the field in the strip: "foto", or "kaarten.{id}.foto" in an item of a list; for a place of the page itself the value of its PagePlace
  * @property-read Media|null $media
  * @property-read Page|null $page
  *

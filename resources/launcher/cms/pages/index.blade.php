@@ -30,6 +30,10 @@
                 </div>
             </template>
             <p class="sr-only" aria-live="polite" data-slot="tree-announce"></p>
+            {{-- Where a dragged page lands: a line at the depth it gets, with the page it goes under. --}}
+            <template data-tree-place>
+                <li class="boom-plek" aria-hidden="true"><span class="boom-plek-label"></span></li>
+            </template>
 
             {{-- pages.js reads this screen again after every move and takes this list and the menu from it. --}}
             <ul class="boom" data-tree data-config="{{ json_encode($tree, JSON_THROW_ON_ERROR) }}">
@@ -47,15 +51,15 @@
                         <span class="status{{ $row['live'] ? ' live' : '' }}">{{ $t('pages.status.'.$row['status']) }}</span>
                         <span class="boomrij-noot">{{ $row['note'] }}</span>
                         <span class="boomrij-datum">{{ $t('pages.index.modified', ['date' => $row['modified']]) }}</span>
-                        @unless ($row['home'])
-                            <span class="boomrij-verplaats" role="group" aria-label="{{ $t('pages.tree.group', ['title' => $row['title']]) }}">
-                                <button type="button" class="verplaatsknop" data-move-to="up" aria-label="{{ $t('pages.tree.up', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></button>
-                                <button type="button" class="verplaatsknop" data-move-to="down" aria-label="{{ $t('pages.tree.down', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg></button>
-                                <button type="button" class="verplaatsknop" data-move-to="indent" aria-label="{{ $t('pages.tree.indent', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 5v8a3 3 0 0 0 3 3h10"/><path d="M15 12l4 4-4 4"/></svg></button>
-                                <button type="button" class="verplaatsknop" data-move-to="outdent" aria-label="{{ $t('pages.tree.outdent', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
-                            </span>
-                        @endunless
                         <span class="boomrij-acties">
+                            @unless ($row['home'])
+                                <span class="boomrij-verplaats" role="group" aria-label="{{ $t('pages.tree.group', ['title' => $row['title']]) }}">
+                                    <button type="button" class="verplaatsknop" data-move-to="up" aria-label="{{ $t('pages.tree.up', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></button>
+                                    <button type="button" class="verplaatsknop" data-move-to="down" aria-label="{{ $t('pages.tree.down', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg></button>
+                                    <button type="button" class="verplaatsknop" data-move-to="indent" aria-label="{{ $t('pages.tree.indent', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 5v8a3 3 0 0 0 3 3h10"/><path d="M15 12l4 4-4 4"/></svg></button>
+                                    <button type="button" class="verplaatsknop" data-move-to="outdent" aria-label="{{ $t('pages.tree.outdent', ['title' => $row['title']]) }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
+                                </span>
+                            @endunless
                             <a class="actie klein" href="{{ $row['showUrl'] }}" aria-label="{{ $t('pages.index.overview_label', ['title' => $row['title']]) }}">{{ $t('pages.index.overview') }}</a>
                             <a class="actie klein" href="{{ $row['editUrl'] }}" aria-label="{{ $t('pages.index.edit_label', ['title' => $row['title']]) }}">{{ $t('pages.index.edit') }}</a>
                         </span>

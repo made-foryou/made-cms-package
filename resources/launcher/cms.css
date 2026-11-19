@@ -1098,20 +1098,26 @@ ul.lijst {
     border-style: dashed;
 }
 
+/* One step of indentation; pages.js reads it to turn a drag to the right into a level. */
+.boom {
+    --boom-inspring: 44px;
+    position: relative;
+}
+
 .boomrij[data-diepte] {
-    margin-left: 44px;
+    margin-left: var(--boom-inspring);
 }
 
 .boomrij[data-diepte="2"] {
-    margin-left: 88px;
+    margin-left: calc(var(--boom-inspring) * 2);
 }
 
 .boomrij[data-diepte="3"] {
-    margin-left: 132px;
+    margin-left: calc(var(--boom-inspring) * 3);
 }
 
 .boomrij[data-diepte="4"] {
-    margin-left: 176px;
+    margin-left: calc(var(--boom-inspring) * 4);
 }
 
 .boomrij[data-diepte]::before,
@@ -1159,9 +1165,162 @@ ul.lijst {
 }
 
 .boomrij-acties {
+    position: relative;
     display: flex;
     flex-shrink: 0;
+    align-items: center;
     gap: 6px;
+}
+
+/* Moving a page (#64): the grip drags it, the buttons move it with the keyboard. */
+.boom-hint {
+    margin: -6px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.boom-meldplek:empty {
+    display: none;
+}
+
+.boom-meldplek .melding {
+    align-items: center;
+    font-size: 14px;
+}
+
+.boom-meldplek .melding .bol {
+    margin-top: 0;
+}
+
+.boom-meldplek .melding-tekst {
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.boom .greep,
+.greep-plek {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin-left: -6px;
+    padding: 0;
+}
+
+.boom .greep:hover {
+    color: var(--made-inhoud);
+}
+
+/* The buttons lie over the date beside the actions while the row has the focus or the pointer, so it never jumps. */
+.boomrij-verplaats {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 6px);
+    display: flex;
+    gap: 4px;
+    padding: 0 6px;
+    background: var(--made-oppervlak-verhoogd);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%);
+    transition: opacity 120ms ease;
+}
+
+.boomrij:focus-within .boomrij-verplaats {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: hover) {
+    .boomrij:hover .boomrij-verplaats {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+.verplaatsknop {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1.5px solid var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    cursor: pointer;
+}
+
+.verplaatsknop:hover {
+    border-color: var(--made-accent);
+}
+
+.verplaatsknop[aria-disabled="true"] {
+    border-color: var(--made-rand);
+    color: var(--made-inhoud-subtiel);
+    cursor: not-allowed;
+}
+
+[data-boom-sleept],
+[data-boom-sleept] * {
+    cursor: grabbing !important;
+    user-select: none;
+}
+
+[data-boom-sleept] .boomrij-verplaats {
+    opacity: 0;
+}
+
+.boomrij.sleept {
+    opacity: .35;
+}
+
+/* Where a dragged page lands: a line at the depth it gets, with the page it goes under. */
+.boom-plek {
+    position: absolute;
+    right: 0;
+    left: calc(var(--boom-inspring) * var(--plek-diepte, 0));
+    z-index: 2;
+    height: 0;
+    pointer-events: none;
+}
+
+.boom-plek::before {
+    content: "";
+    position: absolute;
+    top: -1.5px;
+    right: 0;
+    left: 0;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--made-amber);
+}
+
+.boom-plek::after {
+    content: "";
+    position: absolute;
+    top: -5.5px;
+    left: -5px;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--made-amber);
+}
+
+.boom-plek-label {
+    position: absolute;
+    top: 0;
+    left: 18px;
+    padding: 4px 10px;
+    border-radius: var(--made-radius-pil);
+    background: var(--made-amber);
+    color: var(--made-nachtgroen);
+    font: 700 12px/1.2 var(--font-kop);
+    white-space: nowrap;
+    transform: translateY(-50%);
 }
 
 .punt form {
@@ -3434,7 +3593,9 @@ ul.lijst {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .koprij {
+    .koprij,
+    .boomrij,
+    .boomrij-verplaats {
         transition: none;
     }
 }
@@ -3719,14 +3880,23 @@ button.tekstlink.alarm {
         width: 100%;
     }
 
-    .boomrij[data-diepte] {
-        margin-left: 22px;
+    .boom {
+        --boom-inspring: 22px;
     }
 
     .boomrij[data-diepte="2"],
     .boomrij[data-diepte="3"],
     .boomrij[data-diepte="4"] {
-        margin-left: 44px;
+        margin-left: calc(var(--boom-inspring) * 2);
+    }
+
+    .boomrij-verplaats {
+        position: static;
+        padding: 0;
+        background: none;
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
     }
 
     .boomrij[data-diepte]::before {

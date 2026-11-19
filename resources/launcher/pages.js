@@ -338,5 +338,179 @@ if (initial !== null) {
         }
     });
 
+    /* ---------------------------------------------------------------------------------------------------------------
+     * Dragging: the grip takes the page with the pages under it. Up and down choose the gap between two rows, right
+     * and left the depth there; a line shows where it lands. Escape or a gap the tree does not offer drops nothing.
+     * ------------------------------------------------------------------------------------------------------------ */
+
+    function indent() {
+        return parseFloat(getComputedStyle(list()).getPropertyValue('--boom-inspring')) || 44;
+    }
+
+    /* The gap the pointer is in: before the first row whose middle lies below it. */
+    function gapAt(others, y) {
+        const index = others.findIndex((item) => {
+            const box = item.el.getBoundingClientRect();
+
+            return y < box.top + box.height / 2;
+        });
+
+        return index === -1 ? others.length : index;
+    }
+
+    /* The place in a gap closest to the depth the pointer asks for, among the depths the tree offers there. */
+    function nearest(all, row, others, gap, wanted) {
+        const { min, max } = range(others, gap);
+        const depths = [];
+
+        for (let depth = min; depth <= max; depth++) {
+            depths.push(depth);
+        }
+
+        depths.sort((a, b) => Math.abs(a - wanted) - Math.abs(b - wanted) || b - a);
+
+        for (const depth of depths) {
+            const to = place(all, row, gap, depth);
+
+            if (to.reason === undefined) {
+                return to;
+            }
+        }
+
+        return null;
+    }
+
+    function show(line, others, gap, to) {
+        if (to === null) {
+            line.remove();
+
+            return;
+        }
+
+        const tree = list();
+        const next = others[gap] ?? null;
+        const previous = others[gap - 1] ?? null;
+        const top = next !== null
+            ? next.el.offsetTop - 5
+            : previous.el.offsetTop + previous.el.offsetHeight + 5;
+
+        line.style.top = top + 'px';
+        line.style.setProperty('--plek-diepte', String(to.depth));
+        line.querySelector('.boom-plek-label').textContent = to.parent === null
+            ? texts.place_top
+            : format(texts.place_under, { parent: to.parent.title });
+
+        if (line.parentElement !== tree) {
+            tree.append(line);
+        }
+    }
+
+    function drag(event, grip) {
+        if (event.button !== 0 || busy || dragging !== null) {
+            return;
+        }
+
+        const all = rows();
+        const row = all.find((item) => item.el.contains(grip));
+
+        if (row === undefined || row.home) {
+            return;
+        }
+
+        event.preventDefault();
+
+        const { own, others } = branch(all, row);
+        const line = host.querySelector('template[data-tree-place]').content.firstElementChild.cloneNode(true);
+        const unit = indent();
+        const start = { x: event.clientX, y: event.clientY };
+        let pointer = { x: event.clientX, y: event.clientY };
+        let moved = false;
+        let to = null;
+        let scrolling = 0;
+
+        const update = () => {
+            const gap = gapAt(others, pointer.y);
+
+            to = nearest(all, row, others, gap, row.depth + Math.round((pointer.x - start.x) / unit));
+            show(line, others, gap, to);
+        };
+
+        /* Near the top or the bottom of the window the page scrolls along, faster the closer the pointer comes. */
+        const scroll = () => {
+            const speed = pointer.y < EDGE
+                ? -Math.ceil((EDGE - pointer.y) / 4)
+                : (pointer.y > window.innerHeight - EDGE ? Math.ceil((pointer.y - window.innerHeight + EDGE) / 4) : 0);
+
+            if (speed === 0) {
+                scrolling = 0;
+
+                return;
+            }
+
+            window.scrollBy(0, speed);
+            update();
+            scrolling = window.requestAnimationFrame(scroll);
+        };
+
+        const onMove = (moveEvent) => {
+            pointer = { x: moveEvent.clientX, y: moveEvent.clientY };
+
+            if (! moved && Math.hypot(pointer.x - start.x, pointer.y - start.y) < 4) {
+                return;
+            }
+
+            if (! moved) {
+                moved = true;
+                document.documentElement.dataset.boomSleept = '';
+                own.forEach((item) => item.el.classList.add('sleept'));
+            }
+
+            update();
+
+            if (scrolling === 0) {
+                scrolling = window.requestAnimationFrame(scroll);
+            }
+        };
+
+        const stop = (drop) => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onCancel);
+            window.removeEventListener('keydown', onKey, true);
+            window.cancelAnimationFrame(scrolling);
+            delete document.documentElement.dataset.boomSleept;
+            own.forEach((item) => item.el.classList.remove('sleept'));
+            line.remove();
+            dragging = null;
+
+            if (drop && moved && to !== null) {
+                move(row, to);
+            }
+        };
+
+        const onUp = () => stop(true);
+        const onCancel = () => stop(false);
+        const onKey = (keyEvent) => {
+            if (keyEvent.key === 'Escape') {
+                keyEvent.preventDefault();
+                stop(false);
+            }
+        };
+
+        dragging = row;
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onCancel);
+        window.addEventListener('keydown', onKey, true);
+    }
+
+    host.addEventListener('pointerdown', (event) => {
+        const grip = event.target.closest('.greep');
+
+        if (grip !== null && list().contains(grip)) {
+            drag(event, grip);
+        }
+    });
+
     arm();
 }

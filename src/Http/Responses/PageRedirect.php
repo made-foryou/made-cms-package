@@ -54,6 +54,12 @@ final class PageRedirect
         return $request->hasSession() && $request->session()->get(self::META_SAVED) === $page->id;
     }
 
+    public static function visibilityChanged(Page $page): RedirectResponse
+    {
+        return redirect()->route('made-cms-package.pages.show', ['page' => $page->id])
+            ->with(Shell::NOTICE, ['text' => $page->hidden ? 'hidden' : 'shown', 'title' => $page->title]);
+    }
+
     public static function deleted(Page $page): RedirectResponse
     {
         return redirect()->route('made-cms-package.screens.pages')

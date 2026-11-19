@@ -11,7 +11,7 @@
             @include('made-cms-package-launcher::cms.pages.partials.trail', ['here' => $page['title']])
             <h1 id="made-cms-titel">{{ $page['title'] }}</h1>
             <div class="kop-regel">
-                <span class="status{{ $page['live'] ? ' live' : '' }}">{{ $t('pages.status.'.$page['status']) }}</span>
+                <span class="status{{ $page['state'] === 'live' ? ' live' : '' }}">{{ $t('pages.state.'.$page['state']) }}</span>
                 @if ($address !== null)
                     <span class="adres">{{ $address }}</span>
                 @endif
@@ -51,12 +51,22 @@
                         </div>
                     @endunless
                 </div>
-                @include('made-cms-package-launcher::cms.pages.partials.switch', [
-                    'name' => 'in_menu',
-                    'label' => $t('pages.show.in_menu.label'),
-                    'hint' => $menuPlace === null ? $t('pages.show.in_menu.hidden') : $t('pages.show.in_menu.'.$menuPlace['hint'], $menuPlace['replace']),
-                    'checked' => $page['inMenu'],
-                ])
+                <div class="schakels">
+                    @include('made-cms-package-launcher::cms.pages.partials.switch', [
+                        'name' => 'in_menu',
+                        'label' => $t('pages.show.in_menu.label'),
+                        'hint' => $menuPlace === null ? $t('pages.show.in_menu.off') : $t('pages.show.in_menu.'.$menuPlace['hint'], $menuPlace['replace']),
+                        'checked' => $page['inMenu'],
+                    ])
+                    @unless ($page['home'])
+                        @include('made-cms-package-launcher::cms.pages.partials.switch', [
+                            'name' => 'visible',
+                            'label' => $t('pages.show.visible.label'),
+                            'hint' => $t('pages.show.visible.hint'),
+                            'checked' => ! $page['hidden'],
+                        ])
+                    @endunless
+                </div>
                 <div class="knoppen">
                     <button type="submit" class="knop">{{ $t('pages.show.save') }}</button>
                 </div>
@@ -81,7 +91,7 @@
                                 <a class="boomrij-naam" href="{{ $child['showUrl'] }}">{{ $child['title'] }}</a>
                                 <span class="boomrij-pad">{{ $child['path'] ?? '–' }}</span>
                             </span>
-                            <span class="status{{ $child['live'] ? ' live' : '' }}">{{ $t('pages.status.'.$child['status']) }}</span>
+                            <span class="status{{ $child['state'] === 'live' ? ' live' : '' }}">{{ $t('pages.state.'.$child['state']) }}</span>
                         </li>
                     @endforeach
                 </ul>
@@ -96,22 +106,40 @@
                 @error('delete')
                     <p class="veld-fout" role="alert">{{ $message }}</p>
                 @enderror
+                @error('visible')
+                    <p class="veld-fout" role="alert">{{ $message }}</p>
+                @enderror
+                @if ($page['hidden'])
+                    <p class="kaart-tekst">{{ $t('pages.show.delete.hidden_text', ['title' => $page['title']]) }}</p>
+                @endif
                 @if ($children !== [])
                     <p class="kaart-tekst">{{ $t('pages.show.delete.blocked', ['title' => $page['title']]) }}</p>
-                    <div class="knoppen">
-                        <button type="button" class="knop stil" disabled>{{ $t('pages.show.delete.button') }}</button>
-                    </div>
                 @else
                     <p class="kaart-tekst">{{ $t('pages.show.delete.text', ['title' => $page['title'], 'days' => $keepDays]) }}</p>
-                    <details class="bevestig">
-                        <summary class="knop stil">{{ $t('pages.show.delete.button') }}</summary>
-                        <form method="post" action="{{ $destroyUrl }}">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="knop gevaar">{{ $t('pages.show.delete.confirm', ['title' => $page['title']]) }}</button>
-                        </form>
-                    </details>
                 @endif
+                @unless ($page['hidden'])
+                    <p class="kaart-tekst">{{ $t('pages.show.delete.hide_text', ['title' => $page['title']]) }}</p>
+                @endunless
+                <div class="knoppen weghalen">
+                    <form method="post" action="{{ $visibilityUrl }}">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="visible" value="{{ $page['hidden'] ? 1 : 0 }}">
+                        <button type="submit" class="knop stil">{{ $t($page['hidden'] ? 'pages.show.delete.show' : 'pages.show.delete.hide') }}</button>
+                    </form>
+                    @if ($children !== [])
+                        <button type="button" class="knop stil" disabled>{{ $t('pages.show.delete.button') }}</button>
+                    @else
+                        <details class="bevestig">
+                            <summary class="knop stil">{{ $t('pages.show.delete.button') }}</summary>
+                            <form method="post" action="{{ $destroyUrl }}">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="knop gevaar">{{ $t('pages.show.delete.confirm', ['title' => $page['title']]) }}</button>
+                            </form>
+                        </details>
+                    @endif
+                </div>
             </section>
         @endunless
     </div>

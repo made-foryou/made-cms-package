@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'state' => [
+        'live' => 'Live',
+        'hidden' => 'Hidden',
+        'draft' => 'Draft',
+    ],
     'status' => [
         'draft' => 'Draft',
         'published' => 'Live',
@@ -61,7 +66,9 @@ return [
         'draft_changes' => 'changes in draft',
         'empty' => 'still empty, never published',
         'unpublished' => 'not published yet',
-        'hidden' => 'not in the menu',
+        'out_of_menu' => 'not in the menu',
+        'unlisted' => 'not in the menu or sitemap',
+        'hidden' => 'hidden',
     ],
     'show' => [
         'trail' => 'You are here',
@@ -90,7 +97,12 @@ return [
             'position' => 'Place :position of :total in the menu.',
             'publish' => 'Place :position of :total in the menu once you publish it.',
             'parent' => 'In the menu once :parent is in it.',
-            'hidden' => 'Off means: only found through its address, not in the menu.',
+            'off' => 'Off means: only found through its address, not in the menu.',
+            'while_hidden' => 'Not in the menu while it is hidden from visitors.',
+        ],
+        'visible' => [
+            'label' => 'Visible to visitors',
+            'hint' => 'Off means: only through the direct link, not in the menu, the sitemap or Google.',
         ],
         'children' => [
             'heading' => 'Pages below',
@@ -103,6 +115,10 @@ return [
             'blocked' => 'There are still pages below :title. Move or delete those first; then :title can go.',
             'button' => 'Delete',
             'confirm' => 'Yes, delete :title',
+            'hide_text' => 'Rather keep it? Hide :title instead: it stays reachable through the direct link, but leaves the menu, the sitemap and Google.',
+            'hidden_text' => ':title is hidden: only reachable through the direct link, not in the menu, the sitemap or Google.',
+            'hide' => 'Hide',
+            'show' => 'Show again',
         ],
         'meta' => [
             'heading' => 'How Google sees it',
@@ -129,6 +145,7 @@ return [
                 'label' => 'Google may show it',
                 'hint' => 'Off means noindex: the page stays reachable, but leaves the search results.',
             ],
+            'hidden' => 'Hidden from visitors: Google does not show it and it stays out of the sitemap, whatever the switches below say.',
             'saved' => 'Saved. The site shows it at once; Google takes it over on its next visit.',
         ],
     ],
@@ -167,7 +184,7 @@ return [
         'root' => 'at the top',
         'under' => 'under :parent',
         'in_menu' => 'last in the menu',
-        'hidden' => 'not in the menu',
+        'out_of_menu' => 'not in the menu',
         'tip' => [
             'heading' => 'What helps most now',
             'text' => 'Open the page on the site and fill it with strips: text, photos and buttons. What you type shows right away. Publish it when it is done.',
@@ -180,6 +197,8 @@ return [
         'saved' => ':title is saved.',
         'deleted' => ':title is deleted.',
         'restored' => ':title is restored.',
+        'hidden' => ':title is hidden from visitors.',
+        'shown' => ':title is visible to visitors again.',
     ],
     'errors' => [
         'title_required' => 'Give the page a name.',
@@ -190,6 +209,8 @@ return [
         'home_protected' => 'The home page keeps its address and stays at the top.',
         'has_children' => 'There are still pages below this page. Move or delete those first.',
         'home_delete' => 'The home page cannot be deleted.',
+        'home_hide' => 'The home page stays visible to visitors.',
+        'visible_invalid' => 'Choose whether visitors see the page.',
         'parent_deleted' => 'The page it lived under is deleted too. Restore that one first.',
         'restore_path_taken' => 'Another page has the old address by now. Give that page another address first.',
         'not_deleted' => 'This page is on the site already.',

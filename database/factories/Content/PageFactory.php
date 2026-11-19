@@ -33,6 +33,7 @@ final class PageFactory extends Factory
             'slug' => Str::slug($title),
             'position' => 0,
             'in_menu' => true,
+            'hidden' => false,
             'meta_title' => null,
             'meta_description' => null,
             'in_sitemap' => true,
@@ -68,6 +69,14 @@ final class PageFactory extends Factory
     public function inMenu(bool $inMenu = true): self
     {
         return $this->state(fn (): array => ['in_menu' => $inMenu]);
+    }
+
+    /**
+     * Hides the page from visitors: only its address reaches it, outside the menu, the sitemap and Google.
+     */
+    public function hidden(): self
+    {
+        return $this->state(fn (): array => ['hidden' => true]);
     }
 
     /**

@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'state' => [
+        'live' => 'Live',
+        'hidden' => 'Verborgen',
+        'draft' => 'Concept',
+    ],
     'status' => [
         'draft' => 'Concept',
         'published' => 'Live',
@@ -61,7 +66,9 @@ return [
         'draft_changes' => 'wijzigingen in concept',
         'empty' => 'nog leeg, nooit gepubliceerd',
         'unpublished' => 'nog niet gepubliceerd',
-        'hidden' => 'niet in het menu',
+        'out_of_menu' => 'niet in het menu',
+        'unlisted' => 'niet in menu en sitemap',
+        'hidden' => 'verborgen',
     ],
     'show' => [
         'trail' => 'Je bent hier',
@@ -90,7 +97,12 @@ return [
             'position' => 'Plek :position van :total in het menu.',
             'publish' => 'Komt op plek :position van :total in het menu zodra je hem publiceert.',
             'parent' => 'Komt in het menu zodra :parent erin staat.',
-            'hidden' => 'Uit betekent: alleen te vinden via het adres, niet in het menu.',
+            'off' => 'Uit betekent: alleen te vinden via het adres, niet in het menu.',
+            'while_hidden' => 'Staat niet in het menu zolang hij verborgen is voor bezoekers.',
+        ],
+        'visible' => [
+            'label' => 'Zichtbaar voor bezoekers',
+            'hint' => 'Uit betekent: alleen via de directe link, niet in menu, sitemap of Google.',
         ],
         'children' => [
             'heading' => 'Pagina’s hieronder',
@@ -103,6 +115,10 @@ return [
             'blocked' => 'Onder :title liggen nog pagina’s. Verplaats of verwijder die eerst; daarna kan :title weg.',
             'button' => 'Verwijderen',
             'confirm' => 'Ja, verwijder :title',
+            'hide_text' => 'Liever niet weg? Verberg :title dan: hij blijft bereikbaar via de directe link, maar staat niet meer in het menu, de sitemap of Google.',
+            'hidden_text' => ':title is verborgen: alleen bereikbaar via de directe link, niet in het menu, de sitemap of Google.',
+            'hide' => 'Verbergen',
+            'show' => 'Weer tonen',
         ],
         'meta' => [
             'heading' => 'Hoe Google hem ziet',
@@ -129,6 +145,7 @@ return [
                 'label' => 'Mag Google hem tonen',
                 'hint' => 'Uit betekent noindex: de pagina blijft bereikbaar, maar verdwijnt uit de zoekresultaten.',
             ],
+            'hidden' => 'Verborgen voor bezoekers: Google toont hem niet en hij komt niet in de sitemap, wat de schakelaars hieronder ook zeggen.',
             'saved' => 'Opgeslagen. De site toont het meteen; Google neemt het over bij zijn volgende bezoek.',
         ],
     ],
@@ -167,7 +184,7 @@ return [
         'root' => 'bovenaan',
         'under' => 'onder :parent',
         'in_menu' => 'achteraan in het menu',
-        'hidden' => 'niet in het menu',
+        'out_of_menu' => 'niet in het menu',
         'tip' => [
             'heading' => 'Wat nu het handigst is',
             'text' => 'Open de pagina op de site en vul hem met stroken: tekst, foto’s en knoppen. Wat je typt, zie je meteen. Publiceer hem als hij af is.',
@@ -180,6 +197,8 @@ return [
         'saved' => ':title is opgeslagen.',
         'deleted' => ':title is verwijderd.',
         'restored' => ':title is teruggezet.',
+        'hidden' => ':title is verborgen voor bezoekers.',
+        'shown' => ':title is weer zichtbaar voor bezoekers.',
     ],
     'errors' => [
         'title_required' => 'Geef de pagina een naam.',
@@ -190,6 +209,8 @@ return [
         'home_protected' => 'De homepagina houdt haar adres en blijft bovenaan.',
         'has_children' => 'Onder deze pagina liggen nog pagina’s. Verplaats of verwijder die eerst.',
         'home_delete' => 'De homepagina kan niet weg.',
+        'home_hide' => 'De homepagina blijft zichtbaar voor bezoekers.',
+        'visible_invalid' => 'Kies of bezoekers de pagina zien.',
         'parent_deleted' => 'De pagina waar deze onder lag, is ook verwijderd. Zet die eerst terug.',
         'restore_path_taken' => 'Een andere pagina heeft het oude adres inmiddels. Geef die eerst een ander adres.',
         'not_deleted' => 'Deze pagina staat al op de site.',

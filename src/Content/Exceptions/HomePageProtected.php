@@ -19,6 +19,11 @@ final class HomePageProtected extends RuntimeException
         return new self("The home page [{$page->id}] keeps its address.");
     }
 
+    public static function hide(Page $page): self
+    {
+        return new self("The home page [{$page->id}] stays visible to visitors.");
+    }
+
     public static function delete(Page $page): self
     {
         return new self("The home page [{$page->id}] cannot be deleted.");

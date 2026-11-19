@@ -110,6 +110,23 @@ it('tells per page what still needs doing', function (): void {
         ->toContain('<span class="boomrij-noot">niet in het menu</span>');
 });
 
+it('names a hidden page hidden and says it is out of the menu and the sitemap, a hidden draft a draft', function (): void {
+    Page::factory()->atPosition(0)->published()->hidden()->withStrips([storedStrip()])->at('/privacy')->create(['title' => 'Privacy']);
+    Page::factory()->atPosition(1)->published()->hidden()->withStrips([storedStrip()])->withDraft([])->at('/bedankt')->create(['title' => 'Bedankt']);
+    Page::factory()->atPosition(2)->hidden()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+    $html = pagesScreen();
+
+    expect($html)
+        ->toContain('<span class="status">Verborgen</span>
+                        <span class="boomrij-noot">niet in menu en sitemap</span>')
+        ->toContain('<span class="status">Verborgen</span>
+                        <span class="boomrij-noot">wijzigingen in concept, niet in menu en sitemap</span>')
+        ->toContain('<span class="status">Concept</span>
+                        <span class="boomrij-noot">nog leeg, nooit gepubliceerd, verborgen</span>')
+        ->and(substr_count($html, '<span class="status">Verborgen</span>'))->toBe(2);
+});
+
 it('lists the deleted pages with the address they get back', function (): void {
     $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
     DeletePage::run($page);

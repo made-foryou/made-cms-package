@@ -195,6 +195,7 @@ The pages screen at `/made-cms/pages` lists every page of the site in the order 
 - **New page** (`/made-cms/pages/new`) asks one question per step: the name, from which the address follows, and the place: at the top or under another page. The page starts as an empty draft, last in the menu, and opens on the site to be filled.
 - **One page** (`/made-cms/pages/{page}`) changes the name, the address, the parent and whether the page is in the menu. The pages under it move along, and their addresses follow. The switch says the place of the page in the menu of the site, counting only what the site shows there: a draft says where it comes once published.
 - **How Google sees it**, a card of its own on that screen, changes the title and the description in Google, with counters that follow the typing and the result as Google shows it, and the switches "Staat in de sitemap" and "Mag Google hem tonen". It saves on its own and holds for the site at once; see [Page meta](#page-meta) for printing it. `UpdatePageMeta` stores it, `MeasureMeta` counts a text as Google gets it (60 characters of a title, 155 of a description).
+- **Hiding** ("Zichtbaar voor bezoekers" off in the basics, or "Verbergen" in the card "Weghalen") keeps a page for its direct link only, such as a privacy statement or the thank-you page after a form: its address still serves it, but the menu of the site leaves it out with the pages under it, Google gets noindex and the sitemap will leave it out. It holds at once, outside the draft, and "Weer tonen" undoes it. The tree calls it "Verborgen"; a page that was never published stays "Concept". The home page is never hidden. `SetPageVisibility` stores it, `PageState::of($status, $hidden)` gives the word.
 - **Deleting** hides the page from visitors and editors and frees its address. It stays under "Verwijderde pagina’s" for 30 days (`pages.keep_deleted_days`) and comes back with "Terugzetten". The package schedules `made-cms:prune` daily to remove older deleted pages for good, so the host only needs the scheduler (`php artisan schedule:run` every minute).
 
 The address of a page is the address of its parent plus its slug; a page at the top or under the home page gets `/` plus its slug. The home page keeps `/`, stays at the top and cannot be deleted. A page with pages under it is deleted after they are moved or deleted.
@@ -210,11 +211,11 @@ $team = CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about-
 MovePage::run($team, parentId: null, position: 0); // /team, first in the menu
 ```
 
-`UpdatePage`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageMoved`, `PageDeleted` and `PageRestored`.
+`UpdatePage`, `SetPageVisibility`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageVisibilityChanged`, `PageMoved`, `PageDeleted` and `PageRestored`. Read the pages visitors see with `Page::query()->visible()`, the hidden ones with `->hidden()`.
 
 ### The menu of the site
 
-Build the menu of the site from `ListMenuPages`: the published pages with "Staat in het menu" on, in the order of the pages screen. A draft is left out with the pages under it, like a page outside the menu, and a deleted page never shows.
+Build the menu of the site from `ListMenuPages`: the published pages visitors see with "Staat in het menu" on, in the order of the pages screen. A draft or a hidden page is left out with the pages under it, like a page outside the menu, and a deleted page never shows.
 
 ```php
 use Made\CmsPackage\Content\Actions\ListMenuPages;
@@ -457,7 +458,7 @@ With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a pr
 - A title of its own is the whole title: nothing is added after it. Without one the title is the name of the page and the name of the site (`app.name`), "Onze teams · TTV Merwestad Dordrecht", and for the home page the name of the site alone.
 - Without a description there is no description tag, and Google takes a piece of the page itself.
 - The canonical address is absolute, from `app.url` and never from the Host of the request, so `http://`, `www.` and any other address the site answers on lead Google to the same one. Set `app.url` to the address the site should be found at. Under a route group with a prefix it keeps the prefix (`https://ttvmerwestad.nl/nl/over-ons`); `DescribePageMeta` knows the prefix only for the page the request serves.
-- "Mag Google hem tonen" off writes `<meta name="robots" content="noindex">`: the page stays reachable, but leaves the search results. The edit mode sends `X-Robots-Tag: noindex, nofollow` on top of that for every page. "Staat in de sitemap" is stored for the sitemap the package will serve.
+- "Mag Google hem tonen" off writes `<meta name="robots" content="noindex">`: the page stays reachable, but leaves the search results. A page hidden from visitors gets noindex too, whatever that switch says; the switch counts again once the page is shown. The edit mode sends `X-Robots-Tag: noindex, nofollow` on top of that for every page. "Staat in de sitemap" is stored for the sitemap the package will serve.
 - The component also names the page in the edit bar (`<meta name="made-cms:page">`), so the bar keeps the name of the page when its title in Google says something else.
 
 ## Rendering strips

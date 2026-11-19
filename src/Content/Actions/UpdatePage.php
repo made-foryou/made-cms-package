@@ -24,8 +24,8 @@ final class UpdatePage
     use AsAction;
 
     /**
-     * Changes the name, the address, the parent and the menu flag of a page. A new parent puts the page last among
-     * its new siblings; the pages under it move along and every address follows.
+     * Changes the name, the address, the parent, the menu flag and whether visitors see a page. A new parent puts the
+     * page last among its new siblings; the pages under it move along and every address follows.
      *
      * @throws ParentPageNotFound
      * @throws ParentPageDeleted
@@ -59,30 +59,38 @@ final class UpdatePage
         }
 
         $page->fill(['title' => trim($changes->title), 'slug' => $slug->value, 'in_menu' => $changes->inMenu]);
+        $changed = $moving || $page->isDirty();
+        $hidden = $changes->hidden ?? $page->hidden;
 
-        if (! $moving && ! $page->isDirty()) {
+        if (! $changed && $hidden === $page->hidden) {
             return $page;
         }
 
-        DB::transaction(function () use ($page, $parent, $moving, $from, $to): void {
-            if ($moving) {
-                $leaving = Page::query()->childrenOf($page->parent)->whereKeyNot($page->id)->inMenuOrder()->get()->map(static fn (Page $sibling): int => $sibling->id)->all();
-                $last = Page::query()->childrenOf($parent)->max('position');
+        DB::transaction(function () use ($page, $parent, $moving, $changed, $hidden, $from, $to): void {
+            if ($changed) {
+                if ($moving) {
+                    $leaving = Page::query()->childrenOf($page->parent)->whereKeyNot($page->id)->inMenuOrder()->get()->map(static fn (Page $sibling): int => $sibling->id)->all();
+                    $last = Page::query()->childrenOf($parent)->max('position');
 
-                $page->parent_id = $parent?->id;
-                $page->position = is_numeric($last) ? (int) $last + 1 : 0;
-                RenumberPages::run(array_values($leaving));
+                    $page->parent_id = $parent?->id;
+                    $page->position = is_numeric($last) ? (int) $last + 1 : 0;
+                    RenumberPages::run(array_values($leaving));
+                }
+
+                $page->save();
+
+                if ($to != $from) {
+                    RewritePagePaths::run($page, $to);
+                }
             }
 
-            $page->save();
-
-            if ($to != $from) {
-                RewritePagePaths::run($page, $to);
-            }
+            SetPageVisibility::run($page, $hidden);
         });
 
-        $page->unsetRelation('parent');
-        PageUpdated::dispatch($page, $from, $to);
+        if ($changed) {
+            $page->unsetRelation('parent');
+            PageUpdated::dispatch($page, $from, $to);
+        }
 
         return $page;
     }

@@ -12,11 +12,11 @@ final class ListMenuPages
     use AsAction;
 
     /**
-     * The menu of the site: the published pages with the menu switch on, in menu order. A draft or a page outside
-     * the menu takes the pages under it along; deleted pages are never in it.
+     * The menu of the site: the published pages visitors see with the menu switch on, in menu order. A draft, a
+     * hidden page or a page outside the menu takes the pages under it along; deleted pages are never in it.
      */
     public function handle(): PageTree
     {
-        return ListPages::run()->inMenu()->published();
+        return ListPages::run()->inMenu()->published()->visible();
     }
 }

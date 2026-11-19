@@ -103,6 +103,41 @@ it('explains the switch for a page outside the menu', function (): void {
         ->not->toContain('Plek ');
 });
 
+it('offers the switch for visitors on in the basics of a page visitors see', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+
+    expect(pageScreen($page))
+        ->toContain('<label class="schakel-label" for="made-cms-visible">Zichtbaar voor bezoekers</label>')
+        ->toContain('Uit betekent: alleen via de directe link, niet in menu, sitemap of Google.')
+        ->toContain('id="made-cms-visible" name="visible" value="1" checked aria-describedby');
+});
+
+it('names a hidden page hidden, with the switch off and its place in the menu on hold', function (): void {
+    Page::factory()->published()->atPosition(0)->at('/')->create(['title' => 'Home']);
+    $page = Page::factory()->published()->hidden()->atPosition(1)->at('/privacy')->create(['title' => 'Privacy']);
+
+    expect(pageScreen($page))
+        ->toContain('<span class="status">Verborgen</span>')
+        ->toContain('id="made-cms-visible" name="visible" value="1" aria-describedby')
+        ->toContain('Staat niet in het menu zolang hij verborgen is voor bezoekers.')
+        ->not->toContain('Plek ')
+        ->toContain('href="/privacy" target="_blank" rel="noopener"');
+});
+
+it('names a hidden page that was never published a draft', function (): void {
+    $page = Page::factory()->hidden()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+    expect(pageScreen($page))->toContain('<span class="status">Concept</span>')
+        ->not->toContain('<span class="status">Verborgen</span>');
+});
+
+it('names a hidden page among the pages under a page', function (): void {
+    $about = Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+    Page::factory()->published()->hidden()->under($about)->at('/over-ons/archief')->create(['title' => 'Archief']);
+
+    expect(pageScreen($about))->toContain('<span class="status">Verborgen</span>');
+});
+
 it('chooses the current parent', function (): void {
     $about = Page::factory()->at('/over-ons')->create(['title' => 'Over ons']);
     $team = Page::factory()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);
@@ -116,6 +151,7 @@ it('keeps the address and the place of the home page out of the form, and the ho
     expect(pageScreen($home))
         ->not->toContain('name="slug"')
         ->not->toContain('name="parent_id"')
+        ->not->toContain('name="visible"')
         ->not->toContain('Weghalen');
 });
 
@@ -140,6 +176,29 @@ it('only offers to delete a page without pages under it', function (): void {
     expect(pageScreen($team))
         ->toContain('Ja, verwijder Team')
         ->toContain('<input type="hidden" name="_method" value="DELETE">');
+});
+
+it('offers to hide a page next to deleting it, also when it cannot be deleted', function (): void {
+    $about = Page::factory()->published()->at('/over-ons')->create(['title' => 'Over ons']);
+    $team = Page::factory()->published()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);
+
+    foreach ([$about, $team] as $page) {
+        expect(pageScreen($page))
+            ->toContain('Liever niet weg? Verberg '.$page->title.' dan: hij blijft bereikbaar via de directe link, maar staat niet meer in het menu, de sitemap of Google.')
+            ->toContain('action="/made-cms/pages/'.$page->id.'/visibility"')
+            ->toContain('<input type="hidden" name="visible" value="0">')
+            ->toContain('<button type="submit" class="knop stil">Verbergen</button>');
+    }
+});
+
+it('offers to show a hidden page again', function (): void {
+    $page = Page::factory()->published()->hidden()->at('/privacy')->create(['title' => 'Privacy']);
+
+    expect(pageScreen($page))
+        ->toContain('Privacy is verborgen: alleen bereikbaar via de directe link, niet in het menu, de sitemap of Google.')
+        ->toContain('<input type="hidden" name="visible" value="1">')
+        ->toContain('<button type="submit" class="knop stil">Weer tonen</button>')
+        ->not->toContain('Liever niet weg?');
 });
 
 it('marks the page as current in the menu', function (): void {
@@ -214,6 +273,19 @@ it('says that a page google may not show never goes into the sitemap', function 
         ->toContain('id="made-cms-in_sitemap" name="in_sitemap" value="1" aria-describedby')
         ->toContain('id="made-cms-indexable" name="indexable" value="1" aria-describedby')
         ->toContain('<span class="veld-hint" id="made-cms-in_sitemap-hint">Een pagina die Google niet mag tonen, komt nooit in de sitemap.</span>');
+});
+
+it('says in the google card that a hidden page stays out of google and the sitemap', function (): void {
+    $page = Page::factory()->published()->hidden()->at('/privacy')->create();
+
+    expect(pageScreen($page))
+        ->toContain('Verborgen voor bezoekers: Google toont hem niet en hij komt niet in de sitemap, wat de schakelaars hieronder ook zeggen.')
+        ->toContain('id="made-cms-indexable" name="indexable" value="1" checked aria-describedby');
+
+    $page->hidden = false;
+    $page->save();
+
+    expect(pageScreen($page))->not->toContain('Verborgen voor bezoekers:');
 });
 
 it('links to the meta overview only for an editor who opens it', function (Role $role, bool $linked): void {

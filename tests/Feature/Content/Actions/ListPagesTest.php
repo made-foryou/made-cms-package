@@ -23,7 +23,7 @@ it('lists the pages at the top in menu order with the pages under them', functio
 
 it('carries what the screen shows of every page', function (): void {
     $about = Page::factory()->published()->at('/over-ons')->withStrips([storedStrip()])->withDraft([])->create(['title' => 'Over ons', 'slug' => 'over-ons']);
-    Page::factory()->under($about)->inMenu(false)->atPosition(3)->at('/over-ons/team')->create(['title' => 'Team', 'slug' => 'team']);
+    Page::factory()->under($about)->inMenu(false)->hidden()->atPosition(3)->at('/over-ons/team')->create(['title' => 'Team', 'slug' => 'team']);
 
     [$parent, $child] = ListPages::run()->flatten();
 
@@ -32,11 +32,13 @@ it('carries what the screen shows of every page', function (): void {
         ->and($parent->status)->toBe(PageStatus::Published)
         ->and($parent->hasDraft)->toBeTrue()
         ->and($parent->isEmpty)->toBeFalse()
+        ->and($parent->hidden)->toBeFalse()
         ->and($parent->depth)->toBe(0)
         ->and($child->parentId)->toBe($about->id)
         ->and($child->depth)->toBe(1)
         ->and($child->position)->toBe(3)
         ->and($child->inMenu)->toBeFalse()
+        ->and($child->hidden)->toBeTrue()
         ->and($child->hasDraft)->toBeFalse()
         ->and($child->isEmpty)->toBeTrue();
 });

@@ -1536,6 +1536,324 @@ ul.lijst {
     }
 }
 
+/* How a shared link shows the page (design 23, dark 24): the look of a link in an app, so light in the dark too. The
+   image takes the shape a link gives it, 1,91 : 1, cut in its middle; the description stays on two lines. */
+.deellink-blok {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.deellink {
+    display: flex;
+    flex-direction: column;
+    max-width: 520px;
+    margin: 0;
+    overflow: hidden;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: #fff;
+    color: #0e2b26;
+    font-family: var(--font-tekst);
+}
+
+.deellink-beeld {
+    display: block;
+    aspect-ratio: 1200 / 630;
+    background: #101c33;
+}
+
+.deellink-beeld[hidden] {
+    display: none;
+}
+
+.deellink-beeld img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.deellink-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 12px 16px 14px;
+}
+
+.deellink-domein {
+    color: #47564f;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.deellink-titel {
+    color: #0e2b26;
+    font-family: var(--font-kop);
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.deellink-omschrijving {
+    display: -webkit-box;
+    overflow: hidden;
+    color: #47564f;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+}
+
+.deellink-omschrijving[hidden] {
+    display: none;
+}
+
+.deellink-noot {
+    margin: 0;
+    color: var(--made-inhoud-zwak);
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .deellink {
+        background: #fbfaf5;
+    }
+}
+
+/* The image of the card: the file it holds with what a link cuts away dimmed, or that it has none; the buttons below. */
+.deelveld {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.deelveld-kop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.deelveld-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.deelveld-vak {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak);
+}
+
+.deelveld-bestand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.deelveld-bestand[hidden],
+.deelveld-leeg[hidden],
+.deelveld-upload[hidden] {
+    display: none;
+}
+
+/* The shape of the photo itself (share.js sets --ratio), so the bands of what a link cuts away lie on the photo. */
+.deelveld-mini {
+    --cut: 0%;
+    position: relative;
+    flex: 0 0 auto;
+    width: 120px;
+    max-height: 96px;
+    aspect-ratio: var(--ratio, 4 / 3);
+    overflow: hidden;
+    border-radius: 6px;
+    background: #101c33;
+}
+
+.deelveld-mini img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.deelveld-band {
+    display: none;
+    position: absolute;
+    background: rgba(243, 241, 232, .55);
+}
+
+.deelveld-mini[data-axis="y"] .deelveld-band,
+.deelveld-mini[data-axis="x"] .deelveld-band {
+    display: block;
+}
+
+.deelveld-mini[data-axis="y"] .deelveld-band {
+    left: 0;
+    right: 0;
+    height: var(--cut);
+}
+
+.deelveld-mini[data-axis="y"] .eerste {
+    top: 0;
+    border-bottom: 1.5px dashed var(--made-amber);
+}
+
+.deelveld-mini[data-axis="y"] .tweede {
+    bottom: 0;
+    border-top: 1.5px dashed var(--made-amber);
+}
+
+.deelveld-mini[data-axis="x"] .deelveld-band {
+    top: 0;
+    bottom: 0;
+    width: var(--cut);
+}
+
+.deelveld-mini[data-axis="x"] .eerste {
+    left: 0;
+    border-right: 1.5px dashed var(--made-amber);
+}
+
+.deelveld-mini[data-axis="x"] .tweede {
+    right: 0;
+    border-left: 1.5px dashed var(--made-amber);
+}
+
+.deelveld-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.deelveld-naam {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.deelveld-alt {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--made-status);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.deelveld-alt[data-alt="missing"] {
+    color: var(--made-link);
+}
+
+.deelveld-alt-bol {
+    display: none;
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--made-amber);
+}
+
+.deelveld-alt[data-alt="missing"] .deelveld-alt-bol {
+    display: inline-block;
+}
+
+.deelveld-leeg {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--made-inhoud-zwak);
+    font-size: 14px;
+}
+
+.deelveld-leeg-vlak {
+    flex: 0 0 auto;
+    width: 56px;
+    aspect-ratio: 1200 / 630;
+    border: 1.5px dashed var(--made-rand-sterk);
+    border-radius: 6px;
+}
+
+.deelveld-knoppen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.deelveld-knoppen .actie:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.deelveld-knoppen [hidden] {
+    display: none;
+}
+
+.deelveld-kruis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--made-inhoud-zwak);
+    cursor: pointer;
+}
+
+.deelveld-kruis:hover {
+    background: var(--made-rand);
+    color: var(--made-inhoud);
+}
+
+.deelvoet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    padding-top: 16px;
+    border-top: 1px solid var(--made-rand);
+}
+
+.deelvoet [hidden] {
+    display: none;
+}
+
+.deelvoet-stand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.deelvoet-stand .bol {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.deelvoet-stand .bol.let {
+    background: var(--made-amber);
+}
+
+.deelvoet-stand .bol.goed {
+    background: var(--made-status);
+}
+
 .bevestig summary {
     list-style: none;
 }

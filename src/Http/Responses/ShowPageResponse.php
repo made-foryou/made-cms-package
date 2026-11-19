@@ -8,25 +8,35 @@ use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\MeasureMeta;
+use Made\CmsPackage\Content\Actions\MeasureShareImage;
 use Made\CmsPackage\Content\Data\MetaLength;
 use Made\CmsPackage\Content\Data\PageMeta;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\PageTree;
+use Made\CmsPackage\Content\Data\ShareImageDescription;
+use Made\CmsPackage\Content\Data\ShareImageFit;
 use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Enums\ShareImageRefusal;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Cms\CropStep;
+use Made\CmsPackage\Http\Cms\MediaBrowser;
+use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Http\Cms\Menu;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
 use Made\CmsPackage\Http\Cms\SiteAddress;
+use Made\CmsPackage\Http\Cms\UploadField;
+use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\Site;
 
 /**
- * One page (design 15.2): its basics (name, address, place and menu flag), how Google sees it, the pages under it,
- * and removing it.
+ * One page (design 15.2): its basics (name, address, place and menu flag), how Google sees it, how a shared link shows
+ * it (design 23), the pages under it, and removing it.
  */
 final class ShowPageResponse
 {
@@ -38,6 +48,9 @@ final class ShowPageResponse
      * @param  PageMeta  $meta  what the head of the page tells Google now (DescribePageMeta)
      * @param  string  $fallbackTitle  the title in Google while the page has none of its own (MakeFallbackTitle)
      * @param  bool  $metaSaved  the card "Hoe Google hem ziet" was saved right before
+     * @param  ShareImageDescription  $share  the image a shared link to the page shows now (DescribeShareImage)
+     * @param  MediaFolder|null  $folder  the folder the picker and the upload field start in (MediaFolderMemory)
+     * @param  bool  $shareSaved  the card "Hoe je link gedeeld wordt" was saved right before
      */
     public static function make(
         Editor $editor,
@@ -49,6 +62,9 @@ final class ShowPageResponse
         PageMeta $meta,
         string $fallbackTitle,
         bool $metaSaved,
+        ShareImageDescription $share,
+        ?MediaFolder $folder,
+        bool $shareSaved,
     ): Response {
         $node = $pages->find($page->id);
         $path = $page->route?->path;
@@ -87,6 +103,7 @@ final class ShowPageResponse
             'menuPlace' => self::menuPlace($pages, $menu, $node),
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
             'meta' => self::meta($page, $screens, $meta, $fallbackTitle, $metaSaved),
+            'share' => self::share($page, $screens, $meta, $share, $folder, $shareSaved),
         ], $pages, $page);
     }
 
@@ -133,6 +150,153 @@ final class ShowPageResponse
     }
 
     /**
+     * The card "Hoe je link gedeeld wordt": the shared link as an app shows it (the image that is shared, the domain,
+     * the title and the description from Google), the share image of the page, what to warn about, and what share.js
+     * needs to follow a choice of the picker, an upload and a crop. The picker, the upload field and the crop step come
+     * along, because the card chooses with them; moving a file in the crop step is for whoever opens the media library.
+     *
+     * @param  list<Screen>  $screens
+     * @return array<string, mixed>
+     */
+    private static function share(Page $page, array $screens, PageMeta $meta, ShareImageDescription $share, ?MediaFolder $folder, bool $saved): array
+    {
+        $locale = Locale::launcher();
+        $media = in_array(Screen::Media, $screens, true);
+        $file = $share->file === null ? null : MediaDetails::of($share->file);
+        $fit = $share->own === null ? null : MeasureShareImage::run($share->own->width, $share->own->height);
+        $texts = self::shareTexts($locale);
+        $mediaUrl = $media ? Menu::url(Screen::Media) : null;
+
+        return [
+            'url' => PageLinks::shareImage($page),
+            'value' => $page->share_image_id,
+            'file' => $file,
+            'usable' => $share->own !== null,
+            'preview' => self::sharePreview($share, $file),
+            'domain' => self::host($meta->canonical),
+            'title' => $meta->title,
+            'description' => $meta->description,
+            'indexable' => $meta->indexable,
+            'notices' => self::shareNotices($share, $file, $fit, $mediaUrl, $texts),
+            'saved' => $saved,
+            'upload' => UploadField::image($folder, crop: true),
+            'picker' => MediaBrowser::picker($folder),
+            'crop' => CropStep::make(moves: $media),
+            'script' => LauncherAssetController::url('share.js'),
+            'config' => [
+                'value' => $page->share_image_id,
+                'file' => $file,
+                'refusal' => $share->refusal?->value,
+                'fallback' => $share->fallback?->url,
+                'media_url' => $mediaUrl,
+                'fit' => [
+                    'width' => MeasureShareImage::WIDTH,
+                    'height' => MeasureShareImage::HEIGHT,
+                    'min_width' => MeasureShareImage::MIN_WIDTH,
+                    'min_height' => MeasureShareImage::MIN_HEIGHT,
+                    'tolerance' => MeasureShareImage::TOLERANCE,
+                ],
+                'texts' => $texts,
+            ],
+        ];
+    }
+
+    /**
+     * The image the preview shows: what a shared link shows now, small (the thumbnail of the share image, else the
+     * default of the site); null for none.
+     *
+     * @param  array<string, mixed>|null  $file
+     */
+    private static function sharePreview(ShareImageDescription $share, ?array $file): ?string
+    {
+        if ($share->own !== null) {
+            $thumb = $file['thumb'] ?? null;
+
+            return is_string($thumb) ? $thumb : $share->own->url;
+        }
+
+        return $share->fallback?->url;
+    }
+
+    /**
+     * What the card warns about, in the order share.js gives it: a file the link cannot show; else a small image or how
+     * much of another shape is cut away, and a missing alt text; without an image of its own, the default of the site
+     * or that there is none.
+     *
+     * @param  array<string, mixed>|null  $file
+     * @param  array<string, string>  $texts
+     * @return list<array{tone: string, title: string, text: string, link: array{text: string, href: string}|null}>
+     */
+    private static function shareNotices(ShareImageDescription $share, ?array $file, ?ShareImageFit $fit, ?string $mediaUrl, array $texts): array
+    {
+        if ($share->refusal !== null) {
+            return [self::shareNotice('let', $texts['unusable_title'], $texts['refusal_'.$share->refusal->value])];
+        }
+
+        if ($share->own === null || $file === null || $fit === null) {
+            return [$share->fallback === null ? self::shareNotice('let', '', $texts['none']) : self::shareNotice('', '', $texts['default'])];
+        }
+
+        $croppable = ($file['croppable'] ?? false) === true;
+        $notices = [];
+
+        if ($fit->tooSmall) {
+            $notices[] = self::shareNotice('let', $texts['small_title'], strtr($texts['small'], [':width' => (string) $share->own->width, ':height' => (string) $share->own->height]));
+        } elseif ($fit->cut > 0) {
+            $cut = strtr($texts['cut_'.($fit->axis ?? 'y')], [':cut' => (string) $fit->cut]);
+            $notices[] = self::shareNotice('let', $texts['cut_title'], implode(' ', array_filter([$cut, $croppable ? $texts['cut_crop'] : null, $texts['go_on']])));
+        }
+
+        if ($share->own->alt === null) {
+            $notices[] = self::shareNotice(
+                'let',
+                $texts['alt_title'],
+                $mediaUrl === null && $croppable ? $texts['alt_crop'] : $texts['alt'],
+                $mediaUrl === null ? null : ['text' => $texts['alt_link'], 'href' => $mediaUrl.'?file='.$share->file?->id],
+            );
+        }
+
+        return $notices;
+    }
+
+    /**
+     * @param  ''|'let'  $tone  the colour of its dot: the accent, or amber for something to look at
+     * @param  array{text: string, href: string}|null  $link
+     * @return array{tone: string, title: string, text: string, link: array{text: string, href: string}|null}
+     */
+    private static function shareNotice(string $tone, string $title, string $text, ?array $link = null): array
+    {
+        return ['tone' => $tone, 'title' => $title, 'text' => $text, 'link' => $link];
+    }
+
+    /**
+     * The texts of the card that share.js fills in too, the reasons a file is not shared among them.
+     *
+     * @return array<string, string>
+     */
+    private static function shareTexts(string $locale): array
+    {
+        $notices = __('made-cms-package::pages.show.share.notices', [], $locale);
+        $text = static fn (string $key): string => (string) __('made-cms-package::pages.show.share.'.$key, [], $locale);
+        $refusals = [];
+
+        foreach (ShareImageRefusal::cases() as $refusal) {
+            $refusals['refusal_'.$refusal->value] = (string) __('made-cms-package::pages.errors.share_image_'.$refusal->value, [], $locale);
+        }
+
+        return [
+            ...(is_array($notices) ? array_map(strval(...), $notices) : []),
+            ...$refusals,
+            'meta' => $text('meta'),
+            'alt_line' => $text('alt'),
+            'no_alt_line' => $text('no_alt'),
+            'field' => $text('label'),
+            'place' => $text('heading'),
+            'hint' => $text('hint'),
+        ];
+    }
+
+    /**
      * The text under a field and its state, in the order cms.js follows: missing, too long, the default title.
      *
      * @return array{key: string, replace: array{count: int, limit: int}, state: 'ontbreekt'|'te-lang'|null}
@@ -154,11 +318,20 @@ final class ShowPageResponse
      */
     private static function googleAddress(?string $canonical): string
     {
-        $host = parse_url((string) $canonical, PHP_URL_HOST);
         $path = (string) parse_url((string) $canonical, PHP_URL_PATH);
         $parts = array_map(rawurldecode(...), array_filter(explode('/', $path), static fn (string $part): bool => $part !== ''));
 
-        return implode(' › ', [is_string($host) && $host !== '' ? $host : Site::host(), ...$parts]);
+        return implode(' › ', [self::host($canonical), ...$parts]);
+    }
+
+    /**
+     * The host of the canonical address, "ttvmerwestad.nl", else the host of the site.
+     */
+    private static function host(?string $canonical): string
+    {
+        $host = parse_url((string) $canonical, PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? $host : Site::host();
     }
 
     /**

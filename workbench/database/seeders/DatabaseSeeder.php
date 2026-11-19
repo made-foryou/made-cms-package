@@ -12,6 +12,7 @@ use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Content\Actions\CreateMediaFolder;
 use Made\CmsPackage\Content\Actions\RebuildMediaUsage;
 use Made\CmsPackage\Content\Actions\ReplaceMedia;
+use Made\CmsPackage\Content\Actions\SetPageShareImage;
 use Made\CmsPackage\Content\Actions\UpdateAltText;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\UploadedMedia;
@@ -87,6 +88,9 @@ class DatabaseSeeder extends Seeder
 
         // A gallery with one photo: "Kiezen uit media" in Foto 1 picks several photos at once, the rest as new items.
         [$evening] = $this->clubFolder();
+
+        // A shared link to "Over ons" shows the photo of the club evening (the card "Hoe je link gedeeld wordt").
+        SetPageShareImage::run($about, $evening->id);
 
         Page::factory()->published()->atPosition(3)->at('/fotos')->withStrips([
             $this->strip('hero', ['kop' => 'Foto’s']),

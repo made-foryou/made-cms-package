@@ -222,7 +222,9 @@ if (wizard) {
  * The card "Hoe Google hem ziet" on the screen of a page (design 15.2): the counters under the title and the
  * description, the result in Google and the hint of the sitemap switch follow what the editor types. The server counts
  * the same way (MeasureMeta): the text on one line, in characters, missing before too long before the default title.
- * Without this script the card shows what is stored and saves the same. The texts come from data-config.
+ * Without this script the card shows what is stored and saves the same. The texts come from data-config. Every change
+ * is told as made-cms:meta {title, description} on the document, so the card "Hoe je link gedeeld wordt" (share.js)
+ * shows the same title and description in its shared link.
  */
 
 const metaForm = document.querySelector('form[data-meta]');
@@ -267,6 +269,8 @@ if (metaForm) {
         if (indexable && sitemapHint) {
             sitemapHint.textContent = indexable.checked ? texts.sitemap : texts.sitemap_noindex;
         }
+
+        document.dispatchEvent(new CustomEvent('made-cms:meta', { detail: { title: shown, description: about } }));
     };
 
     metaForm.addEventListener('input', sync);

@@ -75,6 +75,8 @@
 
         @include('made-cms-package-launcher::cms.pages.partials.google')
 
+        @include('made-cms-package-launcher::cms.pages.partials.share')
+
         <section class="kaart" aria-labelledby="made-cms-hieronder">
             <div class="sectiekop">
                 <h2 id="made-cms-hieronder">{{ $t('pages.show.children.heading') }}</h2>
@@ -143,4 +145,15 @@
             </section>
         @endunless
     </div>
+
+    {{-- The picker and the crop step of the card "Hoe je link gedeeld wordt": dialogs, after the cards. --}}
+    @include('made-cms-package-launcher::cms.partials.media-picker', ['picker' => $share['picker']])
+    @include('made-cms-package-launcher::cms.partials.crop', ['crop' => $share['crop']])
 @endsection
+
+@push('scripts')
+    <script type="module" src="{{ $share['upload']['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+    <script type="module" src="{{ $share['crop']['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+    <script type="module" src="{{ $share['picker']['browser']['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+    <script type="module" src="{{ $share['script'] }}"@if ($nonce) nonce="{{ $nonce }}"@endif></script>
+@endpush

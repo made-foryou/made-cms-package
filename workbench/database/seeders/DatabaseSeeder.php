@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
         // Logs in with a code (see storage/logs) or with the password "password".
         $this->editor = CreateEditor::run(new NewEditor(email: 'editor@example.com', name: 'Menno Tempelaar', password: 'password', roles: [Role::Admin]))->id;
 
-        // Served by Route::madeCms() in workbench/routes/web.php: "/", "/over-ons", "/over-ons/team" and "/fotos" open. "/concept" is
+        // Served by Route::madeCms() in workbench/routes/web.php: "/", "/over-ons", "/over-ons/team", "/fotos" and "/downloads" open. "/concept" is
         // a draft and answers 404, except to a logged-in editor in the edit mode of the CMS: "/concept?made-cms=edit".
         // The positions give the order of the menu and of the pages screen.
         $about = Page::factory()->published()->atPosition(1)->at('/over-ons')->withStrips([
@@ -56,7 +56,7 @@ class DatabaseSeeder extends Seeder
         // The home page shows every kind of value: rich text, buttons to a page and an address, a photo from the media
         // library (served from the public disk after `php artisan storage:link`), cards and a hidden strip.
         $photo = $this->samplePhoto();
-        $this->teamsFolder();
+        $schedule = $this->teamsFolder();
 
         Page::factory()->published()->atPosition(0)->at('/')->withStrips([
             $this->strip('hero', [
@@ -93,6 +93,12 @@ class DatabaseSeeder extends Seeder
             $this->strip('gallery', ['fotos' => [['foto' => $evening->id, 'bijschrift' => 'Clubavond in de kantine']]]),
         ])->create(['title' => 'Foto’s', 'slug' => 'fotos']);
 
+        // Downloads: a document from the library, with the link text of the strip or else the description of the file.
+        Page::factory()->published()->atPosition(4)->at('/downloads')->withStrips([
+            $this->strip('hero', ['kop' => 'Downloads']),
+            $this->strip('downloads', ['kop' => 'Voor de competitie', 'bestanden' => [['bestand' => $schedule->id, 'titel' => null]]]),
+        ])->create(['title' => 'Downloads', 'slug' => 'downloads']);
+
         // The factories write the strips without the Actions, so the library learns from them where its photo is.
         RebuildMediaUsage::run();
     }
@@ -122,9 +128,10 @@ class DatabaseSeeder extends Seeder
 
     /**
      * A folder Teams for the picker: two photos, one without an alt text (its amber dot) and one replaced once, so its
-     * former version waits to be put back, and a document the picker of an image never shows.
+     * former version waits to be put back, and a document the picker of an image never shows, which the downloads link
+     * to.
      */
-    private function teamsFolder(): void
+    private function teamsFolder(): Media
     {
         $teams = CreateMediaFolder::run('Teams');
 
@@ -142,10 +149,12 @@ class DatabaseSeeder extends Seeder
         file_put_contents($path, "%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n");
 
         try {
-            UploadMedia::run(new UploadedMedia($path, 'Wedstrijdschema najaar.pdf', $teams->id, $this->editor));
+            $schedule = UploadMedia::run(new UploadedMedia($path, 'Wedstrijdschema najaar.pdf', $teams->id, $this->editor));
         } finally {
             unlink($path);
         }
+
+        return UpdateAltText::run($schedule, 'Wedstrijdschema najaar (pdf)');
     }
 
     /**

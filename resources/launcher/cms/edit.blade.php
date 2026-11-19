@@ -374,6 +374,67 @@
         </div>
     </div>
 </template>
+{{--
+    A document or a video of the media library, the media element of a file field: the file the field holds with its
+    name, size, folder and description, that it holds none, that its file left Media, or that it is of a kind the field
+    does not take. "Kiezen uit media" opens the picker in the stand of the field, "Uploaden" the upload field of its
+    kinds below it (the part "upload-document", "upload-video" or "upload-file"); there is no crop.
+--}}
+<template data-field="file">
+    <div class="veld beeldveld" role="group">
+        <div class="beeldveld-kop">
+            <span class="veld-label" data-slot="label"></span>
+            <span class="veld-hint" data-slot="hint" hidden></span>
+        </div>
+        <div class="beeldkaart bestandkaart" data-kind="document" data-slot="file-card">
+            <div class="beeldkaart-voorbeeld" data-slot="file-preview" hidden>
+                <svg class="beeldkaart-icoon tegel-icoon-document" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h5"/><path d="M10 17h5"/></svg>
+                <svg class="beeldkaart-icoon tegel-icoon-video" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>
+                <span class="beeldkaart-ext" data-slot="file-extension"></span>
+            </div>
+            <div class="beeldkaart-tekst" data-slot="file-file" hidden>
+                <span class="beeldkaart-naam" data-slot="file-name"></span>
+                <span class="veld-hint" data-slot="file-meta"></span>
+                <span class="veld-hint beeldkaart-alt" data-slot="file-alt"></span>
+            </div>
+            <span class="beeldkaart-leegicoon" aria-hidden="true" data-slot="file-none" hidden><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg></span>
+            <span class="beeldkaart-leegtitel" data-slot="file-empty" hidden>{{ $t('cms.edit.file_empty') }}</span>
+            <span class="veld-hint" data-slot="file-empty-text" hidden>{{ $t('cms.edit.file_empty_text') }}</span>
+            <span class="beeldkaart-weg-icoon" aria-hidden="true" data-slot="file-gone-icon" hidden><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M7 3h7l5 5v13H7z"/><path d="M4 6l16 12"/></svg></span>
+            <span class="beeldkaart-weg-tekst" data-slot="file-gone" hidden>
+                <span class="beeldkaart-leegtitel">{{ $t('cms.edit.file_gone') }}</span>
+                <span class="veld-hint">{{ $t('cms.edit.file_gone_text') }}</span>
+            </span>
+            <span class="beeldkaart-weg-tekst" data-slot="file-misfit" hidden>
+                <span class="beeldkaart-leegtitel">{{ $t('cms.edit.file_misfit') }}</span>
+                <span class="veld-hint" data-slot="file-misfit-text"></span>
+            </span>
+            <div class="beeldkaart-acties">
+                <button type="button" class="actie klein" aria-haspopup="dialog" data-slot="file-pick">{{ $t('cms.edit.image_pick') }}</button>
+                <button type="button" class="actie klein" aria-expanded="false" data-slot="file-upload">{{ $t('cms.edit.image_upload') }}</button>
+                <button type="button" class="actie klein beeldkaart-weg" title="{{ $t('cms.edit.image_remove') }}" data-slot="file-remove" hidden><span aria-hidden="true">×</span></button>
+            </div>
+        </div>
+        <div class="beeldveld-upload" data-slot="file-upload-area"></div>
+        <p class="veld-fout" data-slot="error" hidden></p>
+    </div>
+</template>
+{{--
+    The upload field of a file field for each stand (UploadField::file()): a document, a video or either. The panel
+    clones the one of its field; a stand whose kinds the library does not take has none, and its field only chooses.
+    The foot has the slots of the part of an image, so the panel handles both alike.
+--}}
+@foreach ($uploadFiles as $mode => $field)
+    <template data-part="upload-{{ $mode }}">
+        <div class="beeldveld-uploadveld">
+            @include('made-cms-package-launcher::cms.partials.upload', ['upload' => $field])
+            <div class="beeldveld-uploadvoet">
+                <span class="veld-hint" data-slot="image-upload-busy" hidden>{{ $t('cms.edit.file_upload_busy') }}</span>
+                <button type="button" class="tekstlink klein" data-slot="image-upload-cancel">{{ $t('cms.edit.image_upload_cancel') }}</button>
+            </div>
+        </div>
+    </template>
+@endforeach
 <template data-field="choice">
     <div class="veld">
         <label data-slot="label"></label>

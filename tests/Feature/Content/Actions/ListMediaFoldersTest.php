@@ -39,6 +39,18 @@ it('counts only the files of a kind, in the folders and in all files', function 
         ->and($folders->all)->toBe(2);
 });
 
+it('counts the files of several kinds, which win from a single kind', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    Media::factory()->in($teams)->document()->create();
+    Media::factory()->in($teams)->video()->create();
+    Media::factory()->in($teams)->create();
+
+    $folders = ListMediaFolders::run(MediaKind::Image, kinds: [MediaKind::Document, MediaKind::Video]);
+
+    expect($folders->folders)->toEqual([new MediaFolderCount($teams->id, 'Teams', 2)])
+        ->and($folders->all)->toBe(2);
+});
+
 it('counts only the images without an alt text when the list shows those', function (): void {
     $teams = MediaFolder::factory()->create(['name' => 'Teams']);
     Media::factory()->in($teams)->create();

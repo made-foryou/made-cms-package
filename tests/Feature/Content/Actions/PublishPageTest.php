@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
+use Made\CmsPackage\Tests\Fixtures\Strips\Downloads;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -159,6 +160,34 @@ it('refuses a draft with an image whose file is gone or is no image, on the fiel
     }
 
     expect(Page::query()->findOrFail($page->id)->strips)->toBe([]);
+});
+
+it('refuses a draft with a file that is gone or of a kind its field does not take, and publishes one that fits', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Downloads]));
+    $gone = Media::factory()->document()->create();
+    $video = Media::factory()->video()->create();
+    $schema = Media::factory()->document()->create();
+    $page = Page::factory()->withDraft([
+        storedStrip('downloads', ['video' => $video->id, 'bestanden' => [['id' => '9b3e1a52-7c0d-4f8e-9a61-2d5c8e7f4b10', 'bestand' => $gone->id], ['id' => '9b3e1a52-7c0d-4f8e-9a61-2d5c8e7f4b11', 'bestand' => $video->id]]], id: 'a'),
+    ])->create();
+    $gone->delete();
+
+    try {
+        PublishPage::run($page);
+        $this->fail('The draft was published.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toBe([
+            'strips.a.bestanden.0.bestand' => ['Het gekozen bestand bij Bestand bestaat niet meer.'],
+            'strips.a.bestanden.1.bestand' => ['Het gekozen bestand bij Bestand is geen document.'],
+        ]);
+    }
+
+    $draft = [storedStrip('downloads', ['video' => $video->id, 'bestanden' => [['id' => '9b3e1a52-7c0d-4f8e-9a61-2d5c8e7f4b10', 'bestand' => $schema->id]]], id: 'a')];
+    $page = Page::factory()->withDraft($draft)->create();
+
+    PublishPage::run($page);
+
+    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
 });
 
 it('publishes an image of the library as the id of its file', function (): void {

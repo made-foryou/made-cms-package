@@ -73,6 +73,28 @@ it('renders the gallery of the workbench with a photo and a caption per item, an
         ->assertSee('<figcaption data-cms-field="bijschrift">Nog zonder foto</figcaption>', false);
 });
 
+it('renders the downloads of the workbench as links to the lasting link of each file, with its own text or its description', function (): void {
+    config(['app.url' => 'https://ttvmerwestad.nl']);
+    $schema = Media::factory()->document()->withAlt('Wedstrijdschema najaar (pdf)')->create(['name' => 'wedstrijdschema', 'size' => 1_240_000]);
+    $form = Media::factory()->document()->create(['name' => 'inschrijfformulier', 'size' => 84_000]);
+
+    Page::factory()->published()->at('/')->withStrips([
+        storedStrip('downloads', ['kop' => 'Voor de competitie', 'bestanden' => [
+            ['id' => 'b1', 'bestand' => $schema->id, 'titel' => null],
+            ['id' => 'b2', 'bestand' => $form->id, 'titel' => 'Inschrijven'],
+            ['id' => 'b3', 'bestand' => 999, 'titel' => 'Weg'],
+        ]], id: 'downloads'),
+    ])->create(['title' => 'Home']);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('data-cms-items="bestanden"', false)
+        ->assertSee('<a href="https://ttvmerwestad.nl/made-cms/file/'.$schema->ulid.'/wedstrijdschema" data-cms-field="bestand">Wedstrijdschema najaar (pdf)</a>', false)
+        ->assertSee('<a href="https://ttvmerwestad.nl/made-cms/file/'.$form->ulid.'/inschrijfformulier" data-cms-field="bestand">Inschrijven</a>', false)
+        ->assertSee('PDF · 1.2 MB', false)
+        ->assertDontSeeText('Weg');
+});
+
 it('answers 404 for a draft page of the workbench', function (): void {
     Page::factory()->at('/concept')->create();
 

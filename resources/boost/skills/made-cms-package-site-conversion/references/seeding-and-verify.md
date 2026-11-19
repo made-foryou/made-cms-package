@@ -30,7 +30,7 @@ PublishPage::run($page);
 - `AddStrip` adds a strip of a type at a position and returns it; `UpdateStrip` fills it. Pass `chooseLevels: true` so
   the heading levels of the design are stored, otherwise a heading keeps its default level.
 - Values are the stored form: a `Heading` is `{text, tag}` (or a plain text for the default level), a `Link` is
-  `{"url": "…"}` or `{"page": id}`, a `Button` is `{text, link}`, an `Image` is the id of a media file, `Items` is a list
+  `{"url": "…"}` or `{"page": id}`, a `Button` is `{text, link}`, an `Image` or a `File` is the id of a media file, `Items` is a list
   of items. A page link is better than a url for pages of the site, because it survives a changed path.
 - Validation runs through `UpdateStrip` and `PublishPage`; a `ValidationException` names the field path. Fix the
   values, do not loosen the field.
@@ -58,6 +58,8 @@ UpdateAltText::run($media, 'Het team in clubshirts in de sporthal');
 - Write a real alt text for every image that carries meaning; an empty text is for purely decorative images.
 - Look up an image first (`Media::query()->images()->search($name)->first()`) so a second run keeps one copy.
 - The media disk must be usable: `php artisan storage:link` for the `public` disk, or an S3 disk with a `url`.
+- A document for a `File` field goes the same way (`filename: 'wedstrijdschema.pdf'`); its alt text is the description
+  of its download link, which the site shows when the strip has no link text of its own.
 
 ## Verify in the catalogue, the browser and the edit mode
 

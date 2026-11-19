@@ -203,9 +203,12 @@ function notSaved(failed) {
         return;
     }
 
-    // A photo that did not upload, or an alt text the server refused, stays in its field with its error.
+    // A photo or file that did not upload, or an alt text or description the server refused, stays in its field with
+    // its error; the words follow what it was.
     if (failed?.kind === 'upload' || failed?.kind === 'alt') {
-        named(failed.kind === 'upload' ? texts.upload_failed : texts.alt_failed);
+        const key = failed.kind === 'upload' ? 'upload_failed' : 'alt_failed';
+
+        named((failed.media === 'file' ? texts[key + '_file'] : null) ?? texts[key]);
         shell.dispatchEvent(new CustomEvent('made-cms:choose', { detail: { id: failed.id } }));
 
         return;
@@ -363,9 +366,12 @@ function waiting(origin, uploading) {
     mark.hidden = false;
     link.setAttribute('aria-busy', 'true');
     link.setAttribute('aria-label', origin === 'stop' ? texts.stop_waiting : texts.pages_waiting);
-    text.textContent = uploading ? texts.uploading : (origin === 'stop' ? texts.saving : texts.waiting);
+    // uploading is what is still on its way ('image' or 'file'), false for nothing.
+    const words = (key) => (uploading === 'file' ? texts[key.replace('uploading', 'uploading_file')] : null) ?? texts[key];
+
+    text.textContent = uploading ? words('uploading') : (origin === 'stop' ? texts.saving : texts.waiting);
     ui.stay.hidden = ! uploading;
-    say(uploading ? texts.uploading_state : texts.waiting, 'busy', uploading ? '' : texts.waiting);
+    say(uploading ? words('uploading_state') : texts.waiting, 'busy', uploading ? '' : texts.waiting);
 }
 
 function resting() {
@@ -416,7 +422,7 @@ async function settled(origin) {
     try {
         stored = await ask('made-cms:flush', {}, (info) => {
             if (info.uploading && ! attempt.cancelled) {
-                waiting(origin, true);
+                waiting(origin, info.media === 'file' ? 'file' : 'image');
             }
 
             failed = info.failed ?? failed;

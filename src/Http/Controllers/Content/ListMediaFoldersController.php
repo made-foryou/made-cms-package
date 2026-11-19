@@ -16,6 +16,6 @@ final class ListMediaFoldersController
 {
     public function __invoke(ListMediaFoldersRequest $request): JsonResponse
     {
-        return MediaResponse::folders(ListMediaFolders::run($request->kind(), $request->withoutAlt(), $request->search()));
+        return MediaResponse::folders(ListMediaFolders::run($request->kind(), $request->withoutAlt(), $request->search(), $request->kinds()));
     }
 }

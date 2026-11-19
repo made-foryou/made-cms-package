@@ -54,40 +54,6 @@ beforeEach(function (): void {
 });
 
 /**
- * A JavaScript condition: the picker is open and shows these files, in this order.
- *
- * @param  list<string>  $names
- */
-function pickerShows(array $names): string
-{
-    $quoted = json_encode($names, JSON_THROW_ON_ERROR);
-
-    return "document.querySelector('[data-media-picker]').open && ! document.querySelector('[data-media]').hasAttribute('data-loading') && JSON.stringify([...document.querySelectorAll('[data-media-picker] .tegel [data-slot=\"media-tile-name\"]')].map((name) => name.textContent)) === JSON.stringify({$quoted})";
-}
-
-/**
- * A script for $page->script(): every folder of the picker with its number and whether it is open.
- */
-function pickerFolders(): string
-{
-    return <<<'JS'
-        () => [...document.querySelectorAll('[data-media-picker] .kmap')].map((folder) => [
-            folder.querySelector('.kmap-naam').textContent.trim(),
-            folder.querySelector('.kmap-aantal').textContent,
-            folder.getAttribute('aria-pressed'),
-        ])
-        JS;
-}
-
-/**
- * The selector of the tile of a file in the picker.
- */
-function pickerTile(Media $media): string
-{
-    return '[data-media-picker] .tegel[data-id="'.$media->id.'"]';
-}
-
-/**
  * A JavaScript condition: the media element of a field shows a photo, none, or a file that left Media.
  */
 function pickedState(string $path, string $state): string

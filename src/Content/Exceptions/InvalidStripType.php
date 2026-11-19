@@ -66,6 +66,16 @@ final class InvalidStripType extends RuntimeException
         return new self("Strip type [{$type}] field [{$field}] is an image and cannot have a default; the id of a file differs per database.");
     }
 
+    public static function fileDefault(string $type, string $field): self
+    {
+        return new self("Strip type [{$type}] field [{$field}] is a file and cannot have a default; the id of a file differs per database.");
+    }
+
+    public static function fileKinds(string $type, string $field): self
+    {
+        return new self("Strip type [{$type}] field [{$field}] is a file that takes no kind or an image; give it a document, a video or both, and use an image field for an image.");
+    }
+
     public static function defaultWithMedia(string $type, string $field): self
     {
         return new self("Strip type [{$type}] field [{$field}] has a default that holds a file of the media library; the id of a file differs per database.");

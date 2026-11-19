@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Data;
 
 use Made\CmsPackage\Content\Enums\MediaKind;
+use Made\CmsPackage\Support\MediaLink;
 
 /**
  * A file of the media library as a strip renders it and the side panel shows it: by its url, never by where it is on
  * the disk, and without the original of a photo. The thumbnail is for the CMS only; a strip renders the photo.
  *
  * @phpstan-type RenderedImage array{url: string, alt: string, width: int|null, height: int|null, focal: array{x: float, y: float}}
+ * @phpstan-type RenderedFile array{url: string, name: string, extension: string, kind: string, mime: string, size: int, description: string|null}
  */
 final readonly class MediaFile
 {
@@ -62,5 +64,39 @@ final readonly class MediaFile
             'height' => $this->height,
             'focal' => ['x' => $this->focalX ?? 0.5, 'y' => $this->focalY ?? 0.5],
         ];
+    }
+
+    /**
+     * The file as the site renders a link to download or play it: its lasting link (so a link a visitor shared keeps
+     * working after a new version or a new name), its name, the extension and type of the file a visitor gets, its
+     * size in bytes and its description (the alt text of the file), null when it has none. Null for a file without a
+     * folder of its own, which has no lasting link.
+     *
+     * @return RenderedFile|null
+     */
+    public function download(): ?array
+    {
+        if ($this->key === null) {
+            return null;
+        }
+
+        return [
+            'url' => MediaLink::url($this->key, $this->name),
+            'name' => $this->name,
+            'extension' => $this->extension(),
+            'kind' => $this->kind->value,
+            'mime' => $this->mime,
+            'size' => $this->size,
+            'description' => $this->alt === null || $this->alt === '' ? null : $this->alt,
+        ];
+    }
+
+    /**
+     * The extension of the file a visitor opens, in small letters: the type of what the site serves ("webp" for a photo
+     * that was scaled down).
+     */
+    public function extension(): string
+    {
+        return strtolower(pathinfo((string) parse_url($this->url, PHP_URL_PATH), PATHINFO_EXTENSION));
     }
 }

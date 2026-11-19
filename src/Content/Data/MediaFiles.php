@@ -33,4 +33,16 @@ final readonly class MediaFiles
 
         return $file?->kind === MediaKind::Image ? $file : null;
     }
+
+    /**
+     * The file when it is of one of the kinds; another kind is no file to link to there.
+     *
+     * @param  list<MediaKind>  $kinds
+     */
+    public function file(int $id, array $kinds): ?MediaFile
+    {
+        $file = $this->find($id);
+
+        return $file !== null && in_array($file->kind, $kinds, true) ? $file : null;
+    }
 }

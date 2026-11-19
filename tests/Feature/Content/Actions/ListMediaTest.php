@@ -60,6 +60,15 @@ it('refuses a folder that is gone', function (): void {
     ListMedia::run(new MediaFilter(folderId: 404));
 })->throws(MediaFolderNotFound::class);
 
+it('lists the files of several kinds, which win from a single kind', function (): void {
+    Media::factory()->create();
+    $document = Media::factory()->document()->create();
+    $video = Media::factory()->video()->create();
+
+    expect(listedIds(new MediaFilter(sort: MediaSort::Name, kinds: [MediaKind::Document, MediaKind::Video])))->toEqualCanonicalizing([$document->id, $video->id])
+        ->and(listedIds(new MediaFilter(kind: MediaKind::Image, kinds: [MediaKind::Video])))->toBe([$video->id]);
+});
+
 it('lists the files of a kind', function (): void {
     $image = Media::factory()->create();
     $document = Media::factory()->document()->create();

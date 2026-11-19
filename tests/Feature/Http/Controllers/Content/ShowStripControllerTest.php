@@ -7,6 +7,8 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\Downloads;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -82,7 +84,35 @@ it('hands the side panel the files of the images of the strip, by their url and 
         'alt' => 'Het eerste team',
         'image' => ['url' => $url, 'alt' => 'Het eerste team', 'width' => 1600, 'height' => 1067, 'focal' => ['x' => 0.5, 'y' => 0.5]],
         'croppable' => true,
+        'kind' => 'image',
     ]])->and($response->getContent())->not->toContain('original-geheim123');
+});
+
+it('hands the side panel the document of a file field with its kind, and the kinds the field takes', function (): void {
+    Storage::fake('public');
+    app()->instance(StripTypes::class, new StripTypes([new Downloads]));
+    $schema = Media::factory()->document()->withAlt('Wedstrijdschema najaar (pdf)')->create(['name' => 'wedstrijdschema', 'size' => 1_240_000]);
+    $page = Page::factory()->withDraft([
+        storedStrip('downloads', ['bestanden' => [['id' => '9b3e1a52-7c0d-4f8e-9a61-2d5c8e7f4b10', 'bestand' => $schema->id]]], id: 'a'),
+    ])->create();
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->getJson('made-cms/pages/'.$page->id.'/strips/a')
+        ->assertOk()
+        ->assertJsonPath('strip.fields.1.kinds', ['video'])
+        ->assertJsonPath('strip.fields.2.fields.1.kinds', ['document']);
+
+    expect($response->json('strip.media.0'))->toMatchArray([
+        'id' => $schema->id,
+        'thumb' => null,
+        'name' => 'wedstrijdschema',
+        'extension' => 'pdf',
+        'meta' => '1,2 MB',
+        'alt' => 'Wedstrijdschema najaar (pdf)',
+        'image' => null,
+        'croppable' => false,
+        'kind' => 'document',
+    ]);
 });
 
 it('sums up a file by its size, and an image without a size by its size on the disk only', function (array $attributes, string $meta): void {

@@ -24,6 +24,14 @@ final class MediaBuilder extends Builder
         return $this->where('kind', $kind);
     }
 
+    /**
+     * @param  list<MediaKind>  $kinds
+     */
+    public function ofKinds(array $kinds): self
+    {
+        return $this->whereIn('kind', array_map(static fn (MediaKind $kind): string => $kind->value, $kinds));
+    }
+
     public function inFolder(MediaFolder $folder): self
     {
         return $this->where('folder_id', $folder->id);

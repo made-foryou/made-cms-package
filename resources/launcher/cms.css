@@ -2144,6 +2144,12 @@ ul.lijst {
     color: #c7d2ea;
 }
 
+/* A document or a video has no picture to judge: its preview is a short band with its icon and its extension. */
+.bestandkaart .beeldkaart-voorbeeld {
+    aspect-ratio: auto;
+    height: 64px;
+}
+
 .beeldkaart-voorbeeld img {
     position: absolute;
     inset: 0;
@@ -2325,39 +2331,39 @@ ul.lijst {
     align-self: stretch;
 }
 
-.upload[data-one-image] [data-slot="upload-summary"],
-.upload[data-one-image] .upload-kop,
-.upload[data-one-image][data-moment="busy"] .upload-vlak,
-.upload[data-one-image][data-moment="done"] .upload-vlak {
+.upload[data-one] [data-slot="upload-summary"],
+.upload[data-one] .upload-kop,
+.upload[data-one][data-moment="busy"] .upload-vlak,
+.upload[data-one][data-moment="done"] .upload-vlak {
     display: none;
 }
 
-.upload[data-one-image][data-moment="error"] .upload-vlak {
+.upload[data-one][data-moment="error"] .upload-vlak {
     border-color: var(--made-alarm);
 }
 
-.upload[data-one-image][data-moment="error"] .upload-lijst {
+.upload[data-one][data-moment="error"] .upload-lijst {
     order: -1;
 }
 
 /* In the narrow panel the buttons of a row go below its text. */
-.upload[data-one-image] .upload-rij-kop {
+.upload[data-one] .upload-rij-kop {
     flex-wrap: wrap;
 }
 
-.upload[data-one-image] .upload-rij-tekst {
+.upload[data-one] .upload-rij-tekst {
     flex: 1 1 180px;
 }
 
-.upload[data-one-image] .upload-rij[data-state="done"] {
+.upload[data-one] .upload-rij[data-state="done"] {
     padding: 0;
     border: 0;
     background: transparent;
 }
 
-.upload[data-one-image] .upload-rij[data-state="done"] .upload-mini,
-.upload[data-one-image] .upload-rij[data-state="done"] .upload-naam,
-.upload[data-one-image] .upload-rij[data-state="done"] [data-slot="upload-row-note"] {
+.upload[data-one] .upload-rij[data-state="done"] .upload-mini,
+.upload[data-one] .upload-rij[data-state="done"] .upload-naam,
+.upload[data-one] .upload-rij[data-state="done"] [data-slot="upload-row-note"] {
     display: none;
 }
 
@@ -4985,19 +4991,29 @@ button.tekstlink.alarm {
 .tegel[data-kind="document"] .tegel-icoon-image,
 .tegel[data-kind="video"] .tegel-icoon-image,
 .bibliotheek-mini[data-kind="document"] .tegel-icoon-image,
-.bibliotheek-mini[data-kind="video"] .tegel-icoon-image {
+.bibliotheek-mini[data-kind="video"] .tegel-icoon-image,
+.kiezer-mini[data-kind="document"] .tegel-icoon-image,
+.kiezer-mini[data-kind="video"] .tegel-icoon-image,
+.beeldkaart[data-kind="document"] .tegel-icoon-image,
+.beeldkaart[data-kind="video"] .tegel-icoon-image {
     display: none;
 }
 
 .tegel[data-kind="document"] .tegel-icoon-document,
 .tegel[data-kind="video"] .tegel-icoon-video,
 .bibliotheek-mini[data-kind="document"] .tegel-icoon-document,
-.bibliotheek-mini[data-kind="video"] .tegel-icoon-video {
+.bibliotheek-mini[data-kind="video"] .tegel-icoon-video,
+.kiezer-mini[data-kind="document"] .tegel-icoon-document,
+.kiezer-mini[data-kind="video"] .tegel-icoon-video,
+.beeldkaart[data-kind="document"] .tegel-icoon-document,
+.beeldkaart[data-kind="video"] .tegel-icoon-video {
     display: block;
 }
 
 .tegel[data-kind="document"] .tegel-beeld,
-.bibliotheek-mini[data-kind="document"] {
+.bibliotheek-mini[data-kind="document"],
+.kiezer-mini[data-kind="document"],
+.beeldkaart[data-kind="document"] .beeldkaart-voorbeeld {
     border-color: var(--made-rand);
     background: #fbfaf5;
     color: #47564f;
@@ -5009,7 +5025,9 @@ button.tekstlink.alarm {
 }
 
 .tegel[data-kind="video"] .tegel-beeld,
-.bibliotheek-mini[data-kind="video"] {
+.bibliotheek-mini[data-kind="video"],
+.kiezer-mini[data-kind="video"],
+.beeldkaart[data-kind="video"] .beeldkaart-voorbeeld {
     background: #0a211c;
 }
 
@@ -5713,7 +5731,9 @@ button.tekstlink.alarm {
     }
 
     .tegel[data-kind="document"] .tegel-beeld,
-    .bibliotheek-mini[data-kind="document"] {
+    .bibliotheek-mini[data-kind="document"],
+    .kiezer-mini[data-kind="document"],
+    .beeldkaart[data-kind="document"] .beeldkaart-voorbeeld {
         background: #f3f1e8;
         color: #0e2b26;
     }

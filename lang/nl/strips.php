@@ -46,5 +46,10 @@ return [
         'image' => 'Kies bij :attribute een afbeelding uit Media.',
         'image_missing' => 'De gekozen afbeelding bij :attribute bestaat niet meer.',
         'image_kind' => 'Het gekozen bestand bij :attribute is geen afbeelding.',
+        'file' => 'Kies bij :attribute een bestand uit Media.',
+        'file_missing' => 'Het gekozen bestand bij :attribute bestaat niet meer.',
+        'file_kind_document' => 'Het gekozen bestand bij :attribute is geen document.',
+        'file_kind_video' => 'Het gekozen bestand bij :attribute is geen video.',
+        'file_kind_file' => 'Het gekozen bestand bij :attribute is geen document of video.',
     ],
 ];

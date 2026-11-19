@@ -24,6 +24,7 @@ Read this when you decide the fields of a strip type. Field types live in
 | Two or more buttons | `Items::make('knoppen', [Button::make('knop')->required()])->max(2)` | A list of buttons; use `max()` to match the design. |
 | A whole card that links somewhere, with a fixed "Lees meer" | `Link::make('link')` | The words "Lees meer" are fixed design text and stay in the view. |
 | A photo, illustration or background photo | `Image::make('foto')` | Stores the id of a media file; the alt text belongs to the file. Never give it a `default()`. |
+| A download link to a pdf or another document, a video file | `File::make('bestand')->kinds(MediaKind::Document)` plus `Text::make('titel')` for the link text | Stores the id of a media file and renders the lasting link with its name, type, size and description. A list of downloads is `Items` of these two. Never give it a `default()`. |
 | An icon from a fixed icon set | `Choice::make('icoon', [...])` | Options map to the site's icon component. Editors pick, they do not upload. |
 | An icon or logo editors must be able to upload | `Image` | Only when the set is open ended (partner logos). |
 | A repeated block (cards, steps, rows) | `Items::make('kaarten', [...])->min(1)->max(6)` | One level only. `itemLabel('Kaart')` names the add button. |

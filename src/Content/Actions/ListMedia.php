@@ -37,7 +37,9 @@ final class ListMedia
             $query->inFolder(FindMediaFolder::run($filter->folderId) ?? throw MediaFolderNotFound::id($filter->folderId));
         }
 
-        if ($filter->kind !== null) {
+        if ($filter->kinds !== []) {
+            $query->ofKinds($filter->kinds);
+        } elseif ($filter->kind !== null) {
             $query->ofKind($filter->kind);
         }
 

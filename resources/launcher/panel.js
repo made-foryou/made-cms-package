@@ -239,6 +239,9 @@ function rendered(field, value) {
         case 'image':
             // The id of a file, rendered as the server described it: {url, alt, width, height, focal}.
             return media.get(value)?.image ?? null;
+        case 'file':
+            // Nothing to patch: the view prints the name, size and description of a file, so the frame reloads.
+            return null;
         case 'rich_text': {
             // edit.js puts rich text into the site as HTML, so it only ever gets the markup the panel builds itself.
             const html = typeof value === 'string' ? richHtml(new DOMParser().parseFromString(value, 'text/html').body) : '';
@@ -592,6 +595,9 @@ function control(state, field, owner, path, follow = null) {
         case 'image':
             image(state, element, field, owner, path, set);
             break;
+        case 'file':
+            file(state, element, field, owner, path, set);
+            break;
     }
 
     describedBy(element, input);
@@ -641,8 +647,8 @@ function choice(select, field, value, set) {
 // Every upload field the panel opened, until the editor closes it.
 const uploads = new Set();
 
-// The place of the photo that came in out of sight, for the line at the foot of the panel until the editor chooses a
-// strip or closes the line.
+// The photo or file that came in out of sight, {place, field}, for the line at the foot of the panel until the editor
+// chooses a strip or closes the line.
 let arrived = null;
 
 // The items the picker added to a list, said on the line at the foot of the panel with "Ongedaan maken" until the
@@ -677,7 +683,7 @@ function stripPlace(state, path) {
     return parts.join(' › ');
 }
 
-/* Where an image is, as the line at the foot of the panel names it: "Hero › Foto", "Kaarten › Kaart 2 › Icoon". */
+/* Where an image or a file is, as the line at the foot of the panel names it: "Hero › Foto", "Kaarten › Kaart 2 › Icoon". */
 function placeOf(state, field, path) {
     return stripPlace(state, path) + ' › ' + field.label;
 }
@@ -713,6 +719,11 @@ function where(upload) {
     return { owner: items[index], path: list + '.' + index + '.' + key };
 }
 
+/* A text of the line at the foot of the panel in the words of the upload: a photo, or a file of a file field. */
+function said(key, upload) {
+    return upload?.field.type === 'file' ? (texts[key + '_file'] ?? texts[key]) : texts[key];
+}
+
 function uploadOf(state, owner, key) {
     return [...uploads].find((upload) => upload.state === state && upload.key === key && where(upload)?.owner === owner) ?? null;
 }
@@ -731,13 +742,15 @@ function showUploads() {
 
     if (busy.length > 0) {
         percent = Math.round(busy.reduce((sum, upload) => sum + (upload.percent ?? 0), 0) / busy.length);
-        text = busy.length === 1 ? format(texts.upload_busy, { place: busy[0].place }) : format(texts.upload_busy_many, { count: busy.length });
+        text = busy.length === 1
+            ? format(said('upload_busy', busy[0]), { place: busy[0].place })
+            : format(said('upload_busy_many', busy.find((upload) => upload.field.type !== 'file') ? null : busy[0]), { count: busy.length });
         state = 'busy';
     } else if (failed) {
         text = format(texts.upload_failed, { place: failed.place });
         state = 'failed';
     } else if (arrived) {
-        text = format(texts.upload_done, { place: arrived });
+        text = format(said('upload_done', arrived), { place: arrived.place });
         state = 'done';
     } else if (picked) {
         text = picked.text;
@@ -758,7 +771,7 @@ function showUploads() {
     shown = failed;
 }
 
-/* Closes the upload field of an image once no photo is on its way; the files it took stay in Media. */
+/* Closes the upload field of an image or a file once nothing is on its way; the files it took stay in Media. */
 function closeUpload(upload) {
     if (upload.busy) {
         return;
@@ -777,10 +790,13 @@ function closeUpload(upload) {
     showUploads();
 }
 
-/* Opens the upload field of an image below it. upload.js starts the field once it is on the page. */
-function openUpload(state, field, owner, path) {
+/*
+ * Opens the upload field of an image, or of a file field in its stand (the part "upload-document", "upload-video" or
+ * "upload-file"), below it. upload.js starts the field once it is on the page.
+ */
+function openUpload(state, field, owner, path, part = 'upload') {
     const list = path.includes('.') ? path.split('.')[0] : null;
-    const element = template('data-part="upload"');
+    const element = template('data-part="' + part + '"');
     const cancel = slot('image-upload-cancel', element);
     const upload = {
         state,
@@ -850,7 +866,7 @@ function openUpload(state, field, owner, path) {
             changed(upload.state);
             leave(upload.state, spot.path);
             // Next to the field the photo shows itself; the line tells only an editor who is elsewhere.
-            arrived = element.isConnected ? null : placeOf(upload.state, upload.field, spot.path);
+            arrived = element.isConnected ? null : { place: placeOf(upload.state, upload.field, spot.path), field: upload.field };
         }
 
         upload.draw?.();
@@ -862,10 +878,18 @@ function openUpload(state, field, owner, path) {
         const spot = where(upload);
 
         for (const file of event.detail.files ?? []) {
+            const before = media.get(file.id)?.alt ?? null;
+
             media.set(file.id, file);
 
             if (spot && spot.owner[upload.key] === file.id) {
                 liveInput(upload.state, spot.path, upload.field, file.id);
+
+                // The site prints the description of a file, which nothing patches: the strip saves again (no step of
+                // "Ongedaan maken") and the frame reloads.
+                if (upload.field.type === 'file' && (file.alt ?? null) !== before) {
+                    changed(upload.state);
+                }
             }
         }
 
@@ -882,6 +906,102 @@ async function landed() {
     for (let busy = [...uploads].filter((upload) => upload.busy); busy.length > 0; busy = [...uploads].filter((upload) => upload.busy)) {
         await Promise.all(busy.map((upload) => new Promise((resolve) => upload.waiting.push(resolve))));
     }
+}
+
+/*
+ * "Uploaden" of a media element: opens the upload field of the field below it, or closes one without a file on its way
+ * (one that is busy or done keeps its files). An upload of this field that is still open comes back below it when the
+ * field is drawn anew; an error in it is in sight then.
+ */
+function uploadButton(state, field, owner, path, { button, area, draw, part }) {
+    const key = path.split('.').pop();
+    const open = uploadOf(state, owner, key);
+
+    if (open) {
+        open.draw = draw;
+        open.button = button;
+        open.seen ||= open.failed;
+        area.append(open.element);
+        showUploads();
+    }
+
+    button.addEventListener('click', () => {
+        let upload = uploadOf(state, owner, key);
+
+        if (upload && ! slot('image-upload-cancel', upload.element).hidden) {
+            closeUpload(upload);
+
+            return;
+        }
+
+        if (! upload) {
+            upload = openUpload(state, field, owner, path, part);
+            area.append(upload.element);
+            follow(upload);
+        }
+
+        upload.draw = draw;
+        upload.button = button;
+        draw();
+        slot('upload-choose', upload.element)?.focus();
+    });
+}
+
+/*
+ * "Kiezen uit media" of a media element: the picker opens with the file of the field chosen, in the stand of the field
+ * (kinds, for a file field); "Deze gebruiken" makes its choice the value of the field, wherever the field is now, and
+ * a file of this field that still travels no longer overwrites it. Opened for an item of a list (many), it chooses
+ * several photos: the first is the value of this field, every next one a new item right after it, as long as the list
+ * takes them.
+ */
+function openPicker(state, field, owner, path, { opener, file, many, kinds = null, draw }) {
+    const key = path.split('.').pop();
+    const list = path.includes('.') ? path.split('.')[0] : null;
+    const spot = { state, list, item: list === null ? null : owner, key };
+
+    document.querySelector('[data-media-picker]')?.dispatchEvent(new CustomEvent('made-cms:pick', {
+        detail: {
+            field: field.label,
+            place: stripPlace(state, path),
+            hint: field.hint ?? null,
+            file,
+            many,
+            kinds,
+            opener,
+            choose: (files) => {
+                const now = where(spot);
+
+                files.forEach((chosen) => media.set(chosen.id, chosen));
+
+                if (! now || files.length === 0) {
+                    return;
+                }
+
+                const travelling = uploadOf(state, now.owner, key);
+
+                if (travelling?.busy) {
+                    travelling.superseded = true;
+                }
+
+                now.owner[key] = files[0].id;
+                liveInput(state, now.path, field, files[0].id);
+
+                const added = list === null ? [] : addItems(state, list, now.owner, key, files.slice(1));
+
+                changed(state);
+                leave(state, now.path);
+                draw();
+
+                // Photos the list no longer took (it grew while the picker was open) are said, not dropped silently.
+                const left = list === null ? 0 : files.length - 1 - added.length;
+
+                if (added.length > 0 || left > 0) {
+                    itemPlace(state);
+                    tellPicked(state, list, now.owner, added, left);
+                }
+            },
+        },
+    }));
 }
 
 function image(state, element, field, owner, path, set) {
@@ -961,38 +1081,7 @@ function image(state, element, field, owner, path, set) {
         alt.dataset.alt = text === '' ? 'missing' : 'set';
     };
 
-    // An upload of this field that is still open comes back below it; an error in it is in sight now.
-    const open = uploadOf(state, owner, key);
-
-    if (open) {
-        open.draw = draw;
-        open.button = button;
-        open.seen ||= open.failed;
-        area.append(open.element);
-        showUploads();
-    }
-
-    button.addEventListener('click', () => {
-        let upload = uploadOf(state, owner, key);
-
-        // A field without a photo on its way closes again; one that is busy or done keeps its files.
-        if (upload && ! slot('image-upload-cancel', upload.element).hidden) {
-            closeUpload(upload);
-
-            return;
-        }
-
-        if (! upload) {
-            upload = openUpload(state, field, owner, path);
-            area.append(upload.element);
-            follow(upload);
-        }
-
-        upload.draw = draw;
-        upload.button = button;
-        draw();
-        slot('upload-choose', upload.element)?.focus();
-    });
+    uploadButton(state, field, owner, path, { button, area, draw, part: 'upload' });
 
     // The picker opens with the photo of the field chosen; "Deze gebruiken" makes its choice the value of the field,
     // wherever the field is now, and a photo of this field that still travels no longer overwrites it. Opened for an
@@ -1002,50 +1091,8 @@ function image(state, element, field, owner, path, set) {
         const value = owner[key] ?? null;
         const file = value === null ? null : (media.get(value) ?? null);
         const list = path.includes('.') ? path.split('.')[0] : null;
-        const spot = { state, list, item: list === null ? null : owner, key };
 
-        document.querySelector('[data-media-picker]')?.dispatchEvent(new CustomEvent('made-cms:pick', {
-            detail: {
-                field: field.label,
-                place: stripPlace(state, path),
-                hint: field.hint ?? null,
-                file: file?.image ? file : null,
-                many: manyFor(state, list, owner),
-                opener: pick,
-                choose: (files) => {
-                    const now = where(spot);
-
-                    files.forEach((chosen) => media.set(chosen.id, chosen));
-
-                    if (! now || files.length === 0) {
-                        return;
-                    }
-
-                    const travelling = uploadOf(state, now.owner, key);
-
-                    if (travelling?.busy) {
-                        travelling.superseded = true;
-                    }
-
-                    now.owner[key] = files[0].id;
-                    liveInput(state, now.path, field, files[0].id);
-
-                    const added = list === null ? [] : addItems(state, list, now.owner, key, files.slice(1));
-
-                    changed(state);
-                    leave(state, now.path);
-                    draw();
-
-                    // Photos the list no longer took (it grew while the picker was open) are said, not dropped silently.
-                    const left = list === null ? 0 : files.length - 1 - added.length;
-
-                    if (added.length > 0 || left > 0) {
-                        itemPlace(state);
-                        tellPicked(state, list, now.owner, added, left);
-                    }
-                },
-            },
-        }));
+        openPicker(state, field, owner, path, { opener: pick, file: file?.image ? file : null, many: manyFor(state, list, owner), draw });
     });
 
     // The crop step changes the file itself, on every page: the value of the field stays its id.
@@ -1072,6 +1119,97 @@ function image(state, element, field, owner, path, set) {
 }
 
 /*
+ * A document or a video of the media library, the media element of a file field: the file the field holds with its
+ * name, size, folder and description, that it holds none, that its file left Media, or that it is of a kind the field
+ * does not take ("past niet"). "Kiezen uit media" opens the picker in the stand of the field (its kinds), "Uploaden"
+ * the upload field of those kinds below it; without one (the library takes none of its kinds) the editor only chooses.
+ */
+function file(state, element, field, owner, path, set) {
+    const key = path.split('.').pop();
+    const label = slot('label', element);
+    const hint = slot('hint', element);
+    const card = slot('file-card', element);
+    const alt = slot('file-alt', element);
+    const button = slot('file-upload', element);
+    const pick = slot('file-pick', element);
+    const remove = slot('file-remove', element);
+    const area = slot('file-upload-area', element);
+    const kinds = Array.isArray(field.kinds) && field.kinds.length > 0 ? field.kinds : ['document', 'video'];
+    const stand = kinds.length === 1 ? kinds[0] : 'file';
+    const part = 'upload-' + stand;
+
+    label.id ||= 'paneel-' + (++uid);
+    area.id = 'paneel-' + (++uid);
+    element.setAttribute('aria-labelledby', label.id);
+    button.setAttribute('aria-controls', area.id);
+    button.hidden = document.querySelector('template[data-part="' + part + '"]') === null;
+    remove.setAttribute('aria-label', format(texts.image_remove, { field: field.label }));
+    slot('file-misfit-text', element).textContent = texts['file_misfit_' + stand] ?? '';
+
+    if (! hint.hidden) {
+        hint.id ||= 'paneel-' + (++uid);
+        element.setAttribute('aria-describedby', hint.id);
+    }
+
+    // Clicking the file on the site puts the focus on "Uploaden", or on "Kiezen uit media" without it.
+    element.focusTarget = () => (button.hidden ? pick : button);
+
+    const draw = () => {
+        const value = owner[key] ?? null;
+        const stored = value === null ? null : (media.get(value) ?? null);
+        const shown = stored !== null && kinds.includes(stored.kind) ? stored : null;
+        const look = value === null ? 'empty' : (shown ? 'filled' : (stored ? 'misfit' : 'gone'));
+        const text = shown?.alt ?? '';
+
+        // A file of another kind looks like a file that is gone, with words of its own.
+        card.dataset.state = look === 'misfit' ? 'gone' : look;
+        card.dataset.kind = shown?.kind ?? (stand === 'file' ? 'document' : stand);
+        slot('file-preview', element).hidden = shown === null;
+        slot('file-file', element).hidden = shown === null;
+        slot('file-none', element).hidden = value !== null;
+        slot('file-empty', element).hidden = value !== null;
+        slot('file-empty-text', element).hidden = value !== null;
+        slot('file-gone', element).hidden = look !== 'gone';
+        slot('file-misfit', element).hidden = look !== 'misfit';
+        slot('file-gone-icon', element).hidden = look !== 'gone' && look !== 'misfit';
+        remove.hidden = value === null;
+        button.setAttribute('aria-expanded', String(uploadOf(state, owner, key) !== null));
+
+        if (shown === null) {
+            return;
+        }
+
+        slot('file-extension', element).textContent = shown.extension ?? '';
+        slot('file-name', element).textContent = shown.name;
+        slot('file-meta', element).textContent = [shown.meta, shown.folder ? format(texts.image_folder, { folder: shown.folder }) : null]
+            .filter(Boolean)
+            .join(' · ');
+        // A document without a description is no task: the site then shows the name of the file.
+        alt.textContent = text === '' ? texts.file_no_alt : format(texts.file_alt, { alt: text });
+        alt.dataset.alt = text === '' ? 'none' : 'set';
+    };
+
+    uploadButton(state, field, owner, path, { button, area, draw, part });
+
+    pick.addEventListener('click', () => {
+        const value = owner[key] ?? null;
+        const chosen = value === null ? null : (media.get(value) ?? null);
+
+        openPicker(state, field, owner, path, { opener: pick, file: chosen !== null && kinds.includes(chosen.kind) ? chosen : null, many: null, kinds, draw });
+    });
+
+    remove.addEventListener('click', () => {
+        set(null);
+        leave(state, path);
+        draw();
+        (button.hidden ? pick : button).focus();
+    });
+
+    drawings.add(draw);
+    draw();
+}
+
+/*
  * A file changed in the crop step (made-cms:media-changed): its new address, size, focal point, name or alt text. The
  * media elements show it at once. The frame reloads to show it (edit.js); a field of a strip that still holds a change
  * of its own goes to the frame again, so the reloaded page does not get the former address of the file patched in.
@@ -1082,14 +1220,14 @@ function mediaChanged(file) {
 
     for (const state of states.values()) {
         for (const field of state.fields) {
-            if (field.type === 'image' && state.values[field.key] === file.id) {
+            if ((field.type === 'image' || field.type === 'file') && state.values[field.key] === file.id) {
                 liveInput(state, field.key, field, file.id);
             }
 
             if (field.type === 'items' && Array.isArray(state.values[field.key])) {
                 state.values[field.key].forEach((item, index) => {
                     for (const sub of field.fields ?? []) {
-                        if (sub.type === 'image' && item?.[sub.key] === file.id) {
+                        if ((sub.type === 'image' || sub.type === 'file') && item?.[sub.key] === file.id) {
                             liveInput(state, field.key + '.' + index + '.' + sub.key, sub, file.id);
                         }
                     }
@@ -2151,14 +2289,17 @@ async function finishUploads() {
 
 /*
  * Saves what is still open in every strip; true once everything the panel holds is stored. The bar can pass report():
- * it hears at once that a photo is still on its way ({uploading: true}) and, when something could not be stored, what
- * failed first ({failed: {id, kind, errors}}): a strip that was refused ('invalid', with the errors of its fields) or
- * could not be reached ('failed', 'expired'), a photo that did not upload ('upload') or an alt text the server
- * refused ('alt'), so the bar can name that strip.
+ * it hears at once that a photo or a file is still on its way ({uploading: true, media: 'image' | 'file'}) and, when
+ * something could not be stored, what failed first ({failed: {id, kind, errors, media}}): a strip that was refused
+ * ('invalid', with the errors of its fields) or could not be reached ('failed', 'expired'), a photo or file that did
+ * not upload ('upload') or an alt text or description the server refused ('alt'), so the bar can name that strip in
+ * the words of what it was (media: 'file' for a file field).
  */
 async function flush(report = null) {
-    if ([...uploads].some((upload) => upload.busy)) {
-        report?.({ uploading: true });
+    const travelling = [...uploads].filter((upload) => upload.busy);
+
+    if (travelling.length > 0) {
+        report?.({ uploading: true, media: travelling.every((upload) => upload.field.type === 'file') ? 'file' : 'image' });
     }
 
     await landed();
@@ -2191,8 +2332,8 @@ async function flush(report = null) {
         const reason = failed
             ? { id: failed.id, kind: failed.failed, errors: failed.errors ?? {} }
             : (lost
-                ? { id: lost.state.id, kind: 'upload', errors: {} }
-                : { id: refusedAlt[0].state.id, kind: 'alt', errors: {} });
+                ? { id: lost.state.id, kind: 'upload', errors: {}, media: lost.field.type }
+                : { id: refusedAlt[0].state.id, kind: 'alt', errors: {}, media: refusedAlt[0].field.type });
 
         report?.({ failed: reason });
     }

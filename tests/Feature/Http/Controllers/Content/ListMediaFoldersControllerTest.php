@@ -36,6 +36,23 @@ it('lists the folders from a to z with the number of their files', function (): 
         ->assertJsonPath('counts.all', 4);
 });
 
+it('counts the files of several kinds when asked, for the picker of a file field', function (): void {
+    $teams = MediaFolder::factory()->create(['name' => 'Teams']);
+    Media::factory()->in($teams)->document()->create();
+    Media::factory()->in($teams)->video()->create();
+    Media::factory()->in($teams)->create();
+    Media::factory()->document()->create();
+
+    $this->getJson('made-cms/media/folders?kinds[]=document&kinds[]=video')
+        ->assertOk()
+        ->assertJsonPath('all', 3)
+        ->assertJsonPath('folders.0.count', 2)
+        ->assertJsonPath('counts.all', 4);
+
+    $this->getJson('made-cms/media/folders?kinds[]=document')->assertJsonPath('all', 2)->assertJsonPath('folders.0.count', 1);
+    $this->getJson('made-cms/media/folders?kinds[]=foto')->assertUnprocessable()->assertJsonValidationErrors('kinds.0');
+});
+
 it('counts only the images without an alt text when asked', function (): void {
     $teams = MediaFolder::factory()->create(['name' => 'Teams']);
     Media::factory()->in($teams)->count(2)->create();

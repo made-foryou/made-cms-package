@@ -17,14 +17,14 @@ use Made\CmsPackage\Support\Locale;
 
 /**
  * The upload field of the CMS: one field for the media library, the picker and the edit shell. A host includes the
- * partial `cms.partials.upload` with what make(), image() or images() gives as `$upload` and loads its script.
+ * partial `cms.partials.upload` with what make(), image(), images() or file() gives as `$upload` and loads its script.
  *
  * @phpstan-type Field array{
  *     t: Closure(string): string,
  *     rules: string,
  *     limits: string,
  *     accept: string,
- *     one_image: bool,
+ *     one: bool,
  *     replace: bool,
  *     script: string,
  *     config: array{
@@ -32,8 +32,8 @@ use Made\CmsPackage\Support\Locale;
  *         csrf_token: string,
  *         folder: array{id: int|null, label: string},
  *         limits: array{max_bytes: int},
- *         one_image: bool,
- *         only_images: bool,
+ *         one: bool,
+ *         kinds: list<string>|null,
  *         replace: bool,
  *         accepts: array<string, string>,
  *         crop: bool,
@@ -55,7 +55,7 @@ final class UploadField
      */
     public static function make(?MediaFolder $folder = null, bool $crop = false): array
     {
-        return self::field($folder, oneImage: false, crop: $crop);
+        return self::field($folder, one: false, crop: $crop);
     }
 
     /**
@@ -68,7 +68,7 @@ final class UploadField
      */
     public static function image(?MediaFolder $folder = null, bool $crop = false): array
     {
-        return self::field($folder, oneImage: true, crop: $crop);
+        return self::field($folder, one: true, crop: $crop, kinds: [MediaKind::Image], own: 'single');
     }
 
     /**
@@ -81,7 +81,27 @@ final class UploadField
      */
     public static function images(?MediaFolder $folder = null, bool $crop = false): array
     {
-        return self::field($folder, oneImage: false, crop: $crop, onlyImages: true);
+        return self::field($folder, one: false, crop: $crop, kinds: [MediaKind::Image], own: 'images');
+    }
+
+    /**
+     * The field of a file field in a strip (a document, a video or both), the media element of the side panel and the
+     * picker in its stand for that kind: it takes one file at a time of those kinds and says so in their words
+     * (upload.document, upload.video, upload.file for both). It asks the description of the file, never a crop. Null
+     * when the library takes none of those kinds (media.allowed_mimes), so the editor only chooses from Media.
+     *
+     * @param  MediaFolder|null  $folder  the folder the file goes into; null for none ("Alle bestanden")
+     * @return Field|null
+     */
+    public static function file(?MediaFolder $folder, MediaKind ...$kinds): ?array
+    {
+        $taken = array_values(array_filter(
+            DescribeUploadLimits::run()->kinds,
+            static fn (MediaKind $kind): bool => $kind !== MediaKind::Image && in_array($kind, $kinds, true),
+        ));
+        usort($taken, static fn (MediaKind $a, MediaKind $b): int => array_search($a, MediaKind::cases(), true) <=> array_search($b, MediaKind::cases(), true));
+
+        return $taken === [] ? null : self::field($folder, one: true, crop: false, kinds: $taken, own: count($taken) === 1 ? $taken[0]->value : 'file');
     }
 
     /**
@@ -94,35 +114,36 @@ final class UploadField
      */
     public static function replace(): array
     {
-        return self::field(null, oneImage: false, crop: true, replace: true);
+        return self::field(null, one: false, crop: true, replace: true, own: 'replace');
     }
 
     /**
+     * @param  bool  $one  whether it takes one file at a time
+     * @param  list<MediaKind>|null  $kinds  the kinds it takes; null for every kind the library takes
+     * @param  string|null  $own  the texts that differ from the general ones: the field for one photo speaks in the
+     *                            singular (upload.single), the field of a list of images of photos (upload.images), the
+     *                            field of a file field of its kind (upload.document, upload.video, upload.file), the field
+     *                            of a new version in its own words (upload.replace)
      * @return Field
      */
-    private static function field(?MediaFolder $folder, bool $oneImage, bool $crop, bool $replace = false, bool $onlyImages = false): array
+    private static function field(?MediaFolder $folder, bool $one, bool $crop, ?array $kinds = null, bool $replace = false, ?string $own = null): array
     {
-        // The field of one photo takes only images too.
-        $takesOnlyImages = $onlyImages || $oneImage;
         $locale = Locale::launcher();
-        // The field for one photo speaks in the singular where its texts differ (upload.single), the field of a list of
-        // images of photos (upload.images), the field of a new version in its own words (upload.replace).
-        $own = $replace ? 'replace' : ($oneImage ? 'single' : ($onlyImages ? 'images' : null));
         $t = static function (string $key, array $replace = []) use ($locale, $own): string {
             $special = 'made-cms-package::media.upload.'.$own.'.'.$key;
 
             return (string) __($own !== null && Lang::has($special, $locale) ? $special : 'made-cms-package::media.upload.'.$key, $replace, $locale);
         };
         $limits = DescribeUploadLimits::run();
-        $mimes = $takesOnlyImages
-            ? array_values(array_filter($limits->mimes(), static fn (string $mime): bool => MediaKind::fromMime($mime) === MediaKind::Image))
-            : $limits->mimes();
-        $kinds = $takesOnlyImages ? [MediaKind::Image] : $limits->kinds;
+        $mimes = $kinds === null
+            ? $limits->mimes()
+            : array_values(array_filter($limits->mimes(), static fn (string $mime): bool => in_array(MediaKind::fromMime($mime), $kinds, true)));
+        $shown = $kinds ?? $limits->kinds;
         $base = request()->getBaseUrl();
         $label = $folder === null ? $t('all_files') : $t('folder', ['name' => $folder->name]);
         // The line of rules with the folder left open, so the script can name another folder in it (upload-folder).
         $kindList = Str::ucfirst(self::list(
-            array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $kinds),
+            array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $shown),
             (string) __('made-cms-package::media.and', [], $locale),
         ));
         $rules = $t('rules', ['kinds' => $kindList, 'max' => $limits->max]);
@@ -134,7 +155,7 @@ final class UploadField
             // What the field takes without the folder, for a host that tells it beside a drop zone of its own.
             'limits' => $t('limits', ['kinds' => $kindList, 'max' => $limits->max]),
             'accept' => implode(',', $mimes),
-            'one_image' => $oneImage,
+            'one' => $one,
             'replace' => $replace,
             'script' => LauncherAssetController::url('upload.js'),
             'config' => [
@@ -148,18 +169,17 @@ final class UploadField
                 'folder' => ['id' => $folder?->id, 'label' => $label],
                 // Only to spare an editor an upload the server refuses anyway; CheckUploadedMedia decides.
                 'limits' => ['max_bytes' => $limits->maxBytes],
-                'one_image' => $oneImage,
-                // Whether the field refuses a document or a video before it travels; the server checks the kind again.
-                'only_images' => $takesOnlyImages,
+                'one' => $one,
+                // The kinds the field takes, so it refuses another kind before it travels (null for every kind the
+                // library takes); the server reads the kind from the contents again.
+                'kinds' => $kinds === null ? null : array_map(static fn (MediaKind $kind): string => $kind->value, $kinds),
                 'replace' => $replace,
                 // What the file chooser offers for each kind a new version can be of.
                 'accepts' => $replace ? self::accepts($limits) : [],
                 'crop' => $crop,
                 'texts' => [
                     ...self::texts('upload.texts', $locale),
-                    ...($oneImage ? self::texts('upload.single.texts', $locale) : []),
-                    ...($onlyImages && ! $oneImage ? self::texts('upload.images.texts', $locale) : []),
-                    ...($replace ? self::replaceTexts($limits, $locale) : []),
+                    ...($replace ? self::replaceTexts($limits, $locale) : ($own !== null ? self::texts('upload.'.$own.'.texts', $locale) : [])),
                     'processing_image' => (string) __('made-cms-package::media.upload.texts.processing_image', [
                         'format' => config()->string('made-cms-package.media.image.format'),
                         'width' => config()->integer('made-cms-package.media.image.max_width'),

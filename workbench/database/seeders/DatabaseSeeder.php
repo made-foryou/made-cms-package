@@ -99,6 +99,11 @@ class DatabaseSeeder extends Seeder
             $this->strip('downloads', ['kop' => 'Voor de competitie', 'bestanden' => [['bestand' => $schedule->id, 'titel' => null]]]),
         ])->create(['title' => 'Downloads', 'slug' => 'downloads']);
 
+        // A hidden page: its address serves it, with noindex, but the menu and the sitemap leave it out.
+        Page::factory()->published()->hidden()->atPosition(5)->at('/privacy')->withStrips([
+            $this->strip('hero', ['kop' => 'Privacy']),
+        ])->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
         // The factories write the strips without the Actions, so the library learns from them where its photo is.
         RebuildMediaUsage::run();
     }

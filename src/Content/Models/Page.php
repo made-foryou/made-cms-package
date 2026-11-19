@@ -34,6 +34,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property string|null $meta_description the description in Google; null lets Google take a piece of the page
  * @property bool $in_sitemap whether the sitemap of the site lists the page
  * @property bool $indexable whether Google may show the page; off is noindex
+ * @property int|null $share_image_id the file of the media library a shared link to the page shows; null for the default of the site
  * @property PageStatus $status
  * @property list<StoredStrip> $strips the published strips, in order
  * @property list<StoredStrip>|null $draft_strips the draft editors work on; null when there is none
@@ -67,6 +68,7 @@ class Page extends Model
         'meta_description',
         'in_sitemap',
         'indexable',
+        'share_image_id',
         'status',
         'strips',
         'draft_strips',
@@ -95,6 +97,7 @@ class Page extends Model
             'hidden' => 'boolean',
             'in_sitemap' => 'boolean',
             'indexable' => 'boolean',
+            'share_image_id' => 'integer',
             'status' => PageStatus::class,
             'strips' => 'array',
             'draft_strips' => 'array',

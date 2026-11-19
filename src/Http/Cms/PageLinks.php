@@ -42,6 +42,14 @@ final class PageLinks
     }
 
     /**
+     * Where the card "Hoe je link gedeeld wordt" saves the image of a shared link to the page.
+     */
+    public static function shareImage(Page $page): string
+    {
+        return self::url('made-cms-package.pages.share-image', ['page' => $page->id]);
+    }
+
+    /**
      * Where the tree of the pages screen moves a page.
      */
     public static function move(Page|int $page): string

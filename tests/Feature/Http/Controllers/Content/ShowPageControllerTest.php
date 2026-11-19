@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Models\Media;
+use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -298,3 +301,129 @@ it('links to the meta overview only for an editor who opens it', function (Role 
     'an admin' => [Role::Admin, true],
     'the content manager' => [Role::ContentManager, false],
 ]);
+
+describe('the card "Hoe je link gedeeld wordt"', function (): void {
+    beforeEach(function (): void {
+        Storage::fake('public', ['url' => 'http://localhost/storage']);
+    });
+
+    /**
+     * The texts of the notices of the card, as one line each.
+     *
+     * @return list<string>
+     */
+    function shareNotices(string $html): array
+    {
+        $start = strpos($html, 'data-slot="share-notices"');
+        $part = $start === false ? '' : substr($html, $start, (int) strpos($html, 'class="deelvoet"', $start) - $start);
+        preg_match_all('/<span class="melding-tekst">(.*?)<\/span>\s*<\/div>/s', $part, $matches);
+
+        return array_map(static fn (string $text): string => trim((string) preg_replace('/\s+/', ' ', strip_tags(html_entity_decode($text)))), $matches[1]);
+    }
+
+    it('comes right after the card of google, with the shared link as an app shows it', function (): void {
+        $media = Media::factory()->in(MediaFolder::factory()->create(['name' => 'Clubleven']))->withAlt('Leden aan de tafels')
+            ->create(['name' => 'clubavond', 'width' => 1200, 'height' => 630, 'size' => 184_000]);
+        $page = Page::factory()->published()->withMeta(null, 'Wie we zijn.')->withShareImage($media)->at('/over-ons')->create(['title' => 'Over ons']);
+
+        $html = pageScreen($page);
+
+        expect(strpos($html, 'id="made-cms-share"'))->toBeGreaterThan((int) strpos($html, 'id="made-cms-google"'))
+            ->and($html)->toContain('<h2 id="made-cms-share-kop">Hoe je link gedeeld wordt</h2>')
+            ->toContain('action="/made-cms/pages/'.$page->id.'/share-image"')
+            ->toContain('<input type="hidden" name="share_image" value="'.$media->id.'" data-slot="share-value">')
+            ->toContain('<img src="http://localhost/storage/'.$media->thumb_path.'" alt="" data-slot="share-preview-image">')
+            ->toContain('<span class="deellink-domein">localhost</span>')
+            ->toContain('<span class="deellink-titel" data-slot="share-title">Over ons · TTV Merwestad</span>')
+            ->toContain('<span class="deellink-omschrijving" data-slot="share-description">Wie we zijn.</span>')
+            ->toContain('<span class="deelveld-naam" data-slot="share-name">clubavond.webp</span>')
+            ->toContain('<span class="sectienoot" data-slot="share-meta">1200 × 630 · 184 kB · uit map Clubleven</span>')
+            ->toContain('data-slot="share-alt-text">Alt: Leden aan de tafels</span>')
+            ->toContain('href="#made-cms-google">Hoe Google hem ziet</a>')
+            ->not->toContain('Delen werkt ook als Google deze pagina niet toont')
+            ->and(shareNotices($html))->toBe([]);
+    });
+
+    it('says the page uses the default image of the site, or that a link shows no image at all', function (?string $default, string $notice): void {
+        config(['made-cms-package.meta.share_image' => $default]);
+        $page = Page::factory()->at('/over-ons')->create();
+
+        $html = pageScreen($page);
+
+        expect(shareNotices($html))->toBe([$notice])
+            ->and($html)->toContain('<input type="hidden" name="share_image" value="" data-slot="share-value">')
+            ->toContain('data-slot="share-empty">');
+    })->with([
+        'a default' => ['/images/deel.jpg', 'Deze pagina gebruikt de standaardafbeelding van de site. Kies een eigen afbeelding om dat te veranderen.'],
+        'none' => [null, 'Deze pagina heeft geen afbeelding en de site heeft geen standaardafbeelding. In een gedeelde link staan dan alleen de titel en de omschrijving, zonder plaatje. Kies een afbeelding om dat te veranderen.'],
+    ]);
+
+    it('warns about a small photo, another shape and a missing alt text, without stopping a save', function (int $width, int $height, ?string $alt, array $notices): void {
+        $media = Media::factory()->create(['width' => $width, 'height' => $height, 'alt' => $alt]);
+        $page = Page::factory()->withShareImage($media)->at('/over-ons')->create();
+
+        expect(shareNotices(pageScreen($page)))->toBe($notices);
+    })->with([
+        'small' => [480, 252, 'Toernooi', ['Deze afbeelding is klein. Hij is 480 × 252 px; aanbevolen is 1200 × 630. Onder ± 600 px breed wordt hij vaak klein of niet getoond. Opslaan kan gewoon.']],
+        'three by two' => [1600, 1067, 'Training', ['Hij wordt bijgesneden. In een gedeelde link krijgt de afbeelding de verhouding 1,91 : 1, dus boven en onder valt samen ± 21% weg (gedimd in het kleine beeld). Met Bijsnijden kies je zelf wat blijft. Opslaan kan gewoon.']],
+        'without an alt text' => [1200, 630, null, ['Alt-tekst ontbreekt. Vul die in Media in, dan geldt hij overal. Alt-tekst invullen →']],
+    ]);
+
+    it('says why a file the page holds is not shared', function (): void {
+        $media = Media::factory()->create(['mime' => 'image/svg+xml']);
+        $page = Page::factory()->withShareImage($media)->at('/over-ons')->create();
+
+        expect(shareNotices(pageScreen($page)))
+            ->toBe(['Deze afbeelding wordt niet gedeeld. Apps tonen geen svg bij een gedeelde link. Kies een foto, bijvoorbeeld jpg, png of webp.']);
+    });
+
+    it('says that sharing works for a page google may not show', function (): void {
+        $page = Page::factory()->noindex()->at('/bedankt')->create();
+
+        expect(pageScreen($page))->toContain('Delen werkt ook als Google deze pagina niet toont. De schakelaar bij Hoe Google hem ziet gaat alleen over zoekresultaten.');
+    });
+
+    it('says once that it is saved, after saving', function (): void {
+        $media = Media::factory()->create();
+        $page = Page::factory()->at('/over-ons')->create();
+
+        $this->put('made-cms/pages/'.$page->id.'/share-image', ['share_image' => (string) $media->id]);
+
+        expect(pageScreen($page))->toContain('data-slot="share-saved"')
+            ->toContain('Een link die je nu deelt, toont deze afbeelding. Apps onthouden de oude soms nog even.')
+            ->and(pageScreen($page))->not->toContain('data-slot="share-saved"');
+    });
+
+    it('shows a refusal at the card, with the image the page still has', function (): void {
+        $kept = Media::factory()->create(['name' => 'clubavond']);
+        $page = Page::factory()->withShareImage($kept)->at('/over-ons')->create();
+
+        $this->from('/made-cms/pages/'.$page->id)->put('made-cms/pages/'.$page->id.'/share-image', ['share_image' => (string) Media::factory()->document()->create()->id]);
+
+        expect(pageScreen($page))->toContain('<div class="melding alarm" role="alert">')
+            ->toContain('<strong>Opslaan is niet gelukt.</strong> Dit bestand is geen afbeelding. Kies een foto. De afbeelding van deze pagina is niet veranderd.')
+            ->toContain('name="share_image" value="'.$kept->id.'"');
+    });
+
+    it('links to the media library and moves files in the crop step only for an editor who opens it', function (Role $role, bool $media): void {
+        $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+        $page = Page::factory()->withShareImage(Media::factory()->create())->at('/over-ons')->create();
+
+        $html = pageScreen($page);
+
+        expect(['link' => str_contains($html, 'href="/made-cms/media?file='), 'crop' => str_contains(implode(' ', shareNotices($html)), 'Vul die in bij Bijsnijden, dan geldt hij overal.'), 'folder' => str_contains($html, 'data-slot="crop-folder"')])
+            ->toBe(['link' => $media, 'crop' => ! $media, 'folder' => $media]);
+    })->with([
+        'the content manager' => [Role::ContentManager, true],
+        'the owner' => [Role::Owner, false],
+        'the seo specialist' => [Role::SeoSpecialist, false],
+    ]);
+
+    it('brings the picker, the crop step and their scripts along once', function (): void {
+        $html = pageScreen(Page::factory()->at('/over-ons')->create());
+
+        expect(substr_count($html, 'data-media-picker'))->toBe(1)
+            ->and(substr_count($html, 'data-media-crop'))->toBe(1)
+            ->and($html)->toMatch('#launcher/upload\.js\?v=\w+".*launcher/crop\.js\?v=\w+".*launcher/media\.js\?v=\w+".*launcher/share\.js\?v=\w+"#s');
+    });
+});

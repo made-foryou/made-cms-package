@@ -54,7 +54,7 @@ final class MediaResponse
     public static function replaced(MediaFile $file, MediaPlaces $places): JsonResponse
     {
         $details = self::file($file);
-        $live = array_filter($places->places, static fn (MediaPlace $place): bool => ! $place->pageDeleted && $place->in(UsageVersion::Published)) !== [];
+        $live = array_filter($places->places, static fn (MediaPlace $place): bool => $place->shownOnSite()) !== [];
 
         return self::json([
             'file' => $details,
@@ -182,7 +182,8 @@ final class MediaResponse
     /**
      * A file as the side column of the media library shows it: the file, the heading of its places in words
      * ("Gebruikt op 2 pagina's"; "Gebruik" when it is on none, a deleted page does not count), and the pages with the
-     * places on them. Each page has the address of its edit shell (null for a deleted page, which has none) and a note
+     * places on them. Each page has the address of its edit shell, or of the card of its share image on its screen when
+     * that is the only place it holds the file (null for a deleted page, which has none), and a note
      * when it is in the bin or all its places are in one version only ("Alleen in het concept", "Nog op de site, niet
      * meer in het concept"); when its places differ, each place in one version has that note itself.
      *
@@ -202,11 +203,17 @@ final class MediaResponse
         foreach ($description->places->places as $place) {
             $pages[$place->page] ??= [
                 'title' => $place->pageTitle,
-                'url' => $place->pageDeleted ? null : PageLinks::edit($place->page),
+                'url' => $place->pageDeleted ? null : PageLinks::show($place->page).'#'.PageRedirect::SHARE,
                 'deleted' => $place->pageDeleted,
                 'notes' => [],
                 'places' => [],
             ];
+
+            // The share image is on the screen of the page; any place in a strip is in its edit shell.
+            if (! $place->pageDeleted && ! $place->ofPage()) {
+                $pages[$place->page]['url'] = PageLinks::edit($place->page);
+            }
+
             $pages[$place->page]['notes'][] = self::note($place, $locale);
             $pages[$place->page]['places'][] = ['where' => $place->where, 'note' => self::note($place, $locale)];
         }
@@ -369,11 +376,13 @@ final class MediaResponse
 
     /**
      * What a place is in when it is in one version of its page only: the draft added it, or the draft took it away
-     * while the site still shows it. Null for a place in both, or in the published version of a page without a draft.
+     * while the site still shows it. Null for a place in both, in the published version of a page without a draft, or
+     * of the page itself (its share image), which lies outside the draft.
      */
     private static function note(MediaPlace $place, string $locale): ?string
     {
         return match (true) {
+            $place->ofPage() => null,
             ! $place->in(UsageVersion::Published) => (string) __('made-cms-package::media.library.draft_only', [], $locale),
             ! $place->in(UsageVersion::Draft) && $place->pageHasDraft => (string) __('made-cms-package::media.library.removed_in_draft', [], $locale),
             default => null,

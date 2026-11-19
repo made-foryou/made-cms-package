@@ -17,11 +17,17 @@ final class PageRedirect
     /** The card "Hoe Google hem ziet" on the screen of a page, where saving it and a refusal go back to. */
     public const string GOOGLE = 'made-cms-google';
 
+    /** The card "Hoe je link gedeeld wordt" on the screen of a page, where saving it and a refusal go back to. */
+    public const string SHARE = 'made-cms-share';
+
     /** The flash that makes the page show once that it is ready, right after the wizard. */
     private const string CREATED = 'made-cms-package.page_created';
 
     /** The flash that makes the card "Hoe Google hem ziet" say once that it is saved. */
     private const string META_SAVED = 'made-cms-package.page_meta_saved';
+
+    /** The flash that makes the card "Hoe je link gedeeld wordt" say once that it is saved. */
+    private const string SHARE_SAVED = 'made-cms-package.page_share_saved';
 
     public static function created(Page $page): RedirectResponse
     {
@@ -52,6 +58,21 @@ final class PageRedirect
     public static function justSavedMeta(Request $request, Page $page): bool
     {
         return $request->hasSession() && $request->session()->get(self::META_SAVED) === $page->id;
+    }
+
+    /**
+     * Back to the card of the share image, which says it is saved.
+     */
+    public static function shareSaved(Page $page): RedirectResponse
+    {
+        return redirect()->route('made-cms-package.pages.show', ['page' => $page->id])
+            ->withFragment(self::SHARE)
+            ->with(self::SHARE_SAVED, $page->id);
+    }
+
+    public static function justSavedShare(Request $request, Page $page): bool
+    {
+        return $request->hasSession() && $request->session()->get(self::SHARE_SAVED) === $page->id;
     }
 
     public static function visibilityChanged(Page $page): RedirectResponse

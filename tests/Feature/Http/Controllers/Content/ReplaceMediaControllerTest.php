@@ -55,6 +55,24 @@ it('tells that the site shows the new version when a published page holds the fi
     'only in a draft' => ['draft', 'Vervangen door teamfoto-2026.webp.'],
 ]);
 
+it('tells that the site shows the new version when a published page shares the file', function (string $state, string $notice): void {
+    $media = UploadMedia::run(new UploadedMedia(photo(800, 600), 'teamfoto.jpg'));
+    $page = match ($state) {
+        'published' => Page::factory()->published(),
+        'draft' => Page::factory(),
+        'deleted' => Page::factory()->published()->state(['deleted_at' => now()]),
+    };
+    SyncMediaUsage::run($page->withShareImage($media)->create());
+
+    $this->post("made-cms/media/{$media->id}/replace", ['file' => uploadedReplacement(photo(640, 480), 'Teamfoto 2026.jpg')], ['Accept' => 'application/json'])
+        ->assertOk()
+        ->assertJsonPath('notice', $notice);
+})->with([
+    'a published page' => ['published', 'Vervangen door teamfoto-2026.webp. Op de site staat nu de nieuwe versie.'],
+    'a page that was never published' => ['draft', 'Vervangen door teamfoto-2026.webp.'],
+    'a page in the bin' => ['deleted', 'Vervangen door teamfoto-2026.webp.'],
+]);
+
 it('refuses a file of another kind, keyed by file', function (): void {
     $media = UploadMedia::run(new UploadedMedia(photo(800, 600), 'teamfoto.jpg'));
 

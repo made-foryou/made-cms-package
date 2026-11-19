@@ -3,8 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Data\PageMeta;
+use Made\CmsPackage\Content\Data\ShareImage;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -19,6 +22,8 @@ it('describes a page with a title and a description of its own', function (): vo
         description: 'Van de jeugd tot de eredivisie.',
         canonical: 'https://ttvmerwestad.nl/teams',
         indexable: true,
+        image: null,
+        siteName: 'TTV Merwestad Dordrecht',
     ));
 });
 
@@ -31,6 +36,8 @@ it('falls back to the name of the page and the site, and leaves the description 
         description: null,
         canonical: 'https://ttvmerwestad.nl/teams',
         indexable: true,
+        image: null,
+        siteName: 'TTV Merwestad Dordrecht',
     ));
 });
 
@@ -89,4 +96,25 @@ it('keeps the host of the url of the site, whatever host the request names', fun
     });
 
     $this->get('http://www.elders.example/over-ons')->assertExactJson(['canonical' => 'https://ttvmerwestad.nl/over-ons']);
+});
+
+it('gives the image a shared link to the page shows', function (): void {
+    Storage::fake('public', ['url' => 'https://ttvmerwestad.nl/storage']);
+    $media = Media::factory()->withAlt('Spelers na de winst')->create(['width' => 1200, 'height' => 630]);
+    $page = Page::factory()->withShareImage($media)->at('/teams')->create();
+
+    expect(DescribePageMeta::run($page)->image)->toEqual(new ShareImage(
+        url: 'https://ttvmerwestad.nl/storage/'.$media->path,
+        width: 1200,
+        height: 630,
+        alt: 'Spelers na de winst',
+    ));
+});
+
+it('gives the image of a noindex or hidden page too: sharing is apart from google', function (): void {
+    Storage::fake('public', ['url' => 'https://ttvmerwestad.nl/storage']);
+    $media = Media::factory()->create();
+    $page = Page::factory()->published()->noindex()->hidden()->withShareImage($media)->at('/bedankt')->create();
+
+    expect(DescribePageMeta::run($page)->image?->url)->toBe('https://ttvmerwestad.nl/storage/'.$media->path);
 });

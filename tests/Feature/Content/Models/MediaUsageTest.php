@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\QueryException;
+use Made\CmsPackage\Content\Enums\PagePlace;
 use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
@@ -30,6 +31,26 @@ it('reads a stored place in its own types', function (): void {
         ->and($stored->page?->is($page))->toBeTrue()
         ->and($media->usages()->pluck('id')->all())->toBe([$usage->id]);
 });
+
+it('reads a place of the page itself, outside its strips', function (): void {
+    $page = Page::factory()->create();
+
+    $usage = MediaUsage::factory()->for($page)->shareImage()->create();
+
+    $stored = MediaUsage::query()->findOrFail($usage->id);
+
+    expect($stored->version)->toBe(UsageVersion::Page)
+        ->and($stored->strip_id)->toBe('')
+        ->and($stored->strip_type)->toBe('')
+        ->and($stored->field)->toBe(PagePlace::ShareImage->value);
+});
+
+it('holds the share image of a page once', function (): void {
+    $page = Page::factory()->create();
+    MediaUsage::factory()->for($page)->shareImage()->create();
+
+    MediaUsage::factory()->for($page)->shareImage()->create();
+})->throws(QueryException::class);
 
 it('holds a place of a version of a page once', function (): void {
     $page = Page::factory()->create();

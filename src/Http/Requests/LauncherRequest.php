@@ -23,11 +23,14 @@ abstract class LauncherRequest extends FormRequest
     }
 
     /**
+     * Refuses the request with a message under a field, back where a refusal of its validation goes, so a form that
+     * goes back to its card (a fragment) does so for a refusal of the action too.
+     *
      * @throws ValidationException
      */
     public function reject(string $field, string $error): never
     {
-        throw ValidationException::withMessages([$field => $this->error($error)]);
+        throw ValidationException::withMessages([$field => $this->error($error)])->redirectTo($this->getRedirectUrl());
     }
 
     protected function error(string $key): string

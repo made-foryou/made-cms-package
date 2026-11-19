@@ -9,6 +9,10 @@ return [
         'video' => 'Video',
     ],
 
+    'places' => [
+        'share_image' => 'Deelafbeelding',
+    ],
+
     'errors' => [
         'too_large' => 'Te groot: een bestand mag :max zijn.',
         'too_large_video' => 'Te groot: een bestand mag :max zijn. Zet de video op YouTube of Vimeo en plak de link in een videoblok; dat laadt voor bezoekers ook sneller.',

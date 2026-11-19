@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Database\Factories\Content;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Made\CmsPackage\Content\Enums\PagePlace;
 use Made\CmsPackage\Content\Enums\UsageVersion;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
@@ -38,5 +39,18 @@ final class MediaUsageFactory extends Factory
     public function draft(): self
     {
         return $this->state(fn (): array => ['version' => UsageVersion::Draft]);
+    }
+
+    /**
+     * The share image of the page: a place of the page itself, outside its strips.
+     */
+    public function shareImage(): self
+    {
+        return $this->state(fn (): array => [
+            'version' => UsageVersion::Page,
+            'strip_id' => '',
+            'strip_type' => '',
+            'field' => PagePlace::ShareImage->value,
+        ]);
     }
 }

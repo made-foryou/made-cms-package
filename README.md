@@ -196,6 +196,7 @@ The pages screen at `/made-cms/pages` lists every page of the site in the order 
 - **New page** (`/made-cms/pages/new`) asks one question per step: the name, from which the address follows, and the place: at the top or under another page. The page starts as an empty draft, last in the menu, and opens on the site to be filled.
 - **One page** (`/made-cms/pages/{page}`) changes the name, the address, the parent and whether the page is in the menu. The pages under it move along, and their addresses follow. The switch says the place of the page in the menu of the site, counting only what the site shows there: a draft says where it comes once published.
 - **How Google sees it**, a card of its own on that screen, changes the title and the description in Google, with counters that follow the typing and the result as Google shows it, and the switches "Staat in de sitemap" and "Mag Google hem tonen". It saves on its own and holds for the site at once; see [Page meta](#page-meta) for printing it. `UpdatePageMeta` stores it, `MeasureMeta` counts a text as Google gets it (60 characters of a title, 155 of a description).
+- **How a shared link shows it** ("Hoe je link gedeeld wordt"), the card below it, shows a link to the page as WhatsApp, LinkedIn and Facebook show it, with the title and the description of the card of Google, and gives the page an image of its own for it: chosen from the media library or uploaded (the crop step follows and asks its alt text), cropped or taken away. It warns about a small photo, another shape than 1200 × 630 and a missing alt text, without stopping a save, and saves on its own. The file counts as used in the media library ("Over ons › Deelafbeelding"). `SetPageShareImage` stores it; see [Page meta](#page-meta) for the tags.
 - **Hiding** ("Zichtbaar voor bezoekers" off in the basics, or "Verbergen" in the card "Weghalen") keeps a page for its direct link only, such as a privacy statement or the thank-you page after a form: its address still serves it, but the menu of the site leaves it out with the pages under it, Google gets noindex and the sitemap will leave it out. It holds at once, outside the draft, and "Weer tonen" undoes it. The tree calls it "Verborgen"; a page that was never published stays "Concept". The home page is never hidden. `SetPageVisibility` stores it, `PageState::of($status, $hidden)` gives the word.
 - **Deleting** hides the page from visitors and editors and frees its address. It stays under "Verwijderde pagina’s" for 30 days (`pages.keep_deleted_days`) and comes back with "Terugzetten". The package schedules `made-cms:prune` daily to remove older deleted pages for good, so the host only needs the scheduler (`php artisan schedule:run` every minute).
 
@@ -212,7 +213,7 @@ $team = CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about-
 MovePage::run($team, parentId: null, position: 0); // /team, first in the menu
 ```
 
-`UpdatePage`, `SetPageVisibility`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageVisibilityChanged`, `PageMoved`, `PageDeleted` and `PageRestored`. Read the pages visitors see with `Page::query()->visible()`, the hidden ones with `->hidden()`.
+`UpdatePage`, `SetPageVisibility`, `SetPageShareImage`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageVisibilityChanged`, `PageShareImageChanged`, `PageMoved`, `PageDeleted` and `PageRestored`. Read the pages visitors see with `Page::query()->visible()`, the hidden ones with `->hidden()`.
 
 ### The menu of the site
 
@@ -420,7 +421,7 @@ Choosing a strip shows its fields, built from its strip type, with the values of
 
 ## Page meta
 
-Every page has a title and a description in Google, edited in the card "Hoe Google hem ziet" on its screen in the CMS, and two switches: "Staat in de sitemap" and "Mag Google hem tonen". They hold for the site at once: they are no part of the draft. Print them in the `<head>` of your layout.
+Every page has a title and a description in Google, edited in the card "Hoe Google hem ziet" on its screen in the CMS, and two switches: "Staat in de sitemap" and "Mag Google hem tonen". The card "Hoe je link gedeeld wordt" below it gives the page the image a shared link shows in WhatsApp, LinkedIn or Facebook. They hold for the site at once: they are no part of the draft. Print them in the `<head>` of your layout.
 
 ```blade
 {{-- resources/views/page.blade.php --}}
@@ -434,10 +435,20 @@ Every page has a title and a description in Google, edited in the card "Hoe Goog
 <title>Onze teams · TTV Merwestad Dordrecht</title>
 <meta name="description" content="Van de jeugd tot de eredivisie.">
 <link rel="canonical" href="https://ttvmerwestad.nl/teams">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TTV Merwestad Dordrecht">
+<meta property="og:title" content="Onze teams · TTV Merwestad Dordrecht">
+<meta property="og:description" content="Van de jeugd tot de eredivisie.">
+<meta property="og:url" content="https://ttvmerwestad.nl/teams">
+<meta property="og:image" content="https://ttvmerwestad.nl/storage/media/01jbx3m5zq8w2p4r6t8v0x2z4b/wedstrijdfoto.webp">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Spelers van Merwestad 1 na de winst">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="made-cms:page" content="Onze teams">
 ```
 
-With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a prop (see [Serving pages](#serving-pages)): `{title, description, canonical, indexable}`. Print it with the `<Head>` of Inertia:
+With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a prop (see [Serving pages](#serving-pages)): `{title, description, canonical, indexable, image, site_name}`, with `image` as `{url, width, height, alt}` or `null`. Print it with the `<Head>` of Inertia:
 
 ```tsx
 <Head>
@@ -445,6 +456,16 @@ With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a pr
   {meta.description && <meta name="description" content={meta.description} />}
   {meta.canonical && <link rel="canonical" href={meta.canonical} />}
   {!meta.indexable && <meta name="robots" content="noindex" />}
+  <meta property="og:type" content="website" />
+  {meta.site_name && <meta property="og:site_name" content={meta.site_name} />}
+  <meta property="og:title" content={meta.title} />
+  {meta.description && <meta property="og:description" content={meta.description} />}
+  {meta.canonical && <meta property="og:url" content={meta.canonical} />}
+  {meta.image && <meta property="og:image" content={meta.image.url} />}
+  {meta.image?.width && meta.image?.height && <meta property="og:image:width" content={String(meta.image.width)} />}
+  {meta.image?.width && meta.image?.height && <meta property="og:image:height" content={String(meta.image.height)} />}
+  {meta.image?.alt && <meta property="og:image:alt" content={meta.image.alt} />}
+  <meta name="twitter:card" content={meta.image ? 'summary_large_image' : 'summary'} />
 </Head>
 ```
 
@@ -454,14 +475,43 @@ With Inertia, hand `DescribePageMeta::run($page)->toArray()` to the page as a pr
   <meta v-if="meta.description" name="description" :content="meta.description" />
   <link v-if="meta.canonical" rel="canonical" :href="meta.canonical" />
   <meta v-if="!meta.indexable" name="robots" content="noindex" />
+  <meta property="og:type" content="website" />
+  <meta v-if="meta.site_name" property="og:site_name" :content="meta.site_name" />
+  <meta property="og:title" :content="meta.title" />
+  <meta v-if="meta.description" property="og:description" :content="meta.description" />
+  <meta v-if="meta.canonical" property="og:url" :content="meta.canonical" />
+  <template v-if="meta.image">
+    <meta property="og:image" :content="meta.image.url" />
+    <meta v-if="meta.image.width && meta.image.height" property="og:image:width" :content="String(meta.image.width)" />
+    <meta v-if="meta.image.width && meta.image.height" property="og:image:height" :content="String(meta.image.height)" />
+    <meta v-if="meta.image.alt" property="og:image:alt" :content="meta.image.alt" />
+  </template>
+  <meta name="twitter:card" :content="meta.image ? 'summary_large_image' : 'summary'" />
 </Head>
 ```
+
+The apps that show a shared link (WhatsApp, LinkedIn, Facebook) read the HTML the server sends and run no JavaScript. An Inertia site without server-side rendering prints the tags in its root Blade view instead, from `$page['props']['meta']`, or they never reach those apps.
 
 - A title of its own is the whole title: nothing is added after it. Without one the title is the name of the page and the name of the site (`app.name`), "Onze teams · TTV Merwestad Dordrecht", and for the home page the name of the site alone.
 - Without a description there is no description tag, and Google takes a piece of the page itself.
 - The canonical address is absolute, from `app.url` and never from the Host of the request, so `http://`, `www.` and any other address the site answers on lead Google to the same one. Set `app.url` to the address the site should be found at. Under a route group with a prefix it keeps the prefix (`https://ttvmerwestad.nl/nl/over-ons`); `DescribePageMeta` knows the prefix only for the page the request serves.
 - "Mag Google hem tonen" off writes `<meta name="robots" content="noindex">`: the page stays reachable, but leaves the search results. A page hidden from visitors gets noindex too, whatever that switch says; the switch counts again once the page is shown. The edit mode sends `X-Robots-Tag: noindex, nofollow` on top of that for every page. "Staat in de sitemap" off keeps the page out of the [sitemap](#sitemap-and-robotstxt).
+- A shared link takes the title and the description in Google (`og:title`, `og:description`), so the editor fills in nothing twice, and the canonical address (`og:url`). A page Google may not show gets the tags too: sharing is apart from search.
+- The image of a shared link (`og:image`) is the share image of the page: the photo the site shows (never its thumbnail or its original), at an address absolute from the url of the media disk or `app.url`, with its size and its alt text from the media library. A page without one of its own takes the default image of the site from config (`meta.share_image`); without that a link is shared without an image (`twitter:card` `summary`). A file that is gone, no image or an svg (apps show no svg with a link) gives the default too, never an error. `DescribeShareImage::run($page)` gives where the image comes from (`ShareImageDescription`: the file, why it cannot be shared, the image of its own and the default).
+- The size is the photo as the media library scaled it, without a crop of its own for sharing: apps show 1200 × 630 (1,91 : 1) best and cut another shape in the middle. Crop the photo in the media library to choose what stays; that changes it on every page that uses it. The photos are WebP, which the large apps show; an older reader of links may not.
 - The component also names the page in the edit bar (`<meta name="made-cms:page">`), so the bar keeps the name of the page when its title in Google says something else.
+
+```php
+// config/made-cms-package.php
+'meta' => [
+    'share_image' => [
+        'url' => env('MADE_CMS_SHARE_IMAGE'), // https://… or /images/share.jpg from the root of the site
+        'width' => 1200,
+        'height' => 630,
+        'alt' => 'Het clubhuis van TTV Merwestad',
+    ],
+],
+```
 
 ## Sitemap and robots.txt
 
@@ -930,7 +980,7 @@ It reads each photo from the media disk, skips a photo that has a thumbnail, and
 
 ### Where a file is used
 
-The table `cms_media_usages` holds a row for every place a file is used: a field of a strip in the published version of a page, and in its draft while there is one. A hidden strip counts, an image or a file in an item of a list counts by its own place, and a deleted page keeps its rows while it can be restored. Every change of the strips through the Content Actions (saving, adding, moving, hiding, removing and restoring a strip, publishing, discarding the draft) brings the rows of the page up to date in the same transaction, so the host never writes them.
+The table `cms_media_usages` holds a row for every place a file is used: a field of a strip in the published version of a page, and in its draft while there is one, and a place of the page itself, outside its strips and its draft: its share image (`UsageVersion::Page`, `PagePlace::ShareImage`, without a strip). A hidden strip counts, an image or a file in an item of a list counts by its own place, and a deleted page keeps its rows while it can be restored. Every change of the strips through the Content Actions (saving, adding, moving, hiding, removing and restoring a strip, publishing, discarding the draft) and of the share image (`SetPageShareImage`) brings the rows of the page up to date in the same transaction, so the host never writes them.
 
 ```php
 use Made\CmsPackage\Content\Actions\ListMediaPlaces;
@@ -943,12 +993,12 @@ $places = ListMediaPlaces::run($media);         // load a list with Media::query
 
 $places->pageCount();                           // "Gebruikt op 2 pagina's"
 $places->places[0]->pageTitle;                  // "Onze teams"
-$places->places[0]->where;                      // "Hero › Achtergrondfoto", or "Fotorij › Foto 3 › Afbeelding" in a list
+$places->places[0]->where;                      // "Hero › Achtergrondfoto", "Fotorij › Foto 3 › Afbeelding" in a list, or "Deelafbeelding"
 ```
 
-`where` comes from the labels of the strip type and its fields (an item of a list by its `itemLabel()` and number); when the type left the catalogue or no longer has the field it is the keys, `hero › foto`. A place has the page, the strip, the path of the field (`fotos.2.afbeelding`), the versions it is in (`$place->in(UsageVersion::Published)`) and whether its page is deleted. A file that is used cannot be deleted: the foreign key of the table refuses it.
+`where` comes from the labels of the strip type and its fields (an item of a list by its `itemLabel()` and number); when the type left the catalogue or no longer has the field it is the keys, `hero › foto`. The share image of a page is named "Deelafbeelding" and comes before the places of its strips. A place has the page, the strip, the path of the field (`fotos.2.afbeelding`), the versions it is in (`$place->in(UsageVersion::Published)`, `$place->ofPage()` for the share image), whether its page is deleted and whether visitors get the file there now (`$place->shownOnSite()`). A file that is used cannot be deleted: the foreign key of the table refuses it.
 
-Content written without the Actions (a seeder with the page factory, an import) has no rows yet. Build them from the strips of every page with:
+Content written without the Actions (a seeder with the page factory, an import) has no rows yet. Build them from the strips and the share image of every page with:
 
 ```bash
 php artisan made-cms:media-usage

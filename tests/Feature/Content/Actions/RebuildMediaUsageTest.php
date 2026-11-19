@@ -65,6 +65,20 @@ it('fills the usage of content written without the Actions, such as a seeder or 
     expect(allUsageRows())->toBe(["{$a->id} {$page->id} published h hero foto"]);
 });
 
+it('gives the share image of a page its place, also of a page in the bin', function (): void {
+    [$a, $b] = Media::factory()->count(2)->create()->all();
+    $page = Page::factory()->withShareImage($a)->create();
+    $deleted = Page::factory()->withShareImage($b)->create();
+    $deleted->delete();
+
+    RebuildMediaUsage::run();
+
+    expect(allUsageRows())->toBe(collect([
+        "{$a->id} {$page->id} page   share_image",
+        "{$b->id} {$deleted->id} page   share_image",
+    ])->sort()->values()->all());
+});
+
 it('drops rows the strips no longer hold and keeps those of a strip whose type left the catalogue', function (): void {
     $a = Media::factory()->create();
     $page = Page::factory()->withStrips([storedStrip('oud', ['beeld' => $a->id], id: 'o')])->create();

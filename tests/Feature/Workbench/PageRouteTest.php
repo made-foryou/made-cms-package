@@ -97,6 +97,14 @@ it('renders the downloads of the workbench as links to the lasting link of each 
         ->assertDontSeeText('Weg');
 });
 
+it('serves a hidden page of the workbench at its address', function (): void {
+    Page::factory()->published()->hidden()->at('/privacy')->withStrips([storedStrip('hero', ['kop' => 'Je gegevens'])])->create(['title' => 'Privacy']);
+
+    $this->get('privacy')
+        ->assertOk()
+        ->assertSeeText('Je gegevens');
+});
+
 it('answers 404 for a draft page of the workbench', function (): void {
     Page::factory()->at('/concept')->create();
 

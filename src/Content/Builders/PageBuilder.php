@@ -26,6 +26,22 @@ final class PageBuilder extends Builder
     }
 
     /**
+     * The pages visitors see: in the menu, the sitemap and Google as far as their other switches go.
+     */
+    public function visible(): self
+    {
+        return $this->where('hidden', false);
+    }
+
+    /**
+     * The pages hidden from visitors: their address still reaches them, but nothing lists them.
+     */
+    public function hidden(): self
+    {
+        return $this->where('hidden', true);
+    }
+
+    /**
      * The page whose address is the given path.
      */
     public function atPath(PagePath $path): self

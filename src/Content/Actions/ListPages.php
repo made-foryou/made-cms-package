@@ -42,6 +42,7 @@ final class ListPages
             path: $page->route === null ? null : PagePath::fromString($page->route->path),
             status: $page->status,
             inMenu: $page->in_menu,
+            hidden: $page->hidden,
             position: $page->position,
             parentId: $page->parent_id,
             depth: $depth,

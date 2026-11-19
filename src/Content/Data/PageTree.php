@@ -78,6 +78,14 @@ final readonly class PageTree
     }
 
     /**
+     * Only the pages visitors see; a hidden page takes the pages under it along, as the menu has no place for them.
+     */
+    public function visible(): self
+    {
+        return new self(self::filter($this->roots, static fn (PageNode $node): bool => ! $node->hidden));
+    }
+
+    /**
      * @return list<PageNodeArray>
      */
     public function toArray(): array

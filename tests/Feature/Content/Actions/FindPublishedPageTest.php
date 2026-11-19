@@ -19,6 +19,12 @@ it('finds the published home page at the root', function (): void {
     expect(FindPublishedPage::run(PagePath::fromString(''))?->is($home))->toBeTrue();
 });
 
+it('finds a hidden page, because its address still reaches it', function (): void {
+    $privacy = Page::factory()->published()->hidden()->at('/privacy')->create();
+
+    expect(FindPublishedPage::run(PagePath::fromString('/privacy'))?->is($privacy))->toBeTrue();
+});
+
 it('finds nothing at a path without a page', function (): void {
     Page::factory()->published()->at('/over-ons')->create();
 

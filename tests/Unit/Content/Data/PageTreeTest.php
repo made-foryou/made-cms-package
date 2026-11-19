@@ -11,7 +11,7 @@ use Made\CmsPackage\Content\Enums\PageStatus;
 /**
  * @param  list<PageNode>  $children
  */
-function pageNode(int $id, string $path, array $children = [], bool $inMenu = true, ?int $parentId = null, int $depth = 0, PageStatus $status = PageStatus::Draft): PageNode
+function pageNode(int $id, string $path, array $children = [], bool $inMenu = true, ?int $parentId = null, int $depth = 0, PageStatus $status = PageStatus::Draft, bool $hidden = false): PageNode
 {
     return new PageNode(
         id: $id,
@@ -20,6 +20,7 @@ function pageNode(int $id, string $path, array $children = [], bool $inMenu = tr
         path: PagePath::fromString($path),
         status: $status,
         inMenu: $inMenu,
+        hidden: $hidden,
         position: 0,
         parentId: $parentId,
         depth: $depth,
@@ -59,7 +60,7 @@ it('keeps the tree when the page is not in it', function (): void {
     expect(array_map(fn (PageNode $node): int => $node->id, sampleTree()->without(99)->flatten()))->toBe([1, 2, 3, 4, 5, 6, 7]);
 });
 
-it('keeps only the pages in the menu and drops the subtree of a hidden page', function (): void {
+it('keeps only the pages in the menu and drops the subtree of a page outside the menu', function (): void {
     expect(array_map(fn (PageNode $node): int => $node->id, sampleTree()->inMenu()->flatten()))->toBe([1, 2, 3, 4]);
 });
 
@@ -76,6 +77,20 @@ it('keeps only the published pages and drops the subtree of a draft, in menu ord
     ]);
 
     expect(array_map(fn (PageNode $node): int => $node->id, $tree->published()->flatten()))->toBe([1, 2, 5, 8]);
+});
+
+it('keeps only the pages visitors see and drops the subtree of a hidden page, in menu order', function (): void {
+    $tree = new PageTree([
+        pageNode(1, '/'),
+        pageNode(2, '/over-ons', [
+            pageNode(3, '/over-ons/team', [pageNode(4, '/over-ons/team/jeugd', parentId: 3, depth: 2)], parentId: 2, depth: 1, hidden: true),
+            pageNode(5, '/over-ons/geschiedenis', parentId: 2, depth: 1),
+        ]),
+        pageNode(6, '/privacy', [pageNode(7, '/privacy/cookies', parentId: 6, depth: 1)], hidden: true),
+        pageNode(8, '/contact'),
+    ]);
+
+    expect(array_map(fn (PageNode $node): int => $node->id, $tree->visible()->flatten()))->toBe([1, 2, 5, 8]);
 });
 
 it('keeps the published pages in the menu when both filters are combined', function (): void {
@@ -105,6 +120,7 @@ it('turns into arrays with nested children', function (): void {
         'path' => '/over-ons',
         'status' => 'draft',
         'in_menu' => true,
+        'hidden' => false,
         'position' => 0,
         'parent_id' => null,
         'depth' => 0,

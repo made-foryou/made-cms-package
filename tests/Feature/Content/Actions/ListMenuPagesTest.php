@@ -46,6 +46,16 @@ it('leaves out a page outside the menu and the pages under it', function (): voi
     expect(menuIds(ListMenuPages::run()))->toBe([$home->id]);
 });
 
+it('leaves out a hidden page and the pages under it, whatever its menu switch says', function (): void {
+    $home = Page::factory()->published()->atPosition(0)->at('/')->create();
+    $privacy = Page::factory()->published()->hidden()->atPosition(1)->at('/privacy')->create();
+    Page::factory()->published()->under($privacy)->at('/privacy/cookies')->create();
+    $contact = Page::factory()->published()->atPosition(2)->at('/contact')->create();
+
+    expect($privacy->in_menu)->toBeTrue()
+        ->and(menuIds(ListMenuPages::run()))->toBe([$home->id, $contact->id]);
+});
+
 it('leaves out a deleted page', function (): void {
     $home = Page::factory()->published()->atPosition(0)->at('/')->create();
     Page::factory()->published()->trashed()->atPosition(1)->create();

@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\Middleware\ValidatePathEncoding;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\RenderStrips;
@@ -129,6 +132,35 @@ it('answers 404 in the edit mode for an address without a page', function (): vo
         ->get('bestaat-niet?made-cms=edit')
         ->assertNotFound();
 });
+
+it('answers 404 without looking up a page for an address with a control character or that is no UTF-8', function (string $path, bool $editing): void {
+    Page::factory()->published()->at('/overons')->create();
+
+    if ($editing) {
+        $this->actingAs(Editor::factory()->create(), 'made-cms');
+    }
+
+    // Laravel answers a path that is no UTF-8 with 400 before any route (since 12.x); without it the page refuses it itself.
+    $this->withoutMiddleware(ValidatePathEncoding::class);
+
+    $lookups = [];
+    DB::listen(static function (QueryExecuted $query) use (&$lookups): void {
+        if (str_contains($query->sql, 'cms_pages') || str_contains($query->sql, 'cms_routes')) {
+            $lookups[] = $query->sql;
+        }
+    });
+
+    $this->get($path.($editing ? '?made-cms=edit' : ''))->assertNotFound();
+
+    expect($lookups)->toBe([]);
+})->with([
+    'nul byte' => 'over%00ons',
+    'tab' => 'over%09ons',
+    'no utf-8' => 'over%FFons',
+])->with([
+    'visitor' => false,
+    'editor in the edit mode' => true,
+]);
 
 it('sends the edit mode with no-store, sameorigin and noindex headers', function (): void {
     Page::factory()->at('/concept')->create();

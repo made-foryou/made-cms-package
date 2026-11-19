@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Events\PageRestored;
 use Made\CmsPackage\Content\Exceptions\PageNotDeleted;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
@@ -24,6 +26,7 @@ final class RestorePage
      *
      * @throws PageNotDeleted
      * @throws ParentPageDeleted
+     * @throws PagePathTooLong
      * @throws PagePathTaken
      */
     public function handle(Page $page): Page
@@ -40,17 +43,32 @@ final class RestorePage
 
         $path = PagePath::fromString((string) $parent?->route?->path)->child($page->slug);
 
-        if (Route::query()->atPath($path)->exists()) {
-            throw PagePathTaken::at($path);
+        if (! $path->fits()) {
+            throw PagePathTooLong::at($path);
         }
 
-        DB::transaction(function () use ($page, $parent, $path): void {
-            $last = Page::query()->childrenOf($parent)->max('position');
+        try {
+            DB::transaction(function () use ($page, $parent, $path): void {
+                // Another request may have restored it since it was read: the row lock makes the second one wait.
+                if (! Page::query()->withTrashed()->whereKey($page->id)->lockForUpdate()->firstOrFail()->trashed()) {
+                    throw PageNotDeleted::for($page);
+                }
 
-            $page->position = is_numeric($last) ? (int) $last + 1 : 0;
-            $page->restore();
-            $page->route()->create(['path' => $path->value]);
-        });
+                if (Route::query()->atPath($path)->exists()) {
+                    throw PagePathTaken::at($path);
+                }
+
+                $last = Page::query()->childrenOf($parent)->max('position');
+
+                $page->position = is_numeric($last) ? (int) $last + 1 : 0;
+                $page->restore();
+                $page->route()->create(['path' => $path->value]);
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Another request stored a page at the address after the check: the unique index of cms_routes is the
+            // last guard, and the only one this transaction writes. Caught outside it, so it has been rolled back.
+            throw PagePathTaken::at($path);
+        }
 
         PageRestored::dispatch($page->load('route'), $path);
 

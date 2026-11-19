@@ -35,6 +35,7 @@ use Made\CmsPackage\Content\Data\ScanType;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Models\Route as PageRoute;
 use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Scan\StripTypeSource;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -127,6 +128,33 @@ function quoted(string $identifier): string
 function missingId(): int
 {
     return 2_000_000_000;
+}
+
+/**
+ * Lets another request take an address at the same moment: right before this request writes the address of a page
+ * (a route it creates or updates), a row appears at that address, after any check that it was free. It happens once.
+ */
+function claimAddressFirst(): void
+{
+    $claimed = false;
+
+    $claim = static function (PageRoute $route) use (&$claimed): void {
+        if ($claimed) {
+            return;
+        }
+
+        $claimed = true;
+        DB::table('cms_routes')->insert([
+            'path' => $route->path,
+            'routable_type' => 'cms_page',
+            'routable_id' => missingId(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    };
+
+    PageRoute::creating($claim);
+    PageRoute::updating($claim);
 }
 
 /*

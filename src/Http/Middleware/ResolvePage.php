@@ -16,6 +16,7 @@ use Made\CmsPackage\Content\Actions\FindPublishedPage;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\ServedAddress;
+use Made\CmsPackage\Content\Exceptions\InvalidPagePath;
 use Made\CmsPackage\Http\Launcher\Visitor;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -26,7 +27,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * A GET or HEAD for another form of the address of a page ("/Over-Ons", "/over-ons/", "//over-ons") gets a 301 to the
  * canonical address, through this route so the prefix of its group stays, with the query string. An address without
- * a page stays a 404.
+ * a page stays a 404, and so does an address with a control character or that is no UTF-8, without a lookup.
  *
  * With `?made-cms=edit` an editor who opens the pages screen gets the edit mode, for the frame of the CMS: the page
  * whatever its status, its working copy through RenderStrips, and a response that is never stored, may be framed by
@@ -61,13 +62,18 @@ final class ResolvePage
             abort(404);
         }
 
+        try {
+            $path = PagePath::fromString($path);
+        } catch (InvalidPagePath) {
+            abort(404);
+        }
+
         $editing = $this->editing($request);
 
         if ($editing) {
             app()->instance(EditMode::class, EditMode::on());
         }
 
-        $path = PagePath::fromString($path);
         $page = ($editing ? FindPage::run($path) : FindPublishedPage::run($path)) ?? abort(404);
 
         $canonical = $this->canonicalPath($route, $path);

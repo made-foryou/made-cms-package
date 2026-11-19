@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\DeletePage;
+use Made\CmsPackage\Content\Actions\MovePage;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -40,4 +41,17 @@ it('refuses a page whose parent is deleted and says why', function (): void {
 
 it('answers 404 for a page that does not exist', function (): void {
     $this->post('made-cms/pages/'.missingId().'/restore')->assertNotFound();
+});
+
+it('refuses a page whose address got longer than 255 characters and says why', function (): void {
+    $above = Page::factory()->atPosition(0)->at('/'.str_repeat('b', 120))->create(['slug' => str_repeat('b', 120)]);
+    $parent = Page::factory()->atPosition(1)->at('/'.str_repeat('a', 120))->create(['slug' => str_repeat('a', 120)]);
+    $page = Page::factory()->under($parent)->at('/'.str_repeat('a', 120).'/'.str_repeat('d', 13))->create(['slug' => str_repeat('d', 13)]);
+    DeletePage::run($page);
+    MovePage::run($parent, $above->id);
+
+    $this->from('/made-cms/pages')
+        ->post('made-cms/pages/'.$page->id.'/restore')
+        ->assertRedirect('/made-cms/pages')
+        ->assertSessionHasErrors(['restore' => 'Op zijn oude plek wordt het adres langer dan 255 tekens. Geef de pagina erboven eerst een korter adres.']);
 });

@@ -54,6 +54,29 @@ it('refuses an address another page has', function (): void {
         ->assertSessionHasErrors(['slug' => 'Dat adres heeft al een andere pagina.']);
 });
 
+it('refuses an address that gets longer than 120 characters once it is made', function (): void {
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+
+    $this->from('/made-cms/pages/'.$page->id)
+        ->put('made-cms/pages/'.$page->id, ['title' => 'Over ons', 'slug' => str_repeat('щ', 50), 'parent_id' => '', 'in_menu' => '1'])
+        ->assertSessionHasErrors(['slug' => 'Houd het adres op hooguit 120 tekens. Een letter als ß of щ telt daarin als meer tekens.']);
+
+    expect($page->refresh()->slug)->toBe('over-ons')
+        ->and($page->route?->path)->toBe('/over-ons');
+});
+
+it('refuses an address that makes the address of a page under it longer than 255 characters', function (): void {
+    $page = Page::factory()->at('/'.str_repeat('p', 10))->create(['title' => 'Pagina', 'slug' => str_repeat('p', 10)]);
+    $child = Page::factory()->under($page)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+    Page::factory()->under($child)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120))->create(['slug' => str_repeat('g', 120)]);
+
+    $this->from('/made-cms/pages/'.$page->id)
+        ->put('made-cms/pages/'.$page->id, ['title' => 'Pagina', 'slug' => str_repeat('p', 13), 'parent_id' => '', 'in_menu' => '1'])
+        ->assertSessionHasErrors(['slug' => 'Het hele adres wordt dan langer dan 255 tekens, bij deze pagina of een pagina eronder. Kies een korter adres.']);
+
+    expect($page->refresh()->route?->path)->toBe('/'.str_repeat('p', 10));
+});
+
 it('keeps the address of the home page when the form has no address', function (): void {
     $home = Page::factory()->at('/')->create(['title' => 'Home', 'slug' => 'home']);
 

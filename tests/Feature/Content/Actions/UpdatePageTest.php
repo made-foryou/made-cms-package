@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
@@ -12,6 +13,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Models\Page;
 
 it('changes the title and the menu flag without touching the address', function (): void {
@@ -190,4 +192,59 @@ it('changes nothing of the home page when it is asked to hide it', function (): 
         ->toThrow(HomePageProtected::class);
     expect($home->refresh()->title)->toBe('Home')
         ->and($home->hidden)->toBeFalse();
+});
+
+it('refuses a slug that makes the address of a page under it too long and changes nothing', function (): void {
+    Event::fake([PageUpdated::class]);
+    $page = Page::factory()->at('/'.str_repeat('p', 10))->create(['title' => 'Pagina', 'slug' => str_repeat('p', 10)]);
+    $child = Page::factory()->under($page)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+    $grandchild = Page::factory()->under($child)->at('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120))->create(['slug' => str_repeat('g', 120)]);
+
+    // The grandchild is 253 characters now; a slug of 13 makes it 256.
+    expect(fn (): Page => UpdatePage::run($page, new PageChanges(title: 'Langer', slug: str_repeat('p', 13), parentId: null, inMenu: true)))
+        ->toThrow(PagePathTooLong::class);
+
+    $stored = Page::query()->with('route')->findOrFail($page->id);
+
+    expect($stored->title)->toBe('Pagina')
+        ->and($stored->slug)->toBe(str_repeat('p', 10))
+        ->and($stored->route?->path)->toBe('/'.str_repeat('p', 10))
+        ->and($child->refresh()->route?->path)->toBe('/'.str_repeat('p', 10).'/'.str_repeat('c', 120))
+        ->and($grandchild->refresh()->route?->path)->toBe('/'.str_repeat('p', 10).'/'.str_repeat('c', 120).'/'.str_repeat('g', 120));
+    Event::assertNotDispatched(PageUpdated::class);
+});
+
+it('refuses an address another request stores at the same moment, as a taken address', function (): void {
+    Event::fake([PageUpdated::class]);
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+    claimAddressFirst();
+
+    expect(fn (): Page => UpdatePage::run($page, new PageChanges(title: 'Vereniging', slug: 'vereniging', parentId: null, inMenu: true)))
+        ->toThrow(PagePathTaken::class, 'There is already a page at [/vereniging].');
+
+    $stored = Page::query()->with('route')->findOrFail($page->id);
+
+    expect($stored->title)->toBe('Over ons')
+        ->and($stored->route?->path)->toBe('/over-ons');
+    Event::assertNotDispatched(PageUpdated::class);
+});
+
+it('refuses a parent that went under the page at the same moment', function (): void {
+    Event::fake([PageUpdated::class]);
+    $a = Page::factory()->atPosition(0)->at('/a')->create(['title' => 'A', 'slug' => 'a']);
+    $b = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b']);
+    // Another request hangs B under A after this one found B, and commits before this one starts writing.
+    $competing = true;
+    DB::connection()->beforeStartingTransaction(static function () use (&$competing, $a, $b): void {
+        if ($competing) {
+            $competing = false;
+            DB::table('cms_pages')->where('id', $b->id)->update(['parent_id' => $a->id]);
+        }
+    });
+
+    expect(fn (): Page => UpdatePage::run($a, new PageChanges(title: 'A', slug: 'a', parentId: $b->id, inMenu: true)))
+        ->toThrow(CircularPageMove::class);
+
+    expect(Page::query()->findOrFail($a->id)->parent_id)->toBeNull();
+    Event::assertNotDispatched(PageUpdated::class);
 });

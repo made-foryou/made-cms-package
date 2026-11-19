@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\MovePage;
 use Made\CmsPackage\Content\Events\PageMoved;
@@ -10,6 +10,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPagePosition;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
@@ -212,16 +213,106 @@ it('dispatches an event with the same address for a new place among the siblings
     Event::assertDispatched(PageMoved::class, fn (PageMoved $event): bool => $event->from->value === '/b' && $event->to->value === '/b');
 });
 
-it('leaves every address as it was when rewriting fails', function (): void {
+it('refuses as a taken address when a page under it would land on an address made by hand, and leaves every address as it was', function (): void {
     $about = Page::factory()->atPosition(0)->at('/over-ons')->create(['slug' => 'over-ons']);
     $team = Page::factory()->under($about)->at('/over-ons/team')->create(['slug' => 'team']);
     $youth = Page::factory()->under($team)->at('/over-ons/team/jeugd')->create(['slug' => 'jeugd']);
     // An address made by hand, outside the tree, where the page under the moving page would go.
     Page::factory()->atPosition(1)->at('/team/jeugd')->create(['slug' => 'los']);
 
-    expect(fn (): Page => MovePage::run($team, null))->toThrow(QueryException::class);
+    expect(fn (): Page => MovePage::run($team, null))->toThrow(PagePathTaken::class);
 
     expect($team->refresh()->parent_id)->toBe($about->id)
         ->and(Route::query()->where('routable_id', $team->id)->value('path'))->toBe('/over-ons/team')
         ->and($youth->refresh()->route?->path)->toBe('/over-ons/team/jeugd');
+});
+
+/**
+ * A page "/m" with a page under it of 123 characters, and a parent of 121 + 1 + $length characters to move it under.
+ *
+ * @return array{Page, Page, Page}
+ */
+function deepMove(int $length): array
+{
+    $deep = Page::factory()->atPosition(0)->at('/'.str_repeat('t', 120))->create(['slug' => str_repeat('t', 120)]);
+    $parent = Page::factory()->under($deep)->at('/'.str_repeat('t', 120).'/'.str_repeat('u', $length))->create(['slug' => str_repeat('u', $length)]);
+    $page = Page::factory()->atPosition(1)->at('/m')->create(['slug' => 'm']);
+    $child = Page::factory()->under($page)->at('/m/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+
+    return [$parent, $page, $child];
+}
+
+it('moves a page where the address of a page under it gets the longest length', function (): void {
+    [$parent, $page, $child] = deepMove(10);
+
+    MovePage::run($page, $parent->id);
+
+    expect(mb_strlen((string) $child->refresh()->route?->path))->toBe(255);
+});
+
+it('refuses a place where the address of a page under it gets too long and moves nothing', function (): void {
+    Event::fake([PageMoved::class]);
+    [$parent, $page, $child] = deepMove(11);
+
+    expect(fn (): Page => MovePage::run($page, $parent->id))->toThrow(PagePathTooLong::class);
+
+    $stored = Page::query()->with('route')->findOrFail($page->id);
+
+    expect($stored->parent_id)->toBeNull()
+        ->and($stored->position)->toBe(1)
+        ->and($stored->route?->path)->toBe('/m')
+        ->and($child->refresh()->route?->path)->toBe('/m/'.str_repeat('c', 120));
+    Event::assertNotDispatched(PageMoved::class);
+});
+
+it('refuses an address another request stores at the same moment, as a taken address', function (): void {
+    Event::fake([PageMoved::class]);
+    $about = Page::factory()->atPosition(0)->at('/over-ons')->create(['slug' => 'over-ons']);
+    $team = Page::factory()->atPosition(1)->at('/team')->create(['slug' => 'team']);
+    claimAddressFirst();
+
+    expect(fn (): Page => MovePage::run($team, $about->id))
+        ->toThrow(PagePathTaken::class, 'There is already a page at [/over-ons/team].');
+
+    $stored = Page::query()->with('route')->findOrFail($team->id);
+
+    expect($stored->parent_id)->toBeNull()
+        ->and($stored->position)->toBe(1)
+        ->and($stored->route?->path)->toBe('/team');
+    Event::assertNotDispatched(PageMoved::class);
+});
+
+it('refuses a parent that went under the page at the same moment', function (): void {
+    Event::fake([PageMoved::class]);
+    $a = Page::factory()->atPosition(0)->at('/a')->create(['slug' => 'a']);
+    $b = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b']);
+    // Another request hangs B under A after this one found B, and commits before this one starts writing.
+    $competing = true;
+    DB::connection()->beforeStartingTransaction(static function () use (&$competing, $a, $b): void {
+        if ($competing) {
+            $competing = false;
+            DB::table('cms_pages')->where('id', $b->id)->update(['parent_id' => $a->id]);
+        }
+    });
+
+    expect(fn (): Page => MovePage::run($a, $b->id))->toThrow(CircularPageMove::class);
+
+    expect(Page::query()->findOrFail($a->id)->parent_id)->toBeNull();
+    Event::assertNotDispatched(PageMoved::class);
+});
+
+it('refuses a parent deleted at the same moment', function (): void {
+    $a = Page::factory()->atPosition(0)->at('/a')->create(['slug' => 'a']);
+    $b = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b']);
+    $competing = true;
+    DB::connection()->beforeStartingTransaction(static function () use (&$competing, $b): void {
+        if ($competing) {
+            $competing = false;
+            DB::table('cms_pages')->where('id', $b->id)->update(['deleted_at' => now()]);
+        }
+    });
+
+    expect(fn (): Page => MovePage::run($a, $b->id))->toThrow(ParentPageDeleted::class);
+
+    expect(Page::query()->findOrFail($a->id)->parent_id)->toBeNull();
 });

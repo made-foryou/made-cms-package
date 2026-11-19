@@ -9,6 +9,7 @@ use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPagePosition;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
 use Made\CmsPackage\Content\Models\Page;
@@ -34,6 +35,8 @@ final class MovePageController
             $request->reject('position', 'position_invalid');
         } catch (PagePathTaken) {
             $request->reject('parent_id', 'move_path_taken');
+        } catch (PagePathTooLong) {
+            $request->reject('parent_id', 'move_path_long');
         }
 
         return PageTreeResponse::moved();

@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Made\CmsPackage\Content\Actions\RestorePage;
 use Made\CmsPackage\Content\Exceptions\PageNotDeleted;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
+use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Requests\Content\RestorePageRequest;
@@ -26,6 +27,8 @@ final class RestorePageController
             $request->reject('restore', 'parent_deleted');
         } catch (PagePathTaken) {
             $request->reject('restore', 'restore_path_taken');
+        } catch (PagePathTooLong) {
+            $request->reject('restore', 'restore_path_long');
         } catch (PageNotDeleted) {
             $request->reject('restore', 'not_deleted');
         }

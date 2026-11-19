@@ -60,6 +60,25 @@ it('refuses a slug that leaves nothing', function (): void {
         ->assertSessionHasErrors(['slug' => 'Een adres bestaat uit kleine letters, cijfers en streepjes, zoals over-ons.']);
 });
 
+it('refuses an address that gets longer than 120 characters once it is made', function (array $typed): void {
+    $this->from('/made-cms/pages/new')->post('made-cms/pages', [...$typed, 'in_menu' => '1'])
+        ->assertSessionHasErrors(['slug' => 'Houd het adres op hooguit 120 tekens. Een letter als ß of щ telt daarin als meer tekens.']);
+
+    expect(Page::query()->count())->toBe(0);
+})->with([
+    'from the name' => [['title' => str_repeat('щ', 120), 'slug' => '']],
+    'typed' => [['title' => 'Jeugd', 'slug' => str_repeat('щ', 50)]],
+]);
+
+it('refuses an address longer than 255 characters', function (): void {
+    $parent = Page::factory()->at('/'.str_repeat('a', 120).'/'.str_repeat('b', 120))->create(['slug' => str_repeat('b', 120)]);
+
+    $this->from('/made-cms/pages/new')->post('made-cms/pages', ['title' => str_repeat('c', 13), 'parent_id' => (string) $parent->id, 'in_menu' => '1'])
+        ->assertSessionHasErrors(['slug' => 'Het hele adres wordt dan langer dan 255 tekens, bij deze pagina of een pagina eronder. Kies een korter adres.']);
+
+    expect(Page::query()->count())->toBe(1);
+});
+
 it('refuses a parent that does not exist', function (): void {
     $this->from('/made-cms/pages/new')->post('made-cms/pages', ['title' => 'Jeugd', 'parent_id' => (string) missingId()])
         ->assertSessionHasErrors('parent_id');

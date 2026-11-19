@@ -77,6 +77,14 @@ it('refuses a move it cannot make, keyed by the field that holds the cause', fun
 
         return [$team, ['parent_id' => $about->id, 'position' => 0]];
     }, 'parent_id', 'Daar krijgt hij het adres van een andere pagina. Geef een van beide eerst een ander adres.'],
+    'an address longer than 255 characters' => [function (): array {
+        $deep = Page::factory()->at('/'.str_repeat('t', 120))->create(['slug' => str_repeat('t', 120)]);
+        $parent = Page::factory()->under($deep)->at('/'.str_repeat('t', 120).'/'.str_repeat('u', 11))->create(['slug' => str_repeat('u', 11)]);
+        $page = Page::factory()->at('/m')->create(['slug' => 'm']);
+        Page::factory()->under($page)->at('/m/'.str_repeat('c', 120))->create(['slug' => str_repeat('c', 120)]);
+
+        return [$page, ['parent_id' => $parent->id, 'position' => 0]];
+    }, 'parent_id', 'Daar wordt het adres van deze pagina of een pagina eronder langer dan 255 tekens. Kies een plek hoger in de boom.'],
 ]);
 
 it('refuses a place that is no place', function (mixed $position): void {

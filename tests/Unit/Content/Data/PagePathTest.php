@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Data\PagePath;
+use Made\CmsPackage\Content\Exceptions\InvalidPagePath;
 
 it('normalises an address to lowercase with one leading slash and no trailing slash', function (string $raw, string $expected): void {
     expect(PagePath::fromString($raw)->value)->toBe($expected);
@@ -19,6 +20,17 @@ it('normalises an address to lowercase with one leading slash and no trailing sl
     'uppercase with accents' => ['/CAFÉ', '/café'],
 ]);
 
+it('refuses an address with a control character or that is no UTF-8', function (string $raw): void {
+    expect(fn (): PagePath => PagePath::fromString($raw))->toThrow(InvalidPagePath::class);
+})->with([
+    'nul byte' => ["/over\0ons"],
+    'nul byte at the end' => ["/over-ons\0"],
+    'tab' => ["/over\tons"],
+    'line break' => ["/over\nons"],
+    'delete' => ["/over\x7Fons"],
+    'no utf-8' => ["/over\xFFons"],
+]);
+
 it('knows the home address', function (): void {
     expect(PagePath::fromString('')->isHome())->toBeTrue()
         ->and(PagePath::fromString('/over-ons')->isHome())->toBeFalse();
@@ -31,4 +43,11 @@ it('gives the address of a child', function (string $parent, string $slug, strin
     'nested' => ['/over-ons', 'team', '/over-ons/team'],
     'uppercase' => ['/over-ons', 'TEAM', '/over-ons/team'],
     'with slashes' => ['/over-ons', '/team/', '/over-ons/team'],
+]);
+
+it('fits an address of at most 255 characters', function (int $length, bool $fits): void {
+    expect(PagePath::fromString('/'.str_repeat('é', $length - 1))->fits())->toBe($fits);
+})->with([
+    'the longest' => [255, true],
+    'one more' => [256, false],
 ]);

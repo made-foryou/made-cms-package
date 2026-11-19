@@ -99,7 +99,8 @@ layout and why, what was invented because the design did not say (copy, alt text
 - Never hand `$page->strips` to a view; render through `RenderStrips` (`<x-made-cms::strips :page="$page" />` in Blade).
 - Never create pages with `$page->route()->create()` or store a path on a content table when an Action exists
   (`CreatePage`, `MovePage`); see the seeding reference for the one open exception.
-- Never store a url or path for an image in a strip; store the id of a media file (`Image`).
+- Never store a url or path for an image, a document or a video in a strip; store the id of a media file (`Image`,
+  `File`).
 - Never put colours, paddings or font sizes in fields. A handful of named design variants as a `Choice` is fine.
 - Never leave out `data-cms-strip`, and never print `Text`, `LongText` or `Heading` values unescaped; only `RichText`
   is cleaned HTML.

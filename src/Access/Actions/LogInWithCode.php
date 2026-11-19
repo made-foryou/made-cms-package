@@ -57,7 +57,7 @@ final class LogInWithCode
             throw LoginCodeRejected::for($login->email);
         }
 
-        $editor = Editor::query()->forEmail($loginCode->email)->first();
+        $editor = Editor::query()->firstWithEmail($loginCode->email);
 
         // Consuming atomically too, so the same code can never log in twice.
         if ($editor === null || LoginCode::query()->whereKey($loginCode->id)->active()->update(['consumed_at' => now()]) === 0) {

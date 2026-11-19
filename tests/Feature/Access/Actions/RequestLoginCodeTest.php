@@ -31,6 +31,15 @@ it('silently issues nothing for an address without an account', function (): voi
     Event::assertNotDispatched(LoginCodeIssued::class);
 });
 
+it('issues nothing for an address that differs from an editor\'s only in an accent', function (): void {
+    Editor::factory()->create(['email' => 'jose@example.com']);
+
+    RequestLoginCode::run(new LoginCodeRequest(email: 'jose@exämple.com', binding: 'binding', returnTo: null));
+
+    expect(LoginCode::query()->count())->toBe(0);
+    Event::assertNotDispatched(LoginCodeIssued::class);
+});
+
 it('takes at least the same time for known and unknown addresses', function (): void {
     RequestLoginCode::run(new LoginCodeRequest(email: 'iemand@example.com', binding: 'binding', returnTo: null));
 

@@ -26,7 +26,7 @@ final class RequestLoginCode
     public function handle(LoginCodeRequest $request): void
     {
         $this->timebox->call(function () use ($request): void {
-            if (Editor::query()->forEmail($request->email)->exists()) {
+            if (Editor::query()->firstWithEmail($request->email) !== null) {
                 IssueLoginCode::run($request);
             }
         }, self::MINIMUM_MICROSECONDS);

@@ -34,7 +34,7 @@ final class LogInWithLink
             throw LoginLinkRejected::otherBrowser();
         }
 
-        $editor = Editor::query()->forEmail($loginCode->email)->first();
+        $editor = Editor::query()->firstWithEmail($loginCode->email);
 
         if ($editor === null || LoginCode::query()->whereKey($loginCode->id)->active()->update(['consumed_at' => now()]) === 0) {
             throw LoginLinkRejected::expired();

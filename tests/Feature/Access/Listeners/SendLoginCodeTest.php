@@ -134,6 +134,20 @@ it('greets without a name and leaves out what it does not know', function (): vo
     });
 });
 
+it('never greets with the name of an editor whose address differs from the typed one only in an accent', function (): void {
+    Editor::factory()->create(['email' => 'jose@example.com', 'name' => 'Jose Bakker']);
+
+    IssueLoginCode::run(new LoginCodeRequest(email: 'jose@exämple.com', binding: 'binding', returnTo: null));
+    app()->terminate();
+
+    Notification::assertSentOnDemand(LoginCodeNotification::class, function (LoginCodeNotification $notification): bool {
+        expect((string) $notification->toMail(new AnonymousNotifiable)->render())->toContain('Hoi, hier is je inlogcode.')
+            ->not->toContain('Jose');
+
+        return true;
+    });
+});
+
 it('links to help with logging in when the site has a help page', function (): void {
     config(['made-cms-package.mail.help_url' => 'https://made-foryou.nl/hulp']);
 

@@ -25,7 +25,7 @@ it('opens a page at its own address', function (): void {
 it('answers 404 for a page that does not exist or is deleted', function (): void {
     $deleted = Page::factory()->trashed()->create();
 
-    $this->get('made-cms/pages/999')->assertNotFound();
+    $this->get('made-cms/pages/'.missingId())->assertNotFound();
     $this->get('made-cms/pages/'.$deleted->id)->assertNotFound();
 });
 

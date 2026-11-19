@@ -19,7 +19,7 @@ it('publishes the draft', function (): void {
 
     $stored = $page->refresh();
 
-    expect($stored->strips)->toBe($draft)
+    expect($stored->strips)->toBeStoredAs($draft)
         ->and($stored->draft_strips)->toBeNull()
         ->and($stored->status)->toBe(PageStatus::Published)
         ->and($response->headers->getCacheControlDirective('no-store'))->toBeTrue();
@@ -43,7 +43,7 @@ it('answers the errors of a strip that breaks its definition by strip and field'
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['strips.broken.kop' => 'Vul Kop in.']);
 
-    expect($page->refresh()->strips)->toBe($published);
+    expect($page->refresh()->strips)->toBeStoredAs($published);
 });
 
 it('refuses a live page without a draft', function (): void {

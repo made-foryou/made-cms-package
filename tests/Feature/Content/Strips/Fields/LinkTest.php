@@ -26,7 +26,7 @@ it('accepts an existing page', function (): void {
 });
 
 it('refuses a page that does not exist', function (): void {
-    expect(linkErrors(['knoppen' => [['knop' => ['text' => 'Lid worden', 'link' => ['page' => 999]]]]]))
+    expect(linkErrors(['knoppen' => [['knop' => ['text' => 'Lid worden', 'link' => ['page' => missingId()]]]]]))
         ->toBe(['knoppen.0.knop.link' => ['De gekozen pagina bij Gaat naar bestaat niet.']]);
 });
 
@@ -86,7 +86,7 @@ it('renders a page a visitor cannot open as null', function (Closure $page): voi
 })->with([
     'a draft page' => [fn (): int => Page::factory()->at('/concept')->create()->id],
     'a page without an address' => [fn (): int => Page::factory()->published()->create()->id],
-    'a page that is gone' => [fn (): int => 999],
+    'a page that is gone' => [fn (): int => missingId()],
 ]);
 
 it('renders a button to a page with the path of the page', function (): void {
@@ -97,5 +97,5 @@ it('renders a button to a page with the path of the page', function (): void {
 });
 
 it('renders a button to a page that is gone as null', function (): void {
-    expect(Button::make('knop')->render(['text' => 'Lid worden', 'link' => ['page' => 999]]))->toBeNull();
+    expect(Button::make('knop')->render(['text' => 'Lid worden', 'link' => ['page' => missingId()]]))->toBeNull();
 });

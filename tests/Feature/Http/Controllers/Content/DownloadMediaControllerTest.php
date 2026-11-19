@@ -44,7 +44,7 @@ it('answers 404 for a file that is not on the disk or gone', function (): void {
     $media = Media::factory()->create();
 
     $this->get("made-cms/media/{$media->id}/download")->assertNotFound();
-    $this->get('made-cms/media/999/download')->assertNotFound();
+    $this->get('made-cms/media/'.missingId().'/download')->assertNotFound();
 });
 
 it('opens only for an editor who opens the media library', function (Role $role, int $status): void {

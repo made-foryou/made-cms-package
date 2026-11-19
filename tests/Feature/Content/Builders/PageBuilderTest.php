@@ -63,7 +63,7 @@ it('casts the published and the draft strips to arrays', function (): void {
 
     $stored = Page::query()->findOrFail($page->id);
 
-    expect($stored->strips)->toBe($strips)
+    expect($stored->strips)->toBeStoredAs($strips)
         ->and($stored->draft_strips)->toBe([]);
 });
 
@@ -212,6 +212,6 @@ it('finds the pages google may show and the pages that may be in the sitemap', f
     $search = Page::factory()->noindex()->create();
     $privacy = Page::factory()->outOfSitemap()->create();
 
-    expect(Page::query()->indexable()->pluck('id')->all())->toBe([$about->id, $privacy->id])
-        ->and(Page::query()->inSitemap()->pluck('id')->all())->toBe([$about->id, $search->id]);
+    expect(Page::query()->indexable()->orderBy('id')->pluck('id')->all())->toBe([$about->id, $privacy->id])
+        ->and(Page::query()->inSitemap()->orderBy('id')->pluck('id')->all())->toBe([$about->id, $search->id]);
 });

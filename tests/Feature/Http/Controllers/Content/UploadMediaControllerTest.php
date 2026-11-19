@@ -148,7 +148,7 @@ it('refuses a folder that is gone or is no folder', function (mixed $folder): vo
 
     expect(Media::query()->count())->toBe(0)
         ->and(Storage::disk('public')->allFiles())->toBe([]);
-})->with(['gone' => [999], 'no number' => ['teams']]);
+})->with(['gone' => [missingId()], 'no number' => ['teams']]);
 
 it('opens for every editor who opens the pages or the media library', function (Role $role): void {
     $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')

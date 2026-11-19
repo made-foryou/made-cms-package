@@ -68,7 +68,7 @@ it('renames the file as it is now, so a crop made after the editor opened it sta
     $size = getimagesizefromstring((string) $disk->get($media->path));
 
     expect($media->path)->toBe(dirname($cropped->path).'/vierkant.webp')
-        ->and($media->crop)->toBe($cropped->crop)
+        ->and($media->crop)->toBeStoredAs($cropped->crop)
         ->and([$size[0] ?? null, $size[1] ?? null])->toBe([200, 200])
         ->and($disk->allFiles())->toEqualCanonicalizing([$media->path, (string) $cropped->thumb_path, (string) $cropped->original_path]);
 });

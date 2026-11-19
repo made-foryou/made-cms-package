@@ -42,8 +42,13 @@ it('refuses a name another folder has and creates nothing', function (): void {
 
 it('refuses a name a folder got at the same moment, as a taken name', function (): void {
     Event::fake([MediaFolderCreated::class]);
-    MediaFolder::creating(static function (): void {
-        DB::table('cms_media_folders')->insert(['name' => 'Teams', 'created_at' => now(), 'updated_at' => now()]);
+    // Another request stores the folder after the name was checked, outside the transaction that inserts this one.
+    $competing = true;
+    DB::connection()->beforeStartingTransaction(static function () use (&$competing): void {
+        if ($competing) {
+            $competing = false;
+            DB::table('cms_media_folders')->insert(['name' => 'Teams', 'created_at' => now(), 'updated_at' => now()]);
+        }
     });
 
     try {

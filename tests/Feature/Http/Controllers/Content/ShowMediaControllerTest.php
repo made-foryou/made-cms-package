@@ -108,7 +108,7 @@ it('says when a file is used nowhere', function (): void {
 });
 
 it('answers 404 for a file that is not there', function (): void {
-    $this->getJson('made-cms/media/404')->assertNotFound();
+    $this->getJson('made-cms/media/'.missingId())->assertNotFound();
 });
 
 it('opens only for an editor who opens the media library', function (Role $role, bool $opens): void {

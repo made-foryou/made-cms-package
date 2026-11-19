@@ -71,7 +71,7 @@ it('puts a heading back at its published level unless the editor opens Meta-over
         'position' => 0,
     ])->assertCreated();
 
-    expect($page->refresh()->draft_strips[0]['values']['kop'] ?? null)->toBe(['text' => 'Welkom', 'tag' => $tag]);
+    expect($page->refresh()->draft_strips[0]['values']['kop'] ?? null)->toBeStoredAs(['text' => 'Welkom', 'tag' => $tag]);
 })->with([
     'content manager' => [Role::ContentManager, 'h3'],
     'seo specialist' => [Role::SeoSpecialist, 'h1'],

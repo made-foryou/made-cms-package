@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Tests;
 
+use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\Application;
 use Lorisleiva\Actions\ActionServiceProvider;
 use Made\CmsPackage\CmsPackageServiceProvider;
+use Made\CmsPackage\Tests\Fixtures\Database\TestDatabase;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -39,12 +41,13 @@ abstract class TestCase extends Orchestra
         }
 
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-            'foreign_key_constraints' => true,
-        ]);
+        $app['config']->set('database.connections.testing', TestDatabase::connection($app['config']));
+
+        // Only where the migrations are: RefreshDatabase runs them once per database, and a test without it needs no
+        // tables. Testbench's loadMigrationsFrom() would migrate and roll back around tests on a server database.
+        $app->afterResolving('migrator', static function (Migrator $migrator): void {
+            $migrator->path(__DIR__.'/../database/migrations');
+        });
 
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('m', 32)));
 
@@ -59,8 +62,11 @@ abstract class TestCase extends Orchestra
         $app['config']->set('mail.default', 'array');
     }
 
+    /**
+     * Testbench runs this before RefreshDatabase migrates, so the database of the tests is there by then.
+     */
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        TestDatabase::create($this->app['db'], $this->app['config']);
     }
 }

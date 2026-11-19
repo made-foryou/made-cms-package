@@ -66,7 +66,7 @@ it('cuts the area from the original and scales it down to the maximum width', fu
         ->and([$media->focal_x, $media->focal_y])->toBe([0.25, 0.75])
         ->and($media->crop)->toBe(['x' => 80, 'y' => 60, 'width' => 640, 'height' => 360, 'rotation' => 0, 'flip' => false, 'scale_down' => true])
         ->and(quadrantsOf((string) Storage::disk('public')->get($media->path)))->toBe(['red', 'green', 'blue', 'yellow'])
-        ->and(Media::query()->findOrFail($media->id)->crop)->toBe($media->crop);
+        ->and(Media::query()->findOrFail($media->id)->crop)->toBeStoredAs($media->crop);
 });
 
 it('keeps the size of the area when the photo is not scaled down, still as WebP', function (): void {

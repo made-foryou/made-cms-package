@@ -44,7 +44,7 @@ it('cuts the photo from its original and answers with the file as it is now', fu
     $media->refresh();
 
     expect([$media->width, $media->height])->toBe([225, 400])
-        ->and($media->crop)->toBe(['x' => 40, 'y' => 30, 'width' => 225, 'height' => 400, 'rotation' => 90, 'flip' => true, 'scale_down' => true])
+        ->and($media->crop)->toBeStoredAs(['x' => 40, 'y' => 30, 'width' => 225, 'height' => 400, 'rotation' => 90, 'flip' => true, 'scale_down' => true])
         ->and($response->json('file.id'))->toBe($media->id)
         ->and($response->json('file.meta'))->toStartWith('225 × 400 · ')
         ->and($response->json('file.url'))->toBe(Storage::disk('public')->url($media->path))
@@ -87,7 +87,7 @@ it('refuses a file that cannot be cropped, and one that is not in the library', 
         ->assertUnprocessable()
         ->assertJsonPath('errors.crop.0', 'Dit bestand kan niet bijgesneden worden.');
 
-    $this->postJson('made-cms/media/999/crop', cropBody())->assertNotFound();
+    $this->postJson('made-cms/media/'.missingId().'/crop', cropBody())->assertNotFound();
 });
 
 it('opens for every editor who opens the pages or the media library', function (Role $role): void {

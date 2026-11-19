@@ -17,7 +17,7 @@ it('removes a strip from the draft', function (): void {
     $stored = Page::query()->findOrFail($page->id);
 
     expect(array_column($stored->draft_strips ?? [], 'id'))->toBe(['b'])
-        ->and($stored->strips)->toBe($published);
+        ->and($stored->strips)->toBeStoredAs($published);
 });
 
 it('returns the strip as it was stored, so it can be put back', function (): void {
@@ -70,5 +70,5 @@ it('keeps strips of a type that no longer exists when another strip is removed',
 
     RemoveStrip::run($page, 'a');
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBe([$old]);
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeStoredAs([$old]);
 });

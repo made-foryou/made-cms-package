@@ -55,5 +55,5 @@ it('rejects an editor who has no second factor or no longer exists', function ()
     $without = Editor::factory()->create();
 
     expect(fn () => LogInWithTwoFactor::run(twoFactorLogin($without->id, code: '123456')))->toThrow(TwoFactorCodeRejected::class)
-        ->and(fn () => LogInWithTwoFactor::run(twoFactorLogin(999, code: '123456')))->toThrow(TwoFactorCodeRejected::class);
+        ->and(fn () => LogInWithTwoFactor::run(twoFactorLogin(missingId(), code: '123456')))->toThrow(TwoFactorCodeRejected::class);
 });

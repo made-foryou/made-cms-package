@@ -86,7 +86,7 @@ it('keeps the strips of the deleted page', function (): void {
 
     DeletePage::run($page);
 
-    expect(Page::query()->withTrashed()->findOrFail($page->id)->strips)->toBe($strips);
+    expect(Page::query()->withTrashed()->findOrFail($page->id)->strips)->toBeStoredAs($strips);
 });
 
 it('leaves a link to the deleted page without a url', function (): void {

@@ -23,7 +23,8 @@ Prove package behavior with Pest 4/5, Orchestra Testbench, and the local `tests/
 ## Test Layout
 
 - Test paths mirror `src/`: `tests/Feature/<Context>/<Layer>/<Class>Test.php` and `tests/Unit/<Context>/<Layer>/<Class>Test.php`.
-- Feature tests get `RefreshDatabase` through `tests/Pest.php` on an in-memory SQLite database; the package migrations are loaded in `TestCase::defineDatabaseMigrations()`.
+- Feature tests get `RefreshDatabase` through `tests/Pest.php`. The database is SQLite in memory, or the MySQL or PostgreSQL server `DB_CONNECTION` names (`DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`): `tests/Fixtures/Database/TestDatabase` creates `made_cms_package_test` there (`_N` per parallel worker) in `TestCase::defineDatabaseMigrations()` and never reads `DB_DATABASE` or `DB_URL`. `TestCase` only registers the package migrations with the migrator; `RefreshDatabase` runs them once per database. Unit tests have no tables.
+- Write every test for all three databases: compare JSON read back from the database with `toBeStoredAs()` (MySQL sorts the keys of an object), match the text of a query with `quoted('cms_media')`, use `missingId()` for a row that is not there (MySQL and PostgreSQL keep counting ids after a rollback), and order a list read from the database. A test that only holds on SQLite is changed, never skipped.
 - The default test locale is `nl` with `en` as fallback.
 - Create fixtures with model factories, never assume ids, and use `freezeSecond()` when comparing stored timestamps (the database drops microseconds).
 - Arch tests live in `tests/Arch/`, one file per concern. They run without booting the app. Guard every rule with `contextNamespaces()` so a layer is only checked once it has classes.
@@ -56,7 +57,7 @@ Prove package behavior with Pest 4/5, Orchestra Testbench, and the local `tests/
 
 - Test config merge and config override by asserting default package config, then overriding the host config value in the Testbench app.
 - Test publishable assets, migrations, views, lang files, or config by invoking vendor publish behavior and asserting the target path exists.
-- Test routes with Testbench HTTP requests, commands with Artisan assertions, migrations with a SQLite test database, and workbench behavior after `composer build` when needed.
+- Test routes with Testbench HTTP requests, commands with Artisan assertions, migrations by running their `up()` and `down()` on the test database (on MySQL that commits, and `RefreshDatabase` migrates again for the next test), and workbench behavior after `composer build` when needed.
 
 ## Anti-Patterns
 

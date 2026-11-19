@@ -29,7 +29,7 @@ it('keeps the status, the strips, the draft and the switches of the page', funct
     SetPageVisibility::run($page, hidden: true);
 
     expect($page->refresh()->status)->toBe(PageStatus::Published)
-        ->and($page->strips)->toBe($strips)
+        ->and($page->strips)->toBeStoredAs($strips)
         ->and($page->draft_strips)->toBe([])
         ->and($page->in_menu)->toBeTrue()
         ->and($page->indexable)->toBeFalse();

@@ -16,6 +16,7 @@ Content management system from Made
 
 - PHP 8.4 or higher with the extensions `dom` and `fileinfo`.
 - Laravel 12 or 13.
+- A database Laravel supports; the package is tested on MySQL 8.4, PostgreSQL 18 and SQLite.
 - For uploaded photos: GD with WebP support (the default) or Imagick, and `exif` so photos from a phone come out upright.
 - A `memory_limit` of at least 256 MB: with GD, scaling and cropping a phone photo of 12 MP (4032 × 3024 px) takes about 140 MB, and one of 24 MP up to about 290 MB.
 - An `upload_max_filesize` and a `post_max_size` of at least `media.max_upload_kb` (25 MB by default), so PHP lets an upload through to the media library.

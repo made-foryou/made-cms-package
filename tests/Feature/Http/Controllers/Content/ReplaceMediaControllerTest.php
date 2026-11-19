@@ -72,7 +72,7 @@ it('refuses a request without a file', function (): void {
 });
 
 it('answers 404 for a file that is gone', function (): void {
-    $this->post('made-cms/media/999/replace', ['file' => uploadedReplacement(photo(80, 60), 'a.jpg')], ['Accept' => 'application/json'])
+    $this->post('made-cms/media/'.missingId().'/replace', ['file' => uploadedReplacement(photo(80, 60), 'a.jpg')], ['Accept' => 'application/json'])
         ->assertNotFound();
 });
 

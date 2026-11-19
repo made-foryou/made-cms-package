@@ -57,7 +57,7 @@ it('lists the files of a folder', function (): void {
 });
 
 it('refuses a folder that is gone', function (): void {
-    ListMedia::run(new MediaFilter(folderId: 404));
+    ListMedia::run(new MediaFilter(folderId: missingId()));
 })->throws(MediaFolderNotFound::class);
 
 it('lists the files of several kinds, which win from a single kind', function (): void {

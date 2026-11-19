@@ -13,4 +13,4 @@ it('finds a folder by its id', function (): void {
 
 it('finds no folder without an id or for a folder that is gone', function (?int $id): void {
     expect(FindMediaFolder::run($id))->toBeNull();
-})->with(['no id' => [null], 'gone' => [404]]);
+})->with(['no id' => [null], 'gone' => [missingId()]]);

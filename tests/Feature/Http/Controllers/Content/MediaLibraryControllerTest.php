@@ -134,7 +134,7 @@ it('opens in all files when the folder of its address is gone, and leaves out wh
         ->and($config['chosen'])->toBeNull()
         ->and($config['initial']['files']['total'])->toBe(2);
 })->with([
-    'a folder that is gone' => ['folder=404'],
+    'a folder that is gone' => ['folder='.missingId()],
     'no number' => ['folder=teams&file=foto'],
     'an unknown kind and order' => ['kind=foto&sort=random'],
     'lists' => ['folder[]=1&kind[]=image&q[]=x&sort[]=name&file[]=1'],

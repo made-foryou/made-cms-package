@@ -146,7 +146,7 @@ it('gives the files a page at a time', function (): void {
 });
 
 it('refuses a folder that is gone', function (): void {
-    $this->getJson('made-cms/media/files?folder=404')
+    $this->getJson('made-cms/media/files?folder='.missingId())
         ->assertUnprocessable()
         ->assertJsonPath('errors.folder.0', 'Deze map bestaat niet meer. Herlaad de pagina en kies een andere map.');
 });

@@ -250,6 +250,7 @@
 
 ### Changed
 
+- The package requires `laravel/framework` (`^12.0||^13.0`) instead of the separate `illuminate/*` packages, which never offered the `Illuminate\Foundation` classes it uses (`FormRequest`, the HTTP kernel, `Vite`). A Laravel app has it already: nothing to do.
 - `strip.media` of `GET made-cms/pages/{page}/strips/{strip}` holds every file the fields of the strip hold, documents and videos too, and every file of the CMS (`MediaDetails`, also in `strip.media`) says its `kind`.
 - The links in the bar of the edit shell and in the edit bar on the site ("Voorvertoning", "Concept weggooien", "Bewerken", "Startpagina") are amber-light (`--made-amber-licht`) instead of chalk, underlined. "Voorvertoning" shows that it opens a new tab; the logo of the edit shell has the title "Naar de startpagina van Made CMS".
 - A refusal of the bar ("Niet gepubliceerd: Hero — Vul Kop in.", and now also "Niet opgeslagen: …" when a save fails while publishing or leaving) stands in full on a line of its own under the bar instead of in the state of the bar, which says only "Niet gepubliceerd" or "Niet opgeslagen". When a save fails while publishing, the strip with the error is chosen as well. Hosts that published `lang/cms` have the new keys under `cms.edit` and `cms.edit.bar_texts` to add, and the text of `cms.edit.start` changed to "Naar de startpagina van Made CMS".
@@ -304,6 +305,7 @@
 
 ### Fixed
 
+- `CreateMediaFolder` refuses a name another folder got at the same moment inside a savepoint of its own, so on PostgreSQL a transaction of the host around it stays usable; PostgreSQL aborts a whole transaction on a refused statement.
 - Publishing the migrations again (`php artisan vendor:publish --tag="made-cms-package-migrations"`) no longer adds every migration a second time under a new date, which `migrate` then ran again and stopped on a table that exists. A migration the host has, under any date, is skipped (`--force` overwrites it where it is); only a migration the host does not have yet is published, dated after the ones it ran. A host that published twice before this fix deletes the newer copy of each migration it has twice before it migrates.
 - A red button that deletes ("Ja, verwijder …" in the media library, deleting a page) has dark text in the dark colours, so it stands out on its light red (4.8:1 instead of 2.8:1).
 - The edit shell no longer sends the editor back to the top of the site when its frame reloads after a change, a strip that moved or a publication, on a site rendered in the browser (Inertia, React without ssr): the frame holds the place the editor was looking at while the site grows to it and when it scrolls by itself (Inertia puts back a place it remembered, smoothly), until the editor scrolls. A strip that was added or moved and lies outside that view comes into view once the site shows it.

@@ -324,9 +324,10 @@ it('reads the files it gives a place through the shared lock of the library, in 
     [$a, $b] = Media::factory()->count(2)->create()->all();
     $page = Page::factory()->withStrips([storedStrip('hero', ['foto' => $b->id], id: 'h'), storedStrip('hero', ['foto' => $a->id], id: 'g')])->create();
     $reads = [];
+    $files = 'from '.quoted('cms_media');
 
-    DB::listen(static function (QueryExecuted $query) use (&$reads): void {
-        if (str_starts_with($query->sql, 'select') && str_contains($query->sql, 'from "cms_media"')) {
+    DB::listen(static function (QueryExecuted $query) use (&$reads, $files): void {
+        if (str_starts_with($query->sql, 'select') && str_contains($query->sql, $files)) {
             $reads[] = $query->sql;
         }
     });
@@ -334,6 +335,6 @@ it('reads the files it gives a place through the shared lock of the library, in 
     SyncMediaUsage::run($page);
 
     expect($reads)->toHaveCount(1)
-        ->and($reads[0])->toEndWith('order by "id" asc')
+        ->and($reads[0])->toContain('order by '.quoted('id').' asc')
         ->and(usageRows($page))->toHaveCount(2);
 });

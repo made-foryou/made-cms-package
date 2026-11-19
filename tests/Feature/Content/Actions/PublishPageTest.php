@@ -50,7 +50,7 @@ it('makes the draft strips the published strips', function (): void {
 
     $stored = Page::query()->findOrFail($page->id);
 
-    expect($stored->strips)->toBe($draft)
+    expect($stored->strips)->toBeStoredAs($draft)
         ->and($stored->draft_strips)->toBeNull();
 });
 
@@ -63,7 +63,7 @@ it('publishes the draft of a page that is already published', function (): void 
 
     $stored = Page::query()->findOrFail($page->id);
 
-    expect($stored->strips)->toBe($draft)
+    expect($stored->strips)->toBeStoredAs($draft)
         ->and($stored->draft_strips)->toBeNull()
         ->and($stored->status)->toBe(PageStatus::Published)
         ->and($stored->published_at?->equalTo(now()))->toBeTrue();
@@ -103,8 +103,8 @@ it('refuses a draft with a strip that breaks its definition, also when it is hid
 
     $stored = Page::query()->findOrFail($page->id);
 
-    expect($stored->strips)->toBe($published)
-        ->and($stored->draft_strips)->toBe($draft);
+    expect($stored->strips)->toBeStoredAs($published)
+        ->and($stored->draft_strips)->toBeStoredAs($draft);
     Event::assertNotDispatched(PagePublished::class);
 })->with(['visible' => true, 'hidden' => false]);
 
@@ -114,7 +114,7 @@ it('checks a field the strip does not hold yet as its default, as the site rende
 
     PublishPage::run($page);
 
-    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->strips)->toBeStoredAs($draft);
 });
 
 it('publishes a strip of a type that no longer exists without checking it', function (): void {
@@ -123,7 +123,7 @@ it('publishes a strip of a type that no longer exists without checking it', func
 
     PublishPage::run($page);
 
-    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->strips)->toBeStoredAs($draft);
 });
 
 it('publishes a heading stored as text, or with a level its field no longer offers', function (): void {
@@ -136,7 +136,7 @@ it('publishes a heading stored as text, or with a level its field no longer offe
 
     PublishPage::run($page);
 
-    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->strips)->toBeStoredAs($draft);
 });
 
 it('refuses a draft with an image whose file is gone or is no image, on the field of the strip', function (): void {
@@ -187,7 +187,7 @@ it('refuses a draft with a file that is gone or of a kind its field does not tak
 
     PublishPage::run($page);
 
-    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->strips)->toBeStoredAs($draft);
 });
 
 it('publishes an image of the library as the id of its file', function (): void {
@@ -197,5 +197,5 @@ it('publishes an image of the library as the id of its file', function (): void 
 
     PublishPage::run($page);
 
-    expect(Page::query()->findOrFail($page->id)->strips)->toBe($draft);
+    expect(Page::query()->findOrFail($page->id)->strips)->toBeStoredAs($draft);
 });

@@ -31,7 +31,7 @@ it('puts the files into a folder and answers with them by id', function (): void
 it('takes the files out of their folder and leaves out a file that is gone', function (): void {
     $media = Media::factory()->in(MediaFolder::factory()->create())->create();
 
-    $this->putJson('made-cms/media/move', ['files' => [$media->id, 999], 'folder' => null])
+    $this->putJson('made-cms/media/move', ['files' => [$media->id, missingId()], 'folder' => null])
         ->assertOk()
         ->assertJsonPath('files.*.id', [$media->id])
         ->assertJsonPath('files.0.folder', null);
@@ -48,7 +48,7 @@ it('refuses a folder that is gone or no folder, and moves nothing', function (ar
 
     expect($media->refresh()->folder_id)->toBeNull();
 })->with([
-    'gone' => [['folder' => 999], 'Deze map bestaat niet meer. Kies een andere map.'],
+    'gone' => [['folder' => missingId()], 'Deze map bestaat niet meer. Kies een andere map.'],
     'a text' => [['folder' => 'Teams'], 'Kies de map waar het bestand in komt.'],
     'missing' => [[], 'Kies de map waar het bestand in komt.'],
 ]);

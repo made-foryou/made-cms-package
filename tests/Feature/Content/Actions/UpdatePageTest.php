@@ -133,7 +133,7 @@ it('keeps the status and the strips', function (): void {
     UpdatePage::run($page, new PageChanges(title: 'Anders', slug: 'anders', parentId: null, inMenu: true));
 
     expect($page->refresh()->status)->toBe(PageStatus::Published)
-        ->and($page->strips)->toBe($strips)
+        ->and($page->strips)->toBeStoredAs($strips)
         ->and($page->draft_strips)->toBeNull();
 });
 

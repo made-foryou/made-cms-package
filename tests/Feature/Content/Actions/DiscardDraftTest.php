@@ -17,7 +17,7 @@ it('discards the draft and keeps the published strips', function (): void {
 
     expect($discarded->is($page))->toBeTrue()
         ->and($stored->draft_strips)->toBeNull()
-        ->and($stored->strips)->toBe($published);
+        ->and($stored->strips)->toBeStoredAs($published);
 });
 
 it('dispatches an event for the page', function (): void {

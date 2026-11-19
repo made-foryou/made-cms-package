@@ -36,7 +36,7 @@ it('adds a strip of a type to the draft with the defaults of the type', function
             'knoppen' => [],
             'foto' => null,
         ])
-        ->and($stored->draft_strips)->toBe([$strip->toArray()])
+        ->and($stored->draft_strips)->toBeStoredAs([$strip->toArray()])
         ->and($stored->strips)->toBe([]);
 });
 
@@ -65,7 +65,7 @@ it('starts the draft as a copy of the published strips', function (): void {
     $stored = Page::query()->findOrFail($page->id);
 
     expect(array_column($stored->draft_strips ?? [], 'id'))->toBe(['a', $strip->id, 'b'])
-        ->and($stored->strips)->toBe($published);
+        ->and($stored->strips)->toBeStoredAs($published);
 });
 
 it('adds to an existing draft', function (): void {
@@ -113,5 +113,5 @@ it('keeps strips of a type that no longer exists', function (): void {
 
     AddStrip::run($page, 'cards', 1);
 
-    expect(Page::query()->findOrFail($page->id)->draft_strips[0] ?? null)->toBe($old);
+    expect(Page::query()->findOrFail($page->id)->draft_strips[0] ?? null)->toBeStoredAs($old);
 });

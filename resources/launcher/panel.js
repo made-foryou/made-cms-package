@@ -237,7 +237,7 @@ function rendered(field, value) {
         case 'items':
             return null;
         case 'image':
-            // The id of a file, rendered as the server described it: {url, alt, width, height, focal}.
+            // The id of a file, rendered as the server described it: {url, alt, width, height, focal, variants, srcset}.
             return media.get(value)?.image ?? null;
         case 'file':
             // Nothing to patch: the view prints the name, size and description of a file, so the frame reloads.

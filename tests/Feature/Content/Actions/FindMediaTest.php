@@ -29,6 +29,7 @@ it('finds the files by id with the url of the media disk, never their place on t
         'height' => 1067,
         'focal_x' => 0.25,
         'focal_y' => 0.75,
+        'variants' => [['path' => 'media/01k9/480w.webp', 'width' => 480, 'height' => 320]],
     ]);
 
     expect(FindMedia::run([$media->id])->find($media->id))->toEqual(new MediaFile(
@@ -48,6 +49,7 @@ it('finds the files by id with the url of the media disk, never their place on t
         folderId: $folder->id,
         croppable: true,
         key: $media->ulid,
+        variants: [['url' => 'https://cdn.example.com/media/01k9/480w.webp', 'width' => 480, 'height' => 320]],
     ));
 });
 

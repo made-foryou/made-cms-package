@@ -3,7 +3,8 @@
     A field sits on the element that holds only its text; in data-cms-items every direct child is one item.
     A heading is printed as the element of its level, so its look hangs on a class, never on h2. The label and the
     heading have emphasis: the words between asterisks are an <em>.
-    An image is {url, alt, width, height, focal} or null; the focal point is the place object-position keeps in view.
+    An image is {url, alt, width, height, focal, variants, srcset} or null; the focal point is the place
+    object-position keeps in view, and the srcset offers a phone a narrower size, with sizes the site's own.
 --}}
 <section data-cms-strip="{{ $strip->id }}">
     @if ($strip->label)
@@ -20,6 +21,7 @@
         <img
             src="{{ $strip->foto['url'] }}"
             alt="{{ $strip->foto['alt'] }}"
+            @if ($strip->foto['srcset']) srcset="{{ $strip->foto['srcset'] }}" sizes="(max-width: 720px) 100vw, 720px" @endif
             @if ($strip->foto['width']) width="{{ $strip->foto['width'] }}" height="{{ $strip->foto['height'] }}" @endif
             style="max-width: 100%; height: auto; object-fit: cover; object-position: {{ $strip->foto['focal']['x'] * 100 }}% {{ $strip->foto['focal']['y'] * 100 }}%"
             data-cms-field="foto"

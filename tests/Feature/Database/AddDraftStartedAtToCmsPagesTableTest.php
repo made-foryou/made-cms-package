@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schema;
 
 function draftStartedAtMigration(): Migration
 {
-    return require __DIR__.'/../../../database/migrations/2026_11_21_000000_add_draft_started_at_to_cms_pages_table.php';
+    return require __DIR__.'/../../../database/migrations/2026_11_21_000100_add_draft_started_at_to_cms_pages_table.php';
 }
 
 /**

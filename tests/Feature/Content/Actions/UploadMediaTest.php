@@ -77,6 +77,41 @@ it('scales a jpg of 4000 px down to a WebP of 1920 px with the original and a th
         ->and($stored->thumb_path)->toMatch('#^media/[0-9a-z]{26}/thumb-[0-9A-Za-z]{40}\.webp$#')
         ->and(dirname((string) $stored->thumb_path))->toBe(dirname($stored->path))
         ->and(getimagesizefromstring((string) $disk->get((string) $stored->thumb_path)))->toMatchArray([0 => 540, 1 => 360, 'mime' => 'image/webp'])
+        ->and(mediaOnDisk())->toHaveCount(6);
+});
+
+it('gives a photo its narrower sizes next to it, named after their width', function (): void {
+    $media = upload(photo(4000, 2667, 'jpg', 'teamfoto-merwestad-4.jpg'));
+
+    $disk = Storage::disk('public');
+    $folder = "media/{$media->ulid}";
+
+    expect(Media::query()->findOrFail($media->id)->variants)->toBe([
+        ['path' => "{$folder}/480w.webp", 'width' => 480, 'height' => 320],
+        ['path' => "{$folder}/960w.webp", 'width' => 960, 'height' => 640],
+        ['path' => "{$folder}/1440w.webp", 'width' => 1440, 'height' => 960],
+    ])
+        ->and(getimagesizefromstring((string) $disk->get("{$folder}/480w.webp")))->toMatchArray([0 => 480, 1 => 320, 'mime' => 'image/webp'])
+        ->and(getimagesizefromstring((string) $disk->get("{$folder}/960w.webp")))->toMatchArray([0 => 960, 1 => 640, 'mime' => 'image/webp'])
+        ->and(getimagesizefromstring((string) $disk->get("{$folder}/1440w.webp")))->toMatchArray([0 => 1440, 1 => 960, 'mime' => 'image/webp']);
+});
+
+it('gives a photo only the sizes that are narrower than itself', function (int $width, array $widths): void {
+    $media = upload(photo($width, 600));
+
+    expect(array_column((array) $media->variants, 'width'))->toBe($widths);
+})->with([
+    'between two sizes' => [1000, [480, 960]],
+    'exactly a size' => [960, [480]],
+    'narrower than every size' => [400, []],
+]);
+
+it('gives a photo no narrower sizes when the site wants none', function (): void {
+    config(['made-cms-package.media.image.variants' => []]);
+
+    $media = upload(photo(1920, 1280));
+
+    expect($media->variants)->toBe([])
         ->and(mediaOnDisk())->toHaveCount(3);
 });
 
@@ -137,6 +172,7 @@ it('keeps a file that is no photo exactly as it came in', function (Closure $fil
         ->and($media->path)->toMatch("#^media/[0-9a-z]{26}/{$name}\$#")
         ->and($media->original_path)->toBeNull()
         ->and($media->thumb_path)->toBeNull()
+        ->and($media->variants)->toBeNull()
         ->and($media->size)->toBe(filesize($path))
         ->and($media->width === null ? null : [$media->width, $media->height])->toBe($size)
         ->and(Storage::disk('public')->get($media->path))->toBe(file_get_contents($path))
@@ -157,6 +193,7 @@ it('writes the original private and the photo, its thumbnail and their folder pu
     expect($disk->getVisibility((string) $media->original_path))->toBe('private')
         ->and($disk->getVisibility($media->path))->toBe('public')
         ->and($disk->getVisibility((string) $media->thumb_path))->toBe('public')
+        ->and($disk->getVisibility(dirname($media->path).'/480w.webp'))->toBe('public')
         ->and(permissionsOf($disk->path(dirname($media->path))))->toBe('755')
         ->and(permissionsOf($disk->path('media')))->toBe('755');
 })->with([
@@ -188,6 +225,7 @@ it('hands the disk the photo and its thumbnail public with a cache header for a 
     expect(MediaFileRole::CACHE_CONTROL)->toBe('public, max-age=31536000, immutable')
         ->and($disk->written($media->path))->toBe($public)
         ->and($disk->written((string) $media->thumb_path))->toBe($public)
+        ->and($disk->written(dirname($media->path).'/480w.webp'))->toBe($public)
         ->and($disk->written((string) $media->original_path))->toBe(['visibility' => 'private', 'directory_visibility' => 'public', 'CacheControl' => null]);
 });
 

@@ -59,6 +59,8 @@ it('lists the files as the upload field gets one, newest first, with the count i
             'width' => 1600,
             'height' => 1067,
             'focal' => ['x' => 0.5, 'y' => 0.5],
+            'variants' => [],
+            'srcset' => null,
         ],
         'croppable' => true,
         'kind' => 'image',

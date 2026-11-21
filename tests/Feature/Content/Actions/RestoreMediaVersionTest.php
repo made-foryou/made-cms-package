@@ -80,14 +80,19 @@ it('makes the version it puts back public before the row points at it, and the o
 
     RestoreMediaVersion::run($media);
 
-    expect(array_slice($disk->calls(), $before))->toBe([
-        "visibility {$first?->path} public",
-        "visibility {$first?->thumbPath} public",
-        'update',
-        "visibility {$second->path} private",
-        "visibility {$second->thumbPath} private",
-        "visibility {$second->originalPath} private",
-    ]);
+    expect($first?->variantPaths())->toHaveCount(2)
+        ->and($second->variantPaths())->toHaveCount(1)
+        ->and(array_slice($disk->calls(), $before))->toBe([
+            "visibility {$first?->path} public",
+            "visibility {$first?->thumbPath} public",
+            "visibility {$first?->variantPaths()[0]} public",
+            "visibility {$first?->variantPaths()[1]} public",
+            'update',
+            "visibility {$second->path} private",
+            "visibility {$second->thumbPath} private",
+            "visibility {$second->originalPath} private",
+            "visibility {$second->variantPaths()[0]} private",
+        ]);
 });
 
 it('opens the version it puts back for a visitor on a local disk', function (): void {
@@ -100,7 +105,9 @@ it('opens the version it puts back for a visitor on a local disk', function (): 
     expect(Storage::disk('public')->getVisibility($stored->path))->toBe('public')
         ->and(Storage::disk('public')->getVisibility((string) $stored->thumb_path))->toBe('public')
         ->and(Storage::disk('public')->getVisibility((string) $stored->original_path))->toBe('private')
-        ->and(Storage::disk('public')->getVisibility((string) MediaVersion::waiting($stored)?->path))->toBe('private');
+        ->and(Storage::disk('public')->getVisibility(MediaVersion::current($stored)->variantPaths()[0]))->toBe('public')
+        ->and(Storage::disk('public')->getVisibility((string) MediaVersion::waiting($stored)?->path))->toBe('private')
+        ->and(Storage::disk('public')->getVisibility((string) MediaVersion::waiting($stored)?->variantPaths()[0]))->toBe('private');
 })->skipOnWindows();
 
 it('refuses a file without a version that waits', function (): void {

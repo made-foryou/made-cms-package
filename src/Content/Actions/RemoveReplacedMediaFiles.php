@@ -16,9 +16,9 @@ final class RemoveReplacedMediaFiles
 
     /**
      * Takes the files a change of a file of the library replaced off the disk, run by that change from DB::afterCommit
-     * (CropImage, RenameMedia): the former photo and, when given, the former thumbnail. A former photo in a folder of
-     * a crop ({home}/{8 random}/{name}, where home is the folder of the original of a version) goes with that folder;
-     * one next to an original goes alone.
+     * (CropImage, RenameMedia): the former photo and, when given, the former thumbnail and narrower sizes. A former
+     * photo in a folder of a crop ({home}/{8 random}/{name}, where home is the folder of the original of a version)
+     * goes with that folder, its sizes too; one next to an original goes alone, and its sizes one by one.
      *
      * It reads the row again with its row locked and leaves every file the row holds now, of the version the site
      * shows and of the one that waits to be put back: a name given back within one transaction, a change committed
@@ -26,13 +26,15 @@ final class RemoveReplacedMediaFiles
      * such a file stays as a whole, so the folder of a version is never taken for the folder of a crop. A change that
      * takes the lock meanwhile waits, so it never copies onto a file this removes. A row that is gone holds no file.
      *
+     * @param  list<string>  $variants  the files of the narrower sizes of the former photo
+     *
      * @throws MediaDiskNotUsable
      */
-    public function handle(int $mediaId, string $photo, ?string $thumb = null): void
+    public function handle(int $mediaId, string $photo, ?string $thumb = null, array $variants = []): void
     {
         $disk = CheckMediaDisk::run();
 
-        DB::transaction(static function () use ($disk, $mediaId, $photo, $thumb): void {
+        DB::transaction(static function () use ($disk, $mediaId, $photo, $thumb, $variants): void {
             $media = Media::query()->whereKey($mediaId)->lockForUpdate()->first();
             $holds = $media === null ? [] : MediaVersion::held($media);
 
@@ -44,8 +46,10 @@ final class RemoveReplacedMediaFiles
                     : $disk->deleteDirectory($folder);
             }
 
-            if ($thumb !== null && ! in_array($thumb, $holds, true)) {
-                $disk->delete($thumb);
+            foreach ([$thumb, ...$variants] as $file) {
+                if ($file !== null && ! in_array($file, $holds, true)) {
+                    $disk->delete($file);
+                }
             }
         });
     }

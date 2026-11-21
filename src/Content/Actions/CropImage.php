@@ -13,6 +13,8 @@ use Intervention\Image\Format;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
+use Made\CmsPackage\Content\Data\ImageVariant;
+use Made\CmsPackage\Content\Data\MediaVersion;
 use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Events\MediaCropped;
@@ -36,9 +38,10 @@ final class CropImage
      * media.image.quality without the metadata of the camera, with the focal point the site keeps in view. The
      * original stays as it was, so the next crop starts from it again.
      *
-     * The photo gets a new address in a folder of its own next to the original ({home}/{8 random}/{name}), and a new
-     * thumbnail (MakeThumbnail) from it, so no cache keeps the former photo, both public and with the cache header of
-     * MediaFileRole; the former files leave the disk once the row is committed. The original is never written again,
+     * The photo gets a new address in a folder of its own next to the original ({home}/{8 random}/{name}), with its
+     * narrower sizes beside it (WriteImageVariants), and a new thumbnail (MakeThumbnail) from it, so no cache keeps the
+     * former photo, all public and with the cache header of MediaFileRole; the former files leave the disk once the row
+     * is committed. The original is never written again,
      * so it stays private. When only the focal point changed, no file is written. The photo changes on every page that
      * shows it, the published version too.
      *
@@ -70,14 +73,14 @@ final class CropImage
             }
 
             $image = DecodeOriginal::run($stored);
-            $width = $image->width();
-            $height = $image->height();
+            $originalWidth = $image->width();
+            $originalHeight = $image->height();
 
-            if (! $crop->area->fits($width, $height)) {
+            if (! $crop->area->fits($originalWidth, $originalHeight)) {
                 throw ValidationException::withMessages(['crop' => (string) __('made-cms-package::media.errors.crop_outside')]);
             }
 
-            $cut = $crop->area->onOriginal($width, $height);
+            $cut = $crop->area->onOriginal($originalWidth, $originalHeight);
             $image = $image->crop($cut['width'], $cut['height'], $cut['x'], $cut['y']);
 
             // Scaled down before it turns: a quarter turn only moves pixels, so the photo is the same, and turning
@@ -98,6 +101,12 @@ final class CropImage
 
             $format = Format::create(config()->string('made-cms-package.media.image.format'));
             $photo = $image->encodeUsingFormat($format, quality: config()->integer('made-cms-package.media.image.quality'))->toString();
+            $width = $image->width();
+            $height = $image->height();
+
+            // The cut is let go before the thumbnail and the narrower sizes read the photo again, so a photo that was
+            // not scaled down is never twice in memory.
+            unset($image);
             $thumbnail = MakeThumbnail::run($photo);
 
             $home = dirname($stored->original_path);
@@ -107,10 +116,17 @@ final class CropImage
             // fails after the commit (a listener of MediaCropped, RemoveReplacedMediaFiles) leaves a row that holds
             // them. A change that is not committed after all (a commit that fails, a transaction of the host that
             // rolls back) leaves them on the disk, unused.
+            $thumb = null;
+
             try {
                 $thumb = $this->write($disk, "{$home}/thumb-".Str::random(40).".{$thumbnail->extension}", (string) $thumbnail->contents, MediaFileRole::Thumbnail);
-            } catch (MediaNotStored $exception) {
+                $variants = WriteImageVariants::run($disk, dirname($path), $photo);
+            } catch (Throwable $exception) {
                 $disk->deleteDirectory(dirname($path));
+
+                if ($thumb !== null) {
+                    $disk->delete($thumb);
+                }
 
                 throw $exception;
             }
@@ -122,11 +138,12 @@ final class CropImage
                     'thumb_path' => $thumb,
                     'mime' => $format->mediaType()->value,
                     'size' => strlen($photo),
-                    'width' => $image->width(),
-                    'height' => $image->height(),
-                    'original_width' => $width,
-                    'original_height' => $height,
-                    'crop' => $crop->scaleDown && $crop->area->isOriginal($width, $height)
+                    'width' => $width,
+                    'height' => $height,
+                    'variants' => ImageVariant::listToArray($variants),
+                    'original_width' => $originalWidth,
+                    'original_height' => $originalHeight,
+                    'crop' => $crop->scaleDown && $crop->area->isOriginal($originalWidth, $originalHeight)
                         ? null
                         : [...$crop->area->toArray(), 'scale_down' => $crop->scaleDown],
                 ]);
@@ -155,21 +172,23 @@ final class CropImage
     }
 
     /**
-     * Stores the columns on the row, which the caller holds locked, and takes the photo and the thumbnail it replaced
-     * off the disk once the change is committed (RemoveReplacedMediaFiles).
+     * Stores the columns on the row, which the caller holds locked, and takes the photo, the thumbnail and the narrower
+     * sizes it replaced off the disk once the change is committed (RemoveReplacedMediaFiles).
      *
      * @param  array<string, mixed>  $columns
      */
     private function store(Media $stored, array $columns, bool $replacesFiles = false): Media
     {
-        $former = [$stored->path, $stored->thumb_path];
+        $photo = $stored->path;
+        $thumb = $stored->thumb_path;
+        $variants = MediaVersion::current($stored)->variantPaths();
 
         $stored->update($columns);
         MediaCropped::dispatch($stored);
 
         if ($replacesFiles) {
-            DB::afterCommit(static function () use ($stored, $former): void {
-                RemoveReplacedMediaFiles::run($stored->id, ...$former);
+            DB::afterCommit(static function () use ($stored, $photo, $thumb, $variants): void {
+                RemoveReplacedMediaFiles::run($stored->id, $photo, $thumb, $variants);
             });
         }
 

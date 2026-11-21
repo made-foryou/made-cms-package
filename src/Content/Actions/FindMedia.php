@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Actions;
 
 use Lorisleiva\Actions\Concerns\AsAction;
+use Made\CmsPackage\Content\Data\ImageVariant;
 use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Data\MediaFiles;
 use Made\CmsPackage\Content\Enums\MediaKind;
@@ -16,9 +17,9 @@ final class FindMedia
     use AsAction;
 
     /**
-     * The files of the media library with these ids, in one query, each with the url a visitor opens it at and the
-     * url the CMS shows it small at (the thumbnail of a photo, an image without one itself); never the place on the
-     * disk or the original of a photo. A file that is gone is left out. Without ids it asks nothing
+     * The files of the media library with these ids, in one query, each with the url a visitor opens it at, the urls
+     * of the narrower sizes of a photo and the url the CMS shows it small at (the thumbnail of a photo, an image
+     * without one itself); never the place on the disk or the original of a photo. A file that is gone is left out. Without ids it asks nothing
      * of the database or the disk, so a site without images never needs the media disk.
      *
      * @param  list<int>  $ids
@@ -59,6 +60,11 @@ final class FindMedia
                 croppable: $media->kind === MediaKind::Image && $media->original_path !== null
                     && $media->original_width !== null && $media->original_height !== null,
                 key: $media->ulid,
+                variants: array_map(static fn (ImageVariant $variant): array => [
+                    'url' => $disk->url($variant->path),
+                    'width' => $variant->width,
+                    'height' => $variant->height,
+                ], ImageVariant::listFromArray($media->variants) ?? []),
             );
         }
 

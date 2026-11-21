@@ -12,7 +12,8 @@ use Illuminate\Contracts\Filesystem\Filesystem;
  *
  * - the original is private: it holds the full size and the metadata of the camera (GPS too), and only the app reads it,
  *   to crop the photo again;
- * - the photo, its thumbnail and a file kept as it came in are public, for the visitor and the tiles of the CMS;
+ * - the photo, its narrower sizes, its thumbnail and a file kept as it came in are public, for the visitor and the
+ *   tiles of the CMS;
  * - every file a visitor opens may be kept by a browser or CDN for a year without asking again: the bytes at an
  *   address never change. A crop, a new name and a new version (ReplaceMedia, in a folder of its own) write at a new
  *   address, and putting a version back brings back the same bytes at the same address;
@@ -27,6 +28,9 @@ enum MediaFileRole: string
 {
     /** The photo the site shows, scaled down from the original. */
     case Photo = 'photo';
+
+    /** A narrower size of the photo, for the srcset of the site (MakeImageVariants). */
+    case Variant = 'variant';
 
     /** The photo small, for the tiles of the CMS. */
     case Thumbnail = 'thumbnail';
@@ -55,7 +59,7 @@ enum MediaFileRole: string
     {
         return match ($this) {
             self::Original => Filesystem::VISIBILITY_PRIVATE,
-            self::Photo, self::Thumbnail, self::AsUploaded => Filesystem::VISIBILITY_PUBLIC,
+            self::Photo, self::Variant, self::Thumbnail, self::AsUploaded => Filesystem::VISIBILITY_PUBLIC,
         };
     }
 
@@ -69,7 +73,7 @@ enum MediaFileRole: string
         $options = ['visibility' => $this->visibility(), 'directory_visibility' => Filesystem::VISIBILITY_PUBLIC];
 
         return match ($this) {
-            self::Photo, self::Thumbnail, self::AsUploaded => [...$options, 'CacheControl' => self::CACHE_CONTROL],
+            self::Photo, self::Variant, self::Thumbnail, self::AsUploaded => [...$options, 'CacheControl' => self::CACHE_CONTROL],
             self::Original => $options,
         };
     }

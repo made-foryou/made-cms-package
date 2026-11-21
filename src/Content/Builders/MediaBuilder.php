@@ -63,6 +63,14 @@ final class MediaBuilder extends Builder
     }
 
     /**
+     * The photos that were scaled down but whose narrower sizes were not made yet.
+     */
+    public function withoutVariants(): self
+    {
+        return $this->scaled()->whereNull('variants');
+    }
+
+    /**
      * The files a page uses: in its draft or its published version, also on a deleted page that can still be
      * restored. Such a file cannot be deleted.
      */

@@ -31,8 +31,10 @@ function idsOf(array $media): array
 
 it('deletes a file nowhere in use with every version of it, also from the disk', function (): void {
     $media = UploadMedia::run(new UploadedMedia(photo(800, 600), 'een.jpg'));
-    ReplaceMedia::run($media, new UploadedMedia(photo(800, 600), 'twee.jpg'));
+    ReplaceMedia::run($media, new UploadedMedia(photo(1000, 600), 'twee.jpg'));
     $other = UploadMedia::run(new UploadedMedia(mediaFixture('wedstrijdschema.pdf'), 'schema.pdf'));
+
+    expect(Media::query()->findOrFail($media->id)->variants)->toHaveCount(2);
 
     $result = DeleteMedia::run([$media->id]);
 

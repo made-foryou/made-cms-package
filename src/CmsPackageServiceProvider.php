@@ -25,6 +25,7 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Console\Commands\CreateEditorCommand;
 use Made\CmsPackage\Console\Commands\MediaThumbnailsCommand;
 use Made\CmsPackage\Console\Commands\MediaUsageCommand;
+use Made\CmsPackage\Console\Commands\MediaVariantsCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Attention\EmptyPageSource;
@@ -142,6 +143,7 @@ class CmsPackageServiceProvider extends ServiceProvider
             SitemapCommand::class,
             MediaUsageCommand::class,
             MediaThumbnailsCommand::class,
+            MediaVariantsCommand::class,
         ]);
 
         // Deleted pages can be restored for a while; after that they go for good, with the host's scheduler.

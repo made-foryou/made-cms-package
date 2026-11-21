@@ -8,10 +8,14 @@ use Illuminate\Contracts\Filesystem\Cloud;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\CheckedMedia;
+use Made\CmsPackage\Content\Data\ImageVariant;
 use Made\CmsPackage\Content\Data\ScaledImage;
 use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Exceptions\MediaNotStored;
 
+/**
+ * @phpstan-import-type StoredVariant from ImageVariant
+ */
 final class StoreMediaFiles
 {
     use AsAction;
@@ -19,13 +23,14 @@ final class StoreMediaFiles
     /**
      * Writes the files of an upload into a folder of the media disk and gives the columns that describe them, for a
      * new file (UploadMedia) and for a new version of one (ReplaceMedia). A photo that was scaled down becomes
-     * {name}.{format}, with the upload next to it under a name nobody guesses from the url of the photo and its
-     * thumbnail (MakeThumbnail); anything else is {name}.{extension} exactly as it came in. Each file is written as
-     * its role says (MediaFileRole). The caller takes the folder off the disk again when this or its row fails.
+     * {name}.{format}, with the upload next to it under a name nobody guesses from the url of the photo, its
+     * thumbnail (MakeThumbnail) and its narrower sizes for a srcset as {width}w.{format} (MakeImageVariants); anything
+     * else is {name}.{extension} exactly as it came in, without sizes. Each file is written as its role says
+     * (MediaFileRole). The caller takes the folder off the disk again when this or its row fails.
      *
      * @param  string  $file  the local path of the upload
      * @param  ScaledImage|null  $image  the photo scaled down (ScaleImage); null for a file kept as it came in
-     * @return array{path: string, original_path: string|null, thumb_path: string|null, mime: string, size: int, width: int|null, height: int|null, original_width: int|null, original_height: int|null}
+     * @return array{path: string, original_path: string|null, thumb_path: string|null, variants: list<StoredVariant>|null, mime: string, size: int, width: int|null, height: int|null, original_width: int|null, original_height: int|null}
      *
      * @throws MediaNotStored
      */
@@ -36,6 +41,7 @@ final class StoreMediaFiles
                 'path' => $this->put($disk, $directory, $file, "{$name}.{$checked->extension}", MediaFileRole::AsUploaded),
                 'original_path' => null,
                 'thumb_path' => null,
+                'variants' => null,
                 'mime' => $checked->mime,
                 'size' => $checked->size,
                 'width' => $image?->width,
@@ -54,6 +60,7 @@ final class StoreMediaFiles
             'path' => $path,
             'original_path' => $original,
             'thumb_path' => $thumb,
+            'variants' => ImageVariant::listToArray(WriteImageVariants::run($disk, $directory, $image->contents)),
             'mime' => $image->mime,
             'size' => strlen($image->contents),
             'width' => $image->width,

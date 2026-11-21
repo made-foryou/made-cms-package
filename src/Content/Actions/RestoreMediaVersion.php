@@ -27,9 +27,10 @@ final class RestoreMediaVersion
      * turn, so putting it back again undoes it. The file changes on every page that shows it at once, the published
      * ones too. Nothing leaves the disk.
      *
-     * The files of the version it puts back are made public by their roles before the row points at them, so the site
-     * never shows a file a visitor cannot open; the files of the version that now waits are made private once the
-     * change is committed (HidePreviousVersion). It works from the row as it is now, read again with its row locked.
+     * The files of the version it puts back (the photo, its thumbnail and its narrower sizes) are made public by their
+     * roles before the row points at them, so the site never shows a file a visitor cannot open; the files of the
+     * version that now waits are made private once the change is committed (HidePreviousVersion). It works from the
+     * row as it is now, read again with its row locked.
      *
      * @throws ValidationException keyed by "version" when no version waits
      * @throws ModelNotFoundException when the file is gone
@@ -77,8 +78,8 @@ final class RestoreMediaVersion
     }
 
     /**
-     * The files of a version a visitor opens, by their roles: the file the site shows and its thumbnail. Its original
-     * stays private.
+     * The files of a version a visitor opens, by their roles: the file the site shows, its thumbnail and its narrower
+     * sizes. Its original stays private.
      *
      * @return array<string, MediaFileRole>
      */
@@ -88,6 +89,10 @@ final class RestoreMediaVersion
 
         if ($version->thumbPath !== null) {
             $files[$version->thumbPath] = MediaFileRole::Thumbnail;
+        }
+
+        foreach ($version->variantPaths() as $variant) {
+            $files[$variant] = MediaFileRole::Variant;
         }
 
         return $files;

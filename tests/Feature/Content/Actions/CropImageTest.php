@@ -12,6 +12,7 @@ use Made\CmsPackage\Content\Actions\RenameMedia;
 use Made\CmsPackage\Content\Actions\UploadMedia;
 use Made\CmsPackage\Content\Data\CropArea;
 use Made\CmsPackage\Content\Data\CropMedia;
+use Made\CmsPackage\Content\Data\MediaVersion;
 use Made\CmsPackage\Content\Data\UploadedMedia;
 use Made\CmsPackage\Content\Enums\MediaFileRole;
 use Made\CmsPackage\Content\Events\MediaCropped;
@@ -231,6 +232,41 @@ it('writes the photo at a new address with a new thumbnail, and takes the former
         ->and($disk->allFiles())->toEqualCanonicalizing([$second->path, (string) $second->thumb_path, (string) $second->original_path]);
 });
 
+it('gives the cut photo its narrower sizes in its own folder, and takes the former sizes off the disk', function (): void {
+    $disk = Storage::disk('public');
+    $media = cropped(quadrants(2400, 1600));
+    $uploaded = array_column((array) $media->variants, 'path');
+
+    $first = CropImage::run($media, new CropMedia(new CropArea(0, 0, 2400, 800)));
+    $folder = dirname($first->path);
+
+    expect($uploaded)->toHaveCount(3)
+        ->and($first->variants)->toBe([
+            ['path' => "{$folder}/480w.webp", 'width' => 480, 'height' => 160],
+            ['path' => "{$folder}/960w.webp", 'width' => 960, 'height' => 320],
+            ['path' => "{$folder}/1440w.webp", 'width' => 1440, 'height' => 480],
+        ])
+        ->and(storedSize("{$folder}/960w.webp"))->toBe([960, 320, 'mime' => 'image/webp']);
+
+    foreach ($uploaded as $file) {
+        expect($disk->exists($file))->toBeFalse();
+    }
+
+    $second = CropImage::run($first, new CropMedia(new CropArea(0, 0, 1000, 1000)));
+
+    expect(array_column((array) $second->variants, 'width'))->toBe([480, 960])
+        ->and($disk->directoryExists($folder))->toBeFalse()
+        ->and($disk->allFiles())->toEqualCanonicalizing(MediaVersion::held($second));
+});
+
+it('gives a photo that is not scaled down the sizes narrower than itself', function (): void {
+    $media = cropped(quadrants(2400, 1600));
+
+    $media = CropImage::run($media, new CropMedia(new CropArea(0, 0, 1200, 800), scaleDown: false));
+
+    expect(array_column((array) $media->variants, 'width'))->toBe([480, 960]);
+});
+
 it('writes the new photo and its thumbnail public and keeps the original private, on a disk that is private itself', function (): void {
     Storage::fake('public', ['visibility' => 'private']);
     $disk = Storage::disk('public');
@@ -253,7 +289,8 @@ it('hands the disk the new photo and its thumbnail with a cache header for a yea
     $public = ['visibility' => 'public', 'directory_visibility' => 'public', 'CacheControl' => MediaFileRole::CACHE_CONTROL];
 
     expect($disk->written($media->path))->toBe($public)
-        ->and($disk->written((string) $media->thumb_path))->toBe($public);
+        ->and($disk->written((string) $media->thumb_path))->toBe($public)
+        ->and($disk->written(dirname($media->path).'/480w.webp'))->toBe($public);
 });
 
 it('stores only the focal point when the area stays as it was', function (): void {

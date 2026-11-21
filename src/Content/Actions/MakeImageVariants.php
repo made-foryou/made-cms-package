@@ -33,26 +33,25 @@ final class MakeImageVariants
         $image = ImageDriver::configured()->manager()->decodeBinary($photo);
         $format = Format::create(config()->string('made-cms-package.media.image.format'));
         $quality = config()->integer('made-cms-package.media.image.quality');
+        $widths = array_filter(self::widths(), static fn (int $width): bool => $width < $image->width());
         $variants = [];
 
-        foreach (self::widths() as $width) {
-            if ($width >= $image->width()) {
-                break;
-            }
-
-            $variant = (clone $image)->scaleDown(width: $width);
-            $encoded = $variant->encodeUsingFormat($format, quality: $quality);
+        // From wide to narrow on the one image, so a photo that was not scaled down (up to 16383 px) is never copied
+        // in memory; each size is still made from a wider one.
+        foreach (array_reverse($widths) as $width) {
+            $image = $image->scaleDown(width: $width);
+            $encoded = $image->encodeUsingFormat($format, quality: $quality);
 
             $variants[] = new ScaledImage(
-                $variant->width(),
-                $variant->height(),
+                $image->width(),
+                $image->height(),
                 $encoded->toString(),
                 $format->mediaType()->value,
                 $format->fileExtension()->value,
             );
         }
 
-        return $variants;
+        return array_reverse($variants);
     }
 
     /**

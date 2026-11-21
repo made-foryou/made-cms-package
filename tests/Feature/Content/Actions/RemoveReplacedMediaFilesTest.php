@@ -39,6 +39,25 @@ it('removes a former photo next to the original alone, and the former thumbnail'
     expect(Storage::disk('public')->allFiles())->toEqualCanonicalizing([$media->path, $media->original_path, $media->thumb_path]);
 });
 
+it('removes the former sizes of a photo next to the original one by one', function (): void {
+    $home = 'media/01k0000000000000000000000';
+    $media = replacedMedia("{$home}/abcdefgh/teamfoto.webp", ["{$home}/teamfoto.webp", "{$home}/480w.webp", "{$home}/960w.webp"]);
+
+    RemoveReplacedMediaFiles::run($media->id, "{$home}/teamfoto.webp", variants: ["{$home}/480w.webp", "{$home}/960w.webp"]);
+
+    expect(Storage::disk('public')->allFiles())->toEqualCanonicalizing([$media->path, $media->original_path, $media->thumb_path]);
+});
+
+it('leaves a former size the row holds now', function (): void {
+    $home = 'media/01k0000000000000000000000';
+    $media = replacedMedia("{$home}/abcdefgh/teamfoto.webp", ["{$home}/teamfoto.webp", "{$home}/abcdefgh/480w.webp"]);
+    $media->update(['variants' => [['path' => "{$home}/abcdefgh/480w.webp", 'width' => 480, 'height' => 320]]]);
+
+    RemoveReplacedMediaFiles::run($media->id, "{$home}/teamfoto.webp", variants: ["{$home}/abcdefgh/480w.webp"]);
+
+    expect(Storage::disk('public')->exists("{$home}/abcdefgh/480w.webp"))->toBeTrue();
+});
+
 it('removes the folder of a former crop with everything in it', function (): void {
     $home = 'media/01k0000000000000000000000';
     $media = replacedMedia("{$home}/zyxwvuts/teamfoto.webp", ["{$home}/abcdefgh/teamfoto.webp", "{$home}/abcdefgh/clubavond.webp"]);

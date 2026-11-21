@@ -49,6 +49,25 @@ it('renames a photo as a slug and moves it within its folder', function (): void
         ->and(Media::query()->findOrFail($media->id)->only('name', 'path'))->toBe(['name' => 'teamfoto-merwestad-4', 'path' => $media->path]);
 });
 
+it('leaves the narrower sizes of a photo as they are, named after their width', function (): void {
+    $disk = Storage::disk('public');
+    $media = renamed(photo(1000, 500));
+    $variants = $media->variants;
+
+    $media = RenameMedia::run($media, 'Jan Jansen');
+    RenameMedia::run($media, 'Teamfoto');
+
+    $stored = Media::query()->findOrFail($media->id);
+
+    expect($stored->variants)->toBe($variants)
+        ->and(array_column((array) $variants, 'path'))->toBe([dirname($stored->path).'/480w.webp', dirname($stored->path).'/960w.webp'])
+        ->and($disk->allFiles())->not->toContain(dirname($stored->path).'/jan-jansen.webp');
+
+    foreach ((array) $variants as $variant) {
+        expect($disk->exists($variant['path']))->toBeTrue();
+    }
+});
+
 it('renames a cropped photo within the folder of its crop', function (): void {
     $media = CropImage::run(renamed(photo(400, 300)), new CropMedia(new CropArea(0, 0, 200, 200)));
     $folder = dirname($media->path);

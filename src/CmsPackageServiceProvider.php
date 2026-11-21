@@ -27,6 +27,11 @@ use Made\CmsPackage\Console\Commands\MediaThumbnailsCommand;
 use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Console\Commands\SitemapCommand;
+use Made\CmsPackage\Content\Attention\EmptyPageSource;
+use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
+use Made\CmsPackage\Content\Attention\MetaTitleSource;
+use Made\CmsPackage\Content\Attention\StaleDraftSource;
+use Made\CmsPackage\Content\Data\AttentionSources;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\ServedAddress;
 use Made\CmsPackage\Content\Data\SitemapSources;
@@ -67,6 +72,7 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->registerPageRequestState();
 
         $this->registerSitemap();
+        $this->registerAttention();
 
         // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
         // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
@@ -207,6 +213,19 @@ class CmsPackageServiceProvider extends ServiceProvider
 
         // Read from the routes each time it is needed, never at boot: the routes of the site load after this provider.
         $this->app->bind(SitePrefixes::class, static fn (Application $app): SitePrefixes => SiteRoutes::prefixes($app->make(Router::class)));
+    }
+
+    /**
+     * Where the attention points of a page come from, in this order (links and media add a source of their own later).
+     */
+    private function registerAttention(): void
+    {
+        $this->app->bind(AttentionSources::class, static fn (): AttentionSources => new AttentionSources([
+            new StaleDraftSource,
+            new MetaDescriptionSource,
+            new MetaTitleSource,
+            new EmptyPageSource,
+        ]));
     }
 
     /**

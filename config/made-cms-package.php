@@ -113,10 +113,15 @@ return [
     | A deleted page can be restored for keep_deleted_days. After that the
     | made-cms:prune command, which runs every day, removes it for good.
     |
+    | A draft of a published page that is open longer than stale_draft_days
+    | asks for attention on the screen of the page: visitors still see the
+    | older text.
+    |
     */
 
     'pages' => [
         'keep_deleted_days' => 30,
+        'stale_draft_days' => 5,
     ],
 
     /*

@@ -188,7 +188,23 @@ it('renders an image as the url, alt text, size and focal point of its file', fu
         'width' => 1600,
         'height' => 1067,
         'focal' => ['x' => 0.3, 'y' => 0.2],
+        'variants' => [],
+        'srcset' => null,
     ]);
+});
+
+it('renders the narrower sizes of an image with the url of the media disk', function (): void {
+    Storage::fake('public');
+    $disk = Storage::disk('public');
+    $media = Media::factory()->withVariants([480, 960])->create(['path' => 'media/01k9/teamfoto.webp', 'width' => 1600, 'height' => 1000]);
+    $page = Page::factory()->published()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'a')])->create();
+
+    $foto = RenderStrips::run($page)->strips[0]->foto;
+
+    expect($foto['variants'] ?? null)->toBe([
+        ['url' => $disk->url('media/01k9/480w.webp'), 'width' => 480, 'height' => 300],
+        ['url' => $disk->url('media/01k9/960w.webp'), 'width' => 960, 'height' => 600],
+    ])->and($foto['srcset'] ?? null)->toBe($disk->url('media/01k9/480w.webp').' 480w, '.$disk->url('media/01k9/960w.webp').' 960w, '.$disk->url('media/01k9/teamfoto.webp').' 1600w');
 });
 
 it('renders an image in an item of a list', function (): void {
@@ -318,7 +334,7 @@ it('leaves the files of hidden strips and unknown types alone', function (): voi
 
 it('hands the site the url of an image, never its place on the disk or its original', function (): void {
     Storage::fake('public');
-    $media = Media::factory()->create(['path' => 'media/01k9/teamfoto.webp', 'original_path' => 'media/01k9/original-geheim123.jpg']);
+    $media = Media::factory()->withVariants()->create(['path' => 'media/01k9/teamfoto.webp', 'original_path' => 'media/01k9/original-geheim123.jpg']);
     $page = Page::factory()->published()->withStrips([storedStrip('hero', ['foto' => $media->id], id: 'a')])->create();
 
     $json = (string) json_encode(RenderStrips::run($page)->toArray());
@@ -326,5 +342,6 @@ it('hands the site the url of an image, never its place on the disk or its origi
     expect($json)->not->toContain('original-geheim123')
         ->and($json)->not->toContain('"path"')
         ->and($json)->not->toContain('"original_path"')
-        ->and(array_keys(RenderStrips::run($page)->toArray()[0]['foto'] ?? []))->toBe(['url', 'alt', 'width', 'height', 'focal']);
+        ->and(array_keys(RenderStrips::run($page)->toArray()[0]['foto'] ?? []))->toBe(['url', 'alt', 'width', 'height', 'focal', 'variants', 'srcset'])
+        ->and(array_keys(RenderStrips::run($page)->toArray()[0]['foto']['variants'][0] ?? []))->toBe(['url', 'width', 'height']);
 });

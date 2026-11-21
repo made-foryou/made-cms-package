@@ -445,19 +445,26 @@ function setHref(node, url) {
 }
 
 /*
- * An image changes the address and the alt text of the <img> that shows it, and its width and height when the site
- * prints them. An image with sources of its own (srcset, a <picture>), an element that shows it otherwise (a
- * background) and a size the site prints but the file does not have are the site's to make, so they reload.
+ * An image changes the address and the alt text of the <img> that shows it, its srcset when the site prints one (its
+ * sizes stay the site's), and its width and height when the site prints them. A srcset becomes the sizes of the file
+ * as the server wrote them, or its address alone when it has none, so the attribute stays for the next change. A
+ * <picture>, an element that shows it otherwise (a background) and a size the site prints but the file does not have
+ * are the site's to make, so they reload.
  */
 function setImage(node, value) {
     const sized = node.hasAttribute('width') || node.hasAttribute('height');
 
-    if (node.localName !== 'img' || node.hasAttribute('srcset') || node.parentElement?.localName === 'picture'
+    if (node.localName !== 'img' || node.parentElement?.localName === 'picture'
         || typeof value.url !== 'string' || (sized && (value.width === null || value.height === null))) {
         return false;
     }
 
-    const attributes = { src: value.url, alt: value.alt ?? '', ...(sized ? { width: String(value.width), height: String(value.height) } : {}) };
+    const attributes = {
+        src: value.url,
+        alt: value.alt ?? '',
+        ...(node.hasAttribute('srcset') ? { srcset: typeof value.srcset === 'string' ? value.srcset : value.url } : {}),
+        ...(sized ? { width: String(value.width), height: String(value.height) } : {}),
+    };
 
     for (const [name, text] of Object.entries(attributes)) {
         if (node.getAttribute(name) !== text) {

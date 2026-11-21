@@ -9,19 +9,23 @@ use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\MeasureMeta;
 use Made\CmsPackage\Content\Actions\MeasureShareImage;
+use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Data\MetaLength;
+use Made\CmsPackage\Content\Data\PageAttention;
 use Made\CmsPackage\Content\Data\PageMeta;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\PageTree;
 use Made\CmsPackage\Content\Data\ShareImageDescription;
 use Made\CmsPackage\Content\Data\ShareImageFit;
+use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Enums\ShareImageRefusal;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Cms\AttentionActions;
 use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\MediaDetails;
@@ -35,8 +39,9 @@ use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\Site;
 
 /**
- * One page (design 15.2): its basics (name, address, place and menu flag), how Google sees it, how a shared link shows
- * it (design 23), the pages under it, and removing it.
+ * One page (design 15.2): what it asks for attention, also in one line in the column "In het kort" beside the cards,
+ * its basics (name, address, place and menu flag), how Google sees it, how a shared link shows it (design 23), the
+ * pages under it, and removing it.
  */
 final class ShowPageResponse
 {
@@ -51,6 +56,7 @@ final class ShowPageResponse
      * @param  ShareImageDescription  $share  the image a shared link to the page shows now (DescribeShareImage)
      * @param  MediaFolder|null  $folder  the folder the picker and the upload field start in (MediaFolderMemory)
      * @param  bool  $shareSaved  the card "Hoe je link gedeeld wordt" was saved right before
+     * @param  PageAttention  $attention  what the page asks for attention (ListPageAttention)
      */
     public static function make(
         Editor $editor,
@@ -65,6 +71,7 @@ final class ShowPageResponse
         ShareImageDescription $share,
         ?MediaFolder $folder,
         bool $shareSaved,
+        PageAttention $attention,
     ): Response {
         $node = $pages->find($page->id);
         $path = $page->route?->path;
@@ -104,7 +111,46 @@ final class ShowPageResponse
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
             'meta' => self::meta($page, $screens, $meta, $fallbackTitle, $metaSaved),
             'share' => self::share($page, $screens, $meta, $share, $folder, $shareSaved),
+            'attention' => self::attention($page, $screens, $attention),
         ], $pages, $page);
+    }
+
+    /**
+     * The card "Hoe hij ervoor staat" and its line in "In het kort": every point in words, with the way to what solves
+     * it only where the editor may go. A page whose one point is that it is empty says so in the line.
+     *
+     * @param  list<Screen>  $screens
+     * @return array{
+     *     items: list<array{severity: string, title: string, meta: string, action: string, url: string|null}>,
+     *     summary: array{text: string, hint: string|null, flagged: bool},
+     * }
+     */
+    private static function attention(Page $page, array $screens, PageAttention $attention): array
+    {
+        $locale = Locale::launcher();
+        $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.show.'.$key, $replace, $locale);
+        $empty = $attention->count() === 1 && $attention->items[0]->reason === AttentionReason::Empty;
+
+        return [
+            'items' => array_map(static fn (AttentionItem $item): array => [
+                'severity' => $item->severity->value,
+                'title' => $text('attention.reasons.'.$item->reason->value.'.title', $item->details),
+                'meta' => $text('attention.reasons.'.$item->reason->value.'.meta', $item->details),
+                'action' => $text('attention.reasons.'.$item->reason->value.'.action', $item->details),
+                'url' => AttentionActions::url($item->reason, $page, $screens),
+            ], $attention->items),
+            'summary' => [
+                'text' => $empty
+                    ? $text('summary.empty')
+                    : trans_choice('made-cms-package::pages.show.summary.attention', $attention->count(), [], $locale),
+                'hint' => match (true) {
+                    $empty => $text('summary.empty_hint'),
+                    $attention->isEmpty() => null,
+                    default => $text('summary.attention_hint'),
+                },
+                'flagged' => ! $attention->isEmpty(),
+            ],
+        ];
     }
 
     /**

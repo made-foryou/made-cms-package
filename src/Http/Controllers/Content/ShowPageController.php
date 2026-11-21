@@ -11,6 +11,7 @@ use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Actions\DescribeShareImage;
 use Made\CmsPackage\Content\Actions\FindMediaFolder;
 use Made\CmsPackage\Content\Actions\ListMenuPages;
+use Made\CmsPackage\Content\Actions\ListPageAttention;
 use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\ListParentOptions;
 use Made\CmsPackage\Content\Actions\MakeFallbackTitle;
@@ -22,8 +23,8 @@ use Made\CmsPackage\Http\Responses\ShowPageResponse;
 use Made\CmsPackage\Http\Session\MediaFolderMemory;
 
 /**
- * One page: its basics, how Google sees it, how a shared link shows it, the pages under it and removing it. Right after
- * the wizard: that it is ready.
+ * One page: what it asks for attention, its basics, how Google sees it, how a shared link shows it, the pages under it
+ * and removing it. Right after the wizard: that it is ready.
  */
 final class ShowPageController
 {
@@ -50,6 +51,7 @@ final class ShowPageController
             share: DescribeShareImage::run($page),
             folder: FindMediaFolder::run(MediaFolderMemory::of($request)->id()),
             shareSaved: PageRedirect::justSavedShare($request, $page),
+            attention: ListPageAttention::run($page),
         );
     }
 }

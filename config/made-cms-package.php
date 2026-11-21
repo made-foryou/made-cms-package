@@ -206,6 +206,8 @@ return [
         'image' => [
             'driver' => (string) env('MADE_CMS_IMAGE_DRIVER', 'gd'),
             'max_width' => 1920,
+            // The narrower sizes a photo also gets, for the srcset of the site: each width narrower than the photo.
+            'variants' => [480, 960, 1440],
             'format' => 'webp',
             'quality' => 82,
         ],

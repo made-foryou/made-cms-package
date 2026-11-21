@@ -14,7 +14,8 @@ use Throwable;
  * `previous`, in the form toArray() gives; putting one back swaps the two (RestoreMediaVersion).
  *
  * A version that came in by replacing the file lives in a folder of its own, media/{ulid}/{8 random}; the upload
- * lives at the root, media/{ulid}. A crop of a version goes next to its original, in {home}/{8 random}.
+ * lives at the root, media/{ulid}. A crop of a version goes next to its original, in {home}/{8 random}. The narrower
+ * sizes of a photo (ImageVariant) lie next to the photo they were made from.
  */
 final readonly class MediaVersion
 {
@@ -27,6 +28,7 @@ final readonly class MediaVersion
      * @param  array<string, mixed>|null  $crop  how the photo was cut from its original; null for the whole original
      * @param  int|null  $placedBy  the editor who placed this version by replacing the file; null for the upload
      * @param  CarbonImmutable|null  $placedAt  when this version was placed by replacing the file; null for the upload
+     * @param  list<ImageVariant>|null  $variants  the narrower sizes of the photo; null while they were not made
      */
     public function __construct(
         public int $version,
@@ -45,6 +47,7 @@ final readonly class MediaVersion
         public ?array $crop,
         public ?int $placedBy,
         public ?CarbonImmutable $placedAt,
+        public ?array $variants = null,
     ) {}
 
     /**
@@ -69,6 +72,7 @@ final readonly class MediaVersion
             crop: $media->crop,
             placedBy: $media->replaced_by,
             placedAt: $media->replaced_at,
+            variants: ImageVariant::listFromArray($media->variants),
         );
     }
 
@@ -137,6 +141,7 @@ final readonly class MediaVersion
             crop: is_array($crop) ? $crop : null,
             placedBy: self::number($values['placed_by'] ?? null),
             placedAt: $placedAt,
+            variants: ImageVariant::listFromArray($values['variants'] ?? null),
         );
     }
 
@@ -164,6 +169,7 @@ final readonly class MediaVersion
             'crop' => $this->crop,
             'placed_by' => $this->placedBy,
             'placed_at' => $this->placedAt?->toIso8601String(),
+            'variants' => ImageVariant::listToArray($this->variants),
         ];
     }
 
@@ -191,20 +197,35 @@ final readonly class MediaVersion
             'crop' => $this->crop,
             'replaced_by' => $this->placedBy,
             'replaced_at' => $this->placedAt,
+            'variants' => ImageVariant::listToArray($this->variants),
         ];
     }
 
     /**
-     * The files of this version on the media disk: the file the site shows, its thumbnail and its original.
+     * The files of this version on the media disk: the file the site shows, its thumbnail, its original and its
+     * narrower sizes.
      *
      * @return list<string>
      */
     public function files(): array
     {
-        return array_values(array_filter(
-            [$this->path, $this->thumbPath, $this->originalPath],
-            static fn (?string $path): bool => $path !== null,
-        ));
+        return [
+            ...array_values(array_filter(
+                [$this->path, $this->thumbPath, $this->originalPath],
+                static fn (?string $path): bool => $path !== null,
+            )),
+            ...$this->variantPaths(),
+        ];
+    }
+
+    /**
+     * The files of the narrower sizes of the photo, from narrow to wide.
+     *
+     * @return list<string>
+     */
+    public function variantPaths(): array
+    {
+        return array_map(static fn (ImageVariant $variant): string => $variant->path, $this->variants ?? []);
     }
 
     /**

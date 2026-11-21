@@ -24,6 +24,10 @@ function storedVersion(array $overrides = []): array
         'crop' => ['x' => 10, 'y' => 20, 'width' => 400, 'height' => 300, 'rotation' => 0, 'flip' => false, 'scale_down' => true],
         'placed_by' => 7,
         'placed_at' => '2026-10-20T14:30:00+00:00',
+        'variants' => [
+            ['path' => 'media/01jc8x0000000000000000000a/k3f9a2b1/480w.webp', 'width' => 480, 'height' => 320],
+            ['path' => 'media/01jc8x0000000000000000000a/k3f9a2b1/960w.webp', 'width' => 960, 'height' => 640],
+        ],
         ...$overrides,
     ];
 }
@@ -56,6 +60,7 @@ it('reads a version kept as it came in, without original, thumbnail, size or cro
         'crop' => null,
         'placed_by' => null,
         'placed_at' => null,
+        'variants' => null,
     ]);
 
     $version = MediaVersion::fromArray($stored);
@@ -83,7 +88,19 @@ it('lists its files and the folder they are in', function (): void {
         'media/01jc8x0000000000000000000a/k3f9a2b1/teamfoto.webp',
         'media/01jc8x0000000000000000000a/thumb-abc.webp',
         'media/01jc8x0000000000000000000a/original-abc.jpg',
+        'media/01jc8x0000000000000000000a/k3f9a2b1/480w.webp',
+        'media/01jc8x0000000000000000000a/k3f9a2b1/960w.webp',
     ])->and($version?->home())->toBe('media/01jc8x0000000000000000000a');
+});
+
+it('reads a version stored before photos had narrower sizes as one whose sizes were not made', function (): void {
+    $stored = storedVersion();
+    unset($stored['variants']);
+
+    $version = MediaVersion::fromArray($stored);
+
+    expect($version?->variants)->toBeNull()
+        ->and($version?->toArray())->toBe([...$stored, 'variants' => null]);
 });
 
 it('gives the columns that put it back on the row', function (): void {
@@ -100,5 +117,6 @@ it('gives the columns that put it back on the row', function (): void {
         'focal_x' => 0.25,
         'crop' => storedVersion()['crop'],
         'replaced_by' => 7,
+        'variants' => storedVersion()['variants'],
     ])->and($columns['replaced_at'] ?? null)->toBeInstanceOf(CarbonImmutable::class);
 });

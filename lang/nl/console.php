@@ -28,6 +28,13 @@ return [
         'missing' => 'Geen miniatuur voor :name (#:id): het bestand staat niet op de media-disk.',
         'unreadable' => 'Geen miniatuur voor :name (#:id): het bestand is geen foto die te lezen is.',
     ],
+    'media_variants' => [
+        'made' => ':made; :had.',
+        'count' => '{0} Geen formaten gemaakt|{1} Formaten gemaakt voor 1 foto|[2,*] Formaten gemaakt voor :count foto’s',
+        'had' => '{0} geen foto had ze al|{1} 1 foto had ze al|[2,*] :count foto’s hadden ze al',
+        'missing' => 'Geen formaten voor :name (#:id): het bestand staat niet op de media-disk.',
+        'unreadable' => 'Geen formaten voor :name (#:id): het bestand is geen foto die te lezen is.',
+    ],
     'sitemap' => [
         'built' => ':address: :addresses, :errors.',
         'unchanged' => ':address is niet veranderd: :addresses, :errors.',

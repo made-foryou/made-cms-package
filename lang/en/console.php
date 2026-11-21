@@ -28,6 +28,13 @@ return [
         'missing' => 'No thumbnail for :name (#:id): the file is not on the media disk.',
         'unreadable' => 'No thumbnail for :name (#:id): the file is no photo that can be read.',
     ],
+    'media_variants' => [
+        'made' => ':made; :had.',
+        'count' => '{0} Made no sizes|{1} Made the sizes of 1 photo|[2,*] Made the sizes of :count photos',
+        'had' => '{0} no photo had them already|{1} 1 photo had them already|[2,*] :count photos had them already',
+        'missing' => 'No sizes for :name (#:id): the file is not on the media disk.',
+        'unreadable' => 'No sizes for :name (#:id): the file is no photo that can be read.',
+    ],
     'sitemap' => [
         'built' => ':address: :addresses, :errors.',
         'unchanged' => ':address did not change: :addresses, :errors.',

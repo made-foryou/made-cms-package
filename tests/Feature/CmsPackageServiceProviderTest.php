@@ -121,6 +121,10 @@ it('registers the command that makes the missing thumbnails', function (): void 
     expect(Artisan::all())->toHaveKey('made-cms:media-thumbnails');
 });
 
+it('registers the command that makes the missing narrower sizes of photos', function (): void {
+    expect(Artisan::all())->toHaveKey('made-cms:media-variants');
+});
+
 it('registers the prune command and runs it every day', function (): void {
     $events = collect(app(Schedule::class)->events())
         ->filter(fn (Event $event): bool => str_contains((string) $event->command, 'made-cms:prune'));

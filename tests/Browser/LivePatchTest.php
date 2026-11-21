@@ -268,6 +268,41 @@ it('patches the address and the alt text of an image without reloading the frame
     $shell->assertNoJavaScriptErrors();
 });
 
+it('patches the srcset of an image with narrower sizes without reloading the frame, and leaves its sizes to the site', function (): void {
+    Storage::fake('public');
+    $photo = Media::factory()->withVariants()->withAlt('Het oude team')->create();
+    $page = Page::factory()->published()->atPosition(1)->at('/teams')->withStrips([
+        storedStrip('hero', ['kop' => 'Onze teams', 'foto' => $photo->id], id: 'hero'),
+        storedStrip('cards', ['kop' => 'Wat we doen'], id: 'cards'),
+    ])->create(['title' => 'Teams']);
+    $image = siteInFrame()."?.querySelector('[data-cms-strip=\"hero\"] img[data-cms-field=\"foto\"]')";
+    $pixel = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=';
+    $small = 'data:image/gif;base64,R0lGODlhAQABAAAAACw=#480';
+    $sizes = '(max-width: 720px) 100vw, 720px';
+
+    $shell = openStrip($page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Onze teams'");
+
+    expect($shell->script(waitUntil("{$image}?.getAttribute('srcset')?.endsWith(' 1920w') === true && {$image}?.getAttribute('sizes') === '{$sizes}'")))->toBeTrue();
+
+    $shell->script(markFrame());
+    $shell->script(sendPhoto([
+        'url' => $pixel, 'alt' => 'Het nieuwe team', 'width' => 1, 'height' => 1, 'focal' => ['x' => 0.5, 'y' => 0.5],
+        'variants' => [['url' => $small, 'width' => 480, 'height' => 320]], 'srcset' => "{$small} 480w, {$pixel} 960w",
+    ], 1));
+
+    expect($shell->script(waitUntil("{$image}?.getAttribute('srcset') === '{$small} 480w, {$pixel} 960w' && {$image}?.getAttribute('src') === '{$pixel}'")))->toBeTrue()
+        ->and($shell->script("() => {$image}?.getAttribute('sizes')"))->toBe($sizes)
+        ->and($shell->script("() => {$image}?.getAttribute('alt')"))->toBe('Het nieuwe team');
+
+    // A file without narrower sizes keeps the attribute, as its address alone.
+    $shell->script(sendPhoto(['url' => $pixel, 'alt' => 'Het logo', 'width' => 1, 'height' => 1, 'focal' => ['x' => 0.5, 'y' => 0.5], 'variants' => [], 'srcset' => null], 2));
+
+    expect($shell->script(waitUntil("{$image}?.getAttribute('srcset') === '{$pixel}' && {$image}?.getAttribute('alt') === 'Het logo'")))->toBeTrue()
+        ->and($shell->script(valueAfter(frameReloaded(), 500)))->toBeFalse();
+
+    $shell->assertNoJavaScriptErrors();
+});
+
 it('shows the words between asterisks of a heading with emphasis as an <em> while the editor types, without reloading the frame', function (): void {
     $shell = openStrip($this->page, 'hero', "document.querySelector('[data-path=\"kop\"] input')?.value === 'Welkom bij de club'");
     $heading = siteInFrame()."?.querySelector('[data-cms-strip=\"hero\"] h2')";

@@ -10,7 +10,10 @@ use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 
-function mediaFile(int $id, MediaKind $kind = MediaKind::Image, ?string $alt = null, ?float $focalX = null, ?float $focalY = null, ?int $width = 1600, ?int $height = 1067): MediaFile
+/**
+ * @param  list<array{url: string, width: int, height: int}>  $variants
+ */
+function mediaFile(int $id, MediaKind $kind = MediaKind::Image, ?string $alt = null, ?float $focalX = null, ?float $focalY = null, ?int $width = 1600, ?int $height = 1067, array $variants = []): MediaFile
 {
     return new MediaFile(
         id: $id,
@@ -26,6 +29,7 @@ function mediaFile(int $id, MediaKind $kind = MediaKind::Image, ?string $alt = n
         focalX: $focalX,
         focalY: $focalY,
         folder: null,
+        variants: $variants,
     );
 }
 
@@ -182,7 +186,33 @@ it('renders the file as its url, alt text, size and focal point', function (): v
         'width' => 1600,
         'height' => 1067,
         'focal' => ['x' => 0.25, 'y' => 0.75],
+        'variants' => [],
+        'srcset' => null,
     ]);
+});
+
+it('renders the narrower sizes of the file as a list and as a srcset that ends with the file itself', function (): void {
+    $files = new MediaFiles([12 => mediaFile(12, width: 1600, height: 1000, variants: [
+        ['url' => 'https://example.com/storage/media/12/480w.webp', 'width' => 480, 'height' => 300],
+        ['url' => 'https://example.com/storage/media/12/960w.webp', 'width' => 960, 'height' => 600],
+    ])]);
+
+    $rendered = Image::make('foto')->render(12, $files);
+
+    expect($rendered['variants'] ?? null)->toBe([
+        ['url' => 'https://example.com/storage/media/12/480w.webp', 'width' => 480, 'height' => 300],
+        ['url' => 'https://example.com/storage/media/12/960w.webp', 'width' => 960, 'height' => 600],
+    ])->and($rendered['srcset'] ?? null)->toBe(
+        'https://example.com/storage/media/12/480w.webp 480w, https://example.com/storage/media/12/960w.webp 960w, https://example.com/storage/media/12/teamfoto.webp 1600w',
+    )->and($rendered['url'] ?? null)->toBe('https://example.com/storage/media/12/teamfoto.webp');
+});
+
+it('renders no srcset for a file without a width, whatever sizes it holds', function (): void {
+    $files = new MediaFiles([12 => mediaFile(12, width: null, height: null, variants: [
+        ['url' => 'https://example.com/storage/media/12/480w.webp', 'width' => 480, 'height' => 300],
+    ])]);
+
+    expect(Image::make('foto')->render(12, $files))->toHaveKey('srcset', null);
 });
 
 it('renders a file without an alt text with an empty one and without a focal point at the centre', function (): void {
@@ -194,6 +224,8 @@ it('renders a file without an alt text with an empty one and without a focal poi
         'width' => null,
         'height' => null,
         'focal' => ['x' => 0.5, 'y' => 0.5],
+        'variants' => [],
+        'srcset' => null,
     ]);
 });
 

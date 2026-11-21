@@ -11,7 +11,8 @@ use Made\CmsPackage\Support\MediaLink;
  * A file of the media library as a strip renders it and the side panel shows it: by its url, never by where it is on
  * the disk, and without the original of a photo. The thumbnail is for the CMS only; a strip renders the photo.
  *
- * @phpstan-type RenderedImage array{url: string, alt: string, width: int|null, height: int|null, focal: array{x: float, y: float}}
+ * @phpstan-type RenderedVariant array{url: string, width: int, height: int}
+ * @phpstan-type RenderedImage array{url: string, alt: string, width: int|null, height: int|null, focal: array{x: float, y: float}, variants: list<RenderedVariant>, srcset: string|null}
  * @phpstan-type RenderedFile array{url: string, name: string, extension: string, kind: string, mime: string, size: int, description: string|null}
  */
 final readonly class MediaFile
@@ -29,6 +30,7 @@ final readonly class MediaFile
      * @param  int|null  $folderId  the id of that folder; null for none
      * @param  bool  $croppable  whether the file is a photo with an original to cut it from again (CropImage)
      * @param  string|null  $key  the folder of the file on the disk (media/{ulid}), the key of its lasting link
+     * @param  list<RenderedVariant>  $variants  the narrower sizes of a photo by their url, from narrow to wide
      */
     public function __construct(
         public int $id,
@@ -47,11 +49,13 @@ final readonly class MediaFile
         public ?int $folderId = null,
         public bool $croppable = false,
         public ?string $key = null,
+        public array $variants = [],
     ) {}
 
     /**
      * The image as the site renders it. The alt text is always a text, empty when the file has none, so an <img> never
-     * lacks one; without a focal point it is the centre, the place object-position starts from.
+     * lacks one; without a focal point it is the centre, the place object-position starts from. `url` is the largest
+     * size; `variants` are the narrower ones and `srcset` all of them for the attribute of an <img>.
      *
      * @return RenderedImage
      */
@@ -63,7 +67,26 @@ final readonly class MediaFile
             'width' => $this->width,
             'height' => $this->height,
             'focal' => ['x' => $this->focalX ?? 0.5, 'y' => $this->focalY ?? 0.5],
+            'variants' => $this->variants,
+            'srcset' => $this->srcset(),
         ];
+    }
+
+    /**
+     * The sizes of the image for the srcset of an <img>, from narrow to wide and ending with the file itself by its
+     * width ("…/480w.webp 480w, …/teamfoto.webp 1920w"). Null when there is nothing to choose from: no narrower size, or
+     * a file whose width is unknown (an svg).
+     */
+    public function srcset(): ?string
+    {
+        if ($this->variants === [] || $this->width === null) {
+            return null;
+        }
+
+        return implode(', ', array_map(
+            static fn (array $variant): string => "{$variant['url']} {$variant['width']}w",
+            [...$this->variants, ['url' => $this->url, 'width' => $this->width]],
+        ));
     }
 
     /**

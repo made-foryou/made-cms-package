@@ -38,6 +38,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property PageStatus $status
  * @property list<StoredStrip> $strips the published strips, in order
  * @property list<StoredStrip>|null $draft_strips the draft editors work on; null when there is none
+ * @property CarbonImmutable|null $draft_started_at when the draft that is there now began; null without a draft (ChangeDraft)
  * @property CarbonImmutable|null $published_at
  * @property-read Route|null $route the address of the page on the site
  * @property-read Page|null $parent
@@ -101,6 +102,7 @@ class Page extends Model
             'status' => PageStatus::class,
             'strips' => 'array',
             'draft_strips' => 'array',
+            'draft_started_at' => 'immutable_datetime',
             'published_at' => 'immutable_datetime',
             'deleted_at' => 'immutable_datetime',
         ];

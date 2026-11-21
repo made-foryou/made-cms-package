@@ -139,6 +139,14 @@ final class PageFactory extends Factory
      */
     public function withDraft(array $strips): self
     {
-        return $this->state(fn (): array => ['draft_strips' => $strips]);
+        return $this->state(fn (): array => ['draft_strips' => $strips, 'draft_started_at' => now()]);
+    }
+
+    /**
+     * Lets the draft of the page begin at a moment; combine it with withDraft().
+     */
+    public function draftSince(CarbonInterface $moment): self
+    {
+        return $this->state(fn (): array => ['draft_started_at' => $moment]);
     }
 }

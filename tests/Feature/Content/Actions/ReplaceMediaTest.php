@@ -55,7 +55,13 @@ it('keeps the id and puts the new photo in a folder of its own, with the former 
         ->and([$stored->focal_x, $stored->focal_y, $stored->crop])->toBe([null, null, null])
         ->and($stored->replaced_by)->toBe($editor->id)
         ->and($stored->replaced_at)->not->toBeNull()
+        ->and($stored->variants)->toBe([
+            ['path' => dirname($stored->path).'/480w.webp', 'width' => 480, 'height' => 360],
+            ['path' => dirname($stored->path).'/960w.webp', 'width' => 960, 'height' => 720],
+            ['path' => dirname($stored->path).'/1440w.webp', 'width' => 1440, 'height' => 1080],
+        ])
         ->and($previous?->toArray())->toBe($former->toArray())
+        ->and($previous?->variantPaths())->toBe(["media/{$stored->ulid}/480w.webp", "media/{$stored->ulid}/960w.webp", "media/{$stored->ulid}/1440w.webp"])
         ->and(Storage::disk('public')->allFiles())->toEqualCanonicalizing(MediaVersion::held($stored));
 });
 
@@ -100,7 +106,9 @@ it('takes an svg or an animated gif for a photo, as they came in', function (): 
 
     expect($stored->mime)->toBe('image/svg+xml')
         ->and($stored->original_path)->toBeNull()
-        ->and($stored->thumb_path)->toBeNull();
+        ->and($stored->thumb_path)->toBeNull()
+        ->and($stored->variants)->toBeNull()
+        ->and(MediaVersion::waiting($stored)?->variantPaths())->toBe(["media/{$stored->ulid}/480w.webp"]);
 });
 
 it('numbers each version the highest so far plus one and pushes the oldest off the disk', function (): void {
@@ -135,9 +143,11 @@ it('writes the new files by their roles and makes the version that waits private
 
     expect($disk->written($stored->path))->toBe($public)
         ->and($disk->written((string) $stored->thumb_path))->toBe($public)
+        ->and($disk->written(dirname($stored->path).'/480w.webp'))->toBe($public)
         ->and($disk->written((string) $stored->original_path)['visibility'] ?? null)->toBe('private')
         ->and($disk->written($former->path)['visibility'] ?? null)->toBe('private')
-        ->and($disk->written((string) $former->thumbPath)['visibility'] ?? null)->toBe('private');
+        ->and($disk->written((string) $former->thumbPath)['visibility'] ?? null)->toBe('private')
+        ->and($disk->written($former->variantPaths()[0])['visibility'] ?? null)->toBe('private');
 });
 
 it('makes the version that waits private on a local disk', function (): void {

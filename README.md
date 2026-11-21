@@ -53,7 +53,7 @@ php artisan migrate
 
 Do the same after every update of the package: a change of the database comes as a new migration, so the ones you ran stay as they are and `migrate` runs only what is new. Publishing skips every migration you have already, whatever date it got when you published it; `--force` overwrites one where it is, never as a copy under a new date.
 
-A site that already had pages before it got the table `cms_media_usages` runs `php artisan made-cms:media-usage` once after migrating, so the media library knows where its files are used (see [Where a file is used](#where-a-file-is-used)). A site that already had photos before the library made thumbnails runs `php artisan made-cms:media-thumbnails` once (see [Thumbnails](#thumbnails)).
+A site that already had pages before it got the table `cms_media_usages` runs `php artisan made-cms:media-usage` once after migrating, so the media library knows where its files are used (see [Where a file is used](#where-a-file-is-used)). A site that already had photos before the library made thumbnails runs `php artisan made-cms:media-thumbnails` once (see [Thumbnails](#thumbnails)), and a site that had photos before the library made narrower sizes runs `php artisan made-cms:media-variants` once (see [Narrower sizes](#narrower-sizes)).
 
 ### Publishing the Views
 
@@ -280,7 +280,7 @@ final class Hero extends StripType
 | `Link::make('gaat_naar')` | `{"page": 12}` or `{"url": "…"}` | url or `null` | A page of the site, which keeps working when its path changes, or an address: `https://`, `mailto:`, `tel:`, `/path` or `#anchor`. A page renders as its current path, `null` when it is gone or not published; an address the validation would refuse, e.g. from a seeder, renders as `null` too. |
 | `Button::make('knop')` | `{"text": "…", "link": {…}}` | `{"text": "…", "url": "…"}` or `null` | A text and a link; `null` without a text or a url, so a view shows a button or nothing. |
 | `Heading::make('kop')` | `{"text": "…", "tag": "h2"}` | `{"text": "…", "tag": "h2"}` or `null` | A text (as a `Text`) with its level: `h1` to `h6`, or `span` for a text that is no heading for search engines. `->tag('h1')` gives the level of the design (`h2` by default), `->tags(['h1', 'h2', 'h3'])` limits the levels to choose from (all seven by default). A text stored before the field became a `Heading`, and a level no longer in `tags()`, count as the default level. `null` without a text. `->emphasis()` as for a `Text`. See [Headings](#headings). |
-| `Image::make('foto')` | the id of a file of the [media library](#media) | `{"url": "…", "alt": "…", "width": 1600, "height": 1067, "focal": {"x": 0.5, "y": 0.5}}` or `null` | An image of the library, so a file changes everywhere it is used. The url comes from the media disk, never the place on the disk; the alt text is the one of the file (an empty text without one); an svg has no `width` and `height`; without a focal point it is the centre. `null` without an image and when its file is gone or is no image, so the site shows its own fallback; saving or publishing the strip refuses such a file. No `default()`, also not in the default of a list: the id of a file differs per database. See [Images](#images). |
+| `Image::make('foto')` | the id of a file of the [media library](#media) | `{"url": "…", "alt": "…", "width": 1600, "height": 1067, "focal": {"x": 0.5, "y": 0.5}, "variants": [{"url": "…", "width": 480, "height": 320}], "srcset": "… 480w, … 1600w"}` or `null` | An image of the library, so a file changes everywhere it is used. The url comes from the media disk, never the place on the disk; `url` is the largest size, `variants` the narrower ones and `srcset` all of them for an `<img>` (`null` without narrower sizes); the alt text is the one of the file (an empty text without one); an svg has no `width` and `height`; without a focal point it is the centre. `null` without an image and when its file is gone or is no image, so the site shows its own fallback; saving or publishing the strip refuses such a file. No `default()`, also not in the default of a list: the id of a file differs per database. See [Images](#images). |
 | `File::make('bestand')` | the id of a file of the [media library](#media) | `{"url": "…", "name": "…", "extension": "pdf", "kind": "document", "mime": "application/pdf", "size": 1240000, "description": "…"}` or `null` | A document or a video of the library, for a strip such as "Downloads"; `->kinds(MediaKind::Document)` (or `Video`) takes one kind, both by default. The url is the lasting link of the file, which keeps leading to it after a new version or a new name; `size` is in bytes; `description` is the alt text of the file (`null` without one). `null` without a file and when its file is gone or of a kind the field does not take; saving or publishing the strip refuses such a file. No `default()`, as for an image. See [Files](#files). |
 | `Choice::make('stijl', $options)` | string | string | Options as a list, as `value => label`, or a backed enum (labels from its `label()` method when it has one). |
 | `Items::make('knoppen', [...])` | list of items, each with an `id` | list of items, each with an `id` | Every item has the given fields; `min()`/`max()` limit the count, `required()` asks for at least one, `itemLabel('Knop')` names one item in the side panel ("Knop toevoegen", "Item" by default). One level deep. Every stored item gets a fixed `id` (a uuid) that stays the same when the list changes, so use it as the key of a list in React or Vue. Rendered, it is always a list and every item has its `id` and every field. |
@@ -555,7 +555,7 @@ The site renders the strips itself, in its own stack; the package hands over the
 
 ```php
 [
-    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'intro' => '<p>…</p>', 'foto' => ['url' => 'https://…/storage/media/01k9…/teamfoto.webp', 'alt' => 'Het eerste team', 'width' => 1600, 'height' => 1067, 'focal' => ['x' => 0.5, 'y' => 0.5]], 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
+    ['id' => '9b1c…', 'type' => 'hero', 'label' => null, 'kop' => ['text' => 'Welkom', 'tag' => 'h1'], 'intro' => '<p>…</p>', 'foto' => ['url' => 'https://…/storage/media/01k9…/teamfoto.webp', 'alt' => 'Het eerste team', 'width' => 1600, 'height' => 1067, 'focal' => ['x' => 0.5, 'y' => 0.5], 'variants' => [['url' => 'https://…/storage/media/01k9…/480w.webp', 'width' => 480, 'height' => 320], /* 960, 1440 */], 'srcset' => 'https://…/480w.webp 480w, …, https://…/teamfoto.webp 1600w'], 'knoppen' => [['tekst' => 'Lid worden', 'gaat_naar' => '/lid-worden', 'stijl' => 'primary']]],
     ['id' => '4f0a…', 'type' => 'cards', 'kop' => 'Trainingen', 'kaarten' => [/* … */], 'aantal' => 3],
 ]
 ```
@@ -649,11 +649,14 @@ The words between asterisks start and end with a character that is no space or a
 
 ### Images
 
-An `Image` field stores the id of a file of the [media library](#media) and renders as `{url, alt, width, height, focal}`, so the site never deals with ids. `RenderStrips` finds the files of every image on the page in one query. Without an image, and when its file is gone from the library or is no image, the field is `null`: show a fallback of your own. The focal point (`x` and `y` from 0 to 1) is the place a crop keeps in view; use it as `object-position`.
+An `Image` field stores the id of a file of the [media library](#media) and renders as `{url, alt, width, height, focal, variants, srcset}`, so the site never deals with ids. `RenderStrips` finds the files of every image on the page in one query. Without an image, and when its file is gone from the library or is no image, the field is `null`: show a fallback of your own. The focal point (`x` and `y` from 0 to 1) is the place a crop keeps in view; use it as `object-position`.
+
+`url` is the largest size of the photo (at most `media.image.max_width`). A photo also has narrower sizes (see [Narrower sizes](#narrower-sizes)): `variants` lists them from narrow to wide as `{url, width, height}`, and `srcset` is all of them for the `srcset` of an `<img>`, ending with `url` at its own width (`…/480w.webp 480w, …/960w.webp 960w, …/1440w.webp 1440w, …/teamfoto.webp 1920w`). `srcset` is `null` when there is nothing to choose from: a photo narrower than every size, an svg, an animated gif, or a photo uploaded before the sizes until `made-cms:media-variants` ran. The site says how wide the image is shown with `sizes`, the browser picks the file: a phone that shows the photo at 350 px loads the size of 960 px instead of 1920.
 
 ```blade
 @if ($strip->foto)
     <img src="{{ $strip->foto['url'] }}" alt="{{ $strip->foto['alt'] }}" width="{{ $strip->foto['width'] }}" height="{{ $strip->foto['height'] }}"
+         @if ($strip->foto['srcset']) srcset="{{ $strip->foto['srcset'] }}" sizes="(max-width: 720px) 100vw, 720px" @endif
          style="object-fit: cover; object-position: {{ $strip->foto['focal']['x'] * 100 }}% {{ $strip->foto['focal']['y'] * 100 }}%" data-cms-field="foto">
 @endif
 ```
@@ -661,16 +664,18 @@ An `Image` field stores the id of a file of the [media library](#media) and rend
 ```tsx
 {strip.foto && (
   <img src={strip.foto.url} alt={strip.foto.alt} width={strip.foto.width ?? undefined} height={strip.foto.height ?? undefined}
+       srcSet={strip.foto.srcset ?? undefined} sizes={strip.foto.srcset ? '(max-width: 720px) 100vw, 720px' : undefined}
        style={{ objectFit: 'cover', objectPosition: `${strip.foto.focal.x * 100}% ${strip.foto.focal.y * 100}%` }} data-cms-field="foto" />
 )}
 ```
 
 ```vue
 <img v-if="strip.foto" :src="strip.foto.url" :alt="strip.foto.alt" :width="strip.foto.width" :height="strip.foto.height"
+     :srcset="strip.foto.srcset ?? undefined" :sizes="strip.foto.srcset ? '(max-width: 720px) 100vw, 720px' : undefined"
      :style="{ objectFit: 'cover', objectPosition: `${strip.foto.focal.x * 100}% ${strip.foto.focal.y * 100}%` }" data-cms-field="foto" />
 ```
 
-The alt text belongs to the file, so it is the same on every page; an empty one means the image has none yet. An svg has no `width` and `height` (`null`). With `data-cms-field` on the `<img>` the editor sees another image at once; a `srcset`, a `<picture>` or a background reloads the frame instead.
+The alt text belongs to the file, so it is the same on every page; an empty one means the image has none yet. An svg has no `width` and `height` (`null`). With `data-cms-field` on the `<img>` the editor sees another image at once, its `srcset` too (the shell leaves `sizes` as the site printed it); a `<picture>` or a background reloads the frame instead. Use `variants` for markup of your own, such as the `<source>` of a `<picture>` or the loader of an image component.
 
 ### Files
 
@@ -723,7 +728,7 @@ The edit shell patches the element with `data-cms-field` in the page as it is, s
 | `Link` | Has the address in its `href`. |
 | `Button` | Holds only the text and has the address in its `href`. |
 | `Heading` | Is the element of its level and holds only the text (with emphasis: and its `<em>` elements), as `<x-made-cms::heading>` prints it. An element of another level reloads the frame. |
-| `Image` | Is the `<img>` that shows it, without `srcset` and not in a `<picture>`; the shell sets its `src` and `alt`, and its `width` and `height` when the site prints them. Another element (a background) reloads the frame. |
+| `Image` | Is the `<img>` that shows it, not in a `<picture>`; the shell sets its `src` and `alt`, its `srcset` when the site prints one (the `srcset` of the new file, or its address alone when it has no narrower sizes; `sizes` stays the site's), and its `width` and `height` when the site prints them. Another element (a background) reloads the frame. |
 | `File` | Not patched: the frame reloads, since the view prints its name, size or description. |
 | `Choice`, `Items` | Not patched: the frame reloads. |
 
@@ -771,11 +776,11 @@ The media library holds every photo, document and video of the site in one place
 
 Files go to the disk in `media.disk` (env `MADE_CMS_MEDIA_DISK`, default `public`). A visitor must be able to open them by url, so use the `public` disk after `php artisan storage:link`, a local disk with a `url`, or an S3 disk such as DigitalOcean Spaces (see [DigitalOcean Spaces and other S3 disks](#digitalocean-spaces-and-other-s3-disks)). A local disk without a `url` is refused with a `MediaDiskNotUsable` exception the first time the library is used; the site and artisan keep working until then.
 
-The library writes every file with a visibility of its own, whatever the `visibility` of the disk: the photo, its thumbnail and a file kept as it came in are public, the original of a photo is private, and so is a former version that waits to be put back after a replacement. On a local disk that is 0644 for a public file and 0600 for the original, in folders of 0755. PHP still reads the original to crop the photo again; a web server that runs as another user than PHP cannot serve it. Where the web server runs as the same user (Herd, `php artisan serve`, many servers with one user), it could, and the name of 40 random characters keeps the original from being found.
+The library writes every file with a visibility of its own, whatever the `visibility` of the disk: the photo, its narrower sizes, its thumbnail and a file kept as it came in are public, the original of a photo is private, and so is a former version that waits to be put back after a replacement. On a local disk that is 0644 for a public file and 0600 for the original, in folders of 0755. PHP still reads the original to crop the photo again; a web server that runs as another user than PHP cannot serve it. Where the web server runs as the same user (Herd, `php artisan serve`, many servers with one user), it could, and the name of 40 random characters keeps the original from being found.
 
 An upload is checked before anything is stored. The type is read from the contents, never from the name; a file larger than `media.max_upload_kb` (default 25 MB) or of a type outside `media.allowed_mimes` (jpg, png, webp, gif, svg, pdf and mp4) is refused with a message for the editor. Each file gets a folder of its own, `media/{ulid}/`:
 
-- A photo (jpg, png, webp or a gif that does not move) is turned upright by its EXIF orientation, scaled down to at most `media.image.max_width` (1920 px, never up) and stored as `media.image.format` (webp) at `media.image.quality` (82), without the metadata of the camera. The upload is kept next to it under a name nobody can guess from the url of the photo, because it still holds the full size and that metadata; a later crop starts from it. A thumbnail for the tiles of the CMS goes next to them (see [Thumbnails](#thumbnails)).
+- A photo (jpg, png, webp or a gif that does not move) is turned upright by its EXIF orientation, scaled down to at most `media.image.max_width` (1920 px, never up) and stored as `media.image.format` (webp) at `media.image.quality` (82), without the metadata of the camera. The upload is kept next to it under a name nobody can guess from the url of the photo, because it still holds the full size and that metadata; a later crop starts from it. A thumbnail for the tiles of the CMS goes next to them (see [Thumbnails](#thumbnails)), and so do its narrower sizes for a `srcset` (see [Narrower sizes](#narrower-sizes)).
 - An svg is stored exactly as it came in, but only when it does nothing but draw. One with a script, an event attribute, html, an entity, a reference outside the drawing or a style that loads something is refused, because whoever opens its url would run it on the domain of your site.
 - An animated gif, a pdf and an mp4 are stored exactly as they came in.
 
@@ -958,7 +963,7 @@ MoveMedia::run([$media->id, $other->id], $folder->id); // null for "Alle bestand
 
 The area is in pixels of the original as the editor sees it: upright (by its EXIF orientation), turned clockwise by `rotation` (0, 90, 180 or 270), then mirrored left to right when `flip`; `CropArea::onOriginal()` takes it back onto the original. An area outside the photo is refused with a `ValidationException` keyed by `crop`, and a file without an original (an svg, an animated gif, a document, a video) throws `MediaNotCroppable`. The crop is stored in the column `crop` of `cms_media` (null for the whole original, not turned and scaled down), so the next crop starts where the editor left off, and the upright size of the original in `original_width` and `original_height`. When only the focal point changes no file is written.
 
-Every crop writes the photo at a new address in a folder of its own next to the original (`media/{ulid}/{random}/{name}.webp`) with a new thumbnail, so no browser or CDN keeps the former photo; the former files leave the disk after the commit. A page that a host or CDN cached keeps pointing at the former address until its cache runs out. Renaming moves the photo to the new name in its folder, so its address changes too. `CropImage`, `RenameMedia` and `MoveMedia` dispatch `MediaCropped`, `MediaRenamed` and `MediaMoved` after the commit.
+Every crop writes the photo at a new address in a folder of its own next to the original (`media/{ulid}/{random}/{name}.webp`) with its narrower sizes and a new thumbnail, so no browser or CDN keeps the former photo; the former files leave the disk after the commit. A page that a host or CDN cached keeps pointing at the former address until its cache runs out. Renaming moves the photo to the new name in its folder, so its address changes too. `CropImage`, `RenameMedia` and `MoveMedia` dispatch `MediaCropped`, `MediaRenamed` and `MediaMoved` after the commit.
 
 The site uses the focal point as `object-position` (see [Images](#images)), so a photo cut to fit a phone keeps what matters in view.
 
@@ -977,6 +982,20 @@ php artisan made-cms:media-thumbnails
 ```
 
 It reads each photo from the media disk, skips a photo that has a thumbnail, and names a photo whose file is not on the disk or cannot be read, while the others go on; the command then fails. `MakeMissingThumbnails::run()` does the same in code and `MakeThumbnail::run($contents)` makes the thumbnail of one photo without storing it.
+
+### Narrower sizes
+
+A photo that was scaled down also gets narrower sizes, so a site offers a phone a smaller file in a `srcset` (see [Images](#images)): one per width of `media.image.variants` (480, 960 and 1440 by default) that is narrower than the photo itself, never as wide or wider, with the proportions of the photo, as `media.image.format` at `media.image.quality`. A photo of 1000 px gets 480 and 960, one of 400 px none. They are made from the photo the site shows, so they show what a crop kept, and lie next to it as `{width}w.webp` (`media/{ulid}/480w.webp`, `media/{ulid}/{random}/480w.webp` after a crop): named after their width, never after the name of the file, so a new name leaves them as they are. They are public with the cache header of the photo. An svg, an animated gif, a document and a video get none; `media.image.variants` set to `[]` makes none.
+
+The sizes follow the photo: a crop and a new version get sizes of their own at their new address and the former ones leave the disk, a version that waits to be put back keeps its sizes private, putting it back opens them again, and deleting a file takes them along. `cms_media.variants` holds them (`[{path, width, height}]`, `null` while they were not made). They cost three files per photo, together about three quarters of the bytes of the photo, and a little time when a photo is uploaded or cropped; the memory a crop needs stays as it was, because they are made from the photo the site shows, one after the other on one image.
+
+Photos uploaded before the library made narrower sizes have none yet, so their `srcset` is `null`. Give them their sizes with:
+
+```bash
+php artisan made-cms:media-variants
+```
+
+It reads each photo from the media disk, skips a photo that has its sizes, and names a photo whose file is not on the disk or cannot be read, while the others go on; the command then fails. It makes only what is missing: other widths in `media.image.variants` reach the photos uploaded or cropped after the change. `MakeMissingVariants::run()` does the same in code and `MakeImageVariants::run($contents)` makes the sizes of one photo without storing them.
 
 ### Where a file is used
 
@@ -1006,7 +1025,7 @@ php artisan made-cms:media-usage
 
 Run it once after updating a site that already had content, and after such a write. A strip whose type left the catalogue cannot be read, so it keeps the rows it had.
 
-Config keys: `media.disk`, `media.max_upload_kb`, `media.allowed_mimes`, `media.image.driver`, `media.image.max_width`, `media.image.format` and `media.image.quality`.
+Config keys: `media.disk`, `media.max_upload_kb`, `media.allowed_mimes`, `media.image.driver`, `media.image.max_width`, `media.image.variants`, `media.image.format` and `media.image.quality`.
 
 ## Launcher
 

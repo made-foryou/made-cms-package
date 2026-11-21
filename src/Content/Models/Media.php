@@ -26,6 +26,7 @@ use Made\CmsPackage\Database\Factories\Content\MediaFactory;
  * @property string $path the file the site shows, on the media disk
  * @property string|null $original_path the upload as it came in, next to a photo that was scaled down
  * @property string|null $thumb_path the small picture of a photo that was scaled down, for the tiles of the CMS
+ * @property array<int, mixed>|null $variants the narrower sizes of the photo for a srcset (ImageVariant), from narrow to wide; null while they were not made
  * @property string $mime the type of the file at path
  * @property int $size the bytes of the file at path
  * @property int|null $width in pixels, for an image whose size is known
@@ -63,6 +64,7 @@ class Media extends Model
         'path',
         'original_path',
         'thumb_path',
+        'variants',
         'mime',
         'size',
         'width',
@@ -88,6 +90,7 @@ class Media extends Model
         return [
             'folder_id' => 'integer',
             'kind' => MediaKind::class,
+            'variants' => 'array',
             'size' => 'integer',
             'width' => 'integer',
             'height' => 'integer',

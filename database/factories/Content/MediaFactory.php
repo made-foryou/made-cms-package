@@ -34,6 +34,7 @@ final class MediaFactory extends Factory
             'path' => fn (array $attributes): string => "media/{$attributes['ulid']}/{$attributes['name']}.webp",
             'original_path' => fn (array $attributes): string => "media/{$attributes['ulid']}/original.jpg",
             'thumb_path' => fn (array $attributes): string => "media/{$attributes['ulid']}/thumb.webp",
+            'variants' => null,
             'mime' => 'image/webp',
             'size' => fake()->numberBetween(80_000, 600_000),
             'width' => 1920,
@@ -109,6 +110,23 @@ final class MediaFactory extends Factory
         return $this->state(fn (): array => ['thumb_path' => null]);
     }
 
+    /**
+     * A photo with its narrower sizes next to it, one per width that is narrower than the photo, as MakeImageVariants
+     * makes them.
+     *
+     * @param  list<int>  $widths
+     */
+    public function withVariants(array $widths = [480, 960, 1440]): self
+    {
+        return $this->state(fn (): array => [
+            'variants' => fn (array $attributes): array => array_map(static fn (int $width): array => [
+                'path' => dirname((string) $attributes['path'])."/{$width}w.webp",
+                'width' => $width,
+                'height' => (int) round($width * (int) $attributes['height'] / (int) $attributes['width']),
+            ], array_values(array_filter($widths, static fn (int $width): bool => $width < (int) $attributes['width']))),
+        ]);
+    }
+
     public function in(MediaFolder $folder): self
     {
         return $this->state(fn (): array => ['folder_id' => $folder->id]);
@@ -126,6 +144,7 @@ final class MediaFactory extends Factory
             'path' => fn (array $attributes): string => "media/{$attributes['ulid']}/{$attributes['name']}.{$extension}",
             'original_path' => null,
             'thumb_path' => null,
+            'variants' => null,
             'mime' => $mime,
             'width' => null,
             'height' => null,

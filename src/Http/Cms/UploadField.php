@@ -142,7 +142,7 @@ final class UploadField
         $base = request()->getBaseUrl();
         $label = $folder === null ? $t('all_files') : $t('folder', ['name' => $folder->name]);
         // The line of rules with the folder left open, so the script can name another folder in it (upload-folder).
-        $kindList = Str::ucfirst(self::list(
+        $kindList = Str::ucfirst(Words::list(
             array_map(static fn (MediaKind $kind): string => $t('kinds.'.$kind->value), $shown),
             (string) __('made-cms-package::media.and', [], $locale),
         ));
@@ -231,7 +231,7 @@ final class UploadField
 
         foreach ($types as $kind => $extensions) {
             $texts['rules_'.$kind] = (string) __('made-cms-package::media.upload.replace.rules', [
-                'types' => self::list($extensions, (string) __('made-cms-package::media.upload.or', [], $locale)),
+                'types' => Words::list($extensions, (string) __('made-cms-package::media.upload.or', [], $locale)),
                 'max' => $limits->max,
             ], $locale);
             $texts['kind_'.$kind] = (string) __('made-cms-package::media.errors.replace_kind.'.$kind, [], $locale);
@@ -261,17 +261,5 @@ final class UploadField
         $kilobytes = intdiv((int) UploadedFile::getMaxFilesize(), 1024);
 
         return $kilobytes % 1024 === 0 ? intdiv($kilobytes, 1024).' MB' : $kilobytes.' kB';
-    }
-
-    /**
-     * Names as a sentence lists them: "foto’s, documenten en video’s".
-     *
-     * @param  list<string>  $names
-     */
-    private static function list(array $names, string $and): string
-    {
-        $last = array_pop($names);
-
-        return $names === [] ? (string) $last : implode(', ', $names).' '.$and.' '.$last;
     }
 }

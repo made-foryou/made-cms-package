@@ -26,6 +26,7 @@ use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Http\Cms\PageLinks;
+use Made\CmsPackage\Http\Cms\Words;
 use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\MediaLink;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -269,7 +270,7 @@ final class MediaResponse
                 'count' => $deleted,
             ], $locale),
             'refusal' => $kept === 0 ? null : trans_choice('made-cms-package::media.library.removed.kept', $kept, [
-                'names' => self::names(array_map($file, $result->kept), $locale),
+                'names' => Words::list(array_map($file, $result->kept), (string) __('made-cms-package::media.and', [], $locale)),
             ], $locale),
         ]);
     }
@@ -452,18 +453,6 @@ final class MediaResponse
             $shown > 0 => ['allowed' => false, 'note' => trans_choice('made-cms-package::media.library.removal.used', $shown, ['count' => $shown], $locale)],
             default => ['allowed' => false, 'note' => trans_choice('made-cms-package::media.library.removal.bin', $all, ['count' => $all], $locale)],
         };
-    }
-
-    /**
-     * Names as one list in words: "a", "a en b", "a, b en c".
-     *
-     * @param  list<string>  $names
-     */
-    private static function names(array $names, string $locale): string
-    {
-        $last = array_pop($names);
-
-        return $names === [] ? (string) $last : implode(', ', $names).' '.__('made-cms-package::media.and', [], $locale).' '.$last;
     }
 
     private static function nothing(): Response

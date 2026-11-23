@@ -100,3 +100,13 @@ it('answers 404 for a page in the bin', function (): void {
 
     $this->put('made-cms/pages/'.$page->id.'/share-image', ['share_image' => (string) $media->id])->assertNotFound();
 });
+
+it('notes the editor who saves the share image', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->at('/over-ons')->create();
+
+    $this->put('made-cms/pages/'.$page->id.'/share-image', ['share_image' => (string) Media::factory()->create()->id]);
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

@@ -20,7 +20,7 @@ final class StripVisibilityController
     public function __invoke(StripVisibilityRequest $request, Page $page, string $strip): JsonResponse
     {
         try {
-            $stored = SetStripVisibility::run($page, $strip, $request->visible());
+            $stored = SetStripVisibility::run($page, $strip, $request->visible(), $request->editorId());
         } catch (StripNotFound) {
             abort(Response::HTTP_NOT_FOUND);
         }

@@ -214,6 +214,8 @@ $team = CreatePage::run(new NewPage(title: 'Team', slug: null, parentId: $about-
 MovePage::run($team, parentId: null, position: 0); // /team, first in the menu
 ```
 
+Every Action that changes a page or its draft takes the editor who does it (`editorId` in `NewPage`, `PageChanges` and `PageMetaChanges`, else as its last argument, `editorId: $editor->id`) and notes it in `cms_pages.updated_by`, for the pages screen ("20 okt · Menno"). Leave it out in a seeder or an import: the editor of that change is then not known.
+
 `UpdatePage`, `SetPageVisibility`, `SetPageShareImage`, `DeletePage`, `RestorePage` and `ListPages` (the tree in menu order) complete the set; they dispatch `PageCreated`, `PageUpdated`, `PageVisibilityChanged`, `PageShareImageChanged`, `PageMoved`, `PageDeleted` and `PageRestored`. Read the pages visitors see with `Page::query()->visible()`, the hidden ones with `->hidden()`.
 
 ### The menu of the site

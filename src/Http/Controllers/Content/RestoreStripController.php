@@ -23,7 +23,7 @@ final class RestoreStripController
     public function __invoke(RestoreStripRequest $request, Page $page, string $strip): JsonResponse
     {
         try {
-            $restored = RestoreStrip::run($page, $request->toData($strip), $request->position(), $request->choosesLevels());
+            $restored = RestoreStrip::run($page, $request->toData($strip), $request->position(), $request->choosesLevels(), $request->editorId());
         } catch (StripAlreadyOnPage) {
             $request->reject('strip', 'strip_exists');
         } catch (InvalidStripPosition) {

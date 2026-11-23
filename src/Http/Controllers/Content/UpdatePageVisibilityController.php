@@ -19,7 +19,7 @@ final class UpdatePageVisibilityController
     public function __invoke(UpdatePageVisibilityRequest $request, Page $page): RedirectResponse
     {
         try {
-            SetPageVisibility::run($page, $request->hidden());
+            SetPageVisibility::run($page, $request->hidden(), $request->editorId());
         } catch (HomePageProtected) {
             $request->reject('visible', 'home_hide');
         }

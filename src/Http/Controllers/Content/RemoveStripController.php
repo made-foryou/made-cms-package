@@ -9,6 +9,7 @@ use Made\CmsPackage\Content\Actions\ListEditableStrips;
 use Made\CmsPackage\Content\Actions\RemoveStrip;
 use Made\CmsPackage\Content\Exceptions\StripNotFound;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Requests\Content\RemoveStripRequest;
 use Made\CmsPackage\Http\Responses\PageStripsResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -17,10 +18,10 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class RemoveStripController
 {
-    public function __invoke(Page $page, string $strip): JsonResponse
+    public function __invoke(RemoveStripRequest $request, Page $page, string $strip): JsonResponse
     {
         try {
-            $removed = RemoveStrip::run($page, $strip);
+            $removed = RemoveStrip::run($page, $strip, $request->editorId());
         } catch (StripNotFound) {
             abort(Response::HTTP_NOT_FOUND);
         }

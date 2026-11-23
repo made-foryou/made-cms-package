@@ -76,3 +76,14 @@ it('puts a heading back at its published level unless the editor opens Meta-over
     'content manager' => [Role::ContentManager, 'h3'],
     'seo specialist' => [Role::SeoSpecialist, 'h1'],
 ]);
+
+it('notes the editor who puts the strip back', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $hero = storedStrip('hero', ['label' => null, 'kop' => 'TTV Merwestad', 'intro' => null, 'tekst' => null, 'actie' => null, 'knoppen' => null], id: 'b');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a')])->create();
+
+    $this->postJson('made-cms/pages/'.$page->id.'/strips/b/restore', [...$hero, 'position' => 1])->assertCreated();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

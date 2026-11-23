@@ -108,3 +108,13 @@ it('keeps whether visitors see the page when the form has no switch for it', fun
     expect($page->refresh()->title)->toBe('Privacyverklaring')
         ->and($page->hidden)->toBeTrue();
 });
+
+it('notes the editor who saves the basics', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+
+    $this->put('made-cms/pages/'.$page->id, ['title' => 'Wie we zijn', 'slug' => 'over-ons', 'parent_id' => '', 'in_menu' => '1']);
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

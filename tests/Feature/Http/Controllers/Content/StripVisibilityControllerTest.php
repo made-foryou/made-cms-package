@@ -38,3 +38,13 @@ it('answers 404 for a strip that is not on the page', function (): void {
 
     $this->putJson('made-cms/pages/'.$page->id.'/strips/x/visibility', ['visible' => false])->assertNotFound();
 });
+
+it('notes the editor who hides the strip', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a')])->create();
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a/visibility', ['visible' => false])->assertOk();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

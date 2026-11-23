@@ -116,3 +116,14 @@ it('refuses an editor without roles and answers 401 to a guest', function (): vo
 
     expect($about->refresh()->position)->toBe(0);
 });
+
+it('notes the editor who moves the page', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    Page::factory()->atPosition(0)->at('/over-ons')->create(['slug' => 'over-ons']);
+    $contact = Page::factory()->atPosition(1)->at('/contact')->create(['slug' => 'contact']);
+
+    $this->putJson('made-cms/pages/'.$contact->id.'/position', ['parent_id' => null, 'position' => 0])->assertNoContent();
+
+    expect($contact->refresh()->updated_by)->toBe($editor->id);
+});

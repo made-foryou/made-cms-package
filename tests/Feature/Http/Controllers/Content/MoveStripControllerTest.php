@@ -42,3 +42,13 @@ it('answers 401 to a guest', function (): void {
 
     $this->putJson('made-cms/pages/'.$page->id.'/strips/a/position', ['position' => 0])->assertUnauthorized();
 });
+
+it('notes the editor who moves the strip', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a'), storedStrip('hero', id: 'b')])->create();
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a/position', ['position' => 1])->assertOk();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

@@ -47,6 +47,7 @@ final class UpdatePageRequest extends LauncherRequest
             parentId: $this->has('parent_id') ? ($this->filled('parent_id') ? $this->integer('parent_id') : null) : $page->parent_id,
             inMenu: $this->boolean('in_menu'),
             hidden: $this->has('visible') ? ! $this->boolean('visible') : null,
+            editorId: $this->editorId(),
         );
     }
 

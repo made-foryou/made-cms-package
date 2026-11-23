@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Http\Controllers\Content;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Content\Actions\DiscardDraft;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Requests\Content\DiscardDraftRequest;
 use Made\CmsPackage\Http\Responses\DraftResponse;
 
 /**
@@ -14,9 +15,9 @@ use Made\CmsPackage\Http\Responses\DraftResponse;
  */
 final class DiscardDraftController
 {
-    public function __invoke(Page $page): Response
+    public function __invoke(DiscardDraftRequest $request, Page $page): Response
     {
-        DiscardDraft::run($page);
+        DiscardDraft::run($page, $request->editorId());
 
         return DraftResponse::done();
     }

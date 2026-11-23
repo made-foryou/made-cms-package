@@ -19,7 +19,7 @@ final class PublishPageController
     public function __invoke(PublishPageRequest $request, Page $page): Response
     {
         try {
-            PublishPage::run($page);
+            PublishPage::run($page, $request->editorId());
         } catch (PageAlreadyPublished) {
             $request->reject('page', 'nothing_to_publish');
         }

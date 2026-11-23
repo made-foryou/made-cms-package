@@ -91,3 +91,11 @@ it('sends a guest to the login page', function (): void {
 
     expect(Page::query()->count())->toBe(0);
 });
+
+it('notes the editor who creates the page', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $this->post('made-cms/pages', ['title' => 'Jeugd', 'slug' => '', 'parent_id' => '', 'in_menu' => '1']);
+
+    expect(Page::query()->sole()->updated_by)->toBe($editor->id);
+});

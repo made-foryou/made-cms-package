@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\DeletePage;
@@ -97,10 +98,10 @@ it('tells how to move a page and hands the tree what it needs to move one', func
 });
 
 it('tells per page what still needs doing', function (): void {
-    Page::factory()->atPosition(0)->published()->withStrips([storedStrip()])->withDraft([])->at('/a')->create(['title' => 'Gewijzigd']);
+    Page::factory()->atPosition(0)->published()->withMeta(null, 'Omschrijving.')->withStrips([storedStrip()])->withDraft([])->at('/a')->create(['title' => 'Gewijzigd', 'draft_started_at' => null]);
     Page::factory()->atPosition(1)->at('/b')->create(['title' => 'Leeg']);
     Page::factory()->atPosition(2)->withDraft([storedStrip()])->at('/c')->create(['title' => 'Bijna']);
-    Page::factory()->atPosition(3)->published()->withStrips([storedStrip()])->inMenu(false)->at('/d')->create(['title' => 'Verborgen']);
+    Page::factory()->atPosition(3)->published()->withMeta(null, 'Omschrijving.')->withStrips([storedStrip()])->inMenu(false)->at('/d')->create(['title' => 'Verborgen']);
 
     expect(pagesScreen())
         ->toContain('<span class="status live">Live</span>')
@@ -112,7 +113,7 @@ it('tells per page what still needs doing', function (): void {
 
 it('names a hidden page hidden and says it is out of the menu and the sitemap, a hidden draft a draft', function (): void {
     Page::factory()->atPosition(0)->published()->hidden()->withStrips([storedStrip()])->at('/privacy')->create(['title' => 'Privacy']);
-    Page::factory()->atPosition(1)->published()->hidden()->withStrips([storedStrip()])->withDraft([])->at('/bedankt')->create(['title' => 'Bedankt']);
+    Page::factory()->atPosition(1)->published()->hidden()->withStrips([storedStrip()])->withDraft([])->at('/bedankt')->create(['title' => 'Bedankt', 'draft_started_at' => null]);
     Page::factory()->atPosition(2)->hidden()->at('/jeugd')->create(['title' => 'Jeugd']);
 
     $html = pagesScreen();
@@ -160,4 +161,68 @@ it('speaks English when the launcher locale is English', function (): void {
         ->toContain('New page')
         ->toContain('Order of the menu')
         ->toContain('<span class="status">Draft</span>');
+});
+
+describe('the row of a page', function (): void {
+    beforeEach(function (): void {
+        $this->travelTo(CarbonImmutable::parse('2026-11-23 14:00:00'));
+    });
+
+    it('marks a page that asks for attention with a dot and says what first', function (): void {
+        Page::factory()->published()->withStrips([storedStrip()])->inMenu(false)->at('/teams')->create(['title' => 'Onze teams']);
+
+        expect(pagesScreen())->toContain('<span class="boomrij-noot"><span class="boomrij-stip" aria-hidden="true"></span><span class="sr-only">Vraagt aandacht: </span>omschrijving leeg, niet in het menu</span>');
+    });
+
+    it('gives no dot to a page that asks for nothing, nor to one that is only empty', function (): void {
+        Page::factory()->published()->withMeta(null, 'Welkom.')->withStrips([storedStrip()])->at('/')->create(['title' => 'Home']);
+        Page::factory()->atPosition(1)->at('/jeugd')->create(['title' => 'Jeugd']);
+
+        expect(pagesScreen())->not->toContain('boomrij-stip')
+            ->toContain('<span class="boomrij-noot">nog leeg, nooit gepubliceerd</span>');
+    });
+
+    it('says since when a published page has a draft', function (): void {
+        Page::factory()->published()->withMeta(null, 'Wie we zijn.')->withStrips([storedStrip()])->withDraft([])
+            ->draftSince(CarbonImmutable::parse('2026-11-22 16:12:00'))
+            ->at('/over-ons')->create(['title' => 'Over ons']);
+
+        expect(pagesScreen())->toContain('<span class="boomrij-noot">concept sinds gisteren</span>');
+    });
+
+    it('says how long a draft that stays open too long is open, instead of since when', function (): void {
+        Page::factory()->published()->withMeta(null, 'Wie we zijn.')->withStrips([storedStrip()])->withDraft([])
+            ->draftSince(CarbonImmutable::parse('2026-11-17 09:00:00'))
+            ->at('/over-ons')->create(['title' => 'Over ons']);
+
+        expect(pagesScreen())->toContain('<span class="sr-only">Vraagt aandacht: </span>concept staat al 6 dagen open</span>')
+            ->not->toContain('concept sinds');
+    });
+
+    it('says there are changes in the draft when it is not known since when', function (): void {
+        Page::factory()->published()->withMeta(null, 'Wie we zijn.')->withStrips([storedStrip()])->create(['title' => 'Over ons', 'draft_strips' => []]);
+
+        expect(pagesScreen())->toContain('<span class="boomrij-noot">wijzigingen in concept</span>');
+    });
+
+    it('says when a page changed last and who did it', function (): void {
+        $editor = Editor::factory()->create(['name' => 'Menno']);
+        Page::factory()->at('/')->create(['updated_at' => CarbonImmutable::parse('2026-10-20 10:00:00'), 'updated_by' => $editor->id]);
+        Page::factory()->atPosition(1)->at('/jeugd')->create(['updated_at' => CarbonImmutable::parse('2026-11-23 09:00:00')]);
+        Page::factory()->atPosition(2)->at('/privacy')->create(['updated_at' => CarbonImmutable::parse('2024-03-12 10:00:00')]);
+
+        expect(pagesScreen())
+            ->toContain('<span class="boomrij-datum"><span class="sr-only">gewijzigd </span>20 okt · Menno</span>')
+            ->toContain('<span class="boomrij-datum"><span class="sr-only">gewijzigd </span>vandaag</span>')
+            ->toContain('<span class="boomrij-datum"><span class="sr-only">gewijzigd </span>12 mrt 2024</span>');
+    });
+
+    it('leaves out the name of an editor who is gone', function (): void {
+        $editor = Editor::factory()->create(['name' => 'Muriël']);
+        Page::factory()->at('/')->create(['updated_at' => CarbonImmutable::parse('2026-10-20 10:00:00'), 'updated_by' => $editor->id]);
+        $editor->delete();
+
+        expect(pagesScreen())->toContain('<span class="sr-only">gewijzigd </span>20 okt</span>')
+            ->not->toContain('Muriël');
+    });
 });

@@ -49,8 +49,8 @@
                             <span class="boomrij-pad">{{ $row['path'] ?? '–' }}</span>
                         </span>
                         <span class="status{{ $row['state'] === 'live' ? ' live' : '' }}">{{ $t('pages.state.'.$row['state']) }}</span>
-                        <span class="boomrij-noot">{{ $row['note'] }}</span>
-                        <span class="boomrij-datum">{{ $t('pages.index.modified', ['date' => $row['modified']]) }}</span>
+                        <span class="boomrij-noot">@if ($row['attention'])<span class="boomrij-stip" aria-hidden="true"></span><span class="sr-only">{{ $t('pages.index.attention') }} </span>@endif{{ $row['note'] }}</span>
+                        <span class="boomrij-datum"><span class="sr-only">{{ $t('pages.index.modified') }} </span>{{ $row['modified'] }}</span>
                         <span class="boomrij-acties">
                             @unless ($row['home'])
                                 <span class="boomrij-verplaats" role="group" aria-label="{{ $t('pages.tree.group', ['title' => $row['title']]) }}">

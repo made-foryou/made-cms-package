@@ -1157,6 +1157,16 @@ ul.lijst {
     color: var(--made-inhoud-zwak);
 }
 
+.boomrij-stip {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--made-amber);
+    vertical-align: 1px;
+}
+
 .boomrij-datum {
     flex: 0 0 auto;
     font-size: 13px;

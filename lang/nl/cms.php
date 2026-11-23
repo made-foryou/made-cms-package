@@ -7,6 +7,10 @@ return [
     'product' => 'Made CMS',
     'live' => 'Live',
     'view_site' => 'Bekijk de site',
+    'dates' => [
+        'today' => 'vandaag',
+        'yesterday' => 'gisteren',
+    ],
     'menu' => [
         'label' => 'Hoofdnavigatie',
         'open' => 'Menu openen',

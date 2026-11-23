@@ -14,11 +14,13 @@ use Made\CmsPackage\Content\Data\PageAttention;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagesOverview;
 use Made\CmsPackage\Content\Enums\AttentionReason;
+use Made\CmsPackage\Content\Enums\PageFilter;
 use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Http\Cms\Day;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
+use Made\CmsPackage\Http\Cms\Words;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
 use Made\CmsPackage\Support\Locale;
 
@@ -44,6 +46,7 @@ final class PagesResponse
         return Shell::respond('made-cms-package-launcher::cms.pages.index', $editor, $screens, Screen::Pages, [
             'screen' => Screen::Pages,
             'createUrl' => PageLinks::create(),
+            'cards' => $overview->tree->isEmpty() ? [] : self::cards($overview, $locale),
             'tree' => self::tree($locale),
             'rows' => array_map(static fn (PageNode $node): array => [
                 'id' => $node->id,
@@ -71,6 +74,47 @@ final class PagesResponse
             'treeScript' => LauncherAssetController::url('pages.js'),
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
         ], $overview->tree);
+    }
+
+    /**
+     * How the site stands, in four cards counted over every page: the live pages with how many the menu holds, the
+     * pages with something to publish, the pages that ask for attention with why, and the hidden pages.
+     *
+     * @return list<array{count: int, text: string, sub: string, tone: string|null}>
+     */
+    private static function cards(PagesOverview $overview, string $locale): array
+    {
+        $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.index.state.'.$key, $replace, $locale);
+        $count = static fn (string $key, int $number, array $replace = []): string => trans_choice('made-cms-package::pages.index.state.'.$key, $number, ['count' => $number, ...$replace], $locale);
+        $live = $overview->count(PageFilter::Live);
+        $drafts = $overview->inFilter(PageFilter::Draft);
+        $flagged = $overview->count(PageFilter::Attention);
+        $hidden = $overview->inFilter(PageFilter::Hidden);
+        $reasons = array_map(static fn (AttentionReason $reason): string => $text('reasons.'.$reason->value), $overview->attention->reasons());
+
+        return [
+            ['count' => $live, 'text' => $count('live', $live), 'sub' => $text('in_menu', ['count' => $overview->inSiteMenu]), 'tone' => 'nadruk'],
+            ['count' => count($drafts), 'text' => $text('drafts'), 'sub' => $drafts === [] ? $text('drafts_none') : self::titles($drafts, $locale), 'tone' => null],
+            ['count' => $flagged, 'text' => $count('attention', $flagged), 'sub' => $reasons === [] ? $text('attention_none') : Words::list($reasons, (string) __('made-cms-package::media.and', [], $locale)), 'tone' => $flagged > 0 ? 'aandacht' : null],
+            ['count' => count($hidden), 'text' => $text('hidden'), 'sub' => $hidden === [] ? $text('hidden_none') : $text('hidden_names', ['names' => self::titles($hidden, $locale)]), 'tone' => null],
+        ];
+    }
+
+    /**
+     * The names of pages in one phrase, three at most and then how many others: "Over ons, Jeugd, Team en 2 andere".
+     *
+     * @param  list<PageNode>  $pages
+     */
+    private static function titles(array $pages, string $locale): string
+    {
+        $titles = array_map(static fn (PageNode $page): string => $page->title, array_slice($pages, 0, 3));
+        $others = count($pages) - count($titles);
+
+        if ($others > 0) {
+            $titles[] = trans_choice('made-cms-package::pages.index.state.others', $others, ['count' => $others], $locale);
+        }
+
+        return Words::list($titles, (string) __('made-cms-package::media.and', [], $locale));
     }
 
     /**

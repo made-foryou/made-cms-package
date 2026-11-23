@@ -1182,6 +1182,60 @@ ul.lijst {
     gap: 6px;
 }
 
+/* How the site stands (#63, design 15.1): four cards, the first in the colour of emphasis. */
+.stand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+
+.standkaart {
+    display: flex;
+    flex: 1 1 200px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 22px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.standkaart-getal {
+    font: 700 34px/1.1 var(--font-kop);
+    letter-spacing: -.015em;
+}
+
+.standkaart-tekst {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.standkaart-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.standkaart.aandacht .standkaart-getal {
+    color: var(--made-link);
+}
+
+.standkaart.nadruk {
+    border-color: transparent;
+    background: var(--made-oppervlak-nadruk);
+    color: var(--made-inhoud-op-nadruk);
+}
+
+.standkaart.nadruk .standkaart-tekst {
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+.standkaart.nadruk .standkaart-sub {
+    font-weight: 600;
+    color: var(--made-accent-op-nadruk);
+}
+
 /* Moving a page (#64): the grip drags it, the buttons move it with the keyboard. */
 .boom-hint {
     margin: -6px 0 0;

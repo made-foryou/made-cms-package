@@ -10,6 +10,18 @@
         <a class="knop" href="{{ $createUrl }}">{{ $t('pages.index.new') }}</a>
     </section>
 
+    @if ($cards !== [])
+        <section class="stand" aria-label="{{ $t('pages.index.state.label') }}" data-swap="cards">
+            @foreach ($cards as $card)
+                <div @class(['standkaart', $card['tone'] => $card['tone'] !== null])>
+                    <span class="standkaart-getal">{{ $card['count'] }}</span>
+                    <span class="standkaart-tekst">{{ $card['text'] }}</span>
+                    <span class="standkaart-sub">{{ $card['sub'] }}</span>
+                </div>
+            @endforeach
+        </section>
+    @endif
+
     <section class="blok" aria-labelledby="made-cms-alle">
         <div class="sectiekop">
             <h2 id="made-cms-alle">{{ $t('pages.index.heading') }}</h2>

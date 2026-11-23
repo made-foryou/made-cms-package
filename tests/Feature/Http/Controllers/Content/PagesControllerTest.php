@@ -226,3 +226,57 @@ describe('the row of a page', function (): void {
             ->not->toContain('Muriël');
     });
 });
+
+describe('the state of the site', function (): void {
+    /**
+     * The four cards of the screen as their number, text and line under it.
+     *
+     * @return list<string>
+     */
+    function stateCards(string $html): array
+    {
+        preg_match_all('~<div class="standkaart[^"]*">\s*<span class="standkaart-getal">(.*?)</span>\s*<span class="standkaart-tekst">(.*?)</span>\s*<span class="standkaart-sub">(.*?)</span>~s', $html, $cards, PREG_SET_ORDER);
+
+        return array_map(static fn (array $card): string => html_entity_decode($card[1].' '.$card[2].' · '.$card[3], ENT_QUOTES), $cards);
+    }
+
+    it('counts the live pages, the drafts, the pages that ask for attention and the hidden pages', function (): void {
+        $home = Page::factory()->atPosition(0)->published()->withMeta(null, 'Welkom.')->withStrips([storedStrip()])->at('/')->create(['title' => 'Home']);
+        Page::factory()->atPosition(1)->published()->withMeta(null, 'Wie we zijn.')->withStrips([storedStrip()])->withDraft([])->at('/over-ons')->create(['title' => 'Over ons']);
+        Page::factory()->atPosition(2)->published()->withMeta('Tafeltennis in Dordrecht: alle teams van jong tot oud, van de jeugd tot de eredivisie')->withStrips([storedStrip()])->at('/teams')->create(['title' => 'Onze teams']);
+        Page::factory()->atPosition(3)->published()->withStrips([storedStrip()])->inMenu(false)->at('/locatie')->create(['title' => 'Locatie']);
+        Page::factory()->atPosition(4)->at('/jeugd')->create(['title' => 'Jeugd']);
+        Page::factory()->atPosition(5)->published()->hidden()->withStrips([storedStrip()])->at('/bedankt')->create(['title' => 'Bedankt']);
+        Page::factory()->atPosition(6)->published()->hidden()->withStrips([storedStrip()])->at('/privacy')->create(['title' => 'Privacy']);
+
+        expect(stateCards(pagesScreen()))->toBe([
+            '4 pagina’s live · waarvan 3 in het menu',
+            '2 met wijzigingen in concept · Over ons en Jeugd',
+            '2 vragen aandacht · omschrijving leeg en titel te lang',
+            '2 verborgen voor bezoekers · Bedankt en Privacy, bewust buiten menu en sitemap',
+        ]);
+    });
+
+    it('names three pages and counts the others', function (): void {
+        foreach (['Een', 'Twee', 'Drie', 'Vier', 'Vijf'] as $position => $title) {
+            Page::factory()->atPosition($position)->at('/'.strtolower($title))->create(['title' => $title]);
+        }
+
+        expect(stateCards(pagesScreen())[1])->toBe('5 met wijzigingen in concept · Een, Twee, Drie en 2 andere');
+    });
+
+    it('says when there is nothing to count', function (): void {
+        Page::factory()->published()->withMeta(null, 'Welkom.')->withStrips([storedStrip()])->at('/')->create(['title' => 'Home']);
+
+        expect(stateCards(pagesScreen()))->toBe([
+            '1 pagina live · waarvan 1 in het menu',
+            '0 met wijzigingen in concept · alles is gepubliceerd',
+            '0 vragen aandacht · alles staat er goed voor',
+            '0 verborgen voor bezoekers · alles is zichtbaar',
+        ]);
+    });
+
+    it('shows no cards on a site without pages', function (): void {
+        expect(pagesScreen())->not->toContain('standkaart');
+    });
+});

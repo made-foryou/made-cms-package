@@ -20,7 +20,7 @@ final class SetPageVisibility
      *
      * @throws HomePageProtected
      */
-    public function handle(Page $page, bool $hidden): Page
+    public function handle(Page $page, bool $hidden, ?int $editorId = null): Page
     {
         $page->loadMissing('route');
 
@@ -33,6 +33,7 @@ final class SetPageVisibility
         }
 
         $page->hidden = $hidden;
+        NotePageEditor::run($page, $editorId);
         $page->save();
         PageVisibilityChanged::dispatch($page);
 

@@ -30,6 +30,7 @@ final class UpdatePageMeta
             return $page;
         }
 
+        NotePageEditor::run($page, $changes->editorId);
         $page->save();
         PageMetaUpdated::dispatch($page);
 

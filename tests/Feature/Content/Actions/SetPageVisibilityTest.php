@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\SetPageVisibility;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PageVisibilityChanged;
@@ -71,4 +72,22 @@ it('shows a home page that was hidden before', function (): void {
     SetPageVisibility::run($home, hidden: false);
 
     expect($home->refresh()->hidden)->toBeFalse();
+});
+
+it('notes the editor who hides the page', function (): void {
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->published()->at('/privacy')->create();
+
+    SetPageVisibility::run($page, hidden: true, editorId: $editor->id);
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});
+
+it('leaves who changed the page last when it already is as asked', function (): void {
+    $before = Editor::factory()->create();
+    $page = Page::factory()->hidden()->at('/privacy')->create(['updated_by' => $before->id]);
+
+    SetPageVisibility::run($page, hidden: true, editorId: Editor::factory()->create()->id);
+
+    expect($page->refresh()->updated_by)->toBe($before->id);
 });

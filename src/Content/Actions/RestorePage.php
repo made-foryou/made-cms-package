@@ -29,7 +29,7 @@ final class RestorePage
      * @throws PagePathTooLong
      * @throws PagePathTaken
      */
-    public function handle(Page $page): Page
+    public function handle(Page $page, ?int $editorId = null): Page
     {
         if (! $page->trashed()) {
             throw PageNotDeleted::for($page);
@@ -48,7 +48,7 @@ final class RestorePage
         }
 
         try {
-            DB::transaction(function () use ($page, $parent, $path): void {
+            DB::transaction(function () use ($page, $parent, $path, $editorId): void {
                 // Another request may have restored it since it was read: the row lock makes the second one wait.
                 if (! Page::query()->withTrashed()->whereKey($page->id)->lockForUpdate()->firstOrFail()->trashed()) {
                     throw PageNotDeleted::for($page);
@@ -61,6 +61,8 @@ final class RestorePage
                 $last = Page::query()->childrenOf($parent)->max('position');
 
                 $page->position = is_numeric($last) ? (int) $last + 1 : 0;
+                // Restoring always writes (deleted_at), also when the place stays the same.
+                $page->updated_by = $editorId;
                 $page->restore();
                 $page->route()->create(['path' => $path->value]);
             });

@@ -29,6 +29,7 @@ final class MovePage
      *
      * @param  int|null  $parentId  null for the top of the site
      * @param  int|null  $position  0 for the first place; null for the last
+     * @param  int|null  $editorId  the editor who moves it; null when that is not known
      *
      * @throws ParentPageNotFound
      * @throws ParentPageDeleted
@@ -38,7 +39,7 @@ final class MovePage
      * @throws PagePathTaken
      * @throws PagePathTooLong when the address of the page or of a page under it gets too long
      */
-    public function handle(Page $page, ?int $parentId, ?int $position = null): Page
+    public function handle(Page $page, ?int $parentId, ?int $position = null, ?int $editorId = null): Page
     {
         $page->loadMissing('route');
         $parent = FindParentPage::run($parentId);
@@ -61,7 +62,7 @@ final class MovePage
         $to = $sameParent ? $from : PagePath::fromString((string) $parent?->route?->path)->child($page->slug);
 
         try {
-            DB::transaction(function () use ($page, $parent, $position, $others, $sameParent, $from, $to): void {
+            DB::transaction(function () use ($page, $parent, $position, $others, $sameParent, $from, $to, $editorId): void {
                 CheckPageParent::run($page, $parent);
 
                 if ($to != $from && Route::query()->atPath($to)->exists()) {
@@ -72,6 +73,7 @@ final class MovePage
 
                 $page->parent_id = $parent?->id;
                 $page->position = $position;
+                NotePageEditor::run($page, $editorId);
                 $page->save();
 
                 array_splice($others, $position, 0, [$page->id]);

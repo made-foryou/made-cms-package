@@ -52,13 +52,15 @@ final class CreatePage
 
                 $last = Page::query()->childrenOf($parent)->max('position');
 
-                $page = Page::query()->create([
+                $page = Page::query()->make([
                     'parent_id' => $parent?->id,
                     'title' => trim($new->title),
                     'slug' => $slug->value,
                     'position' => is_numeric($last) ? (int) $last + 1 : 0,
                     'in_menu' => $new->inMenu,
                 ]);
+                NotePageEditor::run($page, $new->editorId);
+                $page->save();
                 $page->route()->create(['path' => $path->value]);
 
                 return $page->load('route');

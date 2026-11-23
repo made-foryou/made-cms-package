@@ -14,11 +14,13 @@ final readonly class PageMetaChanges
      * @param  string|null  $description  the description in Google; null or blank leaves it to Google
      * @param  bool  $inSitemap  whether the sitemap of the site lists the page
      * @param  bool  $indexable  whether Google may show the page
+     * @param  int|null  $editorId  the editor who changes them; null when that is not known
      */
     public function __construct(
         public ?string $title,
         public ?string $description,
         public bool $inSitemap,
         public bool $indexable,
+        public ?int $editorId = null,
     ) {}
 }

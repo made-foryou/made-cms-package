@@ -75,6 +75,45 @@ return [
         'view' => 'View on the site',
         'edit' => 'Edit on the site',
         'save' => 'Save',
+        'attention' => [
+            'heading' => 'How it is doing',
+            'caption' => 'what needs attention',
+            'empty' => 'Nothing needs attention. It is in good shape.',
+            'severity' => [
+                'high' => 'Urgent',
+                'medium' => 'Soon',
+                'low' => 'When you have time',
+            ],
+            'reasons' => [
+                'stale_draft' => [
+                    'title' => 'The draft has been open for :days days',
+                    'meta' => 'Visitors still see the old text.',
+                    'action' => 'Review and publish on the site',
+                ],
+                'meta_description_missing' => [
+                    'title' => 'Google description is missing',
+                    'meta' => 'Google now picks a piece of text itself.',
+                    'action' => 'Write it below',
+                ],
+                'meta_title_too_long' => [
+                    'title' => 'Title in Google is too long',
+                    'meta' => ':length characters; Google cuts off after about :limit.',
+                    'action' => 'Shorten it below',
+                ],
+                'empty' => [
+                    'title' => 'Still empty',
+                    'meta' => 'It holds no strips yet.',
+                    'action' => 'Fill it on the site',
+                ],
+            ],
+        ],
+        'summary' => [
+            'label' => 'In short',
+            'attention' => '{0} Nothing needs attention|{1} :count thing needs attention|[2,*] :count things need attention',
+            'attention_hint' => 'Listed at the top under “How it is doing”.',
+            'empty' => 'Still empty',
+            'empty_hint' => 'Fill it on the site and publish it.',
+        ],
         'basics' => [
             'heading' => 'The basics',
             'caption' => 'what the page is and where it lives',

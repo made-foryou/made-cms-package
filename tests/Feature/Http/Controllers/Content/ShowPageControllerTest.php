@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
@@ -301,6 +302,76 @@ it('links to the meta overview only for an editor who opens it', function (Role 
     'an admin' => [Role::Admin, true],
     'the content manager' => [Role::ContentManager, false],
 ]);
+
+describe('the card "Hoe hij ervoor staat"', function (): void {
+    it('lists what the page asks for, the urgent first, with the way to what solves it', function (): void {
+        $this->travelTo(CarbonImmutable::parse('2026-11-21 12:00:00'));
+        $page = Page::factory()->published()->at('/locatie')->withStrips([storedStrip(id: 'a')])
+            ->withDraft([storedStrip(id: 'b')])
+            ->draftSince(CarbonImmutable::parse('2026-11-14 12:00:00'))
+            ->create(['title' => 'Locatie', 'meta_title' => str_repeat('a', 68)]);
+
+        $this->get('made-cms/pages/'.$page->id)
+            ->assertOk()
+            ->assertSee('<h2 id="made-cms-stand">Hoe hij ervoor staat</h2>', false)
+            ->assertSee('<span class="sectienoot">wat aandacht vraagt</span>', false)
+            ->assertSeeInOrder([
+                '<span class="aandacht-stip high" aria-hidden="true"></span>',
+                '<span class="aandacht-titel"><span class="sr-only">Met voorrang: </span>Het concept staat al 7 dagen open</span>',
+                '<span class="punt-meta">Bezoekers zien nog de oude tekst.</span>',
+                '<a class="tekstlink klein" href="/made-cms/pages/'.$page->id.'/edit">Bekijk en publiceer op de site</a>',
+                '<span class="aandacht-titel"><span class="sr-only">Met voorrang: </span>Google-omschrijving ontbreekt</span>',
+                '<span class="punt-meta">Google kiest nu zelf een stukje tekst.</span>',
+                '<a class="tekstlink klein" href="#made-cms-google">Schrijf hem hieronder</a>',
+                '<span class="aandacht-stip medium" aria-hidden="true"></span>',
+                '<span class="aandacht-titel"><span class="sr-only">Binnenkort: </span>Titel in Google is te lang</span>',
+                '<span class="punt-meta">68 tekens; Google kapt af na ongeveer 60.</span>',
+                '<a class="tekstlink klein" href="#made-cms-google">Kort hem in hieronder</a>',
+                '<h2 id="made-cms-basis">',
+            ], false);
+    });
+
+    it('says when the page asks for nothing', function (): void {
+        $page = Page::factory()->published()->withMeta('Onze teams', 'Alle teams van de club.')->at('/teams')
+            ->withStrips([storedStrip()])
+            ->create();
+
+        expect(pageScreen($page))
+            ->toContain('<p class="kaart-tekst">Niets vraagt aandacht. Hij staat er goed voor.</p>')
+            ->not->toContain('class="aandachtspunten"');
+    });
+
+    it('counts the points in the column beside the cards', function (): void {
+        $page = Page::factory()->published()->at('/teams')->withStrips([storedStrip()])
+            ->create(['meta_title' => str_repeat('a', 68)]);
+
+        expect(pageScreen($page))
+            ->toContain('<aside class="paginakort" aria-labelledby="made-cms-kort">')
+            ->toContain('<h2 id="made-cms-kort" class="paginakort-label">In het kort</h2>')
+            ->toContain('<span class="paginakort-kop"><span class="paginakort-stip" aria-hidden="true"></span>2 dingen vragen aandacht</span>')
+            ->toContain('<span class="paginakort-hint">Staan bovenaan onder “Hoe hij ervoor staat”.</span>');
+    });
+
+    it('says in the column that one thing asks for attention, or nothing', function (): void {
+        $one = Page::factory()->published()->withMeta('Onze teams')->at('/teams')->withStrips([storedStrip()])->create();
+        $none = Page::factory()->published()->withMeta('Locatie', 'Waar we spelen.')->at('/locatie')->withStrips([storedStrip()])->create();
+
+        expect(pageScreen($one))->toContain('<span class="paginakort-stip" aria-hidden="true"></span>1 ding vraagt aandacht</span>')
+            ->and(pageScreen($none))
+            ->toContain('<span class="paginakort-kop">Niets vraagt aandacht</span>')
+            ->not->toContain('paginakort-hint');
+    });
+
+    it('says in the column that an empty page that was never published is still empty', function (): void {
+        $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+        expect(pageScreen($page))
+            ->toContain('<span class="aandacht-titel"><span class="sr-only">Binnenkort: </span>Nog leeg</span>')
+            ->toContain('<a class="tekstlink klein" href="/made-cms/pages/'.$page->id.'/edit">Vul hem op de site</a>')
+            ->toContain('<span class="paginakort-stip" aria-hidden="true"></span>Nog leeg</span>')
+            ->toContain('<span class="paginakort-hint">Vul hem op de site en publiceer hem.</span>');
+    });
+});
 
 describe('the card "Hoe je link gedeeld wordt"', function (): void {
     beforeEach(function (): void {

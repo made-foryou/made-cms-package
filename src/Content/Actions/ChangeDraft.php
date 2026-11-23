@@ -23,7 +23,8 @@ final class ChangeDraft
      * page it gets takes the stored state, whatever it held unsaved. The change gets the working copy (the draft, else
      * the published strips) and the page, writes what changes on the page and returns what the Action gives back;
      * the page is saved before the commit. A draft that no longer changes anything (CompareDraft) falls away, so
-     * draft_strips is null unless there is something to publish or discard. When the strips of a version changed, the
+     * draft_strips is null unless there is something to publish or discard, and draft_started_at holds when the draft
+     * that is there began (null without one). When the strips of a version changed, the
      * places of the files of the media library follow in the same transaction (SyncMediaUsage). Events it dispatches go out after the
      * commit (ShouldDispatchAfterCommit), and an exception rolls everything back.
      *
@@ -46,6 +47,8 @@ final class ChangeDraft
             if ($page->draft_strips !== null && CompareDraft::run($page)->count() === 0) {
                 $page->draft_strips = null;
             }
+
+            $page->draft_started_at = $page->draft_strips === null ? null : ($page->draft_started_at ?? now()->toImmutable());
 
             $stripsChanged = $page->isDirty(['strips', 'draft_strips']);
 

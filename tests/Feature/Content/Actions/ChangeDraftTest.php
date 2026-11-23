@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
@@ -269,4 +270,54 @@ it('discards the draft as it is stored, not as the loaded page holds it', functi
 
     expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
     Event::assertDispatched(DraftDiscarded::class);
+});
+
+describe('the start of the draft', function (): void {
+    it('starts the draft at the first change', function (): void {
+        $this->travelTo(CarbonImmutable::parse('2026-11-20 10:00:00'));
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])->create();
+
+        ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
+            $page->draft_strips = $strips->move('a', 1)->toArray();
+        });
+
+        expect(Page::query()->findOrFail($page->id)->draft_started_at?->toDateTimeString())->toBe('2026-11-20 10:00:00');
+    });
+
+    it('keeps the start of the draft at a later change', function (): void {
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b'), storedStrip(id: 'c')])
+            ->withDraft([storedStrip(id: 'b'), storedStrip(id: 'a'), storedStrip(id: 'c')])
+            ->draftSince(CarbonImmutable::parse('2026-11-14 09:00:00'))
+            ->create();
+
+        ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
+            $page->draft_strips = $strips->move('c', 0)->toArray();
+        });
+
+        expect(Page::query()->findOrFail($page->id)->draft_started_at?->toDateTimeString())->toBe('2026-11-14 09:00:00');
+    });
+
+    it('forgets the start once the draft no longer changes anything', function (): void {
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])
+            ->withDraft([storedStrip(id: 'b'), storedStrip(id: 'a')])
+            ->create();
+
+        ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
+            $page->draft_strips = $strips->move('a', 0)->toArray();
+        });
+
+        expect(Page::query()->findOrFail($page->id)->draft_started_at)->toBeNull();
+    });
+
+    it('forgets the start once the draft is published or discarded', function (Closure $end): void {
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a', values: ['kaarten' => []])])->create();
+        UpdateStrip::run($page, 'a', ['kaarten' => [['titel' => 'Nieuw']]], chooseLevels: true);
+
+        $end(Page::query()->findOrFail($page->id));
+
+        expect(Page::query()->findOrFail($page->id)->draft_started_at)->toBeNull();
+    })->with([
+        'published' => [static fn (Page $page) => PublishPage::run($page)],
+        'discarded' => [static fn (Page $page) => DiscardDraft::run($page)],
+    ]);
 });

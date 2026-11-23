@@ -75,6 +75,45 @@ return [
         'view' => 'Bekijk op de site',
         'edit' => 'Bewerken op de site',
         'save' => 'Opslaan',
+        'attention' => [
+            'heading' => 'Hoe hij ervoor staat',
+            'caption' => 'wat aandacht vraagt',
+            'empty' => 'Niets vraagt aandacht. Hij staat er goed voor.',
+            'severity' => [
+                'high' => 'Met voorrang',
+                'medium' => 'Binnenkort',
+                'low' => 'Als je tijd hebt',
+            ],
+            'reasons' => [
+                'stale_draft' => [
+                    'title' => 'Het concept staat al :days dagen open',
+                    'meta' => 'Bezoekers zien nog de oude tekst.',
+                    'action' => 'Bekijk en publiceer op de site',
+                ],
+                'meta_description_missing' => [
+                    'title' => 'Google-omschrijving ontbreekt',
+                    'meta' => 'Google kiest nu zelf een stukje tekst.',
+                    'action' => 'Schrijf hem hieronder',
+                ],
+                'meta_title_too_long' => [
+                    'title' => 'Titel in Google is te lang',
+                    'meta' => ':length tekens; Google kapt af na ongeveer :limit.',
+                    'action' => 'Kort hem in hieronder',
+                ],
+                'empty' => [
+                    'title' => 'Nog leeg',
+                    'meta' => 'Er staan nog geen stroken op.',
+                    'action' => 'Vul hem op de site',
+                ],
+            ],
+        ],
+        'summary' => [
+            'label' => 'In het kort',
+            'attention' => '{0} Niets vraagt aandacht|{1} :count ding vraagt aandacht|[2,*] :count dingen vragen aandacht',
+            'attention_hint' => 'Staan bovenaan onder “Hoe hij ervoor staat”.',
+            'empty' => 'Nog leeg',
+            'empty_hint' => 'Vul hem op de site en publiceer hem.',
+        ],
         'basics' => [
             'heading' => 'De basis',
             'caption' => 'wat de pagina is en waar hij staat',

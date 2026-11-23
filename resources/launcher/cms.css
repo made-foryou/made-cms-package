@@ -1335,6 +1335,119 @@ ul.lijst {
     max-width: 820px;
 }
 
+/* The screen of a page: the cards, and "In het kort" beside them (design 15.2). The cards take all the room the column
+   leaves; once they no longer fit beside each other the column wraps below them, as wide as they are. */
+
+.paginakolommen > .kaarten {
+    flex: 999 1 560px;
+    min-width: 0;
+    max-width: none;
+}
+
+.paginakort {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex: 1 1 300px;
+    flex-direction: column;
+    gap: 18px;
+    padding: 22px;
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-nadruk);
+    color: var(--made-inhoud-op-nadruk);
+}
+
+.paginakort-label {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+.paginakort-aandacht {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.paginakort-kop {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.paginakort-stip {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--made-accent-op-nadruk);
+}
+
+.paginakort-hint {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+/* What a page asks for: a dot in the colour of its severity, the point, and the way to what solves it. */
+
+.aandachtspunten {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.aandachtspunt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid var(--made-rand);
+}
+
+.aandachtspunt:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.aandachtspunt:last-child {
+    padding-bottom: 0;
+}
+
+.aandacht-stip {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--made-wad);
+}
+
+.aandacht-stip.high {
+    background: var(--made-alarm);
+}
+
+.aandacht-stip.medium {
+    background: var(--made-amber);
+}
+
+.aandacht-titel {
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.aandachtspunt .tekstlink {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
 .kaart {
     display: flex;
     flex-direction: column;
@@ -4193,10 +4306,16 @@ button.tekstlink.alarm {
     }
 
     .punt,
+    .aandachtspunt,
     .boomrij,
     .strook,
     .schakelrij {
         flex-wrap: wrap;
+    }
+
+    /* The way to what solves a point lines up with its text, past the dot (9px) and the gap (12px). */
+    .aandachtspunt .tekstlink {
+        margin-left: 21px;
     }
 
     .boomrij-acties {

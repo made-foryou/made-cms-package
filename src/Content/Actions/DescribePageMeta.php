@@ -30,7 +30,7 @@ final class DescribePageMeta
         $path = $this->served->pageId === $page->id ? $this->served->path : $page->route?->path;
 
         return new PageMeta(
-            title: $page->meta_title ?? MakeFallbackTitle::run($page),
+            title: MakeGoogleTitle::run($page),
             description: $page->meta_description,
             canonical: $path === null ? null : Site::url($path),
             indexable: $page->indexable && ! $page->hidden,

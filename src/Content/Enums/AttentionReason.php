@@ -14,4 +14,14 @@ enum AttentionReason: string
     case MetaDescriptionMissing = 'meta_description_missing';
     case MetaTitleTooLong = 'meta_title_too_long';
     case Empty = 'empty';
+
+    /**
+     * Whether the reason lets a page stand out in a list of pages (the dot, the filter, the count). An empty page that
+     * was never published is not: it was just made, and the list says it in its own words; its own screen points
+     * it out.
+     */
+    public function showsInLists(): bool
+    {
+        return $this !== self::Empty;
+    }
 }

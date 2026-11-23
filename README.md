@@ -299,6 +299,52 @@ Read the catalogue through `Made\CmsPackage\Content\Strips\StripTypes`: `app(Str
 
 Config keys: `strips.path` (default `app_path('Cms/Strips')`) and `strips.namespace` (default `App\Cms\Strips`).
 
+## Page types
+
+A site can define kinds of pages, such as a team page: which strip types an editor can add to it, and which strips a new page of that kind starts with. One PHP class per page type in `app/Cms/PageTypes`; the package finds every class in that folder and its sub-folders, like the strip types.
+
+```php
+namespace App\Cms\PageTypes;
+
+use Made\CmsPackage\Content\PageTypes\PageType;
+
+final class TeamPage extends PageType
+{
+    public function key(): string
+    {
+        return 'team';
+    }
+
+    public function label(): string
+    {
+        return 'Teampagina';
+    }
+
+    public function description(): string
+    {
+        return 'Vaste opzet: teamfoto, spelers en wedstrijden.';
+    }
+
+    public function strips(): array
+    {
+        return ['hero', 'players', 'matches', 'gallery'];
+    }
+
+    public function defaults(): array
+    {
+        return ['hero', 'players', 'matches'];
+    }
+}
+```
+
+`key()` follows the rules of a strip type key and is stored with every page (`cms_pages.type`), so it never changes once a page uses it. `label()` (the class name as words by default) and `description()` (none by default) are what editors see when they choose. `strips()` lists the keys of the strip types an editor can add; `null`, the default, allows every strip type. `defaults()` lists the strips a new page starts with, in order and as a draft, each with the defaults of its fields; a key may come back, and the default is none.
+
+A page without a type is an ordinary page ("Gewone pagina"): every strip type, and it starts empty. Without page type classes every page is ordinary, and the wizard for a new page does not ask the type. With them, the wizard asks it first and the editor can change it in the basics of a page. A new type only decides which strip types can be added: strips already on the page stay, also those of a type it does not allow, and publishing never refuses them. A page whose type the site no longer defines keeps its key, takes every strip type and shows the key as "niet meer gedefinieerd".
+
+Every definition is checked against the strip types when the catalogue is built; a mistake (an invalid or duplicate key, an empty `strips()`, a strip type that is not in the catalogue, a default that `strips()` does not allow) throws `InvalidPageType` or `DuplicatePageType` at once. Read the catalogue through `Made\CmsPackage\Content\PageTypes\PageTypes`: `app(PageTypes::class)->all()`, `->has('team')` and `->find('team')`; `ListAllowedStripTypes::run($page->type)` gives the strip types an editor can add to a page.
+
+Config keys: `page_types.path` (default `app_path('Cms/PageTypes')`) and `page_types.namespace` (default `App\Cms\PageTypes`).
+
 ## Serving pages
 
 Every page lives at an address of the site (`/` for the home page, `/over-ons/team` for a nested one). Serve the pages with one line, as the **last** line of `routes/web.php`:
@@ -1116,6 +1162,7 @@ src/
 │   └── Models/     plain table representations
 ├── Content/    pages, strips, publishing, the media library and the sitemap
 │   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
+│   ├── PageTypes/  the page type definition API: PageType and the PageTypes catalogue
 │   ├── Sitemap/    the sources of the sitemap, its xml and the patterns of robots.txt
 │   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render, and UploadMedia
 │   └── ...

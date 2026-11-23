@@ -196,7 +196,7 @@ it('starts a page of a type with the strips of its type, as a draft', function (
         ->and($draft[0]['values']['kop'] ?? null)->toBe('Welkom')
         ->and($stored->draft_started_at)->not->toBeNull()
         ->and($stored->updated_by)->toBe($editor->id)
-        ->and($page->draft_strips)->toBe($stored->draft_strips);
+        ->and($stored->draft_strips)->toBeStoredAs($page->draft_strips);
 });
 
 it('starts an ordinary page and a page of a type without strips empty', function (?string $type): void {

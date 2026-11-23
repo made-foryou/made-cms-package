@@ -142,3 +142,26 @@ it('lists the editors who changed its pages last, each once and without the unkn
     expect($tree->editors())->toBe([4, 9])
         ->and((new PageTree([]))->editors())->toBe([]);
 });
+
+it('keeps the pages that match with the pages above them, at their own depth, without the pages under them', function (): void {
+    $kept = sampleTree()->keeping(static fn (PageNode $node): bool => in_array($node->id, [3, 7], true));
+
+    expect(array_map(fn (PageNode $node): array => [$node->id, $node->depth], $kept->flatten()))
+        ->toBe([[2, 0], [3, 1], [6, 0], [7, 1]]);
+});
+
+it('keeps nothing when nothing matches', function (): void {
+    expect(sampleTree()->keeping(static fn (): bool => false)->isEmpty())->toBeTrue();
+});
+
+it('keeps the menu of the site: the published pages visitors see with the menu switch on', function (): void {
+    $tree = new PageTree([
+        pageNode(1, '/', status: PageStatus::Published),
+        pageNode(2, '/over-ons', [pageNode(3, '/over-ons/team', parentId: 2, depth: 1, status: PageStatus::Published)], status: PageStatus::Published, hidden: true),
+        pageNode(4, '/jeugd'),
+        pageNode(5, '/contact', status: PageStatus::Published, inMenu: false),
+        pageNode(6, '/lid-worden', status: PageStatus::Published),
+    ]);
+
+    expect(array_map(fn (PageNode $node): int => $node->id, $tree->siteMenu()->flatten()))->toBe([1, 6]);
+});

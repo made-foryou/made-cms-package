@@ -86,6 +86,19 @@ final readonly class PageTree
     }
 
     /**
+     * The editors who changed its pages last, each once in menu order, without the unknown: the ids a screen names.
+     *
+     * @return list<int>
+     */
+    public function editors(): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map(static fn (PageNode $node): ?int => $node->updatedBy, $this->flatten()),
+            static fn (?int $id): bool => $id !== null,
+        )));
+    }
+
+    /**
      * @return list<PageNodeArray>
      */
     public function toArray(): array

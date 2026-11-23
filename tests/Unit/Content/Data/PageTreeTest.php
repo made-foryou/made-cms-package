@@ -4,32 +4,8 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Made\CmsPackage\Content\Data\PageNode;
-use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\PageTree;
 use Made\CmsPackage\Content\Enums\PageStatus;
-
-/**
- * @param  list<PageNode>  $children
- */
-function pageNode(int $id, string $path, array $children = [], bool $inMenu = true, ?int $parentId = null, int $depth = 0, PageStatus $status = PageStatus::Draft, bool $hidden = false): PageNode
-{
-    return new PageNode(
-        id: $id,
-        title: 'Pagina '.$id,
-        slug: 'pagina-'.$id,
-        path: PagePath::fromString($path),
-        status: $status,
-        inMenu: $inMenu,
-        hidden: $hidden,
-        position: 0,
-        parentId: $parentId,
-        depth: $depth,
-        hasDraft: false,
-        isEmpty: true,
-        updatedAt: CarbonImmutable::parse('2026-11-03 10:00:00'),
-        children: $children,
-    );
-}
 
 function sampleTree(): PageTree
 {
@@ -127,6 +103,8 @@ it('turns into arrays with nested children', function (): void {
         'has_draft' => false,
         'is_empty' => true,
         'updated_at' => '2026-11-03T10:00:00+00:00',
+        'updated_by' => null,
+        'draft_started_at' => null,
     ])->and($array[0]['children'][0]['path'])->toBe('/over-ons/team');
 });
 
@@ -142,4 +120,25 @@ it('lifts the pages under a page into its place', function (): void {
 
     expect(array_map(fn (PageNode $node): array => [$node->id, $node->depth], $tree->flatten()))
         ->toBe([[1, 0], [3, 0], [4, 1], [5, 0], [6, 0], [7, 1]]);
+});
+
+it('keeps who changed a node last and when its draft began, at another depth and with other children', function (): void {
+    $node = pageNode(2, '/over-ons', updatedBy: 7, draftStartedAt: CarbonImmutable::parse('2026-11-20 09:00:00'));
+
+    foreach ([$node->atDepth(2), $node->withChildren([pageNode(3, '/over-ons/team', parentId: 2, depth: 1)])] as $changed) {
+        expect($changed->updatedBy)->toBe(7)
+            ->and($changed->draftStartedAt?->toDateTimeString())->toBe('2026-11-20 09:00:00');
+    }
+
+    expect($node->toArray())->toMatchArray(['updated_by' => 7, 'draft_started_at' => '2026-11-20T09:00:00+00:00']);
+});
+
+it('lists the editors who changed its pages last, each once and without the unknown', function (): void {
+    $tree = new PageTree([
+        pageNode(1, '/', updatedBy: 4),
+        pageNode(2, '/over-ons', [pageNode(3, '/over-ons/team', parentId: 2, depth: 1, updatedBy: 4), pageNode(5, '/over-ons/jeugd', parentId: 2, depth: 1, updatedBy: 9)]),
+    ]);
+
+    expect($tree->editors())->toBe([4, 9])
+        ->and((new PageTree([]))->editors())->toBe([]);
 });

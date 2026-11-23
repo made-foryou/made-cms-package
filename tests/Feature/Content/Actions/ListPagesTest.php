@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\SetStripVisibility;
 use Made\CmsPackage\Content\Data\PageNode;
@@ -69,4 +71,19 @@ it('leaves out deleted pages', function (): void {
 
 it('gives an empty tree without pages', function (): void {
     expect(ListPages::run()->roots)->toBe([]);
+});
+
+it('carries who changed a page last and when its draft began', function (): void {
+    $editor = Editor::factory()->create();
+    Page::factory()->published()->withStrips([storedStrip()])->withDraft([])
+        ->draftSince(CarbonImmutable::parse('2026-11-20 09:00:00'))
+        ->create(['updated_by' => $editor->id]);
+    Page::factory()->create();
+
+    [$changed, $unknown] = ListPages::run()->flatten();
+
+    expect($changed->updatedBy)->toBe($editor->id)
+        ->and($changed->draftStartedAt?->toDateTimeString())->toBe('2026-11-20 09:00:00')
+        ->and($unknown->updatedBy)->toBeNull()
+        ->and($unknown->draftStartedAt)->toBeNull();
 });

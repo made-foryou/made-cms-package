@@ -49,6 +49,8 @@ final class ListPages
             hasDraft: $page->draft_strips !== null,
             isEmpty: CheckPageEmpty::run($page),
             updatedAt: CarbonImmutable::instance($page->updated_at ?? now()),
+            updatedBy: $page->updated_by,
+            draftStartedAt: $page->draft_started_at,
             children: $this->nodes($byParent, $page->id, $depth + 1),
         ), $byParent[$parentId] ?? []);
     }

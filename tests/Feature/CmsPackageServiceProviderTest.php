@@ -29,6 +29,7 @@ use Made\CmsPackage\Content\Events\PageUpdated;
 use Made\CmsPackage\Content\Events\PageVisibilityChanged;
 use Made\CmsPackage\Content\Listeners\RebuildSitemaps;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 
@@ -50,6 +51,8 @@ it('merges the package config', function (): void {
         ->and(config('made-cms-package.launcher.except'))->toBe(['nova*', 'telescope*', 'horizon*', 'pulse*'])
         ->and(config('made-cms-package.strips.path'))->toBe(app_path('Cms/Strips'))
         ->and(config('made-cms-package.strips.namespace'))->toBe('App\\Cms\\Strips')
+        ->and(config('made-cms-package.page_types.path'))->toBe(app_path('Cms/PageTypes'))
+        ->and(config('made-cms-package.page_types.namespace'))->toBe('App\\Cms\\PageTypes')
         ->and(config('made-cms-package.media.disk'))->toBe('public')
         ->and(config('made-cms-package.media.max_upload_kb'))->toBe(25600)
         ->and(config('made-cms-package.media.allowed_mimes'))->toBe([
@@ -76,6 +79,25 @@ it('builds the strip type catalogue once from the configured folder', function (
 
 it('has an empty catalogue while the site has no strip types', function (): void {
     expect(app(StripTypes::class)->all())->toBe([]);
+});
+
+it('builds the page type catalogue once from the configured folder, against the strip types', function (): void {
+    config([
+        'made-cms-package.strips.path' => __DIR__.'/../Fixtures/Strips/Valid',
+        'made-cms-package.strips.namespace' => 'Made\\CmsPackage\\Tests\\Fixtures\\Strips\\Valid',
+        'made-cms-package.page_types.path' => __DIR__.'/../Fixtures/PageTypes/Valid',
+        'made-cms-package.page_types.namespace' => 'Made\\CmsPackage\\Tests\\Fixtures\\PageTypes\\Valid',
+    ]);
+
+    $catalogue = app(PageTypes::class);
+
+    expect($catalogue->has('team'))->toBeTrue()
+        ->and($catalogue->has('landing'))->toBeTrue()
+        ->and(app(PageTypes::class))->toBe($catalogue);
+});
+
+it('has no page types while the site defines none', function (): void {
+    expect(app(PageTypes::class)->all())->toBe([]);
 });
 
 it('binds the edit mode off', function (): void {

@@ -35,7 +35,10 @@ final class StripTypes
      */
     public const array RESERVED_ITEM_FIELDS = ['id'];
 
-    private const string KEY_PATTERN = '/^[a-z][a-z0-9-]*$/';
+    /**
+     * The form of the key of a strip type, also of a page type.
+     */
+    public const string KEY_PATTERN = '/^[a-z][a-z0-9-]*$/';
 
     private const string FIELD_KEY_PATTERN = '/^[a-z][a-z0-9_]*$/';
 

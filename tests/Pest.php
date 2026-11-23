@@ -40,6 +40,7 @@ use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route as PageRoute;
+use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Scan\StripTypeSource;
 use Made\CmsPackage\Content\Strips\StripType;
@@ -47,6 +48,8 @@ use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Tests\Fixtures\Filesystem\RecordingAdapter;
 use Made\CmsPackage\Tests\Fixtures\Hashing\CountingHasher;
+use Made\CmsPackage\Tests\Fixtures\PageTypes\Valid\Nested\LandingPage;
+use Made\CmsPackage\Tests\Fixtures\PageTypes\Valid\TeamPage;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 use Made\CmsPackage\Tests\TestCase;
@@ -546,6 +549,19 @@ function useStripTypes(): StripTypes
     $catalogue = new StripTypes([new Hero, new Cards]);
 
     app()->instance(StripTypes::class, $catalogue);
+
+    return $catalogue;
+}
+
+/**
+ * Binds a catalogue with the fixture page types "team" (hero and cards, starting with both) and "landing" (every
+ * strip type, empty), next to the fixture strip types.
+ */
+function usePageTypes(): PageTypes
+{
+    $catalogue = new PageTypes([new TeamPage, new LandingPage], useStripTypes());
+
+    app()->instance(PageTypes::class, $catalogue);
 
     return $catalogue;
 }

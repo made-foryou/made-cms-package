@@ -182,6 +182,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Page types
+    |--------------------------------------------------------------------------
+    |
+    | Editors choose a type for a page: one class per type that extends
+    | PageType, which says the strip types an editor can add and the strips
+    | a new page starts with. Without classes every page is an ordinary page.
+    | The catalogue finds every class in path and its sub-folders; namespace
+    | is the namespace that path maps to (PSR-4).
+    |
+    */
+
+    'page_types' => [
+        'path' => app_path('Cms/PageTypes'),
+        'namespace' => 'App\\Cms\\PageTypes',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Media
     |--------------------------------------------------------------------------
     |

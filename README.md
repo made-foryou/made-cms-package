@@ -190,7 +190,10 @@ The blocks still show the static examples of the design for the editor's role (a
 
 ## Pages screen
 
-The pages screen at `/made-cms/pages` lists every page of the site in the order of the menu, the pages under a page indented below it, with its address, its status and what still needs doing. Every editor who opens `Screen::Pages` uses it; the menu lists the same pages under "Je site".
+The pages screen at `/made-cms/pages` lists every page of the site in the order of the menu, the pages under a page indented below it, with its address, its status, what still needs doing (an amber dot when it asks for attention) and when it changed last and by whom ("20 okt · Menno"). Every editor who opens `Screen::Pages` uses it; the menu lists the same pages under "Je site".
+
+- **How the site stands**: four cards above the list count the live pages (and how many the menu holds), the pages with something to publish, the pages that ask for attention (with why) and the hidden pages, over the whole site.
+- **Search and filters**: "Zoek een pagina" finds a page by a piece of its name or address; the filters Alle, Live, Concept, Vraagt aandacht and Verborgen show their number of pages. The list then shows the pages that match with the pages above them and moves nothing until it shows all pages again. Both are in the address (`?q=team&filter=draft`). `OpenPagesOverview::run(new PageSearch(...))` gives the same overview, `ListAttentionByPage::run()` what every page asks for attention (never "Nog leeg", which only the page itself points out).
 
 - **Order and nesting**: drag a page by its grip to change the order, and to the right to hang it under the page above; a line says where it lands ("Bovenaan", "Onder Over ons"). Without a mouse, the buttons of a row (up, down, under the previous page, one level up) do the same and show on focus; a move is read out. The pages under a page move along and every address follows (`MovePage`). The tree hangs a page no deeper than three levels and puts nothing before or under the home page; "Ligt onder" on the page itself goes deeper.
 - **New page** (`/made-cms/pages/new`) asks one question per step: the name, from which the address follows, and the place: at the top or under another page. The page starts as an empty draft, last in the menu, and opens on the site to be filled.

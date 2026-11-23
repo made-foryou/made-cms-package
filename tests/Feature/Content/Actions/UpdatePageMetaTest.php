@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\UpdatePageMeta;
 use Made\CmsPackage\Content\Data\PageMetaChanges;
 use Made\CmsPackage\Content\Events\PageMetaUpdated;
@@ -71,4 +72,22 @@ it('tells nothing when nothing changed', function (): void {
     UpdatePageMeta::run($page, new PageMetaChanges(title: ' Onze teams ', description: null, inSitemap: true, indexable: true));
 
     Event::assertNotDispatched(PageMetaUpdated::class);
+});
+
+it('notes the editor who changes the google fields', function (): void {
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->create();
+
+    UpdatePageMeta::run($page, new PageMetaChanges(title: 'Onze teams', description: null, inSitemap: true, indexable: true, editorId: $editor->id));
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});
+
+it('leaves who changed the page last when nothing changed', function (): void {
+    $before = Editor::factory()->create();
+    $page = Page::factory()->withMeta('Onze teams')->create(['updated_by' => $before->id]);
+
+    UpdatePageMeta::run($page, new PageMetaChanges(title: 'Onze teams', description: null, inSitemap: true, indexable: true, editorId: Editor::factory()->create()->id));
+
+    expect($page->refresh()->updated_by)->toBe($before->id);
 });

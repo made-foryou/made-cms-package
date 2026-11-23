@@ -86,6 +86,39 @@ final readonly class PageTree
     }
 
     /**
+     * The menu of the site: the published pages visitors see with the menu switch on, in menu order. A draft, a
+     * hidden page or a page outside the menu takes the pages under it along.
+     */
+    public function siteMenu(): self
+    {
+        return $this->inMenu()->published()->visible();
+    }
+
+    /**
+     * Only the pages that match, each with the pages above it so its place stays clear, at their own depth; a page
+     * that matches does not bring the pages under it along.
+     *
+     * @param  callable(PageNode): bool  $matches
+     */
+    public function keeping(callable $matches): self
+    {
+        return new self(self::keep($this->roots, $matches));
+    }
+
+    /**
+     * The editors who changed its pages last, each once in menu order, without the unknown: the ids a screen names.
+     *
+     * @return list<int>
+     */
+    public function editors(): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map(static fn (PageNode $node): ?int => $node->updatedBy, $this->flatten()),
+            static fn (?int $id): bool => $id !== null,
+        )));
+    }
+
+    /**
      * @return list<PageNodeArray>
      */
     public function toArray(): array
@@ -122,6 +155,26 @@ final readonly class PageTree
                 array_push($kept, ...array_map(static fn (PageNode $child): PageNode => $child->atDepth($depth), $node->children));
             } else {
                 $kept[] = $node->withChildren(self::liftFrom($node->children, $id, $depth + 1));
+            }
+        }
+
+        return $kept;
+    }
+
+    /**
+     * @param  list<PageNode>  $nodes
+     * @param  callable(PageNode): bool  $matches
+     * @return list<PageNode>
+     */
+    private static function keep(array $nodes, callable $matches): array
+    {
+        $kept = [];
+
+        foreach ($nodes as $node) {
+            $children = self::keep($node->children, $matches);
+
+            if ($children !== [] || $matches($node)) {
+                $kept[] = $node->withChildren($children);
             }
         }
 

@@ -44,6 +44,7 @@ final class UpdatePageMetaRequest extends LauncherRequest
             description: $this->string('meta_description')->toString(),
             inSitemap: $this->boolean('in_sitemap'),
             indexable: $this->boolean('indexable'),
+            editorId: $this->editorId(),
         );
     }
 

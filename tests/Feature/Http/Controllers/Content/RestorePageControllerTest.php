@@ -55,3 +55,14 @@ it('refuses a page whose address got longer than 255 characters and says why', f
         ->assertRedirect('/made-cms/pages')
         ->assertSessionHasErrors(['restore' => 'Op zijn oude plek wordt het adres langer dan 255 tekens. Geef de pagina erboven eerst een korter adres.']);
 });
+
+it('notes the editor who restores the page', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->at('/over-ons')->create(['slug' => 'over-ons']);
+    DeletePage::run($page);
+
+    $this->post('made-cms/pages/'.$page->id.'/restore');
+
+    expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
+});

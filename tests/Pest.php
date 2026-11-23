@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Filesystem\Filesystem;
@@ -26,12 +27,15 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\CombinePageScans;
 use Made\CmsPackage\Content\Actions\RecognisePage;
 use Made\CmsPackage\Content\Data\GeneratedStripTypes;
+use Made\CmsPackage\Content\Data\PageNode;
+use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\RecognisedField;
 use Made\CmsPackage\Content\Data\RecognisedPage;
 use Made\CmsPackage\Content\Data\ScanField;
 use Made\CmsPackage\Content\Data\ScannedPage;
 use Made\CmsPackage\Content\Data\ScanResult;
 use Made\CmsPackage\Content\Data\ScanType;
+use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
@@ -119,6 +123,46 @@ function withSortedKeys(mixed $value): mixed
 function quoted(string $identifier): string
 {
     return DB::getQueryGrammar()->wrap($identifier);
+}
+
+/**
+ * A page of the tree as ListPages builds it, for tests of the tree and what reads it.
+ *
+ * @param  list<PageNode>  $children
+ */
+function pageNode(
+    int $id,
+    string $path,
+    array $children = [],
+    bool $inMenu = true,
+    ?int $parentId = null,
+    int $depth = 0,
+    PageStatus $status = PageStatus::Draft,
+    bool $hidden = false,
+    ?string $title = null,
+    bool $hasDraft = false,
+    bool $isEmpty = true,
+    ?int $updatedBy = null,
+    ?CarbonImmutable $draftStartedAt = null,
+): PageNode {
+    return new PageNode(
+        id: $id,
+        title: $title ?? 'Pagina '.$id,
+        slug: 'pagina-'.$id,
+        path: PagePath::fromString($path),
+        status: $status,
+        inMenu: $inMenu,
+        hidden: $hidden,
+        position: 0,
+        parentId: $parentId,
+        depth: $depth,
+        hasDraft: $hasDraft,
+        isEmpty: $isEmpty,
+        updatedAt: CarbonImmutable::parse('2026-11-03 10:00:00'),
+        updatedBy: $updatedBy,
+        draftStartedAt: $draftStartedAt,
+        children: $children,
+    );
 }
 
 /**

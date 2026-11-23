@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
 use Made\CmsPackage\Content\Enums\PageStatus;
@@ -247,4 +248,31 @@ it('refuses a parent that went under the page at the same moment', function (): 
 
     expect(Page::query()->findOrFail($a->id)->parent_id)->toBeNull();
     Event::assertNotDispatched(PageUpdated::class);
+});
+
+it('notes the editor who changes the page', function (): void {
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Wie we zijn', slug: 'over-ons', parentId: null, inMenu: true, editorId: $editor->id));
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});
+
+it('notes the editor who only hides the page', function (): void {
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->published()->at('/privacy')->create(['title' => 'Privacy', 'slug' => 'privacy']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Privacy', slug: 'privacy', parentId: null, inMenu: true, hidden: true, editorId: $editor->id));
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});
+
+it('leaves who changed the page last when nothing changes', function (): void {
+    $before = Editor::factory()->create();
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons', 'updated_by' => $before->id]);
+
+    UpdatePage::run($page, new PageChanges(title: 'Over ons', slug: 'over-ons', parentId: null, inMenu: true, editorId: Editor::factory()->create()->id));
+
+    expect($page->refresh()->updated_by)->toBe($before->id);
 });

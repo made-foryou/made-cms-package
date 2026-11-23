@@ -21,7 +21,7 @@ final class RemoveStrip
      *
      * @throws StripNotFound
      */
-    public function handle(Page $page, string $stripId): Strip
+    public function handle(Page $page, string $stripId, ?int $editorId = null): Strip
     {
         return ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($stripId): Strip {
             $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
@@ -31,6 +31,6 @@ final class RemoveStrip
             StripRemoved::dispatch($page, $strip);
 
             return $strip;
-        });
+        }, $editorId);
     }
 }

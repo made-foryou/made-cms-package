@@ -37,3 +37,15 @@ it('answers 401 to a guest', function (): void {
 
     expect($page->refresh()->draft_strips)->not->toBeNull();
 });
+
+it('notes the editor who throws the draft away', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', ['kop' => 'Teams'], id: 'a')])
+        ->withDraft([storedStrip('cards', ['kop' => 'Onze teams'], id: 'a')])
+        ->create();
+
+    $this->deleteJson('made-cms/pages/'.$page->id.'/draft')->assertNoContent();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

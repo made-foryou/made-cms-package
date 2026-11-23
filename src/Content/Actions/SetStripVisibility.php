@@ -20,7 +20,7 @@ final class SetStripVisibility
      *
      * @throws StripNotFound
      */
-    public function handle(Page $page, string $stripId, bool $visible): Strip
+    public function handle(Page $page, string $stripId, bool $visible, ?int $editorId = null): Strip
     {
         return ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($stripId, $visible): Strip {
             $strip = ($strips->find($stripId) ?? throw StripNotFound::id($page, $stripId))->withVisibility($visible);
@@ -30,6 +30,6 @@ final class SetStripVisibility
             StripVisibilityChanged::dispatch($page, $strip);
 
             return $strip;
-        });
+        }, $editorId);
     }
 }

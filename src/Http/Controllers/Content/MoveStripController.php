@@ -22,7 +22,7 @@ final class MoveStripController
     public function __invoke(MoveStripRequest $request, Page $page, string $strip): JsonResponse
     {
         try {
-            MoveStrip::run($page, $strip, $request->position());
+            MoveStrip::run($page, $strip, $request->position(), $request->editorId());
         } catch (StripNotFound) {
             abort(Response::HTTP_NOT_FOUND);
         } catch (InvalidStripPosition) {

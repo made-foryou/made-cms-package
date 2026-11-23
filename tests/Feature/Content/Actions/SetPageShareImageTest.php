@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\SetPageShareImage;
 use Made\CmsPackage\Content\Enums\ShareImageRefusal;
 use Made\CmsPackage\Content\Enums\UsageVersion;
@@ -174,4 +175,23 @@ it('locks the page first, then reads every file of it in one go in the order of 
     expect($reads[0])->toContain('from '.quoted('cms_pages'))
         ->and($files[0])->toContain('order by '.quoted('id').' asc')
         ->and(count($files))->toBe(2);
+});
+
+it('notes the editor who gives the page its share image', function (): void {
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->create();
+
+    SetPageShareImage::run($page, Media::factory()->create()->id, editorId: $editor->id);
+
+    expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
+});
+
+it('leaves who changed the page last when the page already has that share image', function (): void {
+    $before = Editor::factory()->create();
+    $media = Media::factory()->create();
+    $page = Page::factory()->withShareImage($media)->create(['updated_by' => $before->id]);
+
+    SetPageShareImage::run($page, $media->id, editorId: Editor::factory()->create()->id);
+
+    expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($before->id);
 });

@@ -27,9 +27,9 @@ final class SetPageShareImage
      *
      * @throws ShareImageRefused when the file is gone, is no image or is an svg
      */
-    public function handle(Page $page, ?int $mediaId): Page
+    public function handle(Page $page, ?int $mediaId, ?int $editorId = null): Page
     {
-        DB::transaction(static function () use ($page, $mediaId): void {
+        DB::transaction(static function () use ($page, $mediaId, $editorId): void {
             $stored = Page::query()->whereKey($page->getKey())->lockForUpdate()->firstOrFail();
             $page->setRawAttributes($stored->getAttributes(), sync: true);
 
@@ -51,6 +51,7 @@ final class SetPageShareImage
                 }
             }
 
+            NotePageEditor::run($page, $editorId);
             $page->save();
             PageShareImageChanged::dispatch($page);
         });

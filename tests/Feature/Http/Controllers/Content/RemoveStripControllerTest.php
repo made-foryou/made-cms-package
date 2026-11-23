@@ -45,3 +45,13 @@ it('answers 401 to a guest', function (): void {
 
     $this->deleteJson('made-cms/pages/'.$page->id.'/strips/a')->assertUnauthorized();
 });
+
+it('notes the editor who removes the strip', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a'), storedStrip('hero', id: 'b')])->create();
+
+    $this->deleteJson('made-cms/pages/'.$page->id.'/strips/b')->assertOk();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

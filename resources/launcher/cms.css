@@ -1157,6 +1157,16 @@ ul.lijst {
     color: var(--made-inhoud-zwak);
 }
 
+.boomrij-stip {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--made-amber);
+    vertical-align: 1px;
+}
+
 .boomrij-datum {
     flex: 0 0 auto;
     font-size: 13px;
@@ -1170,6 +1180,124 @@ ul.lijst {
     flex-shrink: 0;
     align-items: center;
     gap: 6px;
+}
+
+/* How the site stands (#63, design 15.1): four cards, the first in the colour of emphasis. */
+.stand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+}
+
+.standkaart {
+    display: flex;
+    flex: 1 1 150px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 22px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+}
+
+.standkaart-getal {
+    font: 700 34px/1.1 var(--font-kop);
+    letter-spacing: -.015em;
+}
+
+.standkaart-tekst {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.standkaart-sub {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.standkaart.aandacht .standkaart-getal {
+    color: var(--made-link);
+}
+
+.standkaart.nadruk {
+    border-color: transparent;
+    background: var(--made-oppervlak-nadruk);
+    color: var(--made-inhoud-op-nadruk);
+}
+
+.standkaart.nadruk .standkaart-tekst {
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+.standkaart.nadruk .standkaart-sub {
+    font-weight: 600;
+    color: var(--made-accent-op-nadruk);
+}
+
+/* Searching and filtering the pages (#63): a plain form each, the list below them. */
+.paginazoek {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+}
+
+.paginazoek-veld {
+    flex: 1 1 300px;
+    max-width: 420px;
+}
+
+.paginazoek-veld .zoek-icoon {
+    left: 14px;
+}
+
+.paginazoek-veld .zoekveld {
+    padding: 11px 14px 11px 44px;
+    border-width: 1.5px;
+    font-size: 15px;
+}
+
+.paginafilters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.paginalijst {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.paginalijst .leeg a,
+.paginalijst .boom-hint a {
+    color: var(--made-link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.paginanieuws {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.paginanieuws a {
+    color: var(--made-link);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* A page in a part of the tree only for the place of a page under it that matches. */
+.boomrij.ouder .boomrij-naam,
+.boomrij.ouder .boomrij-pad,
+.boomrij.ouder .boomrij-noot,
+.boomrij.ouder .boomrij-datum {
+    color: var(--made-inhoud-subtiel);
 }
 
 /* Moving a page (#64): the grip drags it, the buttons move it with the keyboard. */

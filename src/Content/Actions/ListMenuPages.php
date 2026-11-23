@@ -17,6 +17,6 @@ final class ListMenuPages
      */
     public function handle(): PageTree
     {
-        return ListPages::run()->inMenu()->published()->visible();
+        return ListPages::run()->siteMenu();
     }
 }

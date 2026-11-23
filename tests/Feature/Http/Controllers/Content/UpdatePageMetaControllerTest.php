@@ -93,3 +93,13 @@ it('sends a visitor without a session to the login', function (): void {
 
     expect($page->refresh()->meta_title)->toBeNull();
 });
+
+it('notes the editor who saves how google sees the page', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->at('/teams')->create();
+
+    $this->put('made-cms/pages/'.$page->id.'/meta', ['meta_title' => 'Onze teams', 'meta_description' => '', 'in_sitemap' => '1', 'indexable' => '1']);
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

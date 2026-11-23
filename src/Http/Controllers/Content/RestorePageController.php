@@ -22,7 +22,7 @@ final class RestorePageController
     public function __invoke(RestorePageRequest $request, Page $page): RedirectResponse
     {
         try {
-            RestorePage::run($page);
+            RestorePage::run($page, $request->editorId());
         } catch (ParentPageDeleted) {
             $request->reject('restore', 'parent_deleted');
         } catch (PagePathTaken) {

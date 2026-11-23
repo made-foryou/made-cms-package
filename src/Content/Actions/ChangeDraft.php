@@ -24,7 +24,8 @@ final class ChangeDraft
      * the published strips) and the page, writes what changes on the page and returns what the Action gives back;
      * the page is saved before the commit. A draft that no longer changes anything (CompareDraft) falls away, so
      * draft_strips is null unless there is something to publish or discard, and draft_started_at holds when the draft
-     * that is there began (null without one). When the strips of a version changed, the
+     * that is there began (null without one). A change that writes notes its editor in updated_by (NotePageEditor;
+     * null when the change has none). When the strips of a version changed, the
      * places of the files of the media library follow in the same transaction (SyncMediaUsage). Events it dispatches go out after the
      * commit (ShouldDispatchAfterCommit), and an exception rolls everything back.
      *
@@ -34,11 +35,12 @@ final class ChangeDraft
      * @template TResult
      *
      * @param  Closure(PageStrips, Page): TResult  $change
+     * @param  int|null  $editorId  the editor who makes the change; null when that is not known
      * @return TResult
      */
-    public function handle(Page $page, Closure $change): mixed
+    public function handle(Page $page, Closure $change, ?int $editorId = null): mixed
     {
-        return DB::transaction(static function () use ($page, $change): mixed {
+        return DB::transaction(static function () use ($page, $change, $editorId): mixed {
             $stored = Page::query()->whereKey($page->getKey())->lockForUpdate()->firstOrFail();
             $page->setRawAttributes($stored->getAttributes(), sync: true);
 
@@ -52,6 +54,7 @@ final class ChangeDraft
 
             $stripsChanged = $page->isDirty(['strips', 'draft_strips']);
 
+            NotePageEditor::run($page, $editorId);
             $page->save();
 
             if ($stripsChanged) {

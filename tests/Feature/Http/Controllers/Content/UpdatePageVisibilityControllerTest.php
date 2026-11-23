@@ -68,3 +68,13 @@ it('sends a guest to the login page', function (): void {
 
     expect($page->refresh()->hidden)->toBeFalse();
 });
+
+it('notes the editor who hides the page', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->at('/privacy')->create();
+
+    $this->put('made-cms/pages/'.$page->id.'/visibility', ['visible' => '0']);
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

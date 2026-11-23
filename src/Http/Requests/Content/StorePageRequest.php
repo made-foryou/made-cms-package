@@ -44,6 +44,7 @@ final class StorePageRequest extends LauncherRequest
             slug: $this->filled('slug') ? $this->string('slug')->toString() : null,
             parentId: $this->filled('parent_id') ? $this->integer('parent_id') : null,
             inMenu: $this->boolean('in_menu'),
+            editorId: $this->editorId(),
         );
     }
 

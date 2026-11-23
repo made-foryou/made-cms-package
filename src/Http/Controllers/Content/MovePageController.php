@@ -26,7 +26,7 @@ final class MovePageController
     public function __invoke(MovePageRequest $request, Page $page): Response
     {
         try {
-            MovePage::run($page, $request->parentId(), $request->position());
+            MovePage::run($page, $request->parentId(), $request->position(), $request->editorId());
         } catch (HomePageProtected) {
             $request->reject('parent_id', 'home_protected');
         } catch (CircularPageMove|ParentPageNotFound|ParentPageDeleted) {

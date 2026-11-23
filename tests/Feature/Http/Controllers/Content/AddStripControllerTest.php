@@ -56,3 +56,13 @@ it('answers 401 to a guest', function (): void {
 
     $this->postJson('made-cms/pages/'.$page->id.'/strips', ['type' => 'hero', 'position' => 0])->assertUnauthorized();
 });
+
+it('notes the editor who adds the strip', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', id: 'a')])->create();
+
+    $this->postJson('made-cms/pages/'.$page->id.'/strips', ['type' => 'hero', 'position' => 1])->assertCreated();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

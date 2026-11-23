@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\DeletePage;
 use Made\CmsPackage\Content\Actions\MovePage;
 use Made\CmsPackage\Content\Actions\RestorePage;
@@ -142,4 +143,13 @@ it('refuses a page another request restored at the same moment', function (): vo
 
     expect(Page::query()->with('route')->findOrFail($page->id)->route?->path)->toBe('/over-ons');
     Event::assertNotDispatched(PageRestored::class);
+});
+
+it('notes the editor who restores the page', function (): void {
+    $editor = Editor::factory()->create();
+    $page = deletedPage(Page::factory()->at('/over-ons')->create(['slug' => 'over-ons']));
+
+    RestorePage::run($page, editorId: $editor->id);
+
+    expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
 });

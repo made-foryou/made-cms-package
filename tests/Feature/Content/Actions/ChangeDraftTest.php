@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\AddStrip;
 use Made\CmsPackage\Content\Actions\ChangeDraft;
 use Made\CmsPackage\Content\Actions\DiscardDraft;
@@ -320,4 +321,58 @@ describe('the start of the draft', function (): void {
         'published' => [static fn (Page $page) => PublishPage::run($page)],
         'discarded' => [static fn (Page $page) => DiscardDraft::run($page)],
     ]);
+});
+
+describe('who changed the page last', function (): void {
+    it('notes the editor of every change of the draft', function (Closure $change): void {
+        $editor = Editor::factory()->create();
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a', values: ['kaarten' => []]), storedStrip(id: 'b')])
+            ->withDraft([storedStrip(id: 'b'), storedStrip(id: 'a', values: ['kaarten' => []])])
+            ->create();
+
+        $change($page, $editor->id);
+
+        expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
+    })->with([
+        'AddStrip' => [static fn (Page $page, int $editor): mixed => AddStrip::run($page, 'cards', 0, editorId: $editor)],
+        'UpdateStrip' => [static fn (Page $page, int $editor): mixed => UpdateStrip::run($page, 'a', ['kaarten' => [['titel' => 'Hier']]], chooseLevels: true, editorId: $editor)],
+        'MoveStrip' => [static fn (Page $page, int $editor): mixed => MoveStrip::run($page, 'b', 1, editorId: $editor)],
+        'RemoveStrip' => [static fn (Page $page, int $editor): mixed => RemoveStrip::run($page, 'a', editorId: $editor)],
+        'SetStripVisibility' => [static fn (Page $page, int $editor): mixed => SetStripVisibility::run($page, 'a', false, editorId: $editor)],
+        'RestoreStrip' => [static fn (Page $page, int $editor): mixed => RestoreStrip::run($page, new Strip('c', 'cards', true, ['kaarten' => []]), 0, chooseLevels: true, editorId: $editor)],
+        'PublishPage' => [static fn (Page $page, int $editor): mixed => PublishPage::run($page, editorId: $editor)],
+        'DiscardDraft' => [static fn (Page $page, int $editor): mixed => DiscardDraft::run($page, editorId: $editor)],
+    ]);
+
+    it('notes the editor whose change leaves a draft without changes, which goes', function (): void {
+        $editor = Editor::factory()->create();
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])
+            ->withDraft([storedStrip(id: 'b'), storedStrip(id: 'a')])
+            ->create();
+
+        MoveStrip::run($page, 'a', 0, editorId: $editor->id);
+
+        $stored = Page::query()->findOrFail($page->id);
+        expect($stored->draft_strips)->toBeNull()
+            ->and($stored->updated_by)->toBe($editor->id);
+    });
+
+    it('leaves who changed the page last when a change writes nothing', function (): void {
+        $before = Editor::factory()->create();
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a')])->create(['updated_by' => $before->id]);
+
+        ChangeDraft::run($page, static fn (): null => null, Editor::factory()->create()->id);
+        DiscardDraft::run($page, editorId: Editor::factory()->create()->id);
+
+        expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($before->id);
+    });
+
+    it('does not know who changed the draft when a change comes without an editor', function (): void {
+        $page = Page::factory()->published()->withStrips([storedStrip(id: 'a'), storedStrip(id: 'b')])
+            ->create(['updated_by' => Editor::factory()->create()->id]);
+
+        MoveStrip::run($page, 'a', 1);
+
+        expect(Page::query()->findOrFail($page->id)->updated_by)->toBeNull();
+    });
 });

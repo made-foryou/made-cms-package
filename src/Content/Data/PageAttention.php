@@ -29,6 +29,14 @@ final readonly class PageAttention
     }
 
     /**
+     * The items that let the page stand out in a list of pages, in their order (AttentionReason::showsInLists()).
+     */
+    public function inLists(): self
+    {
+        return new self(array_values(array_filter($this->items, static fn (AttentionItem $item): bool => $item->reason->showsInLists())));
+    }
+
+    /**
      * How many of the items are urgent.
      */
     public function urgent(): int

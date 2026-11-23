@@ -187,3 +187,13 @@ it('changes the level of a heading for an editor who opens Meta-overzicht, also 
     'seo specialist' => [Role::SeoSpecialist],
     'admin' => [Role::Admin],
 ]);
+
+it('notes the editor who saves the strip', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = heroPage();
+
+    $this->putJson('made-cms/pages/'.$page->id.'/strips/a', ['values' => [...panelHero(), 'kop' => 'Nieuwe kop']])->assertOk();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

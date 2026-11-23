@@ -19,7 +19,7 @@ final class UpdatePageShareImageController
     public function __invoke(UpdatePageShareImageRequest $request, Page $page): RedirectResponse
     {
         try {
-            SetPageShareImage::run($page, $request->mediaId());
+            SetPageShareImage::run($page, $request->mediaId(), $request->editorId());
         } catch (ShareImageRefused $refused) {
             $request->reject('share_image', 'share_image_'.$refused->reason->value);
         }

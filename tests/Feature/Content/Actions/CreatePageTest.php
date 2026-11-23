@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\CreatePage;
 use Made\CmsPackage\Content\Data\NewPage;
 use Made\CmsPackage\Content\Data\PagePath;
@@ -167,4 +168,12 @@ it('refuses an address another request stores at the same moment, as a taken add
     expect(Page::query()->count())->toBe(0)
         ->and(Route::query()->count())->toBe(0);
     Event::assertNotDispatched(PageCreated::class);
+});
+
+it('notes the editor who creates the page', function (): void {
+    $editor = Editor::factory()->create();
+
+    $page = CreatePage::run(new NewPage(title: 'Over ons', slug: null, parentId: null, editorId: $editor->id));
+
+    expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
 });

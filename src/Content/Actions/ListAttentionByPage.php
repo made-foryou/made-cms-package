@@ -1,0 +1,30 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Made\CmsPackage\Content\Actions;
+
+use Lorisleiva\Actions\Concerns\AsAction;
+use Made\CmsPackage\Content\Data\PagesAttention;
+use Made\CmsPackage\Content\Models\Page;
+
+final class ListAttentionByPage
+{
+    use AsAction;
+
+    /**
+     * What every page asks for attention in a list of pages (the pages screen, later the start page and the menu of
+     * the CMS): the points of ListPageAttention that let a page stand out there, so no list counts an empty page. The
+     * pages are read once with their addresses, which the title Google gets needs; a source reads only what is loaded.
+     */
+    public function handle(): PagesAttention
+    {
+        $pages = [];
+
+        foreach (Page::query()->with('route')->get() as $page) {
+            $pages[$page->id] = ListPageAttention::run($page)->inLists();
+        }
+
+        return new PagesAttention($pages);
+    }
+}

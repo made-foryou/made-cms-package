@@ -62,3 +62,15 @@ it('answers 401 to a guest', function (): void {
 
     expect($page->refresh()->status)->toBe(PageStatus::Draft);
 });
+
+it('notes the editor who publishes the page', function (): void {
+    $editor = Editor::factory()->create();
+    $this->actingAs($editor, 'made-cms');
+    $page = Page::factory()->published()->withStrips([storedStrip('cards', ['kop' => 'Teams'], id: 'a')])
+        ->withDraft([storedStrip('cards', ['kop' => 'Onze teams'], id: 'a')])
+        ->create();
+
+    $this->postJson('made-cms/pages/'.$page->id.'/publish')->assertNoContent();
+
+    expect($page->refresh()->updated_by)->toBe($editor->id);
+});

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\MovePage;
 use Made\CmsPackage\Content\Events\PageMoved;
 use Made\CmsPackage\Content\Exceptions\CircularPageMove;
@@ -315,4 +316,36 @@ it('refuses a parent deleted at the same moment', function (): void {
     expect(fn (): Page => MovePage::run($a, $b->id))->toThrow(ParentPageDeleted::class);
 
     expect(Page::query()->findOrFail($a->id)->parent_id)->toBeNull();
+});
+
+it('notes the editor who moves the page', function (): void {
+    $editor = Editor::factory()->create();
+    Page::factory()->atPosition(0)->at('/a')->create(['slug' => 'a']);
+    $last = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b']);
+
+    MovePage::run($last, null, 0, editorId: $editor->id);
+
+    expect($last->refresh()->updated_by)->toBe($editor->id);
+});
+
+it('leaves who changed the page last when it already is at that place', function (): void {
+    $before = Editor::factory()->create();
+    Page::factory()->atPosition(0)->at('/a')->create(['slug' => 'a']);
+    $last = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b', 'updated_by' => $before->id]);
+
+    MovePage::run($last, null, 1, editorId: Editor::factory()->create()->id);
+
+    expect($last->refresh()->updated_by)->toBe($before->id);
+});
+
+it('leaves who changed the page last when a gap in the places leaves the page where it was stored', function (): void {
+    $before = Editor::factory()->create();
+    $first = Page::factory()->atPosition(0)->at('/a')->create(['slug' => 'a']);
+    $last = Page::factory()->atPosition(1)->at('/b')->create(['slug' => 'b', 'updated_by' => $before->id]);
+    $first->forceFill(['position' => 3])->saveQuietly();
+
+    MovePage::run($last, null, 1, editorId: Editor::factory()->create()->id);
+
+    expect($last->refresh()->updated_by)->toBe($before->id)
+        ->and(siblingIds(null))->toBe([$first->id, $last->id]);
 });

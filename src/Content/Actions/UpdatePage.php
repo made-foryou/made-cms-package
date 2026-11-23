@@ -63,7 +63,7 @@ final class UpdatePage
         }
 
         try {
-            DB::transaction(function () use ($page, $parent, $moving, $changed, $hidden, $from, $to): void {
+            DB::transaction(function () use ($page, $parent, $moving, $changed, $hidden, $from, $to, $changes): void {
                 if ($changed) {
                     if ($moving) {
                         CheckPageParent::run($page, $parent);
@@ -82,6 +82,7 @@ final class UpdatePage
                         RenumberPages::run(array_values($leaving));
                     }
 
+                    NotePageEditor::run($page, $changes->editorId);
                     $page->save();
 
                     if ($to != $from) {
@@ -89,7 +90,7 @@ final class UpdatePage
                     }
                 }
 
-                SetPageVisibility::run($page, $hidden);
+                SetPageVisibility::run($page, $hidden, $changes->editorId);
             });
         } catch (UniqueConstraintViolationException) {
             // Another request stored a page at the address after the check: the unique index of cms_routes is the

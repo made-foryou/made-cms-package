@@ -21,7 +21,7 @@ final class AddStripController
     public function __invoke(AddStripRequest $request, Page $page): JsonResponse
     {
         try {
-            $strip = AddStrip::run($page, $request->type(), $request->position());
+            $strip = AddStrip::run($page, $request->type(), $request->position(), $request->editorId());
         } catch (UnknownStripType) {
             $request->reject('type', 'type');
         } catch (InvalidStripPosition) {

@@ -7,6 +7,10 @@ return [
     'product' => 'Made CMS',
     'live' => 'Live',
     'view_site' => 'View the site',
+    'dates' => [
+        'today' => 'today',
+        'yesterday' => 'yesterday',
+    ],
     'menu' => [
         'label' => 'Main navigation',
         'open' => 'Open menu',

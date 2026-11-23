@@ -4,16 +4,19 @@
 // refusal, it reads the screen again and takes the tree and the menu from it, so the server's markup is the only one
 // and the tree always shows how the pages are stored.
 //
+// Searching and filtering are plain forms that work without this script; it takes them over to read the screen again
+// at their address and take the parts that follow the pages from it, so the search field keeps the text and the focus.
+// A searched or filtered tree moves nothing: the server leaves out its grips and buttons.
+//
 // The rules of a place live once, in place(): the buttons and dragging both ask it. They are the tree's own, not the
 // server's: nothing goes before or under the home page, and the tree hangs no page deeper than config.depth levels
 // ("Ligt onder" on the page itself and MovePage go deeper).
 
-const list = () => document.querySelector('[data-tree]');
-const initial = list();
+const host = document.querySelector('[data-pages]');
+const list = () => host?.querySelector('[data-tree]') ?? null;
 
-if (initial !== null) {
-    const host = initial.parentElement;
-    const config = JSON.parse(initial.dataset.config ?? '{}');
+if (host !== null) {
+    const config = JSON.parse(host.dataset.config ?? '{}');
     const texts = config.texts ?? {};
     const limit = Number(config.depth ?? 3);
     const slot = (name) => host.querySelector('[data-slot="' + name + '"]');
@@ -57,8 +60,9 @@ if (initial !== null) {
      * The rows and their places
      * ------------------------------------------------------------------------------------------------------------ */
 
+    /* The rows of the tree; none while a search finds nothing. */
     function rows() {
-        return [...list().querySelectorAll(':scope > li.boomrij')].map((el) => ({
+        return [...(list()?.querySelectorAll(':scope > li.boomrij') ?? [])].map((el) => ({
             el,
             id: Number(el.dataset.page),
             parent: el.dataset.parent === '' ? null : Number(el.dataset.parent),
@@ -233,35 +237,54 @@ if (initial !== null) {
         return status === 422 && errors.length > 0 ? String([errors[0]].flat()[0]) : texts.failed;
     }
 
-    /* Reads the screen again and takes the tree and the items of the menu from it; false when it could not. */
-    async function reload() {
+    /* Takes every part of the screen that follows the pages (data-swap: the cards, the filters, the list) and the items
+     * of the menu from a screen read again. */
+    function swap(page) {
+        for (const part of document.querySelectorAll('[data-swap]')) {
+            const fresh = page.querySelector('[data-swap="' + part.dataset.swap + '"]');
+
+            if (fresh !== null) {
+                part.replaceWith(document.adoptNode(fresh));
+            }
+        }
+
+        const menu = page.querySelector('#made-cms-menu');
+
+        if (menu !== null) {
+            document.querySelector('#made-cms-menu')?.replaceChildren(...[...menu.childNodes].map((node) => document.adoptNode(node)));
+        }
+
+        arm();
+    }
+
+    /* Reads the screen again at an address; the parsed screen, or null when it could not. */
+    async function read(url, signal = undefined) {
         try {
-            const response = await fetch(window.location.href, {
+            const response = await fetch(url, {
                 credentials: 'same-origin',
                 cache: 'no-store',
                 headers: { Accept: 'text/html' },
+                signal,
             });
             const page = new DOMParser().parseFromString(await response.text(), 'text/html');
-            const tree = page.querySelector('[data-tree]');
 
-            if (! response.ok || tree === null) {
-                return false;
-            }
-
-            list().replaceWith(document.adoptNode(tree));
-
-            const menu = page.querySelector('#made-cms-menu');
-
-            if (menu !== null) {
-                document.querySelector('#made-cms-menu')?.replaceChildren(...[...menu.childNodes].map((node) => document.adoptNode(node)));
-            }
-
-            arm();
-
-            return true;
+            return response.ok && page.querySelector('[data-pages]') !== null ? page : null;
         } catch {
+            return null;
+        }
+    }
+
+    /* Reads the screen again and takes the parts that follow the pages from it; false when it could not. */
+    async function reload() {
+        const page = await read(window.location.href);
+
+        if (page === null) {
             return false;
         }
+
+        swap(page);
+
+        return true;
     }
 
     /* What the screen reader says once the page is in its new place, read from the tree as the server drew it. */
@@ -304,7 +327,7 @@ if (initial !== null) {
         host.removeAttribute('aria-busy');
 
         if (focus !== null) {
-            list().querySelector('[data-page="' + row.id + '"] [data-move-to="' + focus + '"]')?.focus();
+            list()?.querySelector('[data-page="' + row.id + '"] [data-move-to="' + focus + '"]')?.focus();
         }
 
         if (status !== 204) {
@@ -325,7 +348,7 @@ if (initial !== null) {
     host.addEventListener('click', (event) => {
         const button = event.target.closest('[data-move-to]');
 
-        if (button === null || ! list().contains(button) || button.getAttribute('aria-disabled') === 'true') {
+        if (button === null || ! list()?.contains(button) || button.getAttribute('aria-disabled') === 'true') {
             return;
         }
 
@@ -337,6 +360,111 @@ if (initial !== null) {
             move(row, to, button.dataset.moveTo);
         }
     });
+
+    /* ---------------------------------------------------------------------------------------------------------------
+     * Searching and filtering in place
+     * ------------------------------------------------------------------------------------------------------------ */
+
+    const search = host.querySelector('[data-pages-search]');
+    const field = search?.querySelector('input[name="q"]') ?? null;
+    const WAIT = 250;
+    let generation = 0;
+    let reading = null;
+    let typing = 0;
+
+    const pressed = () => host.querySelector('[data-filter][aria-pressed="true"]')?.dataset.filter ?? 'all';
+
+    /* The address of the screen for the text in the field and a filter, without what is the default. */
+    function address(filter) {
+        const url = new URL(search.action, window.location.href);
+        const text = field.value.trim();
+
+        if (text !== '') {
+            url.searchParams.set('q', text);
+        }
+
+        if (filter !== 'all') {
+            url.searchParams.set('filter', filter);
+        }
+
+        return url;
+    }
+
+    /* The search form keeps the filter, so Enter in the field without this script searches within it too. */
+    function keep(filter) {
+        let hidden = search.querySelector('input[name="filter"]');
+
+        if (filter === 'all') {
+            hidden?.remove();
+
+            return;
+        }
+
+        if (hidden === null) {
+            hidden = Object.assign(document.createElement('input'), { type: 'hidden', name: 'filter' });
+            search.append(hidden);
+        }
+
+        hidden.value = filter;
+    }
+
+    /* Shows the screen at an address: only the newest answer counts, and one that cannot be read becomes a visit. */
+    async function refresh(url, filter, focus) {
+        const mine = ++generation;
+
+        reading?.abort();
+        reading = new AbortController();
+        host.setAttribute('aria-busy', 'true');
+
+        const page = await read(url.toString(), reading.signal);
+
+        if (mine !== generation) {
+            return;
+        }
+
+        host.removeAttribute('aria-busy');
+
+        if (page === null) {
+            window.location.assign(url.toString());
+
+            return;
+        }
+
+        swap(page);
+        keep(filter);
+        window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+
+        if (focus) {
+            host.querySelector('[data-filter="' + filter + '"]')?.focus();
+        }
+
+        announce(slot('pages-found')?.textContent.trim() ?? '');
+    }
+
+    if (search !== null && field !== null) {
+        search.addEventListener('submit', (event) => {
+            event.preventDefault();
+            window.clearTimeout(typing);
+            refresh(address(pressed()), pressed(), false);
+        });
+
+        field.addEventListener('input', () => {
+            window.clearTimeout(typing);
+            typing = window.setTimeout(() => refresh(address(pressed()), pressed(), false), WAIT);
+        });
+
+        host.addEventListener('submit', (event) => {
+            const button = event.submitter;
+
+            if (button?.dataset.filter === undefined || event.target === search) {
+                return;
+            }
+
+            event.preventDefault();
+            window.clearTimeout(typing);
+            refresh(address(button.dataset.filter), button.dataset.filter, true);
+        });
+    }
 
     /* ---------------------------------------------------------------------------------------------------------------
      * Dragging: the grip takes the page with the pages under it. Up and down choose the gap between two rows, right
@@ -507,7 +635,7 @@ if (initial !== null) {
     host.addEventListener('pointerdown', (event) => {
         const grip = event.target.closest('.greep');
 
-        if (grip !== null && list().contains(grip)) {
+        if (grip !== null && list()?.contains(grip)) {
             drag(event, grip);
         }
     });

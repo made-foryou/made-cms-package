@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\ValidationException;
+use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Session\LoginSession;
 
 /**
@@ -31,6 +32,17 @@ abstract class LauncherRequest extends FormRequest
     public function reject(string $field, string $error): never
     {
         throw ValidationException::withMessages([$field => $this->error($error)])->redirectTo($this->getRedirectUrl());
+    }
+
+    /**
+     * The editor who sends the request, for the Actions that note who changed something. The routes that change
+     * content open only for an editor; without one the session expired.
+     *
+     * @throws ValidationException
+     */
+    public function editorId(): int
+    {
+        return Visitor::requireEditor($this)->id;
     }
 
     protected function error(string $key): string

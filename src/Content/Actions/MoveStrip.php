@@ -23,7 +23,7 @@ final class MoveStrip
      * @throws StripNotFound
      * @throws InvalidStripPosition
      */
-    public function handle(Page $page, string $stripId, int $position): void
+    public function handle(Page $page, string $stripId, int $position, ?int $editorId = null): void
     {
         ChangeDraft::run($page, static function (PageStrips $strips, Page $page) use ($stripId, $position): void {
             $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
@@ -40,6 +40,6 @@ final class MoveStrip
             $page->draft_strips = $strips->move($stripId, $position)->toArray();
 
             StripMoved::dispatch($page, $strip, $from, $position);
-        });
+        }, $editorId);
     }
 }

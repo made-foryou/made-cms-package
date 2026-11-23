@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Http\Responses;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\MeasureMeta;
 use Made\CmsPackage\Content\Actions\MeasureShareImage;
 use Made\CmsPackage\Content\Data\AttentionItem;
+use Made\CmsPackage\Content\Data\EditableStrip;
+use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Data\MenuPlace;
 use Made\CmsPackage\Content\Data\MetaLength;
 use Made\CmsPackage\Content\Data\PageAttention;
 use Made\CmsPackage\Content\Data\PageMeta;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagePath;
+use Made\CmsPackage\Content\Data\PageSummary;
 use Made\CmsPackage\Content\Data\PageTree;
 use Made\CmsPackage\Content\Data\ShareImageDescription;
 use Made\CmsPackage\Content\Data\ShareImageFit;
@@ -31,6 +35,7 @@ use Made\CmsPackage\Content\PageTypes\PageType;
 use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Http\Cms\AttentionActions;
 use Made\CmsPackage\Http\Cms\CropStep;
+use Made\CmsPackage\Http\Cms\Day;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Http\Cms\Menu;
@@ -43,9 +48,9 @@ use Made\CmsPackage\Support\Locale;
 use Made\CmsPackage\Support\Site;
 
 /**
- * One page (design 15.2): what it asks for attention, also in one line in the column "In het kort" beside the cards,
- * its basics (name, address, place, menu flag and type), how Google sees it, how a shared link shows it (design 23), the
- * pages under it, and removing it.
+ * One page (design 15.2): what it asks for attention, its basics (name, address, place, menu flag and type), what is on
+ * it, how Google sees it, how a shared link shows it (design 23), the pages under it and removing it, with the page in
+ * short in the column "In het kort" beside the cards.
  */
 final class ShowPageResponse
 {
@@ -61,6 +66,8 @@ final class ShowPageResponse
      * @param  bool  $shareSaved  the card "Hoe je link gedeeld wordt" was saved right before
      * @param  PageAttention  $attention  what the page asks for attention (ListPageAttention)
      * @param  PageTypes  $types  the page types of the site, to choose from in the basics
+     * @param  PageSummary  $summary  the page in short (SummarizePage), for "Wat erop staat" and "In het kort"
+     * @param  array<int, string>  $names  the names of the editors the summary names, by id (NameEditors)
      */
     public static function make(
         Editor $editor,
@@ -76,6 +83,8 @@ final class ShowPageResponse
         bool $shareSaved,
         PageAttention $attention,
         PageTypes $types,
+        PageSummary $summary,
+        array $names,
     ): Response {
         $node = $pages->find($page->id);
         $path = $page->route?->path;
@@ -119,6 +128,8 @@ final class ShowPageResponse
             'meta' => self::meta($page, $screens, $meta, $fallbackTitle, $metaSaved),
             'share' => self::share($page, $screens, $meta, $share, $folder, $shareSaved),
             'attention' => self::attention($page, $screens, $attention),
+            'strips' => self::strips($page, $summary->strips),
+            'summary' => self::summary($pages, $types, $summary, $names),
         ], $pages, $page);
     }
 
@@ -158,6 +169,110 @@ final class ShowPageResponse
                 'flagged' => ! $attention->isEmpty(),
             ],
         ];
+    }
+
+    /**
+     * The card "Wat erop staat": the strips of the working copy as the structure of the edit shell sums them up, each
+     * with the way into the shell with it chosen; a strip whose type left the catalogue has none, as the shell cannot
+     * open it.
+     *
+     * @return list<array{label: string, summary: string, fields: string|null, hidden: bool, editUrl: string|null}>
+     */
+    private static function strips(Page $page, EditableStrips $strips): array
+    {
+        $locale = Locale::launcher();
+        $text = static fn (string $key): string => (string) __('made-cms-package::cms.edit.structure_texts.'.$key, [], $locale);
+
+        return array_map(static fn (EditableStrip $strip): array => [
+            'label' => $strip->label,
+            'summary' => $strip->known ? ($strip->summary ?? $text('empty_strip')) : $text('unknown_summary'),
+            'fields' => $strip->known ? trans_choice('made-cms-package::cms.edit.fields', $strip->fields, [], $locale) : null,
+            'hidden' => ! $strip->visible,
+            'editUrl' => $strip->known ? PageLinks::edit($page, $strip->id) : null,
+        ], $strips->strips);
+    }
+
+    /**
+     * The column "In het kort": how the page stands in one sentence, the facts about it, and how saving works here.
+     *
+     * @param  array<int, string>  $names
+     * @return array{line: string, facts: list<array{label: string, value: string}>, note: string}
+     */
+    private static function summary(PageTree $pages, PageTypes $types, PageSummary $summary, array $names): array
+    {
+        $locale = Locale::launcher();
+        $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.show.summary.'.$key, $replace, $locale);
+        $count = static fn (string $key, int $count, array $replace = []): string => trans_choice('made-cms-package::pages.show.summary.'.$key, $count, $replace, $locale);
+        $day = static fn (?CarbonImmutable $moment): string => $moment === null ? '' : Day::long($moment, $locale);
+        $created = $day($summary->createdAt);
+        $creator = $summary->createdBy === null ? null : ($names[$summary->createdBy] ?? null);
+
+        $facts = [
+            ['label' => $text('type'), 'value' => self::typeName($types, $summary->type, $locale)],
+            ['label' => $text('parent'), 'value' => $summary->parentTitle ?? (string) __('made-cms-package::pages.show.parent.root', [], $locale)],
+            ['label' => $text('menu.label'), 'value' => self::menuName($pages, $summary->menuPlace, $text)],
+            ['label' => $text('children.label'), 'value' => $count('children.count', $summary->children)],
+            ['label' => $text('strips.label'), 'value' => $count('strips.count', count($summary->strips->strips), [
+                'fields' => $count('strips.fields', $summary->fields),
+            ])],
+        ];
+
+        if ($summary->createdAt !== null) {
+            $facts[] = [
+                'label' => $text('created.label'),
+                'value' => $creator === null ? $created : $text('created.by', ['date' => $created, 'name' => $creator]),
+            ];
+        }
+
+        return [
+            'line' => self::line($summary, $names, $day, $text),
+            'facts' => $facts,
+            'note' => $text('note'),
+        ];
+    }
+
+    /**
+     * How the page stands in one sentence: a draft since when and by whom it was created, a page visitors can open
+     * when it was published and changed last, and by whom; a name that is not known is left out.
+     *
+     * @param  array<int, string>  $names
+     * @param  callable(?CarbonImmutable): string  $day
+     * @param  callable(string, array<string, string>): string  $text
+     */
+    private static function line(PageSummary $summary, array $names, callable $day, callable $text): string
+    {
+        if ($summary->state === PageState::Draft) {
+            $name = $summary->createdBy === null ? null : ($names[$summary->createdBy] ?? null);
+
+            return $text('line.draft'.($name === null ? '_unknown' : ''), ['created' => $day($summary->createdAt), 'name' => (string) $name]);
+        }
+
+        $name = $summary->updatedBy === null ? null : ($names[$summary->updatedBy] ?? null);
+
+        return $text('line.'.$summary->state->value.($name === null ? '_unknown' : ''), [
+            'published' => $day($summary->publishedAt),
+            'updated' => $day($summary->updatedAt ?? $summary->publishedAt),
+            'name' => (string) $name,
+        ]);
+    }
+
+    private static function typeName(PageTypes $types, ?string $type, string $locale): string
+    {
+        return match (true) {
+            $type === null => (string) __('made-cms-package::pages.types.ordinary', [], $locale),
+            $types->has($type) => $types->find($type)->label(),
+            default => (string) __('made-cms-package::pages.show.type.unknown', ['key' => $type], $locale),
+        };
+    }
+
+    /**
+     * @param  callable(string, array<string, int|string>): string  $text
+     */
+    private static function menuName(PageTree $pages, ?MenuPlace $place, callable $text): string
+    {
+        $hint = self::menuPlace($pages, $place);
+
+        return $hint === null ? $text('menu.off', []) : $text('menu.'.$hint['hint'], $hint['replace']);
     }
 
     /**

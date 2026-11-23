@@ -40,7 +40,7 @@ it('names the page, its status and its address, and links to the edit shell', fu
         ->toContain('<title>Over ons · TTV Merwestad</title>')
         ->toContain('<h1 id="made-cms-titel">Over ons</h1>')
         ->toContain('<span class="status live">Live</span>')
-        ->toContain('localhost/over-ons')
+        ->toContain('<a class="adres" href="/over-ons" target="_blank" rel="noopener">localhost/over-ons</a>')
         ->toContain('href="/over-ons" target="_blank" rel="noopener"')
         ->toContain('<a class="knop" href="/made-cms/pages/'.$page->id.'/edit">Bewerken op de site</a>');
 });
@@ -48,7 +48,9 @@ it('names the page, its status and its address, and links to the edit shell', fu
 it('only links to the site for a live page', function (): void {
     $page = Page::factory()->at('/concept')->create();
 
-    expect(pageScreen($page))->not->toContain('Bekijk op de site');
+    expect(pageScreen($page))
+        ->toContain('<span class="adres">localhost/concept</span>')
+        ->not->toContain('Bekijk op de site');
 });
 
 it('shows the basics in a form with the other pages as a parent', function (): void {
@@ -550,5 +552,121 @@ describe('the card "Hoe je link gedeeld wordt"', function (): void {
         expect(substr_count($html, 'data-media-picker'))->toBe(1)
             ->and(substr_count($html, 'data-media-crop'))->toBe(1)
             ->and($html)->toMatch('#launcher/upload\.js\?v=\w+".*launcher/crop\.js\?v=\w+".*launcher/media\.js\?v=\w+".*launcher/share\.js\?v=\w+"#s');
+    });
+});
+
+describe('the card "Wat erop staat"', function (): void {
+    beforeEach(function (): void {
+        useStripTypes();
+    });
+
+    it('lists the strips of the working copy with their summary and fields, each with a way into the edit shell', function (): void {
+        $page = Page::factory()->published()->at('/teams')
+            ->withStrips([storedStrip('hero', id: 'a')])
+            ->withDraft([storedStrip('hero', ['kop' => 'Onze teams'], id: 'a'), storedStrip('cards', ['kaarten' => [['titel' => 'Heren 1']]], id: 'b')])
+            ->create();
+        $edit = '/made-cms/pages/'.$page->id.'/edit';
+
+        expect(pageScreen($page))
+            ->toContain('<h2 id="made-cms-inhoud">Wat erop staat</h2>')
+            ->toContain('<a class="tekstlink klein" href="'.$edit.'">Bewerken op de site <span aria-hidden="true">→</span></a>')
+            ->toContain('<span class="strook-naam">Hero</span>')
+            ->toContain('<span class="strook-samenvatting">Onze teams</span>')
+            ->toContain('<span class="strook-velden">7 velden</span>')
+            ->toContain('<a class="actie klein" href="'.$edit.'?strip=a" aria-label="Hero bewerken op de site">Bewerken</a>')
+            ->toContain('<span class="strook-samenvatting">Heren 1</span>')
+            ->toContain('<span class="strook-velden">1 veld</span>')
+            ->toContain('href="'.$edit.'?strip=b" aria-label="Kaarten bewerken op de site"')
+            ->toContain('Teksten, foto’s en knoppen pas je aan op de site zelf');
+    });
+
+    it('marks a hidden strip, and keeps a strip whose type left the catalogue out of the edit shell', function (): void {
+        $page = Page::factory()->at('/teams')
+            ->withDraft([storedStrip('cards', visible: false, id: 'a'), storedStrip('weg', id: 'c')])
+            ->create();
+
+        expect(pageScreen($page))
+            ->toContain('<span class="strook-samenvatting">Nog leeg</span>')
+            ->toContain('<span class="status">Verborgen</span>')
+            ->toContain('<span class="strook-naam">weg</span>')
+            ->toContain('<span class="strook-samenvatting">Inhoud bewaard · type bestaat niet meer</span>')
+            ->not->toContain('?strip=c');
+    });
+
+    it('says a page without strips gets them on the site', function (): void {
+        $page = Page::factory()->at('/teams')->create();
+
+        expect(pageScreen($page))
+            ->toContain('Er staan nog geen stroken op. Die voeg je toe op de site zelf.')
+            ->not->toContain('class="strook-naam"');
+    });
+});
+
+describe('the column "In het kort"', function (): void {
+    beforeEach(function (): void {
+        useStripTypes();
+        $this->travelTo(CarbonImmutable::parse('2026-11-23 14:00:00'));
+    });
+
+    it('says when a live page was published and changed last, and by whom', function (): void {
+        $editor = Editor::factory()->create(['name' => 'Menno']);
+        $page = Page::factory()->published()->at('/teams')->create([
+            'published_at' => CarbonImmutable::parse('2024-03-12 10:00:00'),
+            'updated_at' => CarbonImmutable::parse('2026-10-20 10:00:00'),
+            'updated_by' => $editor->id,
+        ]);
+
+        expect(pageScreen($page))
+            ->toContain('<p class="paginakort-regel">Gepubliceerd 12 maart 2024, laatst gewijzigd 20 oktober door Menno.</p>');
+    });
+
+    it('says a hidden page is out of the menu and the sitemap, without a name it does not know', function (): void {
+        $page = Page::factory()->published()->hidden()->at('/bedankt')->create([
+            'published_at' => CarbonImmutable::parse('2026-11-23 09:00:00'),
+            'updated_at' => CarbonImmutable::parse('2026-11-22 09:00:00'),
+        ]);
+
+        expect(pageScreen($page))
+            ->toContain('<p class="paginakort-regel">Verborgen, dus niet in menu en sitemap. Gepubliceerd vandaag, laatst gewijzigd gisteren.</p>');
+    });
+
+    it('says a draft was never published, and who created it', function (): void {
+        $editor = Editor::factory()->create(['name' => 'Menno']);
+        $page = Page::factory()->at('/jeugd')->create(['created_by' => $editor->id]);
+
+        expect(pageScreen($page))
+            ->toContain('<p class="paginakort-regel">Concept, aangemaakt vandaag door Menno. Nog nooit gepubliceerd.</p>')
+            ->toContain('<dt>Gemaakt</dt><dd>vandaag door Menno</dd>');
+    });
+
+    it('lists the type, the page above, the place in the menu, the pages below and the strips', function (): void {
+        usePageTypes();
+        $home = Page::factory()->published()->at('/')->atPosition(0)->create(['title' => 'Home']);
+        $teams = Page::factory()->published()->under($home)->atPosition(0)->at('/teams')
+            ->withStrips([storedStrip('hero', id: 'a'), storedStrip('cards', id: 'b')])
+            ->create(['title' => 'Teams', 'type' => 'team', 'created_at' => CarbonImmutable::parse('2024-03-12 10:00:00')]);
+        Page::factory()->published()->under($home)->atPosition(1)->at('/contact')->create();
+        Page::factory()->under($teams)->at('/teams/heren-1')->create();
+
+        expect(pageScreen($teams))
+            ->toContain('<dl class="paginakort-feiten" aria-label="Over de pagina">')
+            ->toContain('<dt>Soort</dt><dd>Teampagina</dd>')
+            ->toContain('<dt>Ligt onder</dt><dd>Home</dd>')
+            ->toContain('<dt>Menu</dt><dd>Plek 1 van 2</dd>')
+            ->toContain('<dt>Hieronder</dt><dd>1 pagina</dd>')
+            ->toContain('<dt>Stroken</dt><dd>2, met 8 velden</dd>')
+            ->toContain('<dt>Gemaakt</dt><dd>12 maart 2024</dd>')
+            ->toContain('<p class="paginakort-noot">Wijzigingen op deze pagina slaan we direct op.');
+    });
+
+    it('lists an ordinary page at the top, outside the menu, with nothing below and no strips', function (): void {
+        $page = Page::factory()->inMenu(false)->at('/actie')->create();
+
+        expect(pageScreen($page))
+            ->toContain('<dt>Soort</dt><dd>Gewone pagina</dd>')
+            ->toContain('<dt>Ligt onder</dt><dd>Bovenaan</dd>')
+            ->toContain('<dt>Menu</dt><dd>Niet in het menu</dd>')
+            ->toContain('<dt>Hieronder</dt><dd>Niets</dd>')
+            ->toContain('<dt>Stroken</dt><dd>Nog geen</dd>');
     });
 });

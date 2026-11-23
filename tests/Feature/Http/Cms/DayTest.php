@@ -24,3 +24,11 @@ it('gives a day of this year without the year and without a dot after the month'
 it('gives a day of another year with the year', function (): void {
     expect(Day::of(CarbonImmutable::parse('2024-03-12 10:00:00'), 'nl'))->toBe('12 mrt 2024');
 });
+
+it('says a day in full, with the year only for another year', function (): void {
+    expect(Day::long(CarbonImmutable::parse('2026-11-23 08:12:00'), 'nl'))->toBe('vandaag')
+        ->and(Day::long(CarbonImmutable::parse('2026-11-22 23:59:00'), 'nl'))->toBe('gisteren')
+        ->and(Day::long(CarbonImmutable::parse('2026-10-20 10:00:00'), 'nl'))->toBe('20 oktober')
+        ->and(Day::long(CarbonImmutable::parse('2024-03-12 10:00:00'), 'nl'))->toBe('12 maart 2024')
+        ->and(Day::long(CarbonImmutable::parse('2026-10-20 10:00:00'), 'en'))->toBe('20 October');
+});

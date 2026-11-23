@@ -33,7 +33,7 @@ final class PublishPage
      * @throws PageAlreadyPublished when the page is published and has no draft
      * @throws ValidationException keyed by "strips.<strip id>.<field path>"
      */
-    public function handle(Page $page): Page
+    public function handle(Page $page, ?int $editorId = null): Page
     {
         ChangeDraft::run($page, function (PageStrips $strips, Page $page): void {
             if ($page->status === PageStatus::Published && $page->draft_strips === null) {
@@ -48,7 +48,7 @@ final class PublishPage
             $page->published_at = now()->toImmutable();
 
             PagePublished::dispatch($page);
-        });
+        }, $editorId);
 
         return $page;
     }

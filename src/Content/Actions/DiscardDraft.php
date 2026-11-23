@@ -17,7 +17,7 @@ final class DiscardDraft
      * Throws the draft away, as it is stored now, so the page is back at its published strips. Without a draft
      * nothing happens.
      */
-    public function handle(Page $page): Page
+    public function handle(Page $page, ?int $editorId = null): Page
     {
         ChangeDraft::run($page, static function (PageStrips $strips, Page $page): void {
             if ($page->draft_strips === null) {
@@ -27,7 +27,7 @@ final class DiscardDraft
             $page->draft_strips = null;
 
             DraftDiscarded::dispatch($page);
-        });
+        }, $editorId);
 
         return $page;
     }

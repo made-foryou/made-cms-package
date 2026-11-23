@@ -39,7 +39,7 @@ final class RestoreStrip
      * @throws UnknownStripType when the type is not in the catalogue and the published page does not hold the strip
      * @throws ValidationException keyed by the path of the field
      */
-    public function handle(Page $page, Strip $strip, int $position, bool $chooseLevels): Strip
+    public function handle(Page $page, Strip $strip, int $position, bool $chooseLevels, ?int $editorId = null): Strip
     {
         return ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($strip, $position, $chooseLevels): Strip {
             if ($strips->find($strip->id) !== null) {
@@ -57,7 +57,7 @@ final class RestoreStrip
             StripAdded::dispatch($page, $strip, $position);
 
             return $strip;
-        });
+        }, $editorId);
     }
 
     /**

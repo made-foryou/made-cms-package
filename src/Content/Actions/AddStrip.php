@@ -30,7 +30,7 @@ final class AddStrip
      * @throws UnknownStripType
      * @throws InvalidStripPosition
      */
-    public function handle(Page $page, string $type, int $position): Strip
+    public function handle(Page $page, string $type, int $position, ?int $editorId = null): Strip
     {
         $definition = $this->types->find($type);
 
@@ -46,6 +46,6 @@ final class AddStrip
             StripAdded::dispatch($page, $strip, $position);
 
             return $strip;
-        });
+        }, $editorId);
     }
 }

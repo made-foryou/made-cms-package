@@ -39,7 +39,7 @@ final class UpdateStrip
      * @throws UnknownStripType when the type of the strip is no longer in the catalogue
      * @throws ValidationException keyed by the path of the field
      */
-    public function handle(Page $page, string $stripId, array $values, bool $chooseLevels): Strip
+    public function handle(Page $page, string $stripId, array $values, bool $chooseLevels, ?int $editorId = null): Strip
     {
         $strip = ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($stripId, $values, $chooseLevels): Strip {
             $strip = $strips->find($stripId) ?? throw StripNotFound::id($page, $stripId);
@@ -54,7 +54,7 @@ final class UpdateStrip
             StripUpdated::dispatch($page, $strip);
 
             return $strip;
-        });
+        }, $editorId);
 
         // A change that takes the draft back to the published page drops the draft (ChangeDraft): the strip is then
         // stored as the published page holds it, with the ids of its items, which the side panel takes over.

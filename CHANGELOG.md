@@ -4,6 +4,7 @@
 
 ### Added
 
+- The migration `add_created_by_to_cms_pages_table` gives `cms_pages` the column `created_by`, the editor who created the page (issue #67; `CreatePage` takes it from `NewPage::$editorId`, null when that is not known, as for the pages that are there; it empties when the editor is removed). A host that ran the migrations before publishes them again (`php artisan vendor:publish --tag="made-cms-package-migrations"`) and runs `php artisan migrate`.
 - Page types (issue #61, design 15.2, 15.3, 15.6 and 16.3): a site defines kinds of pages as classes in `app/Cms/PageTypes` that extend `Made\CmsPackage\Content\PageTypes\PageType` (`key()`, `label()`, `description()`, `strips()` with the strip types an editor can add, `defaults()` with the strips a new page starts with). The catalogue `PageTypes` checks every definition against the strip types when it is built and throws `InvalidPageType` or `DuplicatePageType`; see "Page types" in the README. A page without a type is an ordinary page ("Gewone pagina"): every strip type, and it starts empty. A site without page types sees no change.
 - Config `page_types.path` (default `app_path('Cms/PageTypes')`) and `page_types.namespace` (default `App\Cms\PageTypes`).
 - The migration `add_type_to_cms_pages_table` gives `cms_pages` the column `type`, the key of the type of a page (null for an ordinary page, as for the pages that are there). A host that ran the migrations before publishes them again (`php artisan vendor:publish --tag=made-cms-package-migrations`) and runs `php artisan migrate`.

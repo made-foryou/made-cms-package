@@ -45,6 +45,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property-read Page|null $parent
  * @property-read Collection<int, Page> $children
  * @property CarbonImmutable|null $created_at
+ * @property int|null $created_by the editor who created the page (CreatePage); null when that is not known
  * @property CarbonImmutable|null $updated_at
  * @property int|null $updated_by the editor who changed the page last, when it moved updated_at; null when that is not known
  * @property CarbonImmutable|null $deleted_at when the page was deleted; it can be restored until it is pruned
@@ -102,6 +103,7 @@ class Page extends Model
             'in_sitemap' => 'boolean',
             'indexable' => 'boolean',
             'share_image_id' => 'integer',
+            'created_by' => 'integer',
             'updated_by' => 'integer',
             'status' => PageStatus::class,
             'strips' => 'array',

@@ -11,7 +11,6 @@ use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Actions\DescribeShareImage;
 use Made\CmsPackage\Content\Actions\FindMediaFolder;
 use Made\CmsPackage\Content\Actions\ListEditableStrips;
-use Made\CmsPackage\Content\Actions\ListMenuPages;
 use Made\CmsPackage\Content\Actions\ListPageAttention;
 use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\ListParentOptions;
@@ -46,7 +45,6 @@ final class ShowPageController
             page: $page,
             pages: $pages,
             parents: ListParentOptions::run($page),
-            menu: ListMenuPages::run(),
             meta: DescribePageMeta::run($page),
             fallbackTitle: MakeFallbackTitle::run($page),
             metaSaved: PageRedirect::justSavedMeta($request, $page),

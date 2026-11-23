@@ -10,6 +10,7 @@ use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\MeasureMeta;
 use Made\CmsPackage\Content\Actions\MeasureShareImage;
 use Made\CmsPackage\Content\Data\AttentionItem;
+use Made\CmsPackage\Content\Data\MenuPlace;
 use Made\CmsPackage\Content\Data\MetaLength;
 use Made\CmsPackage\Content\Data\PageAttention;
 use Made\CmsPackage\Content\Data\PageMeta;
@@ -19,6 +20,7 @@ use Made\CmsPackage\Content\Data\PageTree;
 use Made\CmsPackage\Content\Data\ShareImageDescription;
 use Made\CmsPackage\Content\Data\ShareImageFit;
 use Made\CmsPackage\Content\Enums\AttentionReason;
+use Made\CmsPackage\Content\Enums\MenuPlaceReason;
 use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
@@ -51,7 +53,6 @@ final class ShowPageResponse
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
      * @param  PageTree  $pages  every page of the site
      * @param  PageTree  $parents  the pages this page may lie under
-     * @param  PageTree  $menu  the menu of the site (ListMenuPages)
      * @param  PageMeta  $meta  what the head of the page tells Google now (DescribePageMeta)
      * @param  string  $fallbackTitle  the title in Google while the page has none of its own (MakeFallbackTitle)
      * @param  bool  $metaSaved  the card "Hoe Google hem ziet" was saved right before
@@ -67,7 +68,6 @@ final class ShowPageResponse
         Page $page,
         PageTree $pages,
         PageTree $parents,
-        PageTree $menu,
         PageMeta $meta,
         string $fallbackTitle,
         bool $metaSaved,
@@ -114,7 +114,7 @@ final class ShowPageResponse
                 'state' => PageState::of($child->status, $child->hidden)->value,
                 'showUrl' => PageLinks::show($child->id),
             ], $node->children ?? []),
-            'menuPlace' => self::menuPlace($pages, $menu, $node),
+            'menuPlace' => self::menuPlace($pages, $pages->menuPlaceOf($page->id)),
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
             'meta' => self::meta($page, $screens, $meta, $fallbackTitle, $metaSaved),
             'share' => self::share($page, $screens, $meta, $share, $folder, $shareSaved),
@@ -389,37 +389,22 @@ final class ShowPageResponse
 
     /**
      * What the menu switch says about the place of the page in the menu of the site; null for a page outside the menu.
-     * Only the pages the site shows in its menu count: a hidden page has no place while it is hidden, a draft gets the
-     * place it takes once published, and a page under a page the menu of the site leaves out names that page.
      *
-     * @return array{hint: 'position'|'publish'|'parent'|'while_hidden', replace: array<string, int|string>}|null
+     * @return array{hint: string, replace: array<string, int|string>}|null
      */
-    private static function menuPlace(PageTree $pages, PageTree $menu, ?PageNode $node): ?array
+    private static function menuPlace(PageTree $pages, ?MenuPlace $place): ?array
     {
-        if ($node === null || ! $node->inMenu) {
+        if ($place === null) {
             return null;
         }
 
-        if ($node->hidden) {
-            return ['hint' => 'while_hidden', 'replace' => []];
-        }
-
-        $shown = array_fill_keys(array_map(static fn (PageNode $item): int => $item->id, $menu->flatten()), true);
-        $parent = $node->parentId === null ? null : $pages->find($node->parentId);
-
-        if ($parent !== null && ! isset($shown[$parent->id])) {
-            return ['hint' => 'parent', 'replace' => ['parent' => $parent->title]];
-        }
-
-        $siblings = array_filter(
-            $parent === null ? $pages->roots : $parent->children,
-            static fn (PageNode $sibling): bool => $sibling->id === $node->id || isset($shown[$sibling->id]),
-        );
-        $ids = array_values(array_map(static fn (PageNode $sibling): int => $sibling->id, $siblings));
-
         return [
-            'hint' => isset($shown[$node->id]) ? 'position' : 'publish',
-            'replace' => ['position' => (int) array_search($node->id, $ids, true) + 1, 'total' => count($ids)],
+            'hint' => $place->reason->value,
+            'replace' => match ($place->reason) {
+                MenuPlaceReason::Position, MenuPlaceReason::Publish => ['position' => (int) $place->position, 'total' => (int) $place->total],
+                MenuPlaceReason::Parent => ['parent' => $pages->find((int) $place->parentId)->title ?? ''],
+                MenuPlaceReason::WhileHidden => [],
+            },
         ];
     }
 }

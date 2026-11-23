@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Made\CmsPackage\Content\Data\MenuPlace;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PageTree;
+use Made\CmsPackage\Content\Enums\MenuPlaceReason;
 use Made\CmsPackage\Content\Enums\PageStatus;
 
 function sampleTree(): PageTree
@@ -164,4 +166,44 @@ it('keeps the menu of the site: the published pages visitors see with the menu s
     ]);
 
     expect(array_map(fn (PageNode $node): int => $node->id, $tree->siteMenu()->flatten()))->toBe([1, 6]);
+});
+
+function menuTree(): PageTree
+{
+    $published = PageStatus::Published;
+
+    return new PageTree([
+        pageNode(1, '/', status: $published),
+        pageNode(2, '/over-ons', [
+            pageNode(3, '/over-ons/team', parentId: 2, depth: 1, status: $published),
+            pageNode(4, '/over-ons/jeugd', parentId: 2, depth: 1),
+            pageNode(5, '/over-ons/bestuur', parentId: 2, depth: 1, status: $published),
+        ], status: $published),
+        pageNode(6, '/blog', [pageNode(7, '/blog/nieuws', parentId: 6, depth: 1, status: $published)]),
+        pageNode(8, '/contact', status: $published, inMenu: false),
+        pageNode(9, '/bedankt', status: $published, hidden: true),
+        pageNode(10, '/lid-worden', status: $published),
+    ]);
+}
+
+it('says the place of a page among the pages of the menu of the site next to it', function (): void {
+    expect(menuTree()->menuPlaceOf(10))->toEqual(new MenuPlace(MenuPlaceReason::Position, position: 3, total: 3))
+        ->and(menuTree()->menuPlaceOf(5))->toEqual(new MenuPlace(MenuPlaceReason::Position, position: 2, total: 2));
+});
+
+it('says the place a draft takes in the menu once it is published', function (): void {
+    expect(menuTree()->menuPlaceOf(4))->toEqual(new MenuPlace(MenuPlaceReason::Publish, position: 2, total: 3));
+});
+
+it('names the page above that the menu of the site leaves out', function (): void {
+    expect(menuTree()->menuPlaceOf(7))->toEqual(new MenuPlace(MenuPlaceReason::Parent, parentId: 6));
+});
+
+it('gives a hidden page no place in the menu while it is hidden', function (): void {
+    expect(menuTree()->menuPlaceOf(9))->toEqual(new MenuPlace(MenuPlaceReason::WhileHidden));
+});
+
+it('gives no place to a page outside the menu or a page that is not in the tree', function (): void {
+    expect(menuTree()->menuPlaceOf(8))->toBeNull()
+        ->and(menuTree()->menuPlaceOf(99))->toBeNull();
 });

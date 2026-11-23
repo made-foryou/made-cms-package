@@ -1278,6 +1278,20 @@ ul.lijst {
     text-underline-offset: 3px;
 }
 
+.paginanieuws {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.paginanieuws a {
+    color: var(--made-link);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
 /* A page in a part of the tree only for the place of a page under it that matches. */
 .boomrij.ouder .boomrij-naam,
 .boomrij.ouder .boomrij-pad,

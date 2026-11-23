@@ -407,3 +407,12 @@ describe('searching and filtering', function (): void {
         expect($count())->toBe($few);
     });
 });
+
+it('says that news items are not in the list, with the way to them for whoever opens them', function (): void {
+    Page::factory()->at('/')->create(['title' => 'Home']);
+
+    expect(pagesScreen(Role::ContentManager))
+        ->toContain('<p class="paginanieuws">Nieuwsberichten staan niet in deze lijst: die horen bij de verzameling Nieuws en krijgen vanzelf hun plek op de site. <a href="/made-cms/news">Naar Nieuws</a></p>')
+        ->and(pagesScreen(Role::SeoSpecialist))
+        ->toContain('<p class="paginanieuws">Nieuwsberichten staan niet in deze lijst: die horen bij de verzameling Nieuws en krijgen vanzelf hun plek op de site.</p>');
+});

@@ -43,6 +43,8 @@ return [
         'none_for' => 'No page found for “:search”.',
         'show_all' => 'Show all pages',
         'part' => 'You see a part of the pages. :link to move them.',
+        'news' => 'News items are not in this list: they belong to the collection News and get their place on the site by themselves.',
+        'news_link' => 'To News',
         'state' => [
             'label' => 'State of the site',
             'live' => '{1} page live|[0,*] pages live',

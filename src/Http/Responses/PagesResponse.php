@@ -18,6 +18,7 @@ use Made\CmsPackage\Content\Enums\PageFilter;
 use Made\CmsPackage\Content\Enums\PageState;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Http\Cms\Day;
+use Made\CmsPackage\Http\Cms\Menu;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
 use Made\CmsPackage\Http\Cms\Words;
@@ -48,6 +49,7 @@ final class PagesResponse
             'createUrl' => PageLinks::create(),
             'cards' => $overview->tree->isEmpty() ? [] : self::cards($overview, $locale),
             'indexUrl' => PageLinks::index(),
+            'newsUrl' => in_array(Screen::News, $screens, true) ? Menu::url(Screen::News) : null,
             'search' => $overview->search->text,
             'filter' => $overview->search->filter->value,
             'filtered' => $overview->search->isFiltered(),

@@ -108,6 +108,7 @@
                     </ul>
                 @endif
             </div>
+            <p class="paginanieuws">{{ $t('pages.index.news') }}@if ($newsUrl !== null) <a href="{{ $newsUrl }}">{{ $t('pages.index.news_link') }}</a>@endif</p>
         @endif
     </section>
 

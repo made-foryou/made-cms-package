@@ -43,6 +43,8 @@ return [
         'none_for' => 'Geen pagina gevonden voor “:search”.',
         'show_all' => 'Toon alle pagina’s',
         'part' => 'Je ziet een deel van de pagina’s. :link om ze te verplaatsen.',
+        'news' => 'Nieuwsberichten staan niet in deze lijst: die horen bij de verzameling Nieuws en krijgen vanzelf hun plek op de site.',
+        'news_link' => 'Naar Nieuws',
         'state' => [
             'label' => 'Stand van zaken',
             'live' => '{1} pagina live|[0,*] pagina’s live',

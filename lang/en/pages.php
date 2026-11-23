@@ -332,6 +332,7 @@ return [
         'path_taken' => 'Another page already has that address.',
         'path_long' => 'The whole address would get longer than 255 characters, for this page or a page under it. Choose a shorter address.',
         'parent_invalid' => 'It cannot live under that page: choose a page that does not lie under this page.',
+        'type_invalid' => 'The site does not know that type of page (any more). Choose another type.',
         'home_protected' => 'The home page keeps its address and stays at the top.',
         'has_children' => 'There are still pages below this page. Move or delete those first.',
         'home_delete' => 'The home page cannot be deleted.',

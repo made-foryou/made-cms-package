@@ -332,6 +332,7 @@ return [
         'path_taken' => 'Dat adres heeft al een andere pagina.',
         'path_long' => 'Het hele adres wordt dan langer dan 255 tekens, bij deze pagina of een pagina eronder. Kies een korter adres.',
         'parent_invalid' => 'Onder die pagina kan hij niet liggen: kies een pagina die niet onder deze pagina ligt.',
+        'type_invalid' => 'Die soort pagina kent de site niet (meer). Kies een andere soort.',
         'home_protected' => 'De homepagina houdt haar adres en blijft bovenaan.',
         'has_children' => 'Onder deze pagina liggen nog pagina’s. Verplaats of verwijder die eerst.',
         'home_delete' => 'De homepagina kan niet weg.',

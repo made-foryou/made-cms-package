@@ -27,6 +27,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property int|null $parent_id the page this page lies under; null for a page at the top
  * @property string $title
  * @property string $slug the last segment of the address
+ * @property string|null $type the key of its page type (PageType); null for an ordinary page
  * @property int $position the place among the pages with the same parent, 0 for the first
  * @property bool $in_menu
  * @property bool $hidden whether visitors only reach the page through its address, outside the menu, the sitemap and Google
@@ -63,6 +64,7 @@ class Page extends Model
         'parent_id',
         'title',
         'slug',
+        'type',
         'position',
         'in_menu',
         'hidden',

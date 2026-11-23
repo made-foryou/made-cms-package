@@ -13,10 +13,12 @@ class WorkbenchServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // The workbench keeps its strip types in workbench/app/Cms/Strips instead of the app folder of a site.
+        // The workbench keeps its strip types and page types in workbench/app/Cms instead of the app folder of a site.
         config([
             'made-cms-package.strips.path' => dirname(__DIR__).'/Cms/Strips',
             'made-cms-package.strips.namespace' => 'Workbench\App\Cms\Strips',
+            'made-cms-package.page_types.path' => dirname(__DIR__).'/Cms/PageTypes',
+            'made-cms-package.page_types.namespace' => 'Workbench\App\Cms\PageTypes',
         ]);
     }
 

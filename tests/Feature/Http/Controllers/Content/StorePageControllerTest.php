@@ -35,6 +35,35 @@ it('takes the slug, the parent and the menu flag the editor chose', function ():
         ->and($page->in_menu)->toBeFalse();
 });
 
+it('creates a page of the type the editor chose, with the strips of that type', function (): void {
+    usePageTypes();
+
+    $this->post('made-cms/pages', ['title' => 'Teams', 'type' => 'team', 'in_menu' => '1']);
+
+    $page = Page::query()->sole();
+
+    expect($page->type)->toBe('team')
+        ->and(array_column($page->draft_strips ?? [], 'type'))->toBe(['hero', 'cards']);
+});
+
+it('creates an ordinary page without a type', function (): void {
+    usePageTypes();
+
+    $this->post('made-cms/pages', ['title' => 'Jeugd', 'type' => '', 'in_menu' => '1']);
+
+    expect(Page::query()->sole()->type)->toBeNull();
+});
+
+it('refuses a type the site does not define', function (mixed $type): void {
+    usePageTypes();
+
+    $this->from('/made-cms/pages/new')->post('made-cms/pages', ['title' => 'Teams', 'type' => $type])
+        ->assertRedirect('/made-cms/pages/new')
+        ->assertSessionHasErrors(['type' => 'Die soort pagina kent de site niet (meer). Kies een andere soort.']);
+
+    expect(Page::query()->count())->toBe(0);
+})->with(['unknown' => ['contact'], 'no text' => [['team']]]);
+
 it('asks for a name', function (): void {
     $this->from('/made-cms/pages/new')->post('made-cms/pages', ['title' => ' '])
         ->assertRedirect('/made-cms/pages/new')

@@ -5,23 +5,61 @@
     $slug = (string) old('slug', '');
     $chosen = (string) old('parent_id', $chosen === null ? '' : (string) $chosen);
     $showSlug = $slug !== '' || $errors->has('slug');
+    $chosenType = (string) old('type', '');
+    // The type is the first step only when the site defines page types; then the name and the place follow.
+    $asksType = $types !== [];
+    $total = $asksType ? 3 : 2;
+    $nameStep = $asksType ? 2 : 1;
 @endphp
 
 @section('content')
     <div class="smalkolom">
         @include('made-cms-package-launcher::cms.pages.partials.trail', ['here' => $t('pages.new.title')])
 
-        {{-- One form in two steps. Without script both steps show and the form still works; the script shows one at a time. --}}
+        {{-- One form in steps. Without script every step shows and the form still works; the script shows one at a time. --}}
         <form class="formulier" method="post" action="{{ $storeUrl }}" data-wizard>
             @csrf
             <div class="stappen" data-stappen hidden>
-                <span class="stap actief" data-balk="1" aria-hidden="true"></span>
-                <span class="stap" data-balk="2" aria-hidden="true"></span>
-                <span class="stapnoot" data-stapnoot data-tekst-1="{{ $t('pages.new.step', ['current' => 1, 'total' => 2]) }}" data-tekst-2="{{ $t('pages.new.step', ['current' => 2, 'total' => 2]) }}">{{ $t('pages.new.step', ['current' => 1, 'total' => 2]) }}</span>
+                @for ($step = 1; $step <= $total; $step++)
+                    <span @class(['stap', 'actief' => $step === 1]) data-balk="{{ $step }}" aria-hidden="true"></span>
+                @endfor
+                <span class="stapnoot" data-stapnoot @for ($step = 1; $step <= $total; $step++) data-tekst-{{ $step }}="{{ $t('pages.new.step', ['current' => $step, 'total' => $total]) }}"@endfor>{{ $t('pages.new.step', ['current' => 1, 'total' => $total]) }}</span>
             </div>
 
-            <fieldset class="stapvak" data-stap="1">
-                <legend class="stapkop"><h1 id="made-cms-titel">{{ $t('pages.new.name.heading') }}</h1></legend>
+            @if ($asksType)
+                <fieldset class="stapvak" data-stap="1">
+                    <legend class="stapkop"><h1 id="made-cms-titel">{{ $t('pages.new.type.heading') }}</h1></legend>
+                    <p class="intro">{{ $t('pages.new.type.intro') }}</p>
+                    <div class="keuzes soortkeuzes">
+                        @foreach ([['key' => '', 'label' => $t('pages.types.ordinary'), 'description' => $t('pages.types.ordinary_text')], ...$types] as $type)
+                            <label class="keuzekaart soortkeuze">
+                                <input type="radio" name="type" value="{{ $type['key'] }}"{!! $chosenType === $type['key'] ? ' checked' : '' !!}>
+                                <span class="keuzekaart-tekst">
+                                    <span class="keuzekaart-naam">{{ $type['label'] }}</span>
+                                    @if ($type['description'] !== null)
+                                        <span class="keuzekaart-uitleg">{{ $type['description'] }}</span>
+                                    @endif
+                                </span>
+                                <span class="vink" aria-hidden="true">{!! $check !!}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('type')
+                        <p class="veld-fout" role="alert">{{ $message }}</p>
+                    @enderror
+                    <div class="knoppen">
+                        <button type="button" class="knop" data-next hidden>{{ $t('pages.new.next') }}</button>
+                        <a class="tekstlink" href="{{ $indexUrl }}">{{ $t('pages.new.cancel') }}</a>
+                    </div>
+                </fieldset>
+            @endif
+
+            <fieldset class="stapvak" data-stap="{{ $nameStep }}">
+                @if ($asksType)
+                    <legend class="stapkop"><h2>{{ $t('pages.new.name.heading') }}</h2></legend>
+                @else
+                    <legend class="stapkop"><h1 id="made-cms-titel">{{ $t('pages.new.name.heading') }}</h1></legend>
+                @endif
                 <p class="intro">{{ $t('pages.new.name.intro') }}</p>
                 @include('made-cms-package-launcher::cms.pages.partials.field', ['name' => 'title', 'label' => $t('pages.new.name.label'), 'value' => '', 'placeholder' => $t('pages.new.name.placeholder'), 'required' => true])
                 <div class="adresvak">
@@ -32,11 +70,15 @@
                 @include('made-cms-package-launcher::cms.pages.partials.field', ['name' => 'slug', 'label' => $t('pages.new.name.slug'), 'value' => '', 'hint' => $t('pages.new.name.slug_hint'), 'wrapper' => 'data-slug-veld'.($showSlug ? ' data-open' : '')])
                 <div class="knoppen">
                     <button type="button" class="knop" data-next hidden>{{ $t('pages.new.next') }}</button>
-                    <a class="tekstlink" href="{{ $indexUrl }}">{{ $t('pages.new.cancel') }}</a>
+                    @if ($asksType)
+                        <button type="button" class="tekstlink" data-back hidden>{{ $t('pages.new.back') }}</button>
+                    @else
+                        <a class="tekstlink" href="{{ $indexUrl }}">{{ $t('pages.new.cancel') }}</a>
+                    @endif
                 </div>
             </fieldset>
 
-            <fieldset class="stapvak" data-stap="2">
+            <fieldset class="stapvak" data-stap="{{ $nameStep + 1 }}">
                 <legend class="stapkop"><h2>{!! $t('pages.new.place.heading', ['title' => '<span data-title-echo>'.e($t('pages.new.place.untitled')).'</span>']) !!}</h2></legend>
                 <p class="intro">{{ $t('pages.new.place.intro') }}</p>
                 <div class="keuzes">

@@ -5,24 +5,30 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Responses;
 
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Made\CmsPackage\Access\Enums\Screen;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Data\EditableStrip;
+use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Data\PageTree;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
 
 /**
- * The end of the wizard (design 15.6): the page is ready as an empty draft, and the way to fill it.
+ * The end of the wizard (design 15.6): the page is ready as a draft, and the way to fill it: with the strips it starts
+ * with, when its type gave it strips.
  */
 final class PageCreatedResponse
 {
     /**
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
      * @param  PageTree  $pages  every page of the site
+     * @param  EditableStrips  $strips  the strips the page starts with (ListEditableStrips)
      */
-    public static function make(Editor $editor, array $screens, Page $page, PageTree $pages): Response
+    public static function make(Editor $editor, array $screens, Page $page, PageTree $pages, EditableStrips $strips): Response
     {
+        $labels = array_map(static fn (EditableStrip $strip): string => $strip->label, $strips->strips);
         $parent = $page->parent_id === null ? null : $pages->find($page->parent_id);
         $t = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.created.'.$key, $replace);
 
@@ -33,6 +39,7 @@ final class PageCreatedResponse
                 'place' => $parent === null ? $t('root') : $t('under', ['parent' => $parent->title]),
                 'menu' => $page->in_menu ? $t('in_menu') : $t('out_of_menu'),
             ]),
+            'tip' => $labels === [] ? $t('tip.text') : $t('tip.with_strips', ['strips' => Arr::join($labels, ', ', $t('and'))]),
             'indexUrl' => PageLinks::index(),
             'showUrl' => PageLinks::show($page),
             'editUrl' => PageLinks::edit($page),

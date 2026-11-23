@@ -15,7 +15,6 @@ use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\StripType;
-use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\EditExits;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
@@ -34,11 +33,11 @@ final class EditPageResponse
 {
     /**
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
-     * @param  StripTypes  $types  the catalogue an editor adds strips from
+     * @param  list<StripType>  $types  the strip types an editor can add to this page (ListAllowedStripTypes)
      * @param  bool  $headingLevels  whether the editor chooses the level of a heading (Visitor::choosesHeadingLevels)
      * @param  MediaFolder|null  $folder  the folder the editor chose last in the picker (MediaFolderMemory); null for "Alle bestanden"
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, StripTypes $types, bool $headingLevels, ?MediaFolder $folder = null): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, array $types, bool $headingLevels, ?MediaFolder $folder = null): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
@@ -105,7 +104,7 @@ final class EditPageResponse
                     'label' => $type->label(),
                     'description' => $type->description(),
                     'fields' => trans_choice('made-cms-package::cms.edit.fields', count($type->fields()), [], $locale),
-                ], $types->all()),
+                ], $types),
                 'page' => ['title' => $page->title],
                 // The folder the picker opens in and the uploads of the panel go into, until the editor opens another.
                 'folder' => $folder === null ? null : ['id' => $folder->id, 'name' => $folder->name],

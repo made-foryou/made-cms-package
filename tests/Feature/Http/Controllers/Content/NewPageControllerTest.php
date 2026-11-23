@@ -34,6 +34,38 @@ it('asks for the name and the place in two steps of one form', function (): void
         ->toContain('href="/made-cms/pages">Toch niet</a>');
 });
 
+it('counts two steps and asks no type while the site defines no page types', function (): void {
+    expect(newPageScreen())
+        ->toContain('data-tekst-2="Stap 2 van 2"')
+        ->not->toContain('data-stap="3"')
+        ->not->toContain('name="type"')
+        ->toContain('<h1 id="made-cms-titel">Hoe heet de pagina?</h1>');
+});
+
+it('asks the type first, an ordinary page chosen, when the site defines page types', function (): void {
+    usePageTypes();
+
+    $screen = newPageScreen();
+
+    expect($screen)
+        ->toContain('data-tekst-1="Stap 1 van 3"')
+        ->toContain('data-tekst-3="Stap 3 van 3"')
+        ->toContain('<h1 id="made-cms-titel">Wat voor pagina wordt het?</h1>')
+        ->toContain('Dit bepaalt welke stroken je straks op de site kunt gebruiken. Veranderen kan later altijd nog.')
+        ->toContain('<input type="radio" name="type" value="" checked>')
+        ->toContain('Gewone pagina')
+        ->toContain('Vrij in te delen met alle stroken van de site.')
+        ->toContain('<input type="radio" name="type" value="team">')
+        ->toContain('Teampagina')
+        ->toContain('Vaste opzet: een hero en de teamkaarten.')
+        ->toContain('<input type="radio" name="type" value="landing">')
+        ->toContain('<h2>Hoe heet de pagina?</h2>')
+        ->toContain('data-stap="3"');
+
+    expect(strpos($screen, 'Gewone pagina'))->toBeLessThan(strpos($screen, 'Landing Page'))
+        ->and(strpos($screen, 'Landing Page'))->toBeLessThan(strpos($screen, 'Teampagina'));
+});
+
 it('offers the top and every page as the place, the top chosen', function (): void {
     $about = Page::factory()->at('/over-ons')->create(['title' => 'Over ons']);
     Page::factory()->under($about)->at('/over-ons/team')->create(['title' => 'Team']);

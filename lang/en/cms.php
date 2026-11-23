@@ -281,6 +281,7 @@ return [
             'visible' => 'The panel did not say whether the strip should be visible. Reload the page and try again.',
             'nothing_to_publish' => 'There is nothing to publish: this page is already live as it is.',
             'type' => 'The site does not know this kind of strip (any more). Reload the page and choose again.',
+            'type_not_allowed' => 'This kind of strip does not fit the type of this page (any more). Reload the page and choose again.',
             'position' => 'That place is not on the page (any more). Reload the page and try again.',
             'strip_exists' => 'This strip is already on the page.',
         ],

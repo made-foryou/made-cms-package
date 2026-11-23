@@ -65,3 +65,45 @@ it('lets the editor change the address', function (): void {
 
     expect(Page::query()->with('route')->where('title', 'Jeugd')->sole()->route?->path)->toBe('/onze-jeugd');
 });
+
+it('starts a page of a type with the strips of its type and offers only the strip types it allows', function (): void {
+    useWorkbenchSite();
+    $wizard = visit('/made-cms/pages/new');
+
+    $wizard->assertVisible('[data-stap="1"]')
+        ->assertMissing('[data-stap="2"]')
+        ->assertSeeIn('[data-stapnoot]', 'Stap 1 van 3')
+        ->assertSeeIn('[data-stap="1"]', 'Wat voor pagina wordt het?')
+        ->assertChecked('input[name="type"][value=""]')
+        ->click('Teampagina')
+        ->assertChecked('input[name="type"][value="team"]')
+        ->click('[data-stap="1"] [data-next]')
+        ->assertVisible('[data-stap="2"]')
+        ->assertSeeIn('[data-stapnoot]', 'Stap 2 van 3')
+        ->type('#made-cms-title', 'Teams')
+        ->click('[data-stap="2"] [data-back]')
+        ->assertVisible('[data-stap="1"]')
+        ->assertChecked('input[name="type"][value="team"]')
+        ->click('[data-stap="1"] [data-next]')
+        ->click('[data-stap="2"] [data-next]')
+        ->assertSeeIn('[data-stapnoot]', 'Stap 3 van 3')
+        ->click('Pagina aanmaken')
+        ->assertSee('Teams staat klaar')
+        ->assertSee('Open de pagina op de site: hij begint al met Hero en Kaarten.')
+        ->assertNoJavaScriptErrors();
+
+    $page = Page::query()->where('title', 'Teams')->sole();
+
+    expect($page->type)->toBe('team');
+
+    $wizard->click('Nu vullen op de site');
+
+    expect($wizard->script(waitUntil("document.querySelectorAll('[data-slot=\"structure-list\"] [data-strip]').length === 2")))->toBeTrue();
+
+    $wizard->assertSeeIn('[data-slot="structure-list"]', 'Hero')
+        ->assertSeeIn('[data-slot="structure-list"]', 'Kaarten')
+        ->click('[data-slot="structure-add"]')
+        ->assertVisible(catalogueCard('Fotogalerij'))
+        ->assertMissing(catalogueCard('Downloads'))
+        ->assertNoJavaScriptErrors();
+});

@@ -8,7 +8,7 @@ use Made\CmsPackage\Content\Data\NewPage;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
- * The new page of the wizard: its name, optionally its slug, its parent and whether it is in the menu.
+ * The new page of the wizard: its type, its name, optionally its slug, its parent and whether it is in the menu.
  */
 final class StorePageRequest extends LauncherRequest
 {
@@ -21,6 +21,7 @@ final class StorePageRequest extends LauncherRequest
             'title' => ['required', 'string', 'max:120'],
             'slug' => ['nullable', 'string', 'max:120'],
             'parent_id' => ['nullable', 'integer'],
+            'type' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -34,6 +35,7 @@ final class StorePageRequest extends LauncherRequest
             'title.*' => $this->error('title_required'),
             'slug.*' => $this->error('slug_invalid'),
             'parent_id.*' => $this->error('parent_invalid'),
+            'type.*' => $this->error('type_invalid'),
         ];
     }
 
@@ -45,6 +47,7 @@ final class StorePageRequest extends LauncherRequest
             parentId: $this->filled('parent_id') ? $this->integer('parent_id') : null,
             inMenu: $this->boolean('in_menu'),
             editorId: $this->editorId(),
+            type: $this->filled('type') ? $this->string('type')->toString() : null,
         );
     }
 

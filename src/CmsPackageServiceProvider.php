@@ -46,6 +46,7 @@ use Made\CmsPackage\Content\Events\PageUpdated;
 use Made\CmsPackage\Content\Events\PageVisibilityChanged;
 use Made\CmsPackage\Content\Listeners\RebuildSitemaps;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Content\Sitemap\PageSitemapSource;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
@@ -69,6 +70,7 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->registerGuard();
 
         $this->registerStripTypes();
+        $this->registerPageTypes();
 
         $this->registerPageRequestState();
 
@@ -241,6 +243,23 @@ class CmsPackageServiceProvider extends ServiceProvider
             return StripTypes::discover(
                 $config->string('made-cms-package.strips.path'),
                 $config->string('made-cms-package.strips.namespace'),
+            );
+        });
+    }
+
+    /**
+     * The catalogue of the site's page types, checked against its strip types. It scans the folder only once, the
+     * first time it is needed.
+     */
+    private function registerPageTypes(): void
+    {
+        $this->app->singleton(PageTypes::class, function (): PageTypes {
+            $config = $this->app->make('config');
+
+            return PageTypes::discover(
+                $config->string('made-cms-package.page_types.path'),
+                $config->string('made-cms-package.page_types.namespace'),
+                $this->app->make(StripTypes::class),
             );
         });
     }

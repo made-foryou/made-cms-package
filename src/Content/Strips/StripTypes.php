@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Strips;
 
-use FilesystemIterator;
 use Illuminate\Container\Container;
 use Made\CmsPackage\Content\Enums\MediaKind;
 use Made\CmsPackage\Content\Exceptions\DuplicateStripType;
@@ -16,10 +15,7 @@ use Made\CmsPackage\Content\Strips\Fields\File;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Image;
 use Made\CmsPackage\Content\Strips\Fields\Items;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use ReflectionClass;
-use SplFileInfo;
+use Made\CmsPackage\Support\ClassesInFolder;
 
 /**
  * The catalogue of strip types the site defines; editors pick from it to build a page.
@@ -39,7 +35,10 @@ final class StripTypes
      */
     public const array RESERVED_ITEM_FIELDS = ['id'];
 
-    private const string KEY_PATTERN = '/^[a-z][a-z0-9-]*$/';
+    /**
+     * The form of the key of a strip type, also of a page type.
+     */
+    public const string KEY_PATTERN = '/^[a-z][a-z0-9-]*$/';
 
     private const string FIELD_KEY_PATTERN = '/^[a-z][a-z0-9_]*$/';
 
@@ -76,47 +75,12 @@ final class StripTypes
      */
     public static function discover(string $path, string $namespace): self
     {
-        $root = realpath($path);
+        $container = Container::getInstance();
 
-        if ($root === false || ! is_dir($root)) {
-            return new self([]);
-        }
-
-        $root = rtrim(str_replace('\\', '/', $root), '/');
-        $namespace = trim($namespace, '\\');
-        $files = [];
-
-        /** @var SplFileInfo $file */
-        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)) as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                $files[] = str_replace('\\', '/', $file->getPathname());
-            }
-        }
-
-        sort($files);
-
-        $types = [];
-
-        foreach ($files as $file) {
-            $class = $namespace.'\\'.str_replace('/', '\\', substr($file, strlen($root) + 1, -4));
-
-            if (! class_exists($class)) {
-                continue;
-            }
-
-            $reflection = new ReflectionClass($class);
-
-            if ($reflection->isAbstract() || ! $reflection->isSubclassOf(StripType::class)) {
-                continue;
-            }
-
-            /** @var StripType $type */
-            $type = Container::getInstance()->make($class);
-
-            $types[] = $type;
-        }
-
-        return new self($types);
+        return new self(array_map(
+            static fn (string $class): StripType => $container->make($class),
+            ClassesInFolder::find($path, $namespace, StripType::class),
+        ));
     }
 
     /**

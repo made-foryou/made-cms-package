@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\PageTypes\Valid\TeamPage;
+use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -49,6 +54,18 @@ it('refuses a type that is not in the catalogue and a place outside the page', f
     'negative' => [['type' => 'hero', 'position' => -1], 'position'],
     'no position' => [['type' => 'hero'], 'position'],
 ]);
+
+it('refuses a strip type the type of the page does not allow', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Hero, new Cards, new Banner]));
+    usePageTypesWith(new TeamPage);
+    $page = Page::factory()->create(['type' => 'team']);
+
+    $this->postJson('made-cms/pages/'.$page->id.'/strips', ['type' => 'banner', 'position' => 0])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['type' => 'Deze soort strook past niet (meer) bij de soort van deze pagina. Herlaad de pagina en kies opnieuw.']);
+
+    expect($page->refresh()->draft_strips)->toBeNull();
+});
 
 it('answers 401 to a guest', function (): void {
     auth('made-cms')->logout();

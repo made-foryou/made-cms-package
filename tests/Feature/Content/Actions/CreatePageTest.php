@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Exceptions\PagePathTaken;
 use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
+use Made\CmsPackage\Content\Exceptions\UnknownPageType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
 
@@ -176,4 +177,47 @@ it('notes the editor who creates the page', function (): void {
     $page = CreatePage::run(new NewPage(title: 'Over ons', slug: null, parentId: null, editorId: $editor->id));
 
     expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
+});
+
+it('starts a page of a type with the strips of its type, as a draft', function (): void {
+    usePageTypes();
+    $editor = Editor::factory()->create();
+
+    $page = CreatePage::run(new NewPage(title: 'Teams', slug: null, parentId: null, editorId: $editor->id, type: 'team'));
+
+    $stored = Page::query()->findOrFail($page->id);
+    $draft = $stored->draft_strips ?? [];
+
+    expect($stored->type)->toBe('team')
+        ->and($stored->strips)->toBe([])
+        ->and(array_column($draft, 'type'))->toBe(['hero', 'cards'])
+        ->and(array_column($draft, 'visible'))->toBe([true, true])
+        ->and($draft[0]['id'] ?? null)->toBeUuid()
+        ->and($draft[0]['values']['kop'] ?? null)->toBe('Welkom')
+        ->and($stored->draft_started_at)->not->toBeNull()
+        ->and($stored->updated_by)->toBe($editor->id)
+        ->and($stored->draft_strips)->toBeStoredAs($page->draft_strips);
+});
+
+it('starts an ordinary page and a page of a type without strips empty', function (?string $type): void {
+    usePageTypes();
+
+    $page = CreatePage::run(new NewPage(title: 'Actie', slug: null, parentId: null, type: $type));
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->type)->toBe($type)
+        ->and($stored->draft_strips)->toBeNull()
+        ->and($stored->draft_started_at)->toBeNull();
+})->with(['ordinary' => [null], 'without strips' => ['landing']]);
+
+it('refuses a type the site does not define and creates nothing', function (): void {
+    usePageTypes();
+    Event::fake([PageCreated::class]);
+
+    expect(fn (): Page => CreatePage::run(new NewPage(title: 'Teams', slug: null, parentId: null, type: 'contact')))
+        ->toThrow(UnknownPageType::class);
+
+    expect(Page::query()->count())->toBe(0);
+    Event::assertNotDispatched(PageCreated::class);
 });

@@ -69,6 +69,40 @@ it('shows the basics in a form with the other pages as a parent', function (): v
         ->toContain('Plek 2 van 3 in het menu.');
 });
 
+it('lets the editor choose the type of the page among the types of the site, an ordinary page first', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'type' => 'team']);
+
+    expect(pageScreen($page))
+        ->toContain('Soort pagina')
+        ->toContain('<option value="">Gewone pagina</option>')
+        ->toContain('<option value="landing">Landing Page</option>')
+        ->toContain('<option value="team" selected>Teampagina</option>')
+        ->toContain('Bepaalt welke stroken je op de site kunt toevoegen. Stroken die er al staan, blijven staan.');
+});
+
+it('chooses an ordinary page for a page without a type', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+    expect(pageScreen($page))->toContain('<option value="" selected>Gewone pagina</option>');
+});
+
+it('keeps a type the site no longer defines as a choice of its own', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'type' => 'vervallen']);
+
+    expect(pageScreen($page))
+        ->toContain('<option value="">Gewone pagina</option>')
+        ->toContain('<option value="vervallen" selected>vervallen · niet meer gedefinieerd</option>');
+});
+
+it('offers no choice of type while the site defines no page types', function (): void {
+    $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+    expect(pageScreen($page))->not->toContain('name="type"');
+});
+
 it('counts the place in the menu among the pages the site shows there', function (): void {
     Page::factory()->published()->atPosition(0)->at('/')->create(['title' => 'Home']);
     Page::factory()->atPosition(1)->at('/jeugd')->create(['title' => 'Jeugd']);
@@ -225,6 +259,26 @@ it('says once that a new page is ready', function (): void {
         ->assertSee('href="/made-cms/pages">Later</a>', false);
 
     expect(pageScreen($page))->not->toContain('staat klaar');
+});
+
+it('names the strips a new page of a type starts with when it is ready', function (): void {
+    usePageTypes();
+
+    $this->post('made-cms/pages', ['title' => 'Teams', 'type' => 'team', 'in_menu' => '1']);
+    $page = Page::query()->where('title', 'Teams')->sole();
+
+    $this->get('made-cms/pages/'.$page->id)
+        ->assertSee('Open de pagina op de site: hij begint al met Hero en Kaarten. Vul ze met je tekst en foto’s, en publiceer hem als hij af is.')
+        ->assertDontSee('Open de pagina op de site en vul hem met stroken');
+});
+
+it('tells how to fill a new page that starts empty', function (): void {
+    $this->post('made-cms/pages', ['title' => 'Jeugd', 'in_menu' => '1']);
+    $page = Page::query()->where('title', 'Jeugd')->sole();
+
+    $this->get('made-cms/pages/'.$page->id)
+        ->assertSee('Open de pagina op de site en vul hem met stroken: tekst, foto’s en knoppen.')
+        ->assertDontSee('hij begint al met');
 });
 
 it('shows how google sees a page without a title or a description of its own', function (): void {

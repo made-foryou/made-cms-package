@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
+use Made\CmsPackage\Content\Exceptions\UnknownPageType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Requests\Content\UpdatePageRequest;
 use Made\CmsPackage\Http\Responses\PageRedirect;
@@ -39,6 +40,8 @@ final class UpdatePageController
             $request->reject('slug', 'home_protected');
         } catch (CircularPageMove|ParentPageNotFound|ParentPageDeleted) {
             $request->reject('parent_id', 'parent_invalid');
+        } catch (UnknownPageType) {
+            $request->reject('type', 'type_invalid');
         }
 
         return PageRedirect::saved($page);

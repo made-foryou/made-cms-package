@@ -19,17 +19,25 @@ use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
+use Made\CmsPackage\Content\Exceptions\UnknownPageType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
+use Made\CmsPackage\Content\PageTypes\PageTypes;
 
 final class UpdatePage
 {
     use AsAction;
 
+    public function __construct(
+        private readonly PageTypes $types,
+    ) {}
+
     /**
-     * Changes the name, the address, the parent, the menu flag and whether visitors see a page. A new parent puts the
-     * page last among its new siblings; the pages under it move along and every address follows.
+     * Changes the name, the address, the parent, the menu flag, whether visitors see a page and its type. A new parent
+     * puts the page last among its new siblings; the pages under it move along and every address follows. A new type
+     * leaves the strips as they are, also those it does not allow: it only decides which strip types can be added.
      *
+     * @throws UnknownPageType when the type is not in the catalogue and the page does not have it already
      * @throws ParentPageNotFound
      * @throws ParentPageDeleted
      * @throws InvalidPageSlug
@@ -54,7 +62,17 @@ final class UpdatePage
         $from = PagePath::fromString((string) $page->route?->path);
         $to = $home ? $from : PagePath::fromString((string) $parent?->route?->path)->child($slug->value);
 
+        $type = $changes->type === null ? $page->type : $changes->type->key;
+
+        if ($type !== null && $type !== $page->type && ! $this->types->has($type)) {
+            throw UnknownPageType::key($type);
+        }
+
         $page->fill(['title' => trim($changes->title), 'slug' => $slug->value, 'in_menu' => $changes->inMenu]);
+
+        if ($type !== $page->type) {
+            $page->type = $type;
+        }
         $changed = $moving || $page->isDirty();
         $hidden = $changes->hidden ?? $page->hidden;
 

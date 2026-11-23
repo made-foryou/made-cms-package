@@ -174,6 +174,11 @@ return [
             'root' => 'Bovenaan',
             'hint' => 'Bepaalt het adres en de plek in het menu. Onder een andere pagina komt hij achteraan.',
         ],
+        'type' => [
+            'label' => 'Soort pagina',
+            'unknown' => ':key · niet meer gedefinieerd',
+            'hint' => 'Bepaalt welke stroken je op de site kunt toevoegen. Stroken die er al staan, blijven staan.',
+        ],
         'in_menu' => [
             'label' => 'Staat in het menu',
             'position' => 'Plek :position van :total in het menu.',
@@ -273,10 +278,18 @@ return [
             ],
         ],
     ],
+    'types' => [
+        'ordinary' => 'Gewone pagina',
+        'ordinary_text' => 'Vrij in te delen met alle stroken van de site.',
+    ],
     'new' => [
         'title' => 'Nieuwe pagina',
         'step' => 'Stap :current van :total',
         'done' => 'Klaar',
+        'type' => [
+            'heading' => 'Wat voor pagina wordt het?',
+            'intro' => 'Dit bepaalt welke stroken je straks op de site kunt gebruiken. Veranderen kan later altijd nog.',
+        ],
         'name' => [
             'heading' => 'Hoe heet de pagina?',
             'intro' => 'Kort en zoals je hem in het menu wilt zien. Het adres maken we ervan.',
@@ -312,7 +325,9 @@ return [
         'tip' => [
             'heading' => 'Wat nu het handigst is',
             'text' => 'Open de pagina op de site en vul hem met stroken: tekst, foto’s en knoppen. Wat je typt, zie je meteen. Publiceer hem als hij af is.',
+            'with_strips' => 'Open de pagina op de site: hij begint al met :strips. Vul ze met je tekst en foto’s, en publiceer hem als hij af is.',
         ],
+        'and' => ' en ',
         'fill' => 'Nu vullen op de site',
         'overview' => 'Eerst het overzicht',
         'later' => 'Later',
@@ -332,6 +347,7 @@ return [
         'path_taken' => 'Dat adres heeft al een andere pagina.',
         'path_long' => 'Het hele adres wordt dan langer dan 255 tekens, bij deze pagina of een pagina eronder. Kies een korter adres.',
         'parent_invalid' => 'Onder die pagina kan hij niet liggen: kies een pagina die niet onder deze pagina ligt.',
+        'type_invalid' => 'Die soort pagina kent de site niet (meer). Kies een andere soort.',
         'home_protected' => 'De homepagina houdt haar adres en blijft bovenaan.',
         'has_children' => 'Onder deze pagina liggen nog pagina’s. Verplaats of verwijder die eerst.',
         'home_delete' => 'De homepagina kan niet weg.',

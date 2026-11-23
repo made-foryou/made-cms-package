@@ -10,7 +10,10 @@ use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Http\Controllers\Access\LauncherAssetController;
+use Made\CmsPackage\Tests\Fixtures\PageTypes\Valid\TeamPage;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -271,6 +274,16 @@ it('hands the opbouw the catalogue of strip types, sorted by name, and the addre
             'grip' => ':strip, plek :n van :m. Verplaatsen met pijltje omhoog of omlaag.',
             'removed' => ':strip is verwijderd.',
         ]);
+});
+
+it('hands the opbouw only the strip types the type of the page allows', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Hero, new Cards, new Banner]));
+    usePageTypesWith(new TeamPage);
+    $page = Page::factory()->at('/teams')->create(['type' => 'team']);
+
+    $response = $this->actingAs(Editor::factory()->create(), 'made-cms')->get('made-cms/pages/'.$page->id.'/edit');
+
+    expect(array_column(editShellConfig((string) $response->getContent())['types'], 'key'))->toBe(['hero', 'cards']);
 });
 
 it('hands the side panel the address of a strip, the csrf token and its texts', function (): void {

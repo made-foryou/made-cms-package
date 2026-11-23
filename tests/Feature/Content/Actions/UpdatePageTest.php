@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
+use Made\CmsPackage\Content\Data\PageTypeChoice;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PageUpdated;
 use Made\CmsPackage\Content\Events\PageVisibilityChanged;
@@ -15,7 +16,9 @@ use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
 use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
+use Made\CmsPackage\Content\Exceptions\UnknownPageType;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Tests\Fixtures\PageTypes\InlinePageType;
 
 it('changes the title and the menu flag without touching the address', function (): void {
     $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons', 'slug' => 'over-ons']);
@@ -275,4 +278,61 @@ it('leaves who changed the page last when nothing changes', function (): void {
     UpdatePage::run($page, new PageChanges(title: 'Over ons', slug: 'over-ons', parentId: null, inMenu: true, editorId: Editor::factory()->create()->id));
 
     expect($page->refresh()->updated_by)->toBe($before->id);
+});
+
+it('changes the type of a page and keeps every strip on it', function (): void {
+    useStripTypes();
+    usePageTypesWith(new InlinePageType('team', ['hero']));
+    $strips = [storedStrip('hero', id: 'a'), storedStrip('cards', id: 'b')];
+    $page = Page::factory()->at('/teams')->withDraft($strips)->create(['slug' => 'teams']);
+    Event::fake([PageUpdated::class]);
+
+    UpdatePage::run($page, new PageChanges(title: $page->title, slug: 'teams', parentId: null, inMenu: true, type: new PageTypeChoice('team')));
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->type)->toBe('team')
+        ->and(array_column($stored->draft_strips ?? [], 'id'))->toBe(['a', 'b']);
+    Event::assertDispatched(PageUpdated::class);
+});
+
+it('makes a page of a type an ordinary page again', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['slug' => 'teams', 'type' => 'team']);
+
+    UpdatePage::run($page, new PageChanges(title: $page->title, slug: 'teams', parentId: null, inMenu: true, type: new PageTypeChoice(null)));
+
+    expect(Page::query()->findOrFail($page->id)->type)->toBeNull();
+});
+
+it('keeps the type of a page when the changes say nothing about it', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['slug' => 'teams', 'type' => 'team']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Onze teams', slug: 'teams', parentId: null, inMenu: true));
+
+    expect(Page::query()->findOrFail($page->id)->type)->toBe('team');
+});
+
+it('keeps a type the site no longer defines when the page keeps it', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['slug' => 'teams', 'type' => 'vervallen']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Onze teams', slug: 'teams', parentId: null, inMenu: true, type: new PageTypeChoice('vervallen')));
+
+    expect(Page::query()->findOrFail($page->id))
+        ->title->toBe('Onze teams')
+        ->type->toBe('vervallen');
+});
+
+it('refuses a type the site does not define and changes nothing', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    expect(fn (): Page => UpdatePage::run($page, new PageChanges(title: 'Onze teams', slug: 'teams', parentId: null, inMenu: true, type: new PageTypeChoice('contact'))))
+        ->toThrow(UnknownPageType::class);
+
+    expect(Page::query()->findOrFail($page->id))
+        ->title->toBe('Teams')
+        ->type->toBeNull();
 });

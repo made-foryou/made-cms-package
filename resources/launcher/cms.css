@@ -1191,7 +1191,7 @@ ul.lijst {
 
 .standkaart {
     display: flex;
-    flex: 1 1 200px;
+    flex: 1 1 150px;
     flex-direction: column;
     gap: 4px;
     padding: 20px 22px;

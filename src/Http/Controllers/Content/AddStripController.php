@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Made\CmsPackage\Content\Actions\AddStrip;
 use Made\CmsPackage\Content\Actions\ListEditableStrips;
 use Made\CmsPackage\Content\Exceptions\InvalidStripPosition;
+use Made\CmsPackage\Content\Exceptions\StripTypeNotAllowed;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Requests\Content\AddStripRequest;
@@ -24,6 +25,8 @@ final class AddStripController
             $strip = AddStrip::run($page, $request->type(), $request->position(), $request->editorId());
         } catch (UnknownStripType) {
             $request->reject('type', 'type');
+        } catch (StripTypeNotAllowed) {
+            $request->reject('type', 'type_not_allowed');
         } catch (InvalidStripPosition) {
             $request->reject('position', 'position');
         }

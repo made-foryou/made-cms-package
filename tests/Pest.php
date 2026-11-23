@@ -40,6 +40,7 @@ use Made\CmsPackage\Content\Enums\ScanDoubt;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route as PageRoute;
+use Made\CmsPackage\Content\PageTypes\PageType;
 use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Content\Scan\ScannedStripType;
 use Made\CmsPackage\Content\Scan\StripTypeSource;
@@ -560,6 +561,18 @@ function useStripTypes(): StripTypes
 function usePageTypes(): PageTypes
 {
     $catalogue = new PageTypes([new TeamPage, new LandingPage], useStripTypes());
+
+    app()->instance(PageTypes::class, $catalogue);
+
+    return $catalogue;
+}
+
+/**
+ * Binds a catalogue of the given page types, checked against the strip types bound now.
+ */
+function usePageTypesWith(PageType ...$types): PageTypes
+{
+    $catalogue = new PageTypes(array_values($types), app(StripTypes::class));
 
     app()->instance(PageTypes::class, $catalogue);
 

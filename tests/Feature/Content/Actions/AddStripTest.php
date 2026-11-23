@@ -6,12 +6,16 @@ use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Content\Actions\AddStrip;
 use Made\CmsPackage\Content\Events\StripAdded;
 use Made\CmsPackage\Content\Exceptions\InvalidStripPosition;
+use Made\CmsPackage\Content\Exceptions\StripTypeNotAllowed;
 use Made\CmsPackage\Content\Exceptions\UnknownStripType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\Fields\Items;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\PageTypes\InlinePageType;
 use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
 
 beforeEach(function (): void {
     useStripTypes();
@@ -114,4 +118,40 @@ it('keeps strips of a type that no longer exists', function (): void {
     AddStrip::run($page, 'cards', 1);
 
     expect(Page::query()->findOrFail($page->id)->draft_strips[0] ?? null)->toBeStoredAs($old);
+});
+
+it('refuses a strip type the type of the page does not allow', function (): void {
+    Event::fake([StripAdded::class]);
+    app()->instance(StripTypes::class, new StripTypes([new Hero, new Cards, new InlineStripType('quote', [Text::make('quote')])]));
+    usePageTypesWith(new InlinePageType('team', ['hero', 'cards']));
+    $page = Page::factory()->create(['type' => 'team']);
+
+    expect(fn (): mixed => AddStrip::run($page, 'quote', 0))->toThrow(StripTypeNotAllowed::class);
+
+    expect(Page::query()->findOrFail($page->id)->draft_strips)->toBeNull();
+    Event::assertNotDispatched(StripAdded::class);
+});
+
+it('adds a strip type the type of the page allows', function (): void {
+    usePageTypes();
+    $page = Page::factory()->create(['type' => 'team']);
+
+    expect(AddStrip::run($page, 'cards', 0)->type)->toBe('cards');
+});
+
+it('adds every strip type to an ordinary page and to a page whose type the site no longer defines', function (?string $type): void {
+    app()->instance(StripTypes::class, new StripTypes([new Hero, new Cards, new InlineStripType('quote', [Text::make('quote')])]));
+    usePageTypesWith(new InlinePageType('team', ['hero', 'cards']));
+    $page = Page::factory()->create(['type' => $type]);
+
+    expect(AddStrip::run($page, 'quote', 0)->type)->toBe('quote');
+})->with(['ordinary' => [null], 'no longer defined' => ['vervallen']]);
+
+it('decides by the type the page has when the strip is added, not by the page it is handed', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new Hero, new Cards, new InlineStripType('quote', [Text::make('quote')])]));
+    usePageTypesWith(new InlinePageType('team', ['hero', 'cards']));
+    $page = Page::factory()->create();
+    Page::query()->whereKey($page->id)->update(['type' => 'team']);
+
+    expect(fn (): mixed => AddStrip::run($page, 'quote', 0))->toThrow(StripTypeNotAllowed::class);
 });

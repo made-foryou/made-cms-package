@@ -281,6 +281,7 @@ return [
             'visible' => 'Het paneel stuurde niet mee of de strook zichtbaar moet zijn. Herlaad de pagina en probeer het opnieuw.',
             'nothing_to_publish' => 'Er is niets te publiceren: deze pagina is al live zoals hij is.',
             'type' => 'Deze soort strook kent de site niet (meer). Herlaad de pagina en kies opnieuw.',
+            'type_not_allowed' => 'Deze soort strook past niet (meer) bij de soort van deze pagina. Herlaad de pagina en kies opnieuw.',
             'position' => 'Die plek bestaat niet (meer) op de pagina. Herlaad de pagina en probeer het opnieuw.',
             'strip_exists' => 'Deze strook staat al op de pagina.',
         ],

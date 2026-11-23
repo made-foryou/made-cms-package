@@ -69,6 +69,40 @@ it('shows the basics in a form with the other pages as a parent', function (): v
         ->toContain('Plek 2 van 3 in het menu.');
 });
 
+it('lets the editor choose the type of the page among the types of the site, an ordinary page first', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'type' => 'team']);
+
+    expect(pageScreen($page))
+        ->toContain('Soort pagina')
+        ->toContain('<option value="">Gewone pagina</option>')
+        ->toContain('<option value="landing">Landing Page</option>')
+        ->toContain('<option value="team" selected>Teampagina</option>')
+        ->toContain('Bepaalt welke stroken je op de site kunt toevoegen. Stroken die er al staan, blijven staan.');
+});
+
+it('chooses an ordinary page for a page without a type', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+    expect(pageScreen($page))->toContain('<option value="" selected>Gewone pagina</option>');
+});
+
+it('keeps a type the site no longer defines as a choice of its own', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'type' => 'vervallen']);
+
+    expect(pageScreen($page))
+        ->toContain('<option value="">Gewone pagina</option>')
+        ->toContain('<option value="vervallen" selected>vervallen · niet meer gedefinieerd</option>');
+});
+
+it('offers no choice of type while the site defines no page types', function (): void {
+    $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);
+
+    expect(pageScreen($page))->not->toContain('name="type"');
+});
+
 it('counts the place in the menu among the pages the site shows there', function (): void {
     Page::factory()->published()->atPosition(0)->at('/')->create(['title' => 'Home']);
     Page::factory()->atPosition(1)->at('/jeugd')->create(['title' => 'Jeugd']);

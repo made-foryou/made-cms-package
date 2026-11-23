@@ -25,6 +25,8 @@ use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Enums\ShareImageRefusal;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\PageTypes\PageType;
+use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Http\Cms\AttentionActions;
 use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
@@ -40,7 +42,7 @@ use Made\CmsPackage\Support\Site;
 
 /**
  * One page (design 15.2): what it asks for attention, also in one line in the column "In het kort" beside the cards,
- * its basics (name, address, place and menu flag), how Google sees it, how a shared link shows it (design 23), the
+ * its basics (name, address, place, menu flag and type), how Google sees it, how a shared link shows it (design 23), the
  * pages under it, and removing it.
  */
 final class ShowPageResponse
@@ -57,6 +59,7 @@ final class ShowPageResponse
      * @param  MediaFolder|null  $folder  the folder the picker and the upload field start in (MediaFolderMemory)
      * @param  bool  $shareSaved  the card "Hoe je link gedeeld wordt" was saved right before
      * @param  PageAttention  $attention  what the page asks for attention (ListPageAttention)
+     * @param  PageTypes  $types  the page types of the site, to choose from in the basics
      */
     public static function make(
         Editor $editor,
@@ -72,6 +75,7 @@ final class ShowPageResponse
         ?MediaFolder $folder,
         bool $shareSaved,
         PageAttention $attention,
+        PageTypes $types,
     ): Response {
         $node = $pages->find($page->id);
         $path = $page->route?->path;
@@ -87,7 +91,10 @@ final class ShowPageResponse
                 'inMenu' => $page->in_menu,
                 'hidden' => $page->hidden,
                 'parentId' => $page->parent_id,
+                'type' => $page->type,
+                'typeKnown' => $page->type === null || $types->has($page->type),
             ],
+            'types' => array_map(static fn (PageType $type): array => ['key' => $type->key(), 'label' => $type->label()], $types->all()),
             'address' => $path === null ? null : Site::host().($path === PagePath::HOME ? '' : $path),
             'viewUrl' => SiteAddress::of($page),
             'indexUrl' => PageLinks::index(),

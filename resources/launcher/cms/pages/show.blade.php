@@ -3,6 +3,7 @@
 @php
     $external = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>';
     $chosen = (string) old('parent_id', (string) $page['parentId']);
+    $chosenType = (string) old('type', (string) $page['type']);
 @endphp
 
 @section('content')
@@ -53,6 +54,24 @@
                                 @enderror
                             </div>
                         @endunless
+                        @if ($types !== [] || $page['type'] !== null)
+                            <div @class(['veld', 'fout' => $errors->has('type')])>
+                                <label for="made-cms-type">{{ $t('pages.show.type.label') }}</label>
+                                <select id="made-cms-type" name="type" aria-describedby="made-cms-type-hint{{ $errors->has('type') ? ' made-cms-type-fout' : '' }}"@error('type') aria-invalid="true"@enderror>
+                                    <option value=""{!! $chosenType === '' ? ' selected' : '' !!}>{{ $t('pages.types.ordinary') }}</option>
+                                    @foreach ($types as $type)
+                                        <option value="{{ $type['key'] }}"{!! $chosenType === $type['key'] ? ' selected' : '' !!}>{{ $type['label'] }}</option>
+                                    @endforeach
+                                    @unless ($page['typeKnown'])
+                                        <option value="{{ $page['type'] }}"{!! $chosenType === $page['type'] ? ' selected' : '' !!}>{{ $t('pages.show.type.unknown', ['key' => $page['type']]) }}</option>
+                                    @endunless
+                                </select>
+                                <p class="veld-hint" id="made-cms-type-hint">{{ $t('pages.show.type.hint') }}</p>
+                                @error('type')
+                                    <p class="veld-fout" id="made-cms-type-fout">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
                     </div>
                     <div class="schakels">
                         @include('made-cms-package-launcher::cms.pages.partials.switch', [

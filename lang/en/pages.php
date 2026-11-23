@@ -174,6 +174,11 @@ return [
             'root' => 'At the top',
             'hint' => 'Decides the address and the place in the menu. Under another page it goes last.',
         ],
+        'type' => [
+            'label' => 'Type of page',
+            'unknown' => ':key · no longer defined',
+            'hint' => 'Decides which strips you can add on the site. Strips that are there already stay.',
+        ],
         'in_menu' => [
             'label' => 'In the menu',
             'position' => 'Place :position of :total in the menu.',
@@ -272,6 +277,10 @@ return [
                 'failed' => 'The image of this page did not change.',
             ],
         ],
+    ],
+    'types' => [
+        'ordinary' => 'Ordinary page',
+        'ordinary_text' => 'Free to lay out with every strip of the site.',
     ],
     'new' => [
         'title' => 'New page',

@@ -16,6 +16,7 @@ use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\ListParentOptions;
 use Made\CmsPackage\Content\Actions\MakeFallbackTitle;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Responses\PageCreatedResponse;
 use Made\CmsPackage\Http\Responses\PageRedirect;
@@ -28,7 +29,7 @@ use Made\CmsPackage\Http\Session\MediaFolderMemory;
  */
 final class ShowPageController
 {
-    public function __invoke(Request $request, Page $page): Response
+    public function __invoke(Request $request, Page $page, PageTypes $types): Response
     {
         $editor = Visitor::requireEditor($request);
         $screens = ListScreens::run($editor);
@@ -52,6 +53,7 @@ final class ShowPageController
             folder: FindMediaFolder::run(MediaFolderMemory::of($request)->id()),
             shareSaved: PageRedirect::justSavedShare($request, $page),
             attention: ListPageAttention::run($page),
+            types: $types,
         );
     }
 }

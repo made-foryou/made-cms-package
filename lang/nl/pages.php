@@ -174,6 +174,11 @@ return [
             'root' => 'Bovenaan',
             'hint' => 'Bepaalt het adres en de plek in het menu. Onder een andere pagina komt hij achteraan.',
         ],
+        'type' => [
+            'label' => 'Soort pagina',
+            'unknown' => ':key · niet meer gedefinieerd',
+            'hint' => 'Bepaalt welke stroken je op de site kunt toevoegen. Stroken die er al staan, blijven staan.',
+        ],
         'in_menu' => [
             'label' => 'Staat in het menu',
             'position' => 'Plek :position van :total in het menu.',
@@ -272,6 +277,10 @@ return [
                 'failed' => 'De afbeelding van deze pagina is niet veranderd.',
             ],
         ],
+    ],
+    'types' => [
+        'ordinary' => 'Gewone pagina',
+        'ordinary_text' => 'Vrij in te delen met alle stroken van de site.',
     ],
     'new' => [
         'title' => 'Nieuwe pagina',

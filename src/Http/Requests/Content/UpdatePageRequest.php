@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Requests\Content;
 
 use Made\CmsPackage\Content\Data\PageChanges;
+use Made\CmsPackage\Content\Data\PageTypeChoice;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
- * The basics of a page: its name, its slug, its parent, whether it is in the menu and whether visitors see it. The
- * form of the home page has no slug, no parent and no switch for visitors, so the page keeps those.
+ * The basics of a page: its name, its slug, its parent, whether it is in the menu, whether visitors see it and its
+ * type. The form of the home page has no slug, no parent and no switch for visitors, so the page keeps those; a form
+ * without a choice of type (a site without page types) keeps the type.
  */
 final class UpdatePageRequest extends LauncherRequest
 {
@@ -23,6 +25,7 @@ final class UpdatePageRequest extends LauncherRequest
             'title' => ['required', 'string', 'max:120'],
             'slug' => ['nullable', 'string', 'max:120'],
             'parent_id' => ['nullable', 'integer'],
+            'type' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -36,6 +39,7 @@ final class UpdatePageRequest extends LauncherRequest
             'title.*' => $this->error('title_required'),
             'slug.*' => $this->error('slug_invalid'),
             'parent_id.*' => $this->error('parent_invalid'),
+            'type.*' => $this->error('type_invalid'),
         ];
     }
 
@@ -48,6 +52,7 @@ final class UpdatePageRequest extends LauncherRequest
             inMenu: $this->boolean('in_menu'),
             hidden: $this->has('visible') ? ! $this->boolean('visible') : null,
             editorId: $this->editorId(),
+            type: $this->has('type') ? new PageTypeChoice($this->filled('type') ? $this->string('type')->toString() : null) : null,
         );
     }
 

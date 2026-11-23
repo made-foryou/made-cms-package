@@ -24,6 +24,40 @@ it('saves the basics and says so', function (): void {
     $this->get('made-cms/pages/'.$page->id)->assertSee('Wie we zijn is opgeslagen.');
 });
 
+it('changes the type of the page', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    $this->put('made-cms/pages/'.$page->id, ['title' => 'Teams', 'slug' => 'teams', 'parent_id' => '', 'in_menu' => '1', 'type' => 'team']);
+
+    expect($page->refresh()->type)->toBe('team');
+
+    $this->put('made-cms/pages/'.$page->id, ['title' => 'Teams', 'slug' => 'teams', 'parent_id' => '', 'in_menu' => '1', 'type' => '']);
+
+    expect($page->refresh()->type)->toBeNull();
+});
+
+it('keeps the type when the form does not choose one', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams', 'type' => 'team']);
+
+    $this->put('made-cms/pages/'.$page->id, ['title' => 'Onze teams', 'slug' => 'teams', 'parent_id' => '', 'in_menu' => '1']);
+
+    expect($page->refresh()->type)->toBe('team');
+});
+
+it('refuses a type the site does not define', function (): void {
+    usePageTypes();
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    $this->from('/made-cms/pages/'.$page->id)
+        ->put('made-cms/pages/'.$page->id, ['title' => 'Teams', 'slug' => 'teams', 'parent_id' => '', 'in_menu' => '1', 'type' => 'contact'])
+        ->assertRedirect('/made-cms/pages/'.$page->id)
+        ->assertSessionHasErrors(['type' => 'Die soort pagina kent de site niet (meer). Kies een andere soort.']);
+
+    expect($page->refresh()->type)->toBeNull();
+});
+
 it('moves the page under another parent', function (): void {
     $about = Page::factory()->atPosition(0)->at('/over-ons')->create(['slug' => 'over-ons']);
     $team = Page::factory()->atPosition(1)->at('/team')->create(['title' => 'Team', 'slug' => 'team']);

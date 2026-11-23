@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Http\Controllers\Content;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Made\CmsPackage\Access\Actions\ListScreens;
 use Made\CmsPackage\Access\Actions\NameEditors;
 use Made\CmsPackage\Content\Actions\ListDeletedPages;
 use Made\CmsPackage\Content\Actions\OpenPagesOverview;
-use Made\CmsPackage\Content\Data\PageSearch;
 use Made\CmsPackage\Http\Launcher\Visitor;
+use Made\CmsPackage\Http\Requests\Content\ShowPagesRequest;
 use Made\CmsPackage\Http\Responses\PagesResponse;
 
 /**
@@ -20,10 +19,10 @@ use Made\CmsPackage\Http\Responses\PagesResponse;
  */
 final class PagesController
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(ShowPagesRequest $request): Response
     {
         $editor = Visitor::requireEditor($request);
-        $overview = OpenPagesOverview::run(new PageSearch);
+        $overview = OpenPagesOverview::run($request->toData());
 
         return PagesResponse::make($editor, ListScreens::run($editor), $overview, NameEditors::run($overview->shown->editors()), ListDeletedPages::run());
     }

@@ -8,12 +8,11 @@
 // server's: nothing goes before or under the home page, and the tree hangs no page deeper than config.depth levels
 // ("Ligt onder" on the page itself and MovePage go deeper).
 
-const list = () => document.querySelector('[data-tree]');
-const initial = list();
+const host = document.querySelector('[data-pages]');
+const list = () => host?.querySelector('[data-tree]') ?? null;
 
-if (initial !== null) {
-    const host = initial.parentElement;
-    const config = JSON.parse(initial.dataset.config ?? '{}');
+if (host !== null) {
+    const config = JSON.parse(host.dataset.config ?? '{}');
     const texts = config.texts ?? {};
     const limit = Number(config.depth ?? 3);
     const slot = (name) => host.querySelector('[data-slot="' + name + '"]');
@@ -57,8 +56,9 @@ if (initial !== null) {
      * The rows and their places
      * ------------------------------------------------------------------------------------------------------------ */
 
+    /* The rows of the tree; none while a search finds nothing. */
     function rows() {
-        return [...list().querySelectorAll(':scope > li.boomrij')].map((el) => ({
+        return [...(list()?.querySelectorAll(':scope > li.boomrij') ?? [])].map((el) => ({
             el,
             id: Number(el.dataset.page),
             parent: el.dataset.parent === '' ? null : Number(el.dataset.parent),
@@ -233,35 +233,53 @@ if (initial !== null) {
         return status === 422 && errors.length > 0 ? String([errors[0]].flat()[0]) : texts.failed;
     }
 
-    /* Reads the screen again and takes the tree and the items of the menu from it; false when it could not. */
-    async function reload() {
+    /* Takes every part of the screen that follows the pages (data-swap: the cards, the filters, the list) and the items
+     * of the menu from a screen read again. */
+    function swap(page) {
+        for (const part of document.querySelectorAll('[data-swap]')) {
+            const fresh = page.querySelector('[data-swap="' + part.dataset.swap + '"]');
+
+            if (fresh !== null) {
+                part.replaceWith(document.adoptNode(fresh));
+            }
+        }
+
+        const menu = page.querySelector('#made-cms-menu');
+
+        if (menu !== null) {
+            document.querySelector('#made-cms-menu')?.replaceChildren(...[...menu.childNodes].map((node) => document.adoptNode(node)));
+        }
+
+        arm();
+    }
+
+    /* Reads the screen again at an address; the parsed screen, or null when it could not. */
+    async function read(url) {
         try {
-            const response = await fetch(window.location.href, {
+            const response = await fetch(url, {
                 credentials: 'same-origin',
                 cache: 'no-store',
                 headers: { Accept: 'text/html' },
             });
             const page = new DOMParser().parseFromString(await response.text(), 'text/html');
-            const tree = page.querySelector('[data-tree]');
 
-            if (! response.ok || tree === null) {
-                return false;
-            }
-
-            list().replaceWith(document.adoptNode(tree));
-
-            const menu = page.querySelector('#made-cms-menu');
-
-            if (menu !== null) {
-                document.querySelector('#made-cms-menu')?.replaceChildren(...[...menu.childNodes].map((node) => document.adoptNode(node)));
-            }
-
-            arm();
-
-            return true;
+            return response.ok && page.querySelector('[data-pages]') !== null ? page : null;
         } catch {
+            return null;
+        }
+    }
+
+    /* Reads the screen again and takes the parts that follow the pages from it; false when it could not. */
+    async function reload() {
+        const page = await read(window.location.href);
+
+        if (page === null) {
             return false;
         }
+
+        swap(page);
+
+        return true;
     }
 
     /* What the screen reader says once the page is in its new place, read from the tree as the server drew it. */
@@ -304,7 +322,7 @@ if (initial !== null) {
         host.removeAttribute('aria-busy');
 
         if (focus !== null) {
-            list().querySelector('[data-page="' + row.id + '"] [data-move-to="' + focus + '"]')?.focus();
+            list()?.querySelector('[data-page="' + row.id + '"] [data-move-to="' + focus + '"]')?.focus();
         }
 
         if (status !== 204) {
@@ -325,7 +343,7 @@ if (initial !== null) {
     host.addEventListener('click', (event) => {
         const button = event.target.closest('[data-move-to]');
 
-        if (button === null || ! list().contains(button) || button.getAttribute('aria-disabled') === 'true') {
+        if (button === null || ! list()?.contains(button) || button.getAttribute('aria-disabled') === 'true') {
             return;
         }
 
@@ -507,7 +525,7 @@ if (initial !== null) {
     host.addEventListener('pointerdown', (event) => {
         const grip = event.target.closest('.greep');
 
-        if (grip !== null && list().contains(grip)) {
+        if (grip !== null && list()?.contains(grip)) {
             drag(event, grip);
         }
     });

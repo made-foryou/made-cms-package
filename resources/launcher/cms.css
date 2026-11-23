@@ -1236,6 +1236,56 @@ ul.lijst {
     color: var(--made-accent-op-nadruk);
 }
 
+/* Searching and filtering the pages (#63): a plain form each, the list below them. */
+.paginazoek {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+}
+
+.paginazoek-veld {
+    flex: 1 1 300px;
+    max-width: 420px;
+}
+
+.paginazoek-veld .zoek-icoon {
+    left: 14px;
+}
+
+.paginazoek-veld .zoekveld {
+    padding: 11px 14px 11px 44px;
+    border-width: 1.5px;
+    font-size: 15px;
+}
+
+.paginafilters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.paginalijst {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.paginalijst .leeg a,
+.paginalijst .boom-hint a {
+    color: var(--made-link);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* A page in a part of the tree only for the place of a page under it that matches. */
+.boomrij.ouder .boomrij-naam,
+.boomrij.ouder .boomrij-pad,
+.boomrij.ouder .boomrij-noot,
+.boomrij.ouder .boomrij-datum {
+    color: var(--made-inhoud-subtiel);
+}
+
 /* Moving a page (#64): the grip drags it, the buttons move it with the keyboard. */
 .boom-hint {
     margin: -6px 0 0;

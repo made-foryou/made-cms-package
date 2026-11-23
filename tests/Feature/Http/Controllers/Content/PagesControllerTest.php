@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Facades\DB;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\DeletePage;
@@ -86,7 +88,7 @@ it('tells how to move a page and hands the tree what it needs to move one', func
     Page::factory()->at('/')->create(['title' => 'Home']);
 
     $html = pagesScreen();
-    $config = json_decode(htmlspecialchars_decode(str($html)->after('<ul class="boom" data-tree data-config="')->before('"')->value()), true);
+    $config = json_decode(htmlspecialchars_decode(str($html)->after('data-pages data-config="')->before('"')->value()), true);
 
     expect($html)->toContain('Sleep een pagina om de volgorde te veranderen; sleep hem naar rechts om hem onder een andere te hangen.')
         ->toContain('<div class="boom-meldplek" role="status" data-slot="tree-notice"></div>')
@@ -120,11 +122,11 @@ it('names a hidden page hidden and says it is out of the menu and the sitemap, a
 
     expect($html)
         ->toContain('<span class="status">Verborgen</span>
-                        <span class="boomrij-noot">niet in menu en sitemap</span>')
+                                <span class="boomrij-noot">niet in menu en sitemap</span>')
         ->toContain('<span class="status">Verborgen</span>
-                        <span class="boomrij-noot">wijzigingen in concept, niet in menu en sitemap</span>')
+                                <span class="boomrij-noot">wijzigingen in concept, niet in menu en sitemap</span>')
         ->toContain('<span class="status">Concept</span>
-                        <span class="boomrij-noot">nog leeg, nooit gepubliceerd, verborgen</span>')
+                                <span class="boomrij-noot">nog leeg, nooit gepubliceerd, verborgen</span>')
         ->and(substr_count($html, '<span class="status">Verborgen</span>'))->toBe(2);
 });
 
@@ -278,5 +280,130 @@ describe('the state of the site', function (): void {
 
     it('shows no cards on a site without pages', function (): void {
         expect(pagesScreen())->not->toContain('standkaart');
+    });
+});
+
+describe('searching and filtering', function (): void {
+    beforeEach(function (): void {
+        $teams = Page::factory()->atPosition(0)->published()->withMeta(null, 'Alle teams.')->withStrips([storedStrip()])->at('/teams')->create(['title' => 'Onze teams']);
+        Page::factory()->under($teams)->atPosition(0)->published()->withMeta(null, 'Het eerste.')->withStrips([storedStrip()])->at('/teams/merwestad-1')->create(['title' => 'Merwestad 1']);
+        Page::factory()->atPosition(1)->published()->withMeta(null, 'Wie we zijn.')->withStrips([storedStrip()])->withDraft([])->at('/over-ons')->create(['title' => 'Over ons']);
+        Page::factory()->atPosition(2)->at('/jeugd')->create(['title' => 'Jeugd']);
+        Page::factory()->atPosition(3)->published()->withStrips([storedStrip()])->at('/locatie')->create(['title' => 'Locatie']);
+        Page::factory()->atPosition(4)->published()->hidden()->withStrips([storedStrip()])->at('/privacy')->create(['title' => 'Privacy']);
+    });
+
+    /**
+     * The pages screen at an address of its own, as the editor of a role sees it.
+     */
+    function pagesScreenAt(string $query): string
+    {
+        return (string) test()->actingAs(Editor::factory()->create(), 'made-cms')
+            ->get('made-cms/pages'.$query)
+            ->assertOk()
+            ->getContent();
+    }
+
+    /**
+     * The names in the tree, a page that only holds the place of a match marked with brackets.
+     *
+     * @return list<string>
+     */
+    function treeNames(string $html): array
+    {
+        preg_match_all('~<li class="boomrij([^"]*)"[^>]*>.*?<a class="boomrij-naam"[^>]*>(.*?)</a>~s', $html, $rows, PREG_SET_ORDER);
+
+        return array_map(static fn (array $row): string => str_contains($row[1], 'ouder') ? '('.$row[2].')' : $row[2], $rows);
+    }
+
+    it('offers a search field and the filters with the number of pages of each', function (): void {
+        $html = pagesScreenAt('');
+
+        expect($html)
+            ->toContain('<label class="sr-only" for="made-cms-pagina-zoek">Zoek een pagina</label>')
+            ->toContain('placeholder="Zoek op naam of adres"')
+            ->toContain('<button type="submit" class="filter" name="filter" value="all" aria-pressed="true" data-filter="all">Alle <span>6</span></button>')
+            ->toContain('<button type="submit" class="filter" name="filter" value="live" aria-pressed="false" data-filter="live">Live <span>4</span></button>')
+            ->toContain('<button type="submit" class="filter" name="filter" value="draft" aria-pressed="false" data-filter="draft">Concept <span>2</span></button>')
+            ->toContain('<button type="submit" class="filter" name="filter" value="attention" aria-pressed="false" data-filter="attention"><span class="filter-bol" aria-hidden="true"></span>Vraagt aandacht <span>1</span></button>')
+            ->toContain('<button type="submit" class="filter" name="filter" value="hidden" aria-pressed="false" data-filter="hidden">Verborgen <span>1</span></button>');
+    });
+
+    it('shows only the pages with something to publish for the filter Concept', function (): void {
+        $html = pagesScreenAt('?filter=draft');
+
+        expect(treeNames($html))->toBe(['Over ons', 'Jeugd'])
+            ->and($html)->toContain('value="draft" aria-pressed="true"')
+            ->toContain('<input type="hidden" name="filter" value="draft">');
+    });
+
+    it('shows a page found by its address with the page above it, which only holds its place', function (): void {
+        expect(treeNames(pagesScreenAt('?q=MERWESTAD')))->toBe(['(Onze teams)', 'Merwestad 1']);
+    });
+
+    it('keeps the search in its field and along with the filters', function (): void {
+        $html = pagesScreenAt('?q=team&filter=live');
+
+        expect($html)->toContain('value="team"')
+            ->toContain('<input type="hidden" name="q" value="team">')
+            ->and(treeNames($html))->toBe(['Onze teams', 'Merwestad 1']);
+    });
+
+    it('counts the filters over the whole site while it searches', function (): void {
+        expect(pagesScreenAt('?q=jeugd'))->toContain('data-filter="all">Alle <span>6</span>')
+            ->toContain('data-filter="live">Live <span>4</span>');
+    });
+
+    it('moves nothing in a part of the tree and says how to move again', function (): void {
+        $html = pagesScreenAt('?filter=live');
+
+        expect($html)->not->toContain('data-move=')
+            ->not->toContain('class="greep"')
+            ->not->toContain('data-move-to=')
+            ->not->toContain('Sleep een pagina')
+            ->toContain('Je ziet een deel van de pagina’s. <a href="/made-cms/pages">Toon alle pagina’s</a> om ze te verplaatsen.');
+    });
+
+    it('says when nothing is found', function (): void {
+        $html = pagesScreenAt('?q=zwembad');
+
+        expect(treeNames($html))->toBe([])
+            ->and($html)->toContain('Geen pagina gevonden voor “zwembad”. <a href="/made-cms/pages">Toon alle pagina’s</a>')
+            ->not->toContain('Je site heeft nog geen pagina’s');
+    });
+
+    it('tells a screen reader how many pages it shows', function (): void {
+        expect(pagesScreenAt('?filter=draft'))->toContain('<p class="sr-only" data-slot="pages-found">2 pagina’s gevonden</p>');
+    });
+
+    it('never refuses its address: what it does not know is left out', function (string $query): void {
+        expect(treeNames(pagesScreenAt($query)))->toHaveCount(6);
+    })->with([
+        'lists' => ['?q[]=team&filter[]=draft'],
+        'unknown filter' => ['?filter=zwembad'],
+        'blank search' => ['?q=%20%20'],
+    ]);
+
+    it('asks the database the same, however many pages the site has', function (): void {
+        $queries = 0;
+        DB::listen(function (QueryExecuted $query) use (&$queries): void {
+            $queries++;
+        });
+        $count = function () use (&$queries): int {
+            $queries = 0;
+            pagesScreenAt('');
+
+            return $queries;
+        };
+
+        Page::query()->where('title', 'Over ons')->update(['updated_by' => Editor::factory()->create()->id]);
+        $few = $count();
+        Page::factory()->count(12)->sequence(fn ($sequence) => ['position' => 10 + $sequence->index])
+            ->published()->withStrips([storedStrip()])
+            ->state(fn () => ['updated_by' => Editor::factory()->create()->id])
+            ->create()
+            ->each(fn (Page $page) => $page->route()->create(['path' => '/extra-'.$page->id]));
+
+        expect($count())->toBe($few);
     });
 });

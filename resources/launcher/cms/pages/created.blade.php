@@ -16,7 +16,7 @@
 
         <div class="nadrukvak">
             <p class="nadrukvak-kop">{{ $t('pages.created.tip.heading') }}</p>
-            <p>{{ $t('pages.created.tip.text') }}</p>
+            <p>{{ $tip }}</p>
         </div>
 
         <div class="knoppen">

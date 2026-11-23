@@ -286,6 +286,10 @@ return [
         'title' => 'New page',
         'step' => 'Step :current of :total',
         'done' => 'Done',
+        'type' => [
+            'heading' => 'What kind of page will it be?',
+            'intro' => 'This decides which strips you can use on the site. You can always change it later.',
+        ],
         'name' => [
             'heading' => 'What is the page called?',
             'intro' => 'Short, the way you want to see it in the menu. We make the address from it.',
@@ -321,7 +325,9 @@ return [
         'tip' => [
             'heading' => 'What helps most now',
             'text' => 'Open the page on the site and fill it with strips: text, photos and buttons. What you type shows right away. Publish it when it is done.',
+            'with_strips' => 'Open the page on the site: it starts with :strips already. Fill them with your text and photos, and publish it when it is done.',
         ],
+        'and' => ' and ',
         'fill' => 'Fill it on the site now',
         'overview' => 'Overview first',
         'later' => 'Later',

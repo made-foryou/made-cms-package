@@ -286,6 +286,10 @@ return [
         'title' => 'Nieuwe pagina',
         'step' => 'Stap :current van :total',
         'done' => 'Klaar',
+        'type' => [
+            'heading' => 'Wat voor pagina wordt het?',
+            'intro' => 'Dit bepaalt welke stroken je straks op de site kunt gebruiken. Veranderen kan later altijd nog.',
+        ],
         'name' => [
             'heading' => 'Hoe heet de pagina?',
             'intro' => 'Kort en zoals je hem in het menu wilt zien. Het adres maken we ervan.',
@@ -321,7 +325,9 @@ return [
         'tip' => [
             'heading' => 'Wat nu het handigst is',
             'text' => 'Open de pagina op de site en vul hem met stroken: tekst, foto’s en knoppen. Wat je typt, zie je meteen. Publiceer hem als hij af is.',
+            'with_strips' => 'Open de pagina op de site: hij begint al met :strips. Vul ze met je tekst en foto’s, en publiceer hem als hij af is.',
         ],
+        'and' => ' en ',
         'fill' => 'Nu vullen op de site',
         'overview' => 'Eerst het overzicht',
         'later' => 'Later',

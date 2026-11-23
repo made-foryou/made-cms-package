@@ -10,6 +10,7 @@ use Made\CmsPackage\Access\Actions\ListScreens;
 use Made\CmsPackage\Content\Actions\DescribePageMeta;
 use Made\CmsPackage\Content\Actions\DescribeShareImage;
 use Made\CmsPackage\Content\Actions\FindMediaFolder;
+use Made\CmsPackage\Content\Actions\ListEditableStrips;
 use Made\CmsPackage\Content\Actions\ListMenuPages;
 use Made\CmsPackage\Content\Actions\ListPageAttention;
 use Made\CmsPackage\Content\Actions\ListPages;
@@ -36,7 +37,7 @@ final class ShowPageController
         $pages = ListPages::run();
 
         if (PageRedirect::justCreated($request, $page)) {
-            return PageCreatedResponse::make($editor, $screens, $page, $pages);
+            return PageCreatedResponse::make($editor, $screens, $page, $pages, ListEditableStrips::run($page));
         }
 
         return ShowPageResponse::make(

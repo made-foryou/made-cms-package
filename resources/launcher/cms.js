@@ -110,9 +110,9 @@ if (button && menu) {
 }
 
 /*
- * The new-page wizard (design 15.3–15.5): one form in two steps, one question per step. Without this script both
- * steps show and the form works the same. The address preview follows the name; the server makes the real address.
- * All copy comes from the markup.
+ * The new-page wizard (design 15.3–15.5): one form in steps (the type when the site defines page types, the name, the
+ * place), one question per step. Without this script every step shows and the form works the same. The address
+ * preview follows the name; the server makes the real address. All copy comes from the markup.
  */
 
 const wizard = document.querySelector('form[data-wizard]');
@@ -138,6 +138,7 @@ if (wizard) {
     const untitled = echo ? echo.textContent : '';
     const note = wizard.querySelector('[data-stapnoot]');
     let custom = slug.value !== '';
+    let current = 1;
 
     const sync = () => {
         const value = slugify(custom ? slug.value : title.value);
@@ -152,6 +153,8 @@ if (wizard) {
     };
 
     const show = (step, focus) => {
+        current = step;
+
         steps.forEach((fieldset) => {
             fieldset.hidden = fieldset.dataset.stap !== String(step);
         });
@@ -165,14 +168,18 @@ if (wizard) {
             note.textContent = note.getAttribute(`data-tekst-${step}`) ?? note.textContent;
         }
 
+        /* The chosen card of a step of cards, else its first field. */
         if (focus) {
-            steps[step - 1]?.querySelector('input:not([type="hidden"])')?.focus();
+            steps[step - 1]?.querySelector('input:checked, input:not([type="hidden"]):not([type="radio"])')?.focus();
         }
     };
 
+    /* On to the next step once the fields of this one are right, such as the name. */
     const next = () => {
-        if (title.reportValidity()) {
-            show(2, true);
+        const fields = [...(steps[current - 1]?.querySelectorAll('input') ?? [])];
+
+        if (fields.every((field) => field.reportValidity())) {
+            show(current + 1, true);
         }
     };
 
@@ -200,15 +207,17 @@ if (wizard) {
         sync();
     });
 
-    wizard.querySelector('[data-next]')?.addEventListener('click', next);
-    wizard.querySelector('[data-back]')?.addEventListener('click', () => show(1, true));
+    wizard.querySelectorAll('[data-next]').forEach((button) => button.addEventListener('click', next));
+    wizard.querySelectorAll('[data-back]').forEach((button) => button.addEventListener('click', () => show(current - 1, true)));
 
-    /* Enter in the first step goes on to the second, instead of creating the page with the first place. */
-    steps[0]?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
-            event.preventDefault();
-            next();
-        }
+    /* Enter before the last step goes on to the next one, instead of creating the page with the first place. */
+    steps.slice(0, -1).forEach((fieldset) => {
+        fieldset.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+                event.preventDefault();
+                next();
+            }
+        });
     });
 
     /* After a refusal the form opens on the step with the error. */

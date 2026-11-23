@@ -2273,6 +2273,34 @@ ul.lijst {
     font: 700 16px/1.25 var(--font-kop);
 }
 
+/* The type of a new page (design 15.3): cards side by side, the name and the check at the top, the explanation below. */
+.soortkeuzes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.soortkeuze {
+    align-items: flex-start;
+    padding: 18px;
+}
+
+.soortkeuze .keuzekaart-naam {
+    font-size: 17px;
+}
+
+.keuzekaart-uitleg {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+@media (max-width: 720px) {
+    .soortkeuzes {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .vink {
     display: flex;
     flex-shrink: 0;

@@ -261,6 +261,26 @@ it('says once that a new page is ready', function (): void {
     expect(pageScreen($page))->not->toContain('staat klaar');
 });
 
+it('names the strips a new page of a type starts with when it is ready', function (): void {
+    usePageTypes();
+
+    $this->post('made-cms/pages', ['title' => 'Teams', 'type' => 'team', 'in_menu' => '1']);
+    $page = Page::query()->where('title', 'Teams')->sole();
+
+    $this->get('made-cms/pages/'.$page->id)
+        ->assertSee('Open de pagina op de site: hij begint al met Hero en Kaarten. Vul ze met je tekst en foto’s, en publiceer hem als hij af is.')
+        ->assertDontSee('Open de pagina op de site en vul hem met stroken');
+});
+
+it('tells how to fill a new page that starts empty', function (): void {
+    $this->post('made-cms/pages', ['title' => 'Jeugd', 'in_menu' => '1']);
+    $page = Page::query()->where('title', 'Jeugd')->sole();
+
+    $this->get('made-cms/pages/'.$page->id)
+        ->assertSee('Open de pagina op de site en vul hem met stroken: tekst, foto’s en knoppen.')
+        ->assertDontSee('hij begint al met');
+});
+
 it('shows how google sees a page without a title or a description of its own', function (): void {
     $page = Page::factory()->published()->at('/over-ons/team')->create(['title' => 'Ons team']);
 

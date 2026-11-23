@@ -76,11 +76,14 @@ final class PageLinks
     }
 
     /**
-     * The edit shell: the page in the edit mode of the site, in a frame of the CMS.
+     * The edit shell: the page in the edit mode of the site, in a frame of the CMS; with a strip, opened with that
+     * strip chosen.
      */
-    public static function edit(Page|int $page): string
+    public static function edit(Page|int $page, ?string $strip = null): string
     {
-        return self::url('made-cms-package.pages.edit', ['page' => self::id($page)]);
+        $url = self::url('made-cms-package.pages.edit', ['page' => self::id($page)]);
+
+        return $strip === null ? $url : $url.'?'.http_build_query(['strip' => $strip]);
     }
 
     private static function id(Page|int $page): int

@@ -36,8 +36,9 @@ final class EditPageResponse
      * @param  list<StripType>  $types  the strip types an editor can add to this page (ListAllowedStripTypes)
      * @param  bool  $headingLevels  whether the editor chooses the level of a heading (Visitor::choosesHeadingLevels)
      * @param  MediaFolder|null  $folder  the folder the editor chose last in the picker (MediaFolderMemory); null for "Alle bestanden"
+     * @param  string|null  $chosen  the id of the strip the shell opens with chosen; one it cannot choose opens the structure
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, array $types, bool $headingLevels, ?MediaFolder $folder = null): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, array $types, bool $headingLevels, ?MediaFolder $folder = null, ?string $chosen = null): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
@@ -99,6 +100,9 @@ final class EditPageResponse
                 // Every strip of the working copy in its stored order: its place is the position the endpoints take.
                 'strips' => PageStripsResponse::strips($strips),
                 'counts' => PageStripsResponse::counts($strips),
+                // The strip to choose at once: only one of the working copy whose type the catalogue has, as the
+                // structure opens only those.
+                'chosen' => self::choosable($strips, $chosen),
                 'types' => array_map(static fn (StripType $type): array => [
                     'key' => $type->key(),
                     'label' => $type->label(),
@@ -167,5 +171,16 @@ final class EditPageResponse
         $texts = __('made-cms-package::'.$key, [], $locale);
 
         return is_array($texts) ? array_map(strval(...), $texts) : [];
+    }
+
+    private static function choosable(EditableStrips $strips, ?string $chosen): ?string
+    {
+        foreach ($strips->strips as $strip) {
+            if ($strip->id === $chosen && $strip->known) {
+                return $chosen;
+            }
+        }
+
+        return null;
     }
 }

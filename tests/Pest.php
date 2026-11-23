@@ -323,13 +323,15 @@ function deviceCookieOf(Editor $editor): string
 */
 
 /**
- * Serves the workbench site: its strip types, its views and its routes with Route::madeCms().
+ * Serves the workbench site: its strip types, its page types, its views and its routes with Route::madeCms().
  */
 function useWorkbenchSite(): void
 {
     $workbench = __DIR__.'/../workbench';
 
-    app()->instance(StripTypes::class, StripTypes::discover($workbench.'/app/Cms/Strips', 'Workbench\\App\\Cms\\Strips'));
+    $strips = StripTypes::discover($workbench.'/app/Cms/Strips', 'Workbench\\App\\Cms\\Strips');
+    app()->instance(StripTypes::class, $strips);
+    app()->instance(PageTypes::class, PageTypes::discover($workbench.'/app/Cms/PageTypes', 'Workbench\\App\\Cms\\PageTypes', $strips));
     app('view')->addLocation($workbench.'/resources/views');
 
     Route::middleware('web')->group($workbench.'/routes/web.php');

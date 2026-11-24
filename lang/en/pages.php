@@ -112,6 +112,7 @@ return [
     'show' => [
         'trail' => 'You are here',
         'view' => 'View on the site',
+        'duplicate' => 'Duplicate',
         'edit' => 'Edit on the site',
         'save' => 'Save',
         'attention' => [

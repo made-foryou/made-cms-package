@@ -963,6 +963,19 @@ h2 {
     gap: 10px 14px;
 }
 
+/* "Dupliceren" and "Bewerken op de site" in the head of a page, with a refusal of the copy below them. */
+.kop-acties {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    max-width: 440px;
+}
+
+.kop-acties .veld-fout {
+    text-align: right;
+}
+
 .knop {
     display: inline-flex;
     align-items: center;

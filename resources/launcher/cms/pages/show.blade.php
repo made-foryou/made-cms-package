@@ -23,7 +23,18 @@
                 @endif
             </div>
         </div>
-        <a class="knop" href="{{ $editUrl }}">{{ $t('pages.show.edit') }}</a>
+        <div class="kop-acties">
+            <div class="knoppen">
+                <form method="post" action="{{ $duplicateUrl }}">
+                    @csrf
+                    <button type="submit" class="knop stil">{{ $t('pages.show.duplicate') }}</button>
+                </form>
+                <a class="knop" href="{{ $editUrl }}">{{ $t('pages.show.edit') }}</a>
+            </div>
+            @error('duplicate')
+                <p class="veld-fout" role="alert">{{ $message }}</p>
+            @enderror
+        </div>
     </section>
 
     <div class="kolommen paginakolommen">

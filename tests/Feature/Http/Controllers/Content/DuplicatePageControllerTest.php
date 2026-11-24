@@ -61,6 +61,9 @@ it('refuses a copy whose address cannot fit', function (): void {
         ->assertSessionHasErrors(['duplicate' => 'Het adres van de kopie wordt langer dan 255 tekens. Geef deze pagina of een pagina erboven eerst een korter adres.']);
 
     expect(Page::query()->count())->toBe(2);
+
+    $this->get('made-cms/pages/'.$page->id)
+        ->assertSee('<p class="veld-fout" role="alert">Het adres van de kopie wordt langer dan 255 tekens.', false);
 });
 
 it('answers 404 for a page that does not exist or is deleted', function (): void {

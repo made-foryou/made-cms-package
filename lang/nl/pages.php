@@ -112,6 +112,7 @@ return [
     'show' => [
         'trail' => 'Je bent hier',
         'view' => 'Bekijk op de site',
+        'duplicate' => 'Dupliceren',
         'edit' => 'Bewerken op de site',
         'save' => 'Opslaan',
         'attention' => [

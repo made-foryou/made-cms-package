@@ -45,6 +45,16 @@ it('names the page, its status and its address, and links to the edit shell', fu
         ->toContain('<a class="knop" href="/made-cms/pages/'.$page->id.'/edit">Bewerken op de site</a>');
 });
 
+it('duplicates the page from a form in its head, before the link to the edit shell', function (): void {
+    $page = Page::factory()->at('/over-ons')->create(['title' => 'Over ons']);
+
+    $html = $this->get('made-cms/pages/'.$page->id)->assertOk()->getContent();
+
+    expect($html)->toContain('<form method="post" action="/made-cms/pages/'.$page->id.'/duplicate">')
+        ->toContain('<button type="submit" class="knop stil">Dupliceren</button>')
+        ->and(strpos((string) $html, 'Dupliceren</button>'))->toBeLessThan(strpos((string) $html, 'Bewerken op de site</a>'));
+});
+
 it('only links to the site for a live page', function (): void {
     $page = Page::factory()->at('/concept')->create();
 

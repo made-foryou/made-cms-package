@@ -30,6 +30,7 @@ use Made\CmsPackage\Http\Controllers\Content\DeleteMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\DeletePageController;
 use Made\CmsPackage\Http\Controllers\Content\DiscardDraftController;
 use Made\CmsPackage\Http\Controllers\Content\DownloadMediaController;
+use Made\CmsPackage\Http\Controllers\Content\DuplicatePageController;
 use Made\CmsPackage\Http\Controllers\Content\GenerateStripTypesController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
@@ -146,6 +147,7 @@ Route::prefix($prefix)
                     ->whereNumber('page')
                     ->withTrashed()
                     ->name('pages.restore');
+                Route::post('pages/{page}/duplicate', DuplicatePageController::class)->whereNumber('page')->name('pages.duplicate');
 
                 // The edit shell: the page in the edit mode of the site, in a frame of the CMS.
                 Route::get('pages/{page}/edit', EditPageController::class)->whereNumber('page')->name('pages.edit');

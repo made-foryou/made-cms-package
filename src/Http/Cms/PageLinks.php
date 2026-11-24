@@ -70,6 +70,11 @@ final class PageLinks
         return self::url('made-cms-package.pages.destroy', ['page' => $page->id]);
     }
 
+    public static function duplicate(Page $page): string
+    {
+        return self::url('made-cms-package.pages.duplicate', ['page' => $page->id]);
+    }
+
     public static function restore(Page|int $page): string
     {
         return self::url('made-cms-package.pages.restore', ['page' => self::id($page)]);

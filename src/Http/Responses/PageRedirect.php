@@ -81,6 +81,15 @@ final class PageRedirect
             ->with(Shell::NOTICE, ['text' => $page->hidden ? 'hidden' : 'shown', 'title' => $page->title]);
     }
 
+    /**
+     * Opens the copy of a page with a notice that names the page it was copied from.
+     */
+    public static function duplicated(Page $copy, Page $origin): RedirectResponse
+    {
+        return redirect()->route('made-cms-package.pages.show', ['page' => $copy->id])
+            ->with(Shell::NOTICE, ['text' => 'duplicated', 'title' => $copy->title, 'origin' => $origin->title]);
+    }
+
     public static function deleted(Page $page): RedirectResponse
     {
         return redirect()->route('made-cms-package.screens.pages')

@@ -13,7 +13,9 @@
             <h1 id="made-cms-titel">{{ $page['title'] }}</h1>
             <div class="kop-regel">
                 <span class="status{{ $page['state'] === 'live' ? ' live' : '' }}">{{ $t('pages.state.'.$page['state']) }}</span>
-                @if ($address !== null)
+                @if ($address !== null && $page['live'] && $viewUrl !== null)
+                    <a class="adres" href="{{ $viewUrl }}" target="_blank" rel="noopener">{{ $address }}</a>
+                @elseif ($address !== null)
                     <span class="adres">{{ $address }}</span>
                 @endif
                 @if ($page['live'] && $viewUrl !== null)
@@ -94,6 +96,8 @@
                     </div>
                 </form>
             </section>
+
+            @include('made-cms-package-launcher::cms.pages.partials.strips')
 
             @include('made-cms-package-launcher::cms.pages.partials.google')
 

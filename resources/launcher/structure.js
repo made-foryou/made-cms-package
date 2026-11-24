@@ -813,4 +813,13 @@ if (shell && ui.list && ui.catalogue) {
     renderNotices();
     renderList();
     showView('structure');
+
+    // "Bewerken" of a strip on the screen of the page opens the shell with that strip chosen, once: the address drops
+    // it, so a reload of the shell does not choose it again.
+    if (config.chosen) {
+        const address = new URL(window.location.href);
+        address.searchParams.delete('strip');
+        history.replaceState(history.state, '', address);
+        choose(config.chosen);
+    }
 }

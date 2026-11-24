@@ -176,7 +176,16 @@ it('notes the editor who creates the page', function (): void {
 
     $page = CreatePage::run(new NewPage(title: 'Over ons', slug: null, parentId: null, editorId: $editor->id));
 
-    expect(Page::query()->findOrFail($page->id)->updated_by)->toBe($editor->id);
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->updated_by)->toBe($editor->id)
+        ->and($stored->created_by)->toBe($editor->id);
+});
+
+it('does not know who created a page without an editor', function (): void {
+    $page = CreatePage::run(new NewPage(title: 'Over ons', slug: null, parentId: null));
+
+    expect(Page::query()->findOrFail($page->id)->created_by)->toBeNull();
 });
 
 it('starts a page of a type with the strips of its type, as a draft', function (): void {

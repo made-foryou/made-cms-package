@@ -1523,6 +1523,94 @@ ul.lijst {
     color: var(--made-inhoud-zwak-op-nadruk);
 }
 
+.paginakort-begin {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.paginakort-regel {
+    margin: 0;
+    font: 700 20px/1.3 var(--font-kop);
+}
+
+.paginakort-feiten {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 14px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.paginakort-feiten dt {
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+.paginakort-feiten dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.paginakort-aandacht,
+.paginakort-noot {
+    padding-top: 14px;
+    border-top: 1px solid var(--made-rand-op-nadruk);
+}
+
+.paginakort-noot {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak-op-nadruk);
+}
+
+/* What is on a page: a row per strip of the working copy, with the way into the edit shell. */
+
+.inhoudrij {
+    flex-wrap: wrap;
+}
+
+.strook-tekst {
+    display: flex;
+    flex: 1 1 220px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.strook-naam {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.strook-samenvatting,
+.strook-velden {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--made-inhoud-zwak);
+}
+
+.strook-samenvatting {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.strook-velden {
+    white-space: nowrap;
+}
+
+.strook-uitleg {
+    max-width: 62ch;
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
 /* What a page asks for: a dot in the colour of its severity, the point, and the way to what solves it. */
 
 .aandachtspunten {

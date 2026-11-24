@@ -476,3 +476,27 @@ it('speaks English when the launcher locale is English', function (): void {
         ->assertSee('Add the first strip')
         ->assertSee('<span class="status" data-slot="bar-page">Draft</span>', false);
 });
+
+it('opens the shell with the strip of its address chosen', function (): void {
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('hero', id: 'a'), storedStrip('cards', id: 'b')])->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit?strip=b')->getContent());
+
+    expect($config['chosen'])->toBe('b');
+});
+
+it('opens the shell at the structure for a strip it cannot choose', function (string $query): void {
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('hero', id: 'a'), storedStrip('weg', id: 'c')])->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit'.$query)->getContent());
+
+    expect($config['chosen'])->toBeNull();
+})->with([
+    'no strip' => [''],
+    'a strip that is not on the page' => ['?strip=zz'],
+    'a strip whose type left the catalogue' => ['?strip=c'],
+    'an empty strip' => ['?strip='],
+    'a list' => ['?strip[]=a'],
+]);

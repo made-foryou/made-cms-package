@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Data;
 
+use Made\CmsPackage\Content\Enums\MenuPlaceReason;
 use Made\CmsPackage\Content\Enums\PageStatus;
 
 /**
@@ -92,6 +93,45 @@ final readonly class PageTree
     public function siteMenu(): self
     {
         return $this->inMenu()->published()->visible();
+    }
+
+    /**
+     * The place of a page in the menu of the site; null for a page outside the menu or not in the tree. Only the pages
+     * the site shows in its menu count: a hidden page has no place while it is hidden, a draft gets the place it takes
+     * once published, and a page under a page the menu of the site leaves out names that page.
+     */
+    public function menuPlaceOf(int $id): ?MenuPlace
+    {
+        $node = $this->find($id);
+
+        if ($node === null || ! $node->inMenu) {
+            return null;
+        }
+
+        if ($node->hidden) {
+            return new MenuPlace(MenuPlaceReason::WhileHidden);
+        }
+
+        $shown = array_fill_keys(array_map(static fn (PageNode $item): int => $item->id, $this->siteMenu()->flatten()), true);
+        $parent = $node->parentId === null ? null : $this->find($node->parentId);
+
+        if ($parent !== null && ! isset($shown[$parent->id])) {
+            return new MenuPlace(MenuPlaceReason::Parent, parentId: $parent->id);
+        }
+
+        $ids = array_values(array_map(
+            static fn (PageNode $sibling): int => $sibling->id,
+            array_filter(
+                $parent === null ? $this->roots : $parent->children,
+                static fn (PageNode $sibling): bool => $sibling->id === $node->id || isset($shown[$sibling->id]),
+            ),
+        ));
+
+        return new MenuPlace(
+            isset($shown[$node->id]) ? MenuPlaceReason::Position : MenuPlaceReason::Publish,
+            position: (int) array_search($node->id, $ids, true) + 1,
+            total: count($ids),
+        );
     }
 
     /**

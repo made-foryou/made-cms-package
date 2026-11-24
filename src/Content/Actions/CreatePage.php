@@ -72,6 +72,7 @@ final class CreatePage
                     'position' => is_numeric($last) ? (int) $last + 1 : 0,
                     'in_menu' => $new->inMenu,
                 ]);
+                $page->created_by = $new->editorId;
                 NotePageEditor::run($page, $new->editorId);
                 $page->save();
                 $page->route()->create(['path' => $path->value]);

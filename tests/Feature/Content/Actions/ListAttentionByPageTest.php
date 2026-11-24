@@ -14,7 +14,7 @@ beforeEach(function (): void {
 
 it('gives what every page asks for attention by its id', function (): void {
     $teams = Page::factory()->published()->withMeta('Onze teams')->at('/teams')->create();
-    $about = Page::factory()->published()->withMeta(null, 'Wie we zijn.')->at('/over-ons')->create();
+    $about = Page::factory()->published()->withMeta(null, 'Wie we zijn.')->at('/over-ons')->create(['title' => 'Over ons']);
 
     $attention = ListAttentionByPage::run();
 

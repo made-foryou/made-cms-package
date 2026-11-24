@@ -373,6 +373,11 @@ return [
         'overview' => 'Eerst het overzicht',
         'later' => 'Later',
     ],
+    // The name and the end of the address of a copy (DuplicatePage): stored content, made in the language of the CMS.
+    'copy' => [
+        'title' => ':title (kopie)',
+        'slug' => 'kopie',
+    ],
     'notices' => [
         'saved' => ':title is opgeslagen.',
         'deleted' => ':title is verwijderd.',

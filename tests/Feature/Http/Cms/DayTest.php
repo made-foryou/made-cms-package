@@ -32,3 +32,10 @@ it('says a day in full, with the year only for another year', function (): void 
         ->and(Day::long(CarbonImmutable::parse('2024-03-12 10:00:00'), 'nl'))->toBe('12 maart 2024')
         ->and(Day::long(CarbonImmutable::parse('2026-10-20 10:00:00'), 'en'))->toBe('20 October');
 });
+
+it('says a moment as its day in full with the time', function (): void {
+    expect(Day::moment(CarbonImmutable::parse('2026-11-23 08:12:00'), 'nl'))->toBe('vandaag, 08:12')
+        ->and(Day::moment(CarbonImmutable::parse('2026-10-20 14:12:00'), 'nl'))->toBe('20 oktober, 14:12')
+        ->and(Day::moment(CarbonImmutable::parse('2024-03-12 10:00:00'), 'nl'))->toBe('12 maart 2024, 10:00')
+        ->and(Day::moment(CarbonImmutable::parse('2026-10-20 14:12:00'), 'en'))->toBe('20 October, 2:12 PM');
+});

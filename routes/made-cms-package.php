@@ -50,6 +50,7 @@ use Made\CmsPackage\Http\Controllers\Content\RenameMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\ReplaceMediaController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreMediaVersionController;
 use Made\CmsPackage\Http\Controllers\Content\RestorePageController;
+use Made\CmsPackage\Http\Controllers\Content\RestorePageVersionController;
 use Made\CmsPackage\Http\Controllers\Content\RestoreStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowDraftController;
 use Made\CmsPackage\Http\Controllers\Content\ShowMediaController;
@@ -148,6 +149,10 @@ Route::prefix($prefix)
                     ->withTrashed()
                     ->name('pages.restore');
                 Route::post('pages/{page}/duplicate', DuplicatePageController::class)->whereNumber('page')->name('pages.duplicate');
+                Route::post('pages/{page}/versions/{version:number}/restore', RestorePageVersionController::class)
+                    ->scopeBindings()
+                    ->whereNumber(['page', 'version'])
+                    ->name('pages.versions.restore');
 
                 // The edit shell: the page in the edit mode of the site, in a frame of the CMS.
                 Route::get('pages/{page}/edit', EditPageController::class)->whereNumber('page')->name('pages.edit');

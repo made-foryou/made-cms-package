@@ -6,9 +6,12 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Data\Strip;
+use Made\CmsPackage\Content\Data\VersionChanges;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Models\PageVersion;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -679,4 +682,78 @@ describe('the column "In het kort"', function (): void {
             ->toContain('<dt>Hieronder</dt><dd>Niets</dd>')
             ->toContain('<dt>Stroken</dt><dd>Nog geen</dd>');
     });
+});
+
+it('lists the versions of the page after the pages under it, the newest live without a way back', function (): void {
+    useStripTypes();
+    $this->travelTo(CarbonImmutable::parse('2026-11-23 15:00:00'));
+    $menno = Editor::factory()->create(['name' => 'Menno de Vries']);
+    $page = Page::factory()->published()->at('/team')->create(['title' => 'Team']);
+    PageVersion::factory()->for($page)->number(1)->publishedBy($menno)->create(['published_at' => CarbonImmutable::parse('2024-03-12 10:00:00')]);
+    PageVersion::factory()->for($page)->number(2)->withStrips([storedStrip('hero', ['kop' => 'Lid worden'], id: 'hero')])->create([
+        'published_at' => CarbonImmutable::parse('2026-11-23 14:12:00'),
+        'changes' => (new VersionChanges(first: false, changed: ['hero']))->toArray(),
+    ]);
+
+    $html = pageScreen($page);
+
+    expect($html)
+        ->toContain('<section class="kaart" id="made-cms-versies" aria-labelledby="made-cms-versies-kop">')
+        ->toContain('Wat er eerder gebeurde')
+        ->toContain('elke publicatie is een versie')
+        ->toContain('1 strook gewijzigd: ‘Lid worden’')
+        ->toContain('Versie 2 · vandaag, 14:12 · nu live')
+        ->toContain('Voor het eerst gepubliceerd')
+        ->toContain('Versie 1 · 12 maart 2024, 10:00 · Menno de Vries')
+        ->toContain('<form class="versie-terug" method="post" action="/made-cms/pages/'.$page->id.'/versions/1/restore">')
+        ->toContain('aria-label="Versie 1 terugzetten"')
+        ->not->toContain('/versions/2/restore')
+        ->not->toContain('Je concept gaat weg');
+
+    expect(strpos($html, 'Pagina’s hieronder'))->toBeLessThan(strpos($html, 'Wat er eerder gebeurde'))
+        ->and(strpos($html, 'Wat er eerder gebeurde'))->toBeLessThan(strpos($html, 'Weghalen'));
+});
+
+it('asks before a version takes the place of the draft', function (): void {
+    $page = Page::factory()->published()->at('/team')->withStrips([])->withDraft([storedStrip('cards', id: 'nieuw')])->create();
+    PageVersion::factory()->for($page)->number(1)->create();
+    PageVersion::factory()->for($page)->number(2)->create();
+
+    expect(pageScreen($page))
+        ->toContain('<details class="bevestig">')
+        ->toContain('Je concept gaat weg: wat nog niet live staat, ben je kwijt.')
+        ->toContain('<button type="submit" class="knop">Ja, zet versie 1 terug</button>');
+});
+
+it('names up to three strips of a change and counts the rest', function (): void {
+    useStripTypes();
+    $titles = ['Teams', 'Competitie', 'Training', 'Locatie', 'Contact'];
+    $strips = array_map(fn (string $title): array => storedStrip('hero', ['kop' => $title], id: $title), $titles);
+    $page = Page::factory()->published()->at('/team')->create();
+    PageVersion::factory()->for($page)->withStrips($strips)->create(['changes' => (new VersionChanges(
+        first: false,
+        added: ['Teams'],
+        changed: ['Competitie', 'Training'],
+        moved: $titles,
+        removed: [new Strip('weg', 'cards', true, [])],
+    ))->toArray()]);
+
+    expect(pageScreen($page))->toContain(
+        '1 strook toegevoegd: ‘Teams’; 2 stroken gewijzigd: ‘Competitie’ en ‘Training’; 5 stroken verplaatst: ‘Teams’, ‘Competitie’, ‘Training’ en 2 andere; 1 strook verwijderd: ‘Kaarten’',
+    );
+});
+
+it('says when the page has no versions yet', function (): void {
+    $draft = Page::factory()->at('/nieuw')->create();
+    $published = Page::factory()->published()->at('/oud')->create();
+
+    expect(pageScreen($draft))->toContain('Nog niet gepubliceerd. Elke publicatie komt hier te staan als een versie die je kunt terugzetten.')
+        ->and(pageScreen($published))->toContain('Nog geen versies. De volgende publicatie wordt versie 1.');
+});
+
+it('lists the versions of the home page too', function (): void {
+    $home = Page::factory()->published()->at('/')->create(['title' => 'Home']);
+    PageVersion::factory()->for($home)->create();
+
+    expect(pageScreen($home))->toContain('Wat er eerder gebeurde')->toContain('Versie 1 · ');
 });

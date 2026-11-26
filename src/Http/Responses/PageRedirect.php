@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Http\Responses;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Made\CmsPackage\Content\Data\RestoredVersion;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Cms\Shell;
 
@@ -28,6 +29,12 @@ final class PageRedirect
 
     /** The flash that makes the card "Hoe je link gedeeld wordt" say once that it is saved. */
     private const string SHARE_SAVED = 'made-cms-package.page_share_saved';
+
+    /** The card "Wat er eerder gebeurde" on the screen of a page, where putting a version back goes back to. */
+    public const string VERSIONS = 'made-cms-versies';
+
+    /** The flash that makes the card "Wat er eerder gebeurde" say once what putting a version back did. */
+    private const string VERSION_RESTORED = 'made-cms-package.page_version_restored';
 
     public static function created(Page $page): RedirectResponse
     {
@@ -73,6 +80,32 @@ final class PageRedirect
     public static function justSavedShare(Request $request, Page $page): bool
     {
         return $request->hasSession() && $request->session()->get(self::SHARE_SAVED) === $page->id;
+    }
+
+    /**
+     * Back to the card, which says what putting the version back did and leads to the edit shell to look at it.
+     */
+    public static function versionRestored(Page $page, RestoredVersion $restored): RedirectResponse
+    {
+        return redirect()->route('made-cms-package.pages.show', ['page' => $page->id])
+            ->withFragment(self::VERSIONS)
+            ->with(self::VERSION_RESTORED, [
+                'page' => $page->id,
+                'number' => $restored->number,
+                'replaced' => $restored->replacedDraft,
+                'draft' => $restored->draft,
+            ]);
+    }
+
+    public static function justRestoredVersion(Request $request, Page $page): ?RestoredVersion
+    {
+        $flash = $request->hasSession() ? $request->session()->get(self::VERSION_RESTORED) : null;
+
+        if (! is_array($flash) || ($flash['page'] ?? null) !== $page->id || ! is_int($flash['number'] ?? null)) {
+            return null;
+        }
+
+        return new RestoredVersion($flash['number'], ($flash['replaced'] ?? false) === true, ($flash['draft'] ?? false) === true);
     }
 
     public static function visibilityChanged(Page $page): RedirectResponse

@@ -137,6 +137,8 @@
                 @endif
             </section>
 
+            @include('made-cms-package-launcher::cms.pages.partials.versions')
+
             @unless ($page['home'])
                 <section class="kaart" aria-labelledby="made-cms-weghalen">
                     <div class="sectiekop">

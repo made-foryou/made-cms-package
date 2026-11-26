@@ -8,7 +8,8 @@ use Carbon\CarbonImmutable;
 
 /**
  * A day as a screen of the CMS says it: short in a list ("vandaag", "gisteren", "20 okt" in this year, "12 mrt 2024"
- * before), in full in a sentence ("20 oktober", "12 maart 2024").
+ * before), in full in a sentence ("20 oktober", "12 maart 2024"), and a moment as that day with its time
+ * ("20 oktober, 14:12").
  */
 final class Day
 {
@@ -23,6 +24,11 @@ final class Day
     {
         return self::relative($moment, $locale)
             ?? $moment->settings(['locale' => $locale])->isoFormat($moment->isCurrentYear() ? 'D MMMM' : 'D MMMM YYYY');
+    }
+
+    public static function moment(CarbonImmutable $moment, string $locale): string
+    {
+        return self::long($moment, $locale).', '.$moment->settings(['locale' => $locale])->isoFormat('LT');
     }
 
     private static function relative(CarbonImmutable $moment, string $locale): ?string

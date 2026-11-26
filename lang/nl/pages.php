@@ -112,6 +112,7 @@ return [
     'show' => [
         'trail' => 'Je bent hier',
         'view' => 'Bekijk op de site',
+        'duplicate' => 'Dupliceren',
         'edit' => 'Bewerken op de site',
         'save' => 'Opslaan',
         'attention' => [
@@ -373,12 +374,18 @@ return [
         'overview' => 'Eerst het overzicht',
         'later' => 'Later',
     ],
+    // The name and the end of the address of a copy (DuplicatePage): stored content, made in the language of the CMS.
+    'copy' => [
+        'title' => ':title (kopie)',
+        'slug' => 'kopie',
+    ],
     'notices' => [
         'saved' => ':title is opgeslagen.',
         'deleted' => ':title is verwijderd.',
         'restored' => ':title is teruggezet.',
         'hidden' => ':title is verborgen voor bezoekers.',
         'shown' => ':title is weer zichtbaar voor bezoekers.',
+        'duplicated' => ':title is gemaakt als kopie van :origin.',
     ],
     'errors' => [
         'title_required' => 'Geef de pagina een naam.',
@@ -407,5 +414,8 @@ return [
         'share_image_gone' => 'Deze afbeelding staat niet meer in Media. Kies een andere.',
         'share_image_kind' => 'Dit bestand is geen afbeelding. Kies een foto.',
         'share_image_svg' => 'Apps tonen geen svg bij een gedeelde link. Kies een foto, bijvoorbeeld jpg, png of webp.',
+        'duplicate_path_taken' => 'Een andere pagina kreeg net het adres van de kopie. Probeer het nog eens.',
+        'duplicate_path_long' => 'Het adres van de kopie wordt langer dan 255 tekens. Geef deze pagina of een pagina erboven eerst een korter adres.',
+        'duplicate_parent' => 'De pagina waar deze onder ligt, bestaat niet meer. Er is geen kopie gemaakt.',
     ],
 ];

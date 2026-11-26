@@ -67,4 +67,9 @@ final readonly class Strip
     {
         return new self($this->id, $this->type, $visible, $this->values);
     }
+
+    public function withId(string $id): self
+    {
+        return new self($id, $this->type, $this->visible, $this->values);
+    }
 }

@@ -28,11 +28,14 @@ it('returns changed copies', function (): void {
 
     $hidden = $strip->withVisibility(false);
     $changed = $strip->withValues(['kop' => 'Nieuw']);
+    $renamed = $strip->withId('b');
 
     expect($strip->visible)->toBeTrue()
         ->and($strip->values)->toBe(['kop' => 'Oud'])
+        ->and($strip->id)->toBe('a')
         ->and($hidden->visible)->toBeFalse()
         ->and($hidden->id)->toBe('a')
         ->and($changed->values)->toBe(['kop' => 'Nieuw'])
-        ->and($changed->id)->toBe('a');
+        ->and($changed->id)->toBe('a')
+        ->and($renamed->toArray())->toBe(storedStrip('hero', ['kop' => 'Oud'], id: 'b'));
 });

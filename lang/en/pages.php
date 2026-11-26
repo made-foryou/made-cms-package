@@ -112,6 +112,7 @@ return [
     'show' => [
         'trail' => 'You are here',
         'view' => 'View on the site',
+        'duplicate' => 'Duplicate',
         'edit' => 'Edit on the site',
         'save' => 'Save',
         'attention' => [
@@ -373,12 +374,18 @@ return [
         'overview' => 'Overview first',
         'later' => 'Later',
     ],
+    // The name and the end of the address of a copy (DuplicatePage): stored content, made in the language of the CMS.
+    'copy' => [
+        'title' => ':title (copy)',
+        'slug' => 'copy',
+    ],
     'notices' => [
         'saved' => ':title is saved.',
         'deleted' => ':title is deleted.',
         'restored' => ':title is restored.',
         'hidden' => ':title is hidden from visitors.',
         'shown' => ':title is visible to visitors again.',
+        'duplicated' => ':title is made as a copy of :origin.',
     ],
     'errors' => [
         'title_required' => 'Give the page a name.',
@@ -407,5 +414,8 @@ return [
         'share_image_gone' => 'This image is no longer in Media. Choose another one.',
         'share_image_kind' => 'This file is not an image. Choose a photo.',
         'share_image_svg' => 'Apps show no svg with a shared link. Choose a photo, such as a jpg, png or webp.',
+        'duplicate_path_taken' => 'Another page just took the address of the copy. Try again.',
+        'duplicate_path_long' => 'The address of the copy gets longer than 255 characters. Give this page or a page above it a shorter address first.',
+        'duplicate_parent' => 'The page this one lies under no longer exists. No copy was made.',
     ],
 ];

@@ -109,6 +109,7 @@ final class ShowPageResponse
             'indexUrl' => PageLinks::index(),
             'editUrl' => PageLinks::edit($page),
             'updateUrl' => PageLinks::update($page),
+            'duplicateUrl' => PageLinks::duplicate($page),
             'destroyUrl' => PageLinks::destroy($page),
             'visibilityUrl' => PageLinks::visibility($page),
             'childCreateUrl' => PageLinks::create($page->id),

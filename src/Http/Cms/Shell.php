@@ -110,9 +110,10 @@ final class Shell
         }
 
         $restore = $notice['restore'] ?? null;
+        $origin = $notice['origin'] ?? null;
 
         return [
-            'text' => (string) __('made-cms-package::pages.notices.'.$notice['text'], ['title' => $notice['title']]),
+            'text' => (string) __('made-cms-package::pages.notices.'.$notice['text'], ['title' => $notice['title'], 'origin' => is_string($origin) ? $origin : '']),
             'restoreUrl' => is_int($restore) ? PageLinks::restore($restore) : null,
         ];
     }

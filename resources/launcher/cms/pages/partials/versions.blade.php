@@ -16,7 +16,7 @@
         <ol class="versies">
             @foreach ($versions['items'] as $version)
                 <li class="versie">
-                    <span class="versie-stip{{ $version['live'] ? ' live' : '' }}" aria-hidden="true"></span>
+                    <span class="versie-stip{{ $version['live'] ? ' huidig' : '' }}" aria-hidden="true"></span>
                     <span class="punt-tekst">
                         <span class="versie-titel">{{ $version['title'] }}</span>
                         <span class="punt-meta">{{ $version['meta'] }}</span>

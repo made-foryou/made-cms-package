@@ -1714,8 +1714,13 @@ ul.lijst {
     background: var(--made-inhoud-subtiel);
 }
 
-.versie-stip.live {
+.versie-stip.huidig {
     background: var(--made-status);
+}
+
+/* The text gives way to the button, so a long change wraps within the row instead of pushing the button below it. */
+.versie .punt-tekst {
+    flex: 1 1 0;
 }
 
 .versie-titel {
@@ -4644,6 +4649,11 @@ button.tekstlink.alarm {
     /* The way to what solves a point lines up with its text, past the dot (9px) and the gap (12px). */
     .aandachtspunt .tekstlink {
         margin-left: 21px;
+    }
+
+    /* The way back goes below the text, in line with it past the dot (9px) and the gap (12px). */
+    .versie .punt-tekst {
+        flex-basis: calc(100% - 21px);
     }
 
     .versie-terug {

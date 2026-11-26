@@ -22,4 +22,14 @@ final class PageVersionBuilder extends Builder
     {
         return $this->orderByDesc('number');
     }
+
+    /**
+     * The number of the newest version these rows hold; 0 without one.
+     */
+    public function highestNumber(): int
+    {
+        $number = $this->max('number');
+
+        return is_numeric($number) ? (int) $number : 0;
+    }
 }

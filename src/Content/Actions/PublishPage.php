@@ -22,7 +22,8 @@ final class PublishPage
     ) {}
 
     /**
-     * Makes the draft, as it is stored now, the published version of the page.
+     * Makes the draft, as it is stored now, the published version of the page, and keeps it as the next version of the
+     * page (RecordPageVersion), with the editor who published it.
      *
      * Every strip of the draft must pass its strip type, hidden strips too, so they never
      * break once they are shown. A stored value is checked in its current form, so a heading
@@ -35,17 +36,21 @@ final class PublishPage
      */
     public function handle(Page $page, ?int $editorId = null): Page
     {
-        ChangeDraft::run($page, function (PageStrips $strips, Page $page): void {
+        ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($editorId): void {
             if ($page->status === PageStatus::Published && $page->draft_strips === null) {
                 throw PageAlreadyPublished::for($page);
             }
 
             $this->check($strips);
 
+            $now = now()->toImmutable();
+
+            RecordPageVersion::run($page, $strips, $now, $editorId);
+
             $page->strips = $strips->toArray();
             $page->draft_strips = null;
             $page->status = PageStatus::Published;
-            $page->published_at = now()->toImmutable();
+            $page->published_at = $now;
 
             PagePublished::dispatch($page);
         }, $editorId);

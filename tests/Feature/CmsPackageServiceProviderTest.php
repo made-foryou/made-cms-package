@@ -200,6 +200,10 @@ it('keeps deleted pages for thirty days', function (): void {
     expect(config('made-cms-package.pages.keep_deleted_days'))->toBe(30);
 });
 
+it('keeps the twenty newest versions of a page', function (): void {
+    expect(config('made-cms-package.pages.keep_versions'))->toBe(20);
+});
+
 it('appends the launcher middleware to the web middleware group', function (): void {
     /** @var FoundationKernel $kernel */
     $kernel = app(Kernel::class);

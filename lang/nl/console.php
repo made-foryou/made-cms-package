@@ -15,6 +15,7 @@ return [
     ],
     'prune' => [
         'pruned' => '{0} Geen pagina’s definitief verwijderd.|{1} 1 pagina definitief verwijderd.|[2,*] :count pagina’s definitief verwijderd.',
+        'versions' => '{0} Geen oudere versies opgeruimd.|{1} 1 oudere versie opgeruimd.|[2,*] :count oudere versies opgeruimd.',
     ],
     'media_usage' => [
         'rebuilt' => 'Gebruik van media opnieuw opgebouwd uit :pages: :places.',

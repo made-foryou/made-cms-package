@@ -44,6 +44,7 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property-read Route|null $route the address of the page on the site
  * @property-read Page|null $parent
  * @property-read Collection<int, Page> $children
+ * @property-read Collection<int, PageVersion> $versions
  * @property CarbonImmutable|null $created_at
  * @property int|null $created_by the editor who created the page (CreatePage); null when that is not known
  * @property CarbonImmutable|null $updated_at
@@ -136,6 +137,16 @@ class Page extends Model
     public function children(): HasMany
     {
         return $this->hasMany(Page::class, 'parent_id');
+    }
+
+    /**
+     * Every publication the page keeps (PublishPage), the newest the one visitors see.
+     *
+     * @return HasMany<PageVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(PageVersion::class, 'page_id');
     }
 
     /**

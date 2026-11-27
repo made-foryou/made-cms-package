@@ -173,6 +173,16 @@ return [
                 ],
             ],
         ],
+        'files' => [
+            'heading' => 'Bestanden op deze pagina',
+            'open' => 'Open in Media',
+            'empty' => 'Er staan nog geen bestanden op deze pagina.',
+            'unavailable' => 'De bestanden zijn nu niet te tonen: de opslag van Media geeft geen adres waar ze te zien zijn.',
+            'no_alt' => 'Geen alt-tekst',
+            'alt' => '{1} Eén foto heeft nog geen alt-tekst (de amber stip). Vul je die in Media in, dan geldt hij overal.|[2,*] :count foto’s hebben nog geen alt-tekst (de amber stip). Vul je ze in Media in, dan gelden ze overal.',
+            'alt_elsewhere' => '{1} Eén foto heeft nog geen alt-tekst (de amber stip). Wie Media beheert, vult hem in; dan geldt hij overal.|[2,*] :count foto’s hebben nog geen alt-tekst (de amber stip). Wie Media beheert, vult ze in; dan gelden ze overal.',
+            'alt_link' => '{1} Alt-tekst invullen|[2,*] Alt-teksten invullen',
+        ],
         'summary' => [
             'label' => 'In het kort',
             'attention' => '{0} Niets vraagt aandacht|{1} :count ding vraagt aandacht|[2,*] :count dingen vragen aandacht',
@@ -206,6 +216,13 @@ return [
                 'label' => 'Stroken',
                 'count' => '{0} Nog geen|[1,*] :count, :fields',
                 'fields' => '{0} zonder velden|{1} met 1 veld|[2,*] met :count velden',
+            ],
+            'files' => [
+                'label' => 'Bestanden',
+                'none' => 'Geen',
+                'image' => '{1} 1 foto|[2,*] :count foto’s',
+                'document' => '{1} 1 document|[2,*] :count documenten',
+                'video' => '{1} 1 video|[2,*] :count video’s',
             ],
             'created' => [
                 'label' => 'Gemaakt',

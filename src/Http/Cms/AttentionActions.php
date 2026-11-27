@@ -28,9 +28,10 @@ final class AttentionActions
             AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong => ['#made-cms-google', null],
             AttentionReason::PublicationOverdue => ['#made-cms-basis', null],
             AttentionReason::StaleDraft, AttentionReason::Empty, AttentionReason::PublicationFailed => [PageLinks::edit($page), Screen::Pages],
-            AttentionReason::ImageWithoutAlt => [Menu::url(Screen::Media).'?'.http_build_query(
-                ($item->details['count'] ?? 0) === 1 ? ['file' => $item->details['media'] ?? null] : ['without_alt' => 1],
-            ), Screen::Media],
+            AttentionReason::ImageWithoutAlt => [
+                MediaLinks::missingAlt((int) ($item->details['count'] ?? 0), (int) ($item->details['media'] ?? 0)),
+                Screen::Media,
+            ],
         };
 
         return $screen === null || in_array($screen, $screens, true) ? $url : null;

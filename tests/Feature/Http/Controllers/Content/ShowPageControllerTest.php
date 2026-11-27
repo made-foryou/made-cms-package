@@ -719,7 +719,119 @@ describe('the column "In het kort"', function (): void {
             ->toContain('<dt>Ligt onder</dt><dd>Bovenaan</dd>')
             ->toContain('<dt>Menu</dt><dd>Niet in het menu</dd>')
             ->toContain('<dt>Hieronder</dt><dd>Niets</dd>')
-            ->toContain('<dt>Stroken</dt><dd>Nog geen</dd>');
+            ->toContain('<dt>Stroken</dt><dd>Nog geen</dd>')
+            ->toContain('<dt>Bestanden</dt><dd>Geen</dd>');
+    });
+
+    it('counts the files of the working copy per kind, after the strips', function (): void {
+        Storage::fake('public', ['url' => 'https://cdn.example.com']);
+        [$first, $second] = Media::factory()->count(2)->create()->all();
+        $page = Page::factory()->published()->at('/teams')
+            ->withStrips([storedStrip('hero', ['foto' => $first->id])])
+            ->withDraft([
+                storedStrip('hero', ['foto' => $first->id]),
+                storedStrip('hero', ['foto' => $second->id]),
+                storedStrip('hero', ['foto' => Media::factory()->document()->create()->id]),
+            ])
+            ->create();
+        SyncMediaUsage::run($page);
+
+        $html = pageScreen($page);
+
+        expect($html)->toContain('<dt>Bestanden</dt><dd>2 foto’s, 1 document</dd>')
+            ->and(strpos($html, '<dt>Stroken</dt>'))->toBeLessThan(strpos($html, '<dt>Bestanden</dt>'));
+    });
+});
+
+describe('the card "Bestanden op deze pagina"', function (): void {
+    beforeEach(function (): void {
+        useStripTypes();
+        Storage::fake('public', ['url' => 'https://cdn.example.com']);
+    });
+
+    it('shows the files of the working copy small, in the order of the page, each opening in Media', function (): void {
+        $photo = Media::factory()->withAlt('Het eerste team')->create(['name' => 'teamfoto-merwestad-1']);
+        $document = Media::factory()->document()->create(['name' => 'opstelling-najaar']);
+        $page = Page::factory()->published()->at('/teams')
+            ->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id])])
+            ->withDraft([storedStrip('hero', ['foto' => $photo->id]), storedStrip('hero', ['foto' => $document->id])])
+            ->create(['title' => 'Onze teams']);
+        SyncMediaUsage::run($page);
+
+        $html = pageScreen($page);
+
+        expect($html)
+            ->toContain('<section class="kaart" id="made-cms-bestanden" aria-labelledby="made-cms-bestanden-kop">')
+            ->toContain('<h2 id="made-cms-bestanden-kop">Bestanden op deze pagina</h2>')
+            ->toContain('<a class="tekstlink klein" href="/made-cms/media?q=Onze%20teams">Open in Media <span aria-hidden="true">→</span></a>')
+            ->toContain('<a class="paginabestand" href="/made-cms/media?file='.$photo->id.'">')
+            ->toContain('<img src="https://cdn.example.com/'.$photo->thumb_path.'" alt="" loading="lazy" decoding="async">')
+            ->toContain('<span class="paginabestand-naam">teamfoto-merwestad-1.webp</span>')
+            ->toContain('<a class="paginabestand" href="/made-cms/media?file='.$document->id.'">')
+            ->toContain('<span class="paginabestand-beeld" data-kind="document">')
+            ->toContain('<span class="paginabestand-naam">opstelling-najaar.pdf</span>')
+            ->not->toContain('<span class="beeldkaart-stip" role="img" aria-label="Geen alt-tekst"></span>')
+            ->not->toContain('nog geen alt-tekst (de amber stip)')
+            ->and(strpos($html, 'teamfoto-merwestad-1.webp'))->toBeLessThan(strpos($html, 'opstelling-najaar.pdf'))
+            ->and(strpos($html, 'Pagina’s hieronder'))->toBeLessThan(strpos($html, 'Bestanden op deze pagina'))
+            ->and(strpos($html, 'Bestanden op deze pagina'))->toBeLessThan(strpos($html, 'Wat er eerder gebeurde'));
+    });
+
+    it('marks a photo without an alt text with an amber dot and says where it is filled in', function (): void {
+        $photo = Media::factory()->create(['name' => 'teamfoto-merwestad-1']);
+        $page = Page::factory()->published()->at('/teams')->withStrips([storedStrip('hero', ['foto' => $photo->id])])->create();
+        SyncMediaUsage::run($page);
+
+        expect(pageScreen($page))
+            ->toContain('<span class="beeldkaart-stip" role="img" aria-label="Geen alt-tekst"></span>')
+            ->toContain('<p class="kaart-tekst">Eén foto heeft nog geen alt-tekst (de amber stip). Vul je die in Media in, dan geldt hij overal. <a class="tekstlink" href="/made-cms/media?file='.$photo->id.'">Alt-tekst invullen</a></p>');
+    });
+
+    it('counts the photos without an alt text and leads to those of the library', function (): void {
+        $page = Page::factory()->published()->at('/teams')
+            ->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id]), storedStrip('hero', ['foto' => Media::factory()->create()->id])])
+            ->create();
+        SyncMediaUsage::run($page);
+
+        expect(pageScreen($page))
+            ->toContain('<p class="kaart-tekst">2 foto’s hebben nog geen alt-tekst (de amber stip). Vul je ze in Media in, dan gelden ze overal. <a class="tekstlink" href="/made-cms/media?without_alt=1">Alt-teksten invullen</a></p>');
+    });
+
+    it('gives the ways to Media only to an editor who opens it', function (Role $role, bool $media): void {
+        $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+        $photo = Media::factory()->create();
+        $page = Page::factory()->published()->at('/teams')->withStrips([storedStrip('hero', ['foto' => $photo->id])])->create();
+        SyncMediaUsage::run($page);
+
+        $html = pageScreen($page);
+
+        expect(['links' => str_contains($html, 'href="/made-cms/media'), 'tile' => str_contains($html, '<span class="paginabestand">')])
+            ->toBe(['links' => $media, 'tile' => ! $media])
+            ->and(str_contains($html, 'Eén foto heeft nog geen alt-tekst (de amber stip). Wie Media beheert, vult hem in; dan geldt hij overal.'))->toBe(! $media);
+    })->with([
+        'the content manager' => [Role::ContentManager, true],
+        'the owner' => [Role::Owner, false],
+        'the seo specialist' => [Role::SeoSpecialist, false],
+    ]);
+
+    it('leaves out the share image, which has a card of its own', function (): void {
+        $share = Media::factory()->create(['name' => 'deelbeeld']);
+        $page = Page::factory()->published()->at('/teams')->withShareImage($share)->withStrips([storedStrip('hero', ['kop' => 'Welkom'])])->create();
+        SyncMediaUsage::run($page);
+
+        expect(pageScreen($page))
+            ->toContain('<p class="kaart-tekst">Er staan nog geen bestanden op deze pagina.</p>')
+            ->not->toContain('<span class="paginabestand-naam">deelbeeld.webp</span>');
+    });
+
+    it('says the files cannot be shown when the media disk gives no address, and leaves their count out', function (): void {
+        $page = Page::factory()->published()->at('/teams')->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id])])->create();
+        SyncMediaUsage::run($page);
+        config(['made-cms-package.media.disk' => 'missing']);
+
+        expect(pageScreen($page))
+            ->toContain('<p class="kaart-tekst">De bestanden zijn nu niet te tonen: de opslag van Media geeft geen adres waar ze te zien zijn.</p>')
+            ->not->toContain('<dt>Bestanden</dt>');
     });
 });
 

@@ -143,6 +143,8 @@
                 @endif
             </section>
 
+            @include('made-cms-package-launcher::cms.pages.partials.files')
+
             @include('made-cms-package-launcher::cms.pages.partials.versions')
 
             @unless ($page['home'])

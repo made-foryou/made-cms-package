@@ -1677,6 +1677,67 @@ ul.lijst {
     white-space: nowrap;
 }
 
+/* The files on a page (design 15.2/16.2): small tiles on night green, in both themes, so a photo with transparent
+   parts reads as in the library and stands out on the raised card of the dark theme; a document as paper. */
+
+.paginabestanden {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.paginabestand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 118px;
+    color: var(--made-inhoud);
+    text-decoration: none;
+}
+
+.paginabestand-beeld {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border: 1.5px solid transparent;
+    border-radius: var(--made-radius-s);
+    background: var(--made-nachtgroen);
+    color: #c7d2ea;
+    transition: border-color 120ms ease;
+}
+
+.paginabestand-beeld img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+a.paginabestand:hover .paginabestand-beeld,
+a.paginabestand:focus-visible .paginabestand-beeld {
+    border-color: var(--made-accent);
+}
+
+.paginabestand-naam {
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--made-inhoud-zwak);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+a.paginabestand:hover .paginabestand-naam {
+    color: var(--made-inhoud);
+}
+
 /* The versions of a page: a dot (green for the one visitors see), what changed and when, and the way back for an older
    one. Asking first opens below the version, across the row. */
 
@@ -6128,7 +6189,8 @@ button.tekstlink.alarm {
 .tegel[data-kind="document"] .tegel-beeld,
 .bibliotheek-mini[data-kind="document"],
 .kiezer-mini[data-kind="document"],
-.beeldkaart[data-kind="document"] .beeldkaart-voorbeeld {
+.beeldkaart[data-kind="document"] .beeldkaart-voorbeeld,
+.paginabestand-beeld[data-kind="document"] {
     border-color: var(--made-rand);
     background: #fbfaf5;
     color: #47564f;
@@ -6142,7 +6204,8 @@ button.tekstlink.alarm {
 .tegel[data-kind="video"] .tegel-beeld,
 .bibliotheek-mini[data-kind="video"],
 .kiezer-mini[data-kind="video"],
-.beeldkaart[data-kind="video"] .beeldkaart-voorbeeld {
+.beeldkaart[data-kind="video"] .beeldkaart-voorbeeld,
+.paginabestand-beeld[data-kind="video"] {
     background: #0a211c;
 }
 
@@ -6848,7 +6911,8 @@ button.tekstlink.alarm {
     .tegel[data-kind="document"] .tegel-beeld,
     .bibliotheek-mini[data-kind="document"],
     .kiezer-mini[data-kind="document"],
-    .beeldkaart[data-kind="document"] .beeldkaart-voorbeeld {
+    .beeldkaart[data-kind="document"] .beeldkaart-voorbeeld,
+    .paginabestand-beeld[data-kind="document"] {
         background: #f3f1e8;
         color: #0e2b26;
     }

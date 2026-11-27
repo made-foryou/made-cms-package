@@ -43,6 +43,7 @@ use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\Day;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\MediaDetails;
+use Made\CmsPackage\Http\Cms\MediaLinks;
 use Made\CmsPackage\Http\Cms\Menu;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
@@ -141,6 +142,7 @@ final class ShowPageResponse
             'attention' => self::attention($page, $screens, $attention, $summary->media),
             'strips' => self::strips($page, $summary->strips),
             'summary' => self::summary($pages, $types, $summary, $names),
+            'files' => self::files($page, $screens, $summary->media),
             'versions' => self::versions($page, $history, $restored, $names),
         ], $pages, $page);
     }
@@ -247,6 +249,60 @@ final class ShowPageResponse
     }
 
     /**
+     * The files on the working copy per kind, "3 foto’s, 1 document"; null for none.
+     *
+     * @param  callable(string, int, array<string, string>): string  $count
+     */
+    private static function fileCount(PageMedia $media, callable $count): ?string
+    {
+        $kinds = array_filter($media->countPerKind());
+
+        return $kinds === [] ? null : implode(', ', array_map(
+            static fn (string $kind, int $number): string => $count('files.'.$kind, $number, []),
+            array_keys($kinds),
+            $kinds,
+        ));
+    }
+
+    /**
+     * The card "Bestanden op deze pagina" (design 15.2): the files on the working copy small, in the order of the page,
+     * an amber dot on a photo without an alt text and a line about those. Only an editor who opens Media gets the
+     * ways there: a file opens chosen, "Open in Media" searches the library for the name of the page.
+     *
+     * @param  list<Screen>  $screens
+     * @return array{
+     *     available: bool,
+     *     items: list<array{name: string, kind: string, thumb: string|null, noAlt: bool, url: string|null}>,
+     *     searchUrl: string|null,
+     *     alt: array{text: string, link: string|null, url: string|null}|null,
+     * }
+     */
+    private static function files(Page $page, array $screens, PageMedia $media): array
+    {
+        $locale = Locale::launcher();
+        $library = in_array(Screen::Media, $screens, true);
+        $missing = count($media->withoutAlt);
+        $count = static fn (string $key): string => trans_choice('made-cms-package::pages.show.files.'.$key, $missing, [], $locale);
+
+        return [
+            'available' => $media->available,
+            'items' => array_map(static fn (MediaFile $file): array => [
+                'name' => self::fileName($file),
+                'kind' => $file->kind->value,
+                'thumb' => $file->thumb,
+                'noAlt' => in_array($file->id, $media->withoutAlt, true),
+                'url' => $library ? MediaLinks::file($file->id) : null,
+            ], $media->files),
+            'searchUrl' => $library ? MediaLinks::search($page->title) : null,
+            'alt' => $missing === 0 ? null : [
+                'text' => $count($library ? 'alt' : 'alt_elsewhere'),
+                'link' => $library ? $count('alt_link') : null,
+                'url' => $library ? MediaLinks::missingAlt($missing, $media->withoutAlt[0]) : null,
+            ],
+        ];
+    }
+
+    /**
      * A file by the name an editor knows it by: its name with the extension of the file a visitor gets.
      */
     private static function fileName(MediaFile $file): string
@@ -299,6 +355,10 @@ final class ShowPageResponse
                 'fields' => $count('strips.fields', $summary->fields),
             ])],
         ];
+
+        if ($summary->media->available) {
+            $facts[] = ['label' => $text('files.label'), 'value' => self::fileCount($summary->media, $count) ?? $text('files.none')];
+        }
 
         if ($summary->createdAt !== null) {
             $facts[] = [

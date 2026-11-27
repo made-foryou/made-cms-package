@@ -156,6 +156,15 @@ it('registers the prune command and runs it every day', function (): void {
         ->and($events->first()?->expression)->toBe('0 0 * * *');
 });
 
+it('registers the command that publishes the planned pages and runs it every minute', function (): void {
+    $events = collect(app(Schedule::class)->events())
+        ->filter(fn (Event $event): bool => str_contains((string) $event->command, 'made-cms:publish-scheduled'));
+
+    expect(Artisan::all())->toHaveKey('made-cms:publish-scheduled')
+        ->and($events)->toHaveCount(1)
+        ->and($events->first()?->expression)->toBe('* * * * *');
+});
+
 it('registers the command that builds the sitemaps again', function (): void {
     expect(Artisan::all())->toHaveKey('made-cms:sitemap');
 });

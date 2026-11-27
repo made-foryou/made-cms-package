@@ -34,7 +34,8 @@ it('keeps a point that is still too long in the round', function (): void {
 });
 
 it('has no next point after the last', function (): void {
-    $a = Page::factory()->published()->at('/a')->create();
+    // A name of its own: a random one can make the title Google gets without one longer than 60 characters.
+    $a = Page::factory()->published()->at('/a')->create(['title' => 'A']);
 
     expect(UpdatePageMetaInRound::run($a, new PageMetaChanges(title: null, description: 'Een omschrijving van A.')))
         ->toEqual(new MetaRoundStep(inRound: true, settled: true, next: null));

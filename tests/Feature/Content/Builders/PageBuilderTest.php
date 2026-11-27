@@ -239,3 +239,15 @@ it('finds the pages google may show and the pages that may be in the sitemap', f
     expect(Page::query()->indexable()->orderBy('id')->pluck('id')->all())->toBe([$about->id, $privacy->id])
         ->and(Page::query()->inSitemap()->orderBy('id')->pluck('id')->all())->toBe([$about->id, $search->id]);
 });
+
+it('reads only what the measure of a page in Google needs, with its address', function (): void {
+    Page::factory()->published()->at('/teams')->withMeta('Onze teams', 'Alle teams.')
+        ->withStrips([storedStrip()])->withDraft([storedStrip()])
+        ->create(['title' => 'Teams']);
+
+    $page = Page::query()->forMeta()->sole();
+
+    expect(array_keys($page->getAttributes()))->toEqualCanonicalizing(['id', 'title', 'status', 'hidden', 'indexable', 'meta_title', 'meta_description'])
+        ->and($page->relationLoaded('route'))->toBeTrue()
+        ->and($page->route?->path)->toBe('/teams');
+});

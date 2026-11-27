@@ -15,12 +15,12 @@ final class ListMetaRows
 
     /**
      * Every page in menu order (ListPages, the pages outside the menu included) with how it does in Google
-     * (MeasurePageMeta), the pages read once with their addresses.
+     * (MeasurePageMeta), the pages read once more with only what that measure needs.
      */
     public function handle(): MetaRows
     {
         $tree = ListPages::run();
-        $pages = Page::query()->with('route')->get()->keyBy('id');
+        $pages = Page::query()->forMeta()->get()->keyBy('id');
         $rows = [];
 
         foreach ($tree->flatten() as $node) {

@@ -27,7 +27,7 @@ final class ListPageAttention
      */
     public function handle(Page $page, ?AttentionContext $context = null): PageAttention
     {
-        $context ??= MakeAttentionContext::run(Page::query()->published()->visible()->indexable()->with('route')->get());
+        $context ??= MakeAttentionContext::run(Page::query()->published()->visible()->indexable()->forMeta()->get());
         $items = [];
 
         foreach ($this->sources->sources as $source) {

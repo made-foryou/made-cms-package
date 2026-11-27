@@ -6,7 +6,7 @@ namespace Made\CmsPackage\Http\Requests\Content;
 
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Data\PageMetaChanges;
-use Made\CmsPackage\Content\Enums\MetaField;
+use Made\CmsPackage\Http\Cms\MetaTexts;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 use Made\CmsPackage\Http\Responses\PageRedirect;
 
@@ -21,10 +21,7 @@ final class UpdatePageMetaRequest extends LauncherRequest
      */
     public function rules(): array
     {
-        return [
-            'meta_title' => ['nullable', 'string', 'max:'.MetaField::Title->maxLength()],
-            'meta_description' => ['nullable', 'string', 'max:'.MetaField::Description->maxLength()],
-        ];
+        return MetaTexts::rules();
     }
 
     /**
@@ -32,10 +29,7 @@ final class UpdatePageMetaRequest extends LauncherRequest
      */
     public function messages(): array
     {
-        return [
-            'meta_title.*' => $this->error('meta_title_long'),
-            'meta_description.*' => $this->error('meta_description_long'),
-        ];
+        return MetaTexts::messages();
     }
 
     public function toData(): PageMetaChanges
@@ -47,11 +41,6 @@ final class UpdatePageMetaRequest extends LauncherRequest
             indexable: $this->boolean('indexable'),
             editorId: $this->editorId(),
         );
-    }
-
-    protected function error(string $key): string
-    {
-        return (string) __('made-cms-package::pages.errors.'.$key);
     }
 
     /**

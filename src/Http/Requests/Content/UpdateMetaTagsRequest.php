@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Http\Requests\Content;
 
+use Made\CmsPackage\Content\Data\MetaSearch;
 use Made\CmsPackage\Content\Data\PageMetaChanges;
-use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Content\Enums\MetaFilter;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Http\Cms\MetaLinks;
+use Made\CmsPackage\Http\Cms\MetaTexts;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 
 /**
@@ -23,10 +24,7 @@ final class UpdateMetaTagsRequest extends LauncherRequest
      */
     public function rules(): array
     {
-        return [
-            'meta_title' => ['nullable', 'string', 'max:'.MetaField::Title->maxLength()],
-            'meta_description' => ['nullable', 'string', 'max:'.MetaField::Description->maxLength()],
-        ];
+        return MetaTexts::rules();
     }
 
     /**
@@ -34,10 +32,7 @@ final class UpdateMetaTagsRequest extends LauncherRequest
      */
     public function messages(): array
     {
-        return [
-            'meta_title.*' => $this->error('meta_title_long'),
-            'meta_description.*' => $this->error('meta_description_long'),
-        ];
+        return MetaTexts::messages();
     }
 
     public function toData(): PageMetaChanges
@@ -65,14 +60,9 @@ final class UpdateMetaTagsRequest extends LauncherRequest
     public function done(): int
     {
         $done = $this->input('done');
-        $done = is_string($done) ? filter_var($done, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 10000]]) : false;
+        $done = is_string($done) ? filter_var($done, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => MetaSearch::MAX_DONE]]) : false;
 
         return $done === false ? 0 : $done;
-    }
-
-    protected function error(string $key): string
-    {
-        return (string) __('made-cms-package::pages.errors.'.$key);
     }
 
     /**

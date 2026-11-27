@@ -14,8 +14,8 @@ final class DiscardDraft
     use AsAction;
 
     /**
-     * Throws the draft away, as it is stored now, so the page is back at its published strips. Without a draft
-     * nothing happens.
+     * Throws the draft away, as it is stored now, so the page is back at its published strips. The planned
+     * publication goes along, and the note of a planned one a strip stopped. Without a draft nothing happens.
      */
     public function handle(Page $page, ?int $editorId = null): Page
     {
@@ -25,6 +25,9 @@ final class DiscardDraft
             }
 
             $page->draft_strips = null;
+            $page->publish_at = null;
+            $page->scheduled_by = null;
+            $page->publish_failed_at = null;
 
             DraftDiscarded::dispatch($page);
         }, $editorId);

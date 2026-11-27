@@ -18,7 +18,7 @@ final class DeletePage
 
     /**
      * Deletes a page: visitors and editors no longer find it and its address is free again. It keeps its content
-     * and can be restored until it is pruned.
+     * and can be restored until it is pruned. Its planned publication goes, so it never goes live once restored.
      *
      * @throws HomePageProtected
      * @throws PageHasChildren
@@ -37,6 +37,12 @@ final class DeletePage
         }
 
         DB::transaction(function () use ($page): void {
+            if ($page->publish_at !== null) {
+                $page->publish_at = null;
+                $page->scheduled_by = null;
+                $page->save();
+            }
+
             $page->route()->delete();
             $page->unsetRelation('route');
             $page->delete();

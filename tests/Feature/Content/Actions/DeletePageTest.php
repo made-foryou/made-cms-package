@@ -27,6 +27,17 @@ it('deletes the page and frees its address', function (): void {
         ->and(Route::query()->count())->toBe(0);
 });
 
+it('takes the planned publication of a deleted page away, so it never goes live from the bin or once restored', function (): void {
+    $page = Page::factory()->published()->withDraft([])->at('/over-ons')->scheduledAt(now()->addDay())->create();
+
+    DeletePage::run($page);
+
+    $stored = Page::query()->withTrashed()->findOrFail($page->id);
+
+    expect($stored->publish_at)->toBeNull()
+        ->and($stored->scheduled_by)->toBeNull();
+});
+
 it('lets a new page take the address of a deleted page', function (): void {
     DeletePage::run(Page::factory()->at('/over-ons')->create(['slug' => 'over-ons']));
 

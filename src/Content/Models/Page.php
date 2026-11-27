@@ -146,7 +146,7 @@ class Page extends Model
     }
 
     /**
-     * Every publication the page keeps (PublishPage), the newest the one visitors see.
+     * Every publication the page keeps (PutDraftLive), the newest the one visitors see.
      *
      * @return HasMany<PageVersion, $this>
      */

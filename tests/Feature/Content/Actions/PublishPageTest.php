@@ -107,6 +107,28 @@ it('keeps no version of a publication it refuses', function (): void {
         ->and(PageVersion::query()->count())->toBe(0);
 });
 
+it('takes the planned publication and the note of a stopped one along', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', publishableHero(), id: 'a')])
+        ->scheduledAt(now()->addDay(), Editor::factory()->create())
+        ->publicationFailedAt(now()->subDay())
+        ->create();
+
+    PublishPage::run($page);
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->publish_at)->toBeNull()
+        ->and($stored->scheduled_by)->toBeNull()
+        ->and($stored->publish_failed_at)->toBeNull();
+});
+
+it('keeps the planned publication when it refuses the draft', function (): void {
+    $page = Page::factory()->withDraft([storedStrip('hero', ['kop' => null], id: 'a')])->scheduledAt(now()->addDay())->create();
+
+    expect(fn (): mixed => PublishPage::run($page))->toThrow(ValidationException::class)
+        ->and($page->refresh()->publish_at)->not->toBeNull();
+});
+
 it('dispatches an event for the published page', function (): void {
     Event::fake([PagePublished::class]);
     $page = Page::factory()->create();

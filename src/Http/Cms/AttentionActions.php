@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Cms;
 
 use Made\CmsPackage\Access\Enums\Screen;
+use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -16,14 +17,20 @@ use Made\CmsPackage\Content\Models\Page;
 final class AttentionActions
 {
     /**
+     * A photo without an alt text leads to Media, where its alt text holds everywhere: the one photo chosen, or the
+     * photos of the library without one when the page has more.
+     *
      * @param  list<Screen>  $screens  the screens of the editor (ListScreens)
      */
-    public static function url(AttentionReason $reason, Page $page, array $screens): ?string
+    public static function url(AttentionItem $item, Page $page, array $screens): ?string
     {
-        [$url, $screen] = match ($reason) {
+        [$url, $screen] = match ($item->reason) {
             AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong => ['#made-cms-google', null],
             AttentionReason::PublicationOverdue => ['#made-cms-basis', null],
             AttentionReason::StaleDraft, AttentionReason::Empty, AttentionReason::PublicationFailed => [PageLinks::edit($page), Screen::Pages],
+            AttentionReason::ImageWithoutAlt => [Menu::url(Screen::Media).'?'.http_build_query(
+                ($item->details['count'] ?? 0) === 1 ? ['file' => $item->details['media'] ?? null] : ['without_alt' => 1],
+            ), Screen::Media],
         };
 
         return $screen === null || in_array($screen, $screens, true) ? $url : null;

@@ -63,6 +63,7 @@ return [
                 'stale_draft' => 'draft open for long',
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
+                'image_without_alt' => 'photos without an alt text',
                 'empty' => 'still empty',
             ],
         ],
@@ -156,6 +157,13 @@ return [
                     'meta' => ':length characters; Google cuts off after about :limit.',
                     'action' => 'Shorten it below',
                     'short' => 'title too long',
+                ],
+                'image_without_alt' => [
+                    'title' => '{1} Photo without an alt text|[2,*] :count photos without an alt text',
+                    'meta' => '{1} :name. Google and screen readers cannot tell what is on it.|[2,*] :name and :others more. Google and screen readers cannot tell what is on them.',
+                    'action' => 'Fill it in at Media',
+                    'short' => '{1} photo without an alt text|[2,*] :count photos without an alt text',
+                    'unnamed' => 'A photo on this page',
                 ],
                 'empty' => [
                     'title' => 'Still empty',

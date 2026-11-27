@@ -63,6 +63,7 @@ return [
                 'stale_draft' => 'concept staat lang open',
                 'meta_description_missing' => 'omschrijving leeg',
                 'meta_title_too_long' => 'titel te lang',
+                'image_without_alt' => 'foto’s zonder alt-tekst',
                 'empty' => 'nog leeg',
             ],
         ],
@@ -156,6 +157,13 @@ return [
                     'meta' => ':length tekens; Google kapt af na ongeveer :limit.',
                     'action' => 'Kort hem in hieronder',
                     'short' => 'titel te lang',
+                ],
+                'image_without_alt' => [
+                    'title' => '{1} Foto zonder alt-tekst|[2,*] :count foto’s zonder alt-tekst',
+                    'meta' => '{1} :name. Google en een schermlezer weten niet wat erop staat.|[2,*] :name en :others andere. Google en een schermlezer weten niet wat erop staat.',
+                    'action' => 'Vul in bij Media',
+                    'short' => '{1} foto zonder alt-tekst|[2,*] :count foto’s zonder alt-tekst',
+                    'unnamed' => 'Een foto op deze pagina',
                 ],
                 'empty' => [
                     'title' => 'Nog leeg',

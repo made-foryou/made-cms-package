@@ -30,6 +30,7 @@ use Made\CmsPackage\Console\Commands\PrunePagesCommand;
 use Made\CmsPackage\Console\Commands\PublishScheduledPagesCommand;
 use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Attention\EmptyPageSource;
+use Made\CmsPackage\Content\Attention\ImageWithoutAltSource;
 use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
 use Made\CmsPackage\Content\Attention\MetaTitleSource;
 use Made\CmsPackage\Content\Attention\PublicationFailedSource;
@@ -227,7 +228,7 @@ class CmsPackageServiceProvider extends ServiceProvider
     }
 
     /**
-     * Where the attention points of a page come from, in this order (links and media add a source of their own later).
+     * Where the attention points of a page come from, in this order (links add a source of their own later).
      */
     private function registerAttention(): void
     {
@@ -237,6 +238,7 @@ class CmsPackageServiceProvider extends ServiceProvider
             new StaleDraftSource,
             new MetaDescriptionSource,
             new MetaTitleSource,
+            new ImageWithoutAltSource,
             new EmptyPageSource,
         ]));
     }

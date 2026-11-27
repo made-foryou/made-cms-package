@@ -6,6 +6,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Data\Strip;
 use Made\CmsPackage\Content\Data\VersionChanges;
 use Made\CmsPackage\Content\Models\Media;
@@ -430,6 +431,44 @@ describe('the card "Hoe hij ervoor staat"', function (): void {
             ->toContain('<span class="paginakort-kop">Niets vraagt aandacht</span>')
             ->not->toContain('paginakort-hint');
     });
+
+    it('asks for the alt text of a photo on the page, naming it, with the way to Media that photo chosen', function (): void {
+        useStripTypes();
+        Storage::fake('public', ['url' => 'https://cdn.example.com']);
+        $photo = Media::factory()->create(['name' => 'teamfoto-merwestad-1']);
+        $page = Page::factory()->published()->withMeta('Onze teams', 'Alle teams.')->at('/teams')
+            ->withStrips([storedStrip('hero', ['foto' => $photo->id])])
+            ->create();
+        SyncMediaUsage::run($page);
+
+        expect(pageScreen($page))
+            ->toContain('<span class="aandacht-stip medium" aria-hidden="true"></span>')
+            ->toContain('<span class="aandacht-titel"><span class="sr-only">Binnenkort: </span>Foto zonder alt-tekst</span>')
+            ->toContain('<span class="punt-meta">teamfoto-merwestad-1.webp. Google en een schermlezer weten niet wat erop staat.</span>')
+            ->toContain('<a class="tekstlink klein" href="/made-cms/media?file='.$photo->id.'">Vul in bij Media</a>');
+    });
+
+    it('counts the photos without an alt text and leads to them in Media only for an editor who opens it', function (Role $role, bool $linked): void {
+        useStripTypes();
+        Storage::fake('public', ['url' => 'https://cdn.example.com']);
+        $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+        $first = Media::factory()->create(['name' => 'teamfoto-merwestad-1']);
+        $page = Page::factory()->published()->withMeta('Onze teams', 'Alle teams.')->at('/teams')
+            ->withStrips([storedStrip('hero', ['foto' => $first->id]), storedStrip('hero', ['foto' => Media::factory()->create()->id])])
+            ->create();
+        SyncMediaUsage::run($page);
+
+        $html = pageScreen($page);
+
+        expect($html)
+            ->toContain('<span class="aandacht-titel"><span class="sr-only">Binnenkort: </span>2 foto’s zonder alt-tekst</span>')
+            ->toContain('<span class="punt-meta">teamfoto-merwestad-1.webp en 1 andere. Google en een schermlezer weten niet wat erop staat.</span>')
+            ->and(str_contains($html, '<a class="tekstlink klein" href="/made-cms/media?without_alt=1">Vul in bij Media</a>'))->toBe($linked);
+    })->with([
+        'the content manager' => [Role::ContentManager, true],
+        'the owner' => [Role::Owner, false],
+        'the seo specialist' => [Role::SeoSpecialist, false],
+    ]);
 
     it('says in the column that an empty page that was never published is still empty', function (): void {
         $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);

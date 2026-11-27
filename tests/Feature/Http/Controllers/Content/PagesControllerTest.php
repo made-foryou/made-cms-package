@@ -5,9 +5,12 @@ declare(strict_types=1);
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\DeletePage;
+use Made\CmsPackage\Content\Actions\SyncMediaUsage;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -174,6 +177,18 @@ describe('the row of a page', function (): void {
         Page::factory()->published()->withStrips([storedStrip()])->inMenu(false)->at('/teams')->create(['title' => 'Onze teams']);
 
         expect(pagesScreen())->toContain('<span class="boomrij-noot"><span class="boomrij-stip" aria-hidden="true"></span><span class="sr-only">Vraagt aandacht: </span>omschrijving leeg, niet in het menu</span>');
+    });
+
+    it('says on the row how many photos have no alt text', function (): void {
+        useStripTypes();
+        Storage::fake('public', ['url' => 'https://cdn.example.com']);
+        $page = Page::factory()->published()->withMeta(null, 'Alle teams.')->at('/teams')
+            ->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id]), storedStrip('hero', ['foto' => Media::factory()->create()->id])])
+            ->create(['title' => 'Onze teams']);
+        SyncMediaUsage::run($page);
+
+        expect(pagesScreen())->toContain('<span class="sr-only">Vraagt aandacht: </span>2 foto’s zonder alt-tekst</span>')
+            ->toContain('<span class="standkaart-sub">foto’s zonder alt-tekst</span>');
     });
 
     it('gives no dot to a page that asks for nothing, nor to one that is only empty', function (): void {

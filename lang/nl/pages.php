@@ -64,6 +64,7 @@ return [
                 'meta_description_missing' => 'omschrijving leeg',
                 'meta_title_too_long' => 'titel te lang',
                 'image_without_alt' => 'foto’s zonder alt-tekst',
+                'many_h1' => 'meer dan één H1',
                 'empty' => 'nog leeg',
             ],
         ],
@@ -165,6 +166,12 @@ return [
                     'short' => '{1} foto zonder alt-tekst|[2,*] :count foto’s zonder alt-tekst',
                     'unnamed' => 'Een foto op deze pagina',
                 ],
+                'many_h1' => [
+                    'title' => ':count keer een H1 in de stroken',
+                    'meta' => 'In :names. Eén per pagina is genoeg; maak de andere een H2.',
+                    'action' => 'Bekijk de koppen op de site',
+                    'short' => ':count keer een H1',
+                ],
                 'empty' => [
                     'title' => 'Nog leeg',
                     'meta' => 'Er staan nog geen stroken op.',
@@ -230,6 +237,10 @@ return [
             ],
             'note' => 'Wijzigingen op deze pagina slaan we direct op. Alleen wat je op de site zelf bewerkt, gaat pas live met “Publiceren”.',
         ],
+        'list' => [
+            'and' => 'en',
+            'more' => '{1} en 1 andere|[2,*] en :count andere',
+        ],
         'versions' => [
             'heading' => 'Wat er eerder gebeurde',
             'note' => 'elke publicatie is een versie',
@@ -243,8 +254,6 @@ return [
             'removed' => '{1} 1 strook verwijderd|[2,*] :count stroken verwijderd',
             'part' => ':change: :names',
             'name' => '‘:name’',
-            'and' => 'en',
-            'more' => '{1} en 1 andere|[2,*] en :count andere',
             'number' => 'Versie :number',
             'live' => 'nu live',
             'restore' => 'Terugzetten',

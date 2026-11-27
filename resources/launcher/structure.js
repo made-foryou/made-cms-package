@@ -814,12 +814,21 @@ if (shell && ui.list && ui.catalogue) {
     renderList();
     showView('structure');
 
-    // "Bewerken" of a strip on the screen of the page opens the shell with that strip chosen, once: the address drops
-    // it, so a reload of the shell does not choose it again.
-    if (config.chosen) {
-        const address = new URL(window.location.href);
+    // The attention point of more than one h1 opens the shell at the overview Koppen, and "Bewerken" of a strip on the
+    // screen of the page with that strip chosen, once: the address drops them, so a reload of the shell starts again.
+    const address = new URL(window.location.href);
+
+    if (address.searchParams.has('view') || address.searchParams.has('strip')) {
+        address.searchParams.delete('view');
         address.searchParams.delete('strip');
         history.replaceState(history.state, '', address);
+    }
+
+    if (config.view === 'headings' && ui.tabs) {
+        showTab('headings');
+    }
+
+    if (config.chosen) {
         choose(config.chosen);
     }
 }

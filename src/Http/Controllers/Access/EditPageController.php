@@ -36,6 +36,7 @@ final class EditPageController
             Visitor::choosesHeadingLevels($request),
             FindMediaFolder::run(MediaFolderMemory::of($request)->id()),
             $request->chosenStrip(),
+            $request->opensHeadings(),
         );
     }
 }

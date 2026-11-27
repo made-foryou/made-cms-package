@@ -342,7 +342,7 @@ it('fits a bar of 1024 pixels with short texts', function (): void {
         ->and($shell->script("() => getComputedStyle(document.querySelector('.bewerkbalk-site')).display"))->toBe('none')
         ->and($shell->script("() => document.querySelector('.bewerkbalk').getBoundingClientRect().height"))->toBe(56)
         ->and($shell->script('() => document.documentElement.scrollWidth <= window.innerWidth'))->toBeTrue()
-        ->and($shell->script("() => [...document.querySelectorAll('.bewerkbalk-stop, .bewerkbalk-knop, .bewerkbalk-terug')].every((el) => el.checkVisibility() && el.getBoundingClientRect().right <= window.innerWidth)"))->toBeTrue();
+        ->and($shell->script("() => [...document.querySelectorAll('.bewerkbalk-stop, .bewerkbalk-knop, .bewerkbalk-terug')].filter((el) => ! el.closest('[hidden]')).every((el) => el.checkVisibility() && el.getBoundingClientRect().right <= window.innerWidth)"))->toBeTrue();
 
     $shell->assertSeeIn('.bewerkbalk-stop', 'Bewerken stoppen')
         ->assertSeeIn('.bewerkbalk-terug', 'Pagina’s');

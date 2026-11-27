@@ -102,3 +102,15 @@ it('goes to the basics of the page to change the moment', function (): void {
         ->assertSeeIn('#made-cms-scheduled-hint', 'om 09:00 live, met wat er dan in het concept staat.')
         ->assertNoJavaScriptErrors();
 });
+
+it('fits the planned moment in a bar of 1024 pixels', function (): void {
+    $page = Page::factory()->published()->at('/')->withStrips($this->live)->withDraft($this->draft)->scheduledAt($this->moment)->create(['title' => 'Home']);
+
+    $shell = visit('/made-cms/pages/'.$page->id.'/edit')->resize(1024, 800);
+
+    expect($shell->script(waitUntil(scheduleBarSays('bar-state', '1 wijziging'))))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('.bewerkbalk').getBoundingClientRect().height"))->toBe(56)
+        ->and($shell->script('() => document.documentElement.scrollWidth <= window.innerWidth'))->toBeTrue()
+        ->and($shell->script("() => { const button = document.querySelector('[data-slot=\"bar-scheduled-summary\"]'); return button.checkVisibility() && button.getBoundingClientRect().right <= window.innerWidth; }"))->toBeTrue()
+        ->and($shell->script("() => document.querySelector('[data-slot=\"bar-scheduled-summary\"]').textContent"))->toStartWith('Gepland · ');
+});

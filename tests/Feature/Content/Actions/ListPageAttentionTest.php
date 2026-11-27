@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Made\CmsPackage\Content\Actions\ListPageAttention;
 use Made\CmsPackage\Content\Attention\AttentionSource;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Data\AttentionSources;
 use Made\CmsPackage\Content\Enums\AttentionReason;
@@ -27,7 +29,7 @@ function fixedAttentionSource(AttentionItem ...$items): AttentionSource
          */
         public function __construct(private array $items) {}
 
-        public function items(Page $page): array
+        public function items(Page $page, AttentionContext $context): array
         {
             return $this->items;
         }
@@ -95,3 +97,17 @@ it('takes the sources of the container and keeps their order within a severity',
         AttentionReason::Empty,
     ]);
 });
+
+it('reads the other pages google shows once, however many there are', function (int $count): void {
+    for ($i = 0; $i < $count; $i++) {
+        Page::factory()->published()->at('/pagina-'.$i)->create();
+    }
+
+    $page = Page::factory()->published()->at('/contact')->create();
+    $page->load('route', 'usagesWithoutAlt');
+
+    DB::enableQueryLog();
+    ListPageAttention::run($page);
+
+    expect(DB::getQueryLog())->toHaveCount(2);
+})->with([3, 30]);

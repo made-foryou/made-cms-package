@@ -40,6 +40,14 @@ final class LongText extends Field
         return null;
     }
 
+    /**
+     * Every line with text in it: a long text is running text.
+     */
+    public function prose(mixed $value): ?string
+    {
+        return is_string($value) ? self::paragraphs($value) : null;
+    }
+
     public function rules(string $path): array
     {
         return [$path => [$this->presence(), 'string', 'max:'.self::MAX_LENGTH]];

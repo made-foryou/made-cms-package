@@ -57,6 +57,21 @@ it('tells which pages give a visitor more than one h1 in their strips', function
         ->and($attention->of($about->id)->isEmpty())->toBeTrue();
 });
 
+it('flags every page that shares its title in Google with another, but not a noindex twin', function (): void {
+    config(['app.name' => 'TTV Merwestad']);
+    $contact = Page::factory()->published()->withMeta('Contact | TTV Merwestad', 'Bel of mail ons.')->at('/contact')->create(['title' => 'Contact']);
+    $join = Page::factory()->published()->withMeta('contact | ttv merwestad', 'Word lid.')->at('/lid-worden')->create(['title' => 'Lid worden']);
+    $intern = Page::factory()->published()->noindex()->withMeta('Contact | TTV Merwestad', 'Intern.')->at('/intern')->create(['title' => 'Intern']);
+
+    $attention = ListAttentionByPage::run();
+    $reasons = static fn (Page $page): array => array_map(static fn (AttentionItem $item): AttentionReason => $item->reason, $attention->of($page->id)->items);
+
+    expect($reasons($contact))->toBe([AttentionReason::MetaTitleShared])
+        ->and($attention->of($contact->id)->items[0]->names)->toBe(['Lid worden'])
+        ->and($reasons($join))->toBe([AttentionReason::MetaTitleShared])
+        ->and($reasons($intern))->toBe([]);
+});
+
 it('reads the pages, their addresses and their photos without an alt text once, however many pages there are', function (int $count): void {
     app()->instance(StripTypes::class, new StripTypes([new Hero, new InlineStripType('kop', [Heading::make('kop')->tag('h1')], 'Kop')]));
 

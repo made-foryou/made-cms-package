@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Made\CmsPackage\Content\Attention\PublicationFailedSource;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
 use Made\CmsPackage\Content\Models\Page;
 
 it('asks for attention at once when a strip stopped the planned publication of the draft', function (Closure $page): void {
-    expect((new PublicationFailedSource)->items($page()))->toEqual([
+    expect((new PublicationFailedSource)->items($page(), new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::PublicationFailed, AttentionSeverity::High),
     ]);
 })->with([
@@ -21,7 +22,7 @@ it('asks for attention at once when a strip stopped the planned publication of t
 ]);
 
 it('leaves a page alone that no strip stopped, or a live page without a draft to publish', function (Closure $page): void {
-    expect((new PublicationFailedSource)->items($page()))->toBe([]);
+    expect((new PublicationFailedSource)->items($page(), new AttentionContext))->toBe([]);
 })->with([
     'nothing stopped' => [static fn (): Page => Page::factory()->published()->withDraft([storedStrip(id: 'a')])->create()],
     'no draft any more' => [static fn (): Page => Page::factory()->published()

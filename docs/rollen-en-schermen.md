@@ -31,7 +31,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Nieuws (`news`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
 | Media (`media`) | ✓ | ✓ | ✓ |  |  | Verzamelingen | gebouwd (#55, mappen #56, bestandsacties #57) |
 | Berichten (`messages`) | ✓ | ✓ | ✓ |  | ✓ | Verzamelingen | nog geen epic |
-| Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#88); het kopniveau in de bewerkschil: gebouwd (#126) |
+| Meta-overzicht (`meta-tags`) | ✓ |  |  | ✓ |  | Vindbaarheid | gebouwd (#88); het kopniveau in de bewerkschil: gebouwd (#126) |
 | Alt-teksten (`alt-texts`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#95) |
 | Links (`links`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #75 (#82); Beheerder ○ in #82 |
 | Redirects (`redirects`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #87 (#93); Beheerder ○ in #93 |
@@ -44,7 +44,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Domein en certificaat (`domain`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
 <!-- matrix:end -->
 
-Pagina's en Media zijn gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
+Pagina's, Media en het Meta-overzicht zijn gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
 
 ## Altijd open
 
@@ -70,7 +70,8 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | De standaard van een linkbestemming wijzigen, en Vervang | `Screen::Links` | Raakt alle plekken van een bestemming. | #75, #82 |
 | Het niveau van een kop kiezen in het zijpaneel (h1–h6 of "Geen kop"), en de weergave "Koppen" naast de Opbouw | `Screen::MetaTags` | De SEO-specialist bepaalt welke structuur Google leest, met de pagina in beeld. De weergave Koppen toont daarvoor alle koppen van de pagina met de signalen; ze is alleen UI. De anderen met Pagina's zien het niveau als label en bewerken de tekst. De server bewaakt het: `UpdateStrip` en `RestoreStrip` houden voor hen het opgeslagen niveau vast (`Visitor::choosesHeadingLevels`). | #124 (besluit 2 en 3), #126, #127 |
 | Titel en omschrijving in Google, "Staat in de sitemap" en "Mag Google hem tonen" van één pagina (`PUT made-cms/pages/{page}/meta`) | `Screen::Pages` | De kaart "Hoe Google hem ziet" op de paginadetail; de Vindbaarheid-schermen tonen dezelfde gegevens voor alle pagina's tegelijk. De link naar het Meta-overzicht staat er alleen voor wie dat scherm opent. | #65 (gebouwd), #87 (besluit 7) |
-| De aandachtspunten van één pagina zien (de kaart "Hoe hij ervoor staat" en de regel in "In het kort" op de paginadetail) | `Screen::Pages` | Ze staan op het scherm van de pagina. Content geeft alleen de reden; `Http\Cms\AttentionActions` bepaalt waar de actie heen gaat en welk scherm daarvoor nodig is. Zonder dat scherm verschijnt geen link. De Google-punten wijzen naar de kaart eronder, "Nog leeg" en een oud concept naar de bewerkschil, "Foto zonder alt-tekst" naar Media (alleen met `Screen::Media`), "Meer dan één H1" naar de weergave Koppen van de bewerkschil (alleen met `Screen::MetaTags`, want alleen wie dat scherm opent kiest het niveau van een kop). | #60 (besluit 5), #66, #71, #128 |
+| Titel en omschrijving van een pagina opslaan vanuit het Meta-overzicht (`PUT made-cms/meta-tags/{page}`) | `Screen::MetaTags` | Het afwerken, één voor één, gebeurt op het scherm zelf. Het slaat alleen de titel en de omschrijving op; "Staat in de sitemap" en "Mag Google hem tonen" blijven zoals ze zijn, die staan op de kaart van de pagina. Het geldt meteen, zoals op die kaart. | #88 |
+| De aandachtspunten van één pagina zien (de kaart "Hoe hij ervoor staat" en de regel in "In het kort" op de paginadetail) | `Screen::Pages` | Ze staan op het scherm van de pagina. Content geeft alleen de reden; `Http\Cms\AttentionActions` bepaalt waar de actie heen gaat en welk scherm daarvoor nodig is. Zonder dat scherm verschijnt geen link. De Google-punten (geen omschrijving, een te lange titel of omschrijving, een titel die een andere pagina ook heeft) wijzen naar de kaart eronder, "Nog leeg" en een oud concept naar de bewerkschil, "Foto zonder alt-tekst" naar Media (alleen met `Screen::Media`), "Meer dan één H1" naar de weergave Koppen van de bewerkschil (alleen met `Screen::MetaTags`, want alleen wie dat scherm opent kiest het niveau van een kop). | #60 (besluit 5), #66, #71, #88, #128 |
 | Een pagina verbergen voor bezoekers of weer tonen (de schakelaar "Zichtbaar voor bezoekers" in De basis, en `PUT made-cms/pages/{page}/visibility` voor "Verbergen" en "Weer tonen" in de kaart Weghalen) | `Screen::Pages` | Hoort bij de basis van een pagina, zoals "Staat in het menu", en is het zachtere alternatief voor verwijderen. Het geldt meteen, buiten het concept. De homepagina blijft zichtbaar. | #60 (besluit 4), #62 |
 | Een pagina dupliceren ("Dupliceren" in de kop van de paginadetail, `POST made-cms/pages/{page}/duplicate`) | `Screen::Pages` | Een nieuwe pagina maken op basis van een bestaande, zoals een nieuwe pagina aanmaken. De kopie is een concept dat nooit gepubliceerd is, dus bezoekers zien niets tot iemand hem publiceert. | #60, #68 |
 | Een versie terugzetten ("Terugzetten" in de kaart "Wat er eerder gebeurde", `POST made-cms/pages/{page}/versions/{number}/restore`) | `Screen::Pages` | De stroken van een oudere versie worden het concept, zoals elke wijziging van de stroken in de bewerkschil. Bezoekers zien niets tot iemand het concept publiceert. | #60, #69 |
@@ -114,6 +115,9 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | 2026-11-07 | De weergave Koppen naast de Opbouw valt ook onder Meta-overzicht; de anderen zien alleen de Opbouw. | #124 (besluit 3), #127 |
 | 2026-11-10 | Uploaden en de alt-tekst van een bestand opslaan staan open voor wie Pagina's of Media opent: één route per handeling, voor de bewerkschil en de bibliotheek. | #51 |
 | 2026-11-13 | Bijsnijden, het brandpunt en de bestandsnaam staan open voor wie Pagina's of Media opent; een bestand naar een map verplaatsen is beheer en valt onder Media, ook in de bijsnijd-stap. | #54 (besluit 3) |
+| 2026-11-27 | Het Meta-overzicht telt alleen de pagina's die Google toont (gepubliceerd, indexeerbaar, niet verborgen), net als de aandachtspunten. Een concept, een verborgen of een noindex-pagina staat alleen onder "Alle". | #88 |
+| 2026-11-27 | Een te lange omschrijving is een aandachtspunt, zodat het Meta-overzicht, de paginadetail en "Vraagt aandacht" dezelfde pagina's tellen. | #88 |
+| 2026-11-27 | "Overslaan" in het Meta-overzicht geldt alleen voor de ronde (in het adres); opslaan zet de titel en de omschrijving meteen live. | #88 |
 
 ## Bijwerken
 

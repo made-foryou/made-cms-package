@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Attention;
 
-use Made\CmsPackage\Content\Actions\CheckShownInGoogle;
-use Made\CmsPackage\Content\Actions\MakeGoogleTitle;
-use Made\CmsPackage\Content\Actions\MeasureMeta;
+use Made\CmsPackage\Content\Actions\MeasurePageMeta;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
-use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Content\Models\Page;
 
 /**
@@ -18,21 +16,17 @@ use Made\CmsPackage\Content\Models\Page;
  */
 final readonly class MetaTitleSource implements AttentionSource
 {
-    public function items(Page $page): array
+    public function items(Page $page, AttentionContext $context): array
     {
-        if (! CheckShownInGoogle::run($page)) {
-            return [];
-        }
+        $measure = MeasurePageMeta::run($page);
 
-        $title = MeasureMeta::run(MetaField::Title, MakeGoogleTitle::run($page));
-
-        if (! $title->tooLong) {
+        if (! $measure->shown() || ! $measure->title->tooLong) {
             return [];
         }
 
         return [new AttentionItem(AttentionReason::MetaTitleTooLong, AttentionSeverity::Medium, [
-            'length' => $title->length,
-            'limit' => $title->limit,
+            'length' => $measure->title->length,
+            'limit' => $measure->title->limit,
         ])];
     }
 }

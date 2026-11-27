@@ -182,6 +182,21 @@ describe('the row of a page', function (): void {
         expect(pagesScreen())->toContain('<span class="boomrij-noot"><span class="boomrij-stip" aria-hidden="true"></span><span class="sr-only">Vraagt aandacht: </span>omschrijving leeg, niet in het menu</span>');
     });
 
+    it('says on the row that the description is longer than Google shows', function (): void {
+        Page::factory()->published()->withStrips([storedStrip()])->withMeta(null, str_repeat('a', 156))->at('/teams')->create(['title' => 'Onze teams']);
+
+        expect(pagesScreen())->toContain('<span class="sr-only">Vraagt aandacht: </span>omschrijving te lang</span>')
+            ->toContain('<span class="standkaart-sub">omschrijving te lang</span>');
+    });
+
+    it('says on the row that another page has the same title in Google', function (): void {
+        Page::factory()->published()->withStrips([storedStrip()])->withMeta('Contact', 'Bel of mail ons.')->at('/contact')->create(['title' => 'Contact']);
+        Page::factory()->published()->withStrips([storedStrip()])->withMeta('Contact', 'Word lid.')->at('/lid-worden')->create(['title' => 'Lid worden']);
+
+        expect(pagesScreen())->toContain('<span class="sr-only">Vraagt aandacht: </span>titel dubbel</span>')
+            ->toContain('<span class="standkaart-sub">titel dubbel</span>');
+    });
+
     it('says on the row how many times the strips give an h1', function (): void {
         app()->instance(StripTypes::class, new StripTypes([new InlineStripType('kop', [Heading::make('kop')->tag('h1')], 'Kop')]));
         Page::factory()->published()->withMeta(null, 'Alle teams.')->at('/teams')

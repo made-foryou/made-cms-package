@@ -248,6 +248,29 @@ abstract class StripType
     }
 
     /**
+     * The running text of the strip (Field::prose()), a text per field that holds it, in the order of its fields, a
+     * missing field from its default. The items of a list are left out: cards are no running text of a page.
+     *
+     * @param  array<string, mixed>  $values  stored values
+     * @return list<string>
+     */
+    final public function prose(array $values): array
+    {
+        $prose = [];
+
+        foreach ($this->fields() as $field) {
+            $key = $field->getKey();
+            $text = $field->prose(array_key_exists($key, $values) ? $values[$key] : $field->getDefault());
+
+            if ($text !== null) {
+                $prose[] = $text;
+            }
+        }
+
+        return $prose;
+    }
+
+    /**
      * The values as they are stored: rich text cleaned, links in their stored form.
      *
      * @param  array<string, mixed>  $values  validated values

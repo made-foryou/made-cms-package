@@ -91,3 +91,25 @@ it('leaves who changed the page last when nothing changed', function (): void {
 
     expect($page->refresh()->updated_by)->toBe($before->id);
 });
+
+it('keeps both switches when the change leaves them out', function (bool $on): void {
+    $page = Page::factory()->at('/teams')->create(['in_sitemap' => $on, 'indexable' => $on]);
+
+    UpdatePageMeta::run($page, new PageMetaChanges(title: 'Onze teams', description: 'Alle teams van de club.'));
+
+    $page->refresh();
+
+    expect($page->meta_title)->toBe('Onze teams')
+        ->and($page->meta_description)->toBe('Alle teams van de club.')
+        ->and($page->in_sitemap)->toBe($on)
+        ->and($page->indexable)->toBe($on);
+})->with([true, false]);
+
+it('tells nothing when only the texts it was given are what the page holds', function (): void {
+    $page = Page::factory()->at('/teams')->withMeta('Onze teams', 'Alle teams van de club.')->create();
+    Event::fake([PageMetaUpdated::class]);
+
+    UpdatePageMeta::run($page, new PageMetaChanges(title: 'Onze teams', description: 'Alle teams van de club.'));
+
+    Event::assertNotDispatched(PageMetaUpdated::class);
+});

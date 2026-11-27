@@ -36,6 +36,7 @@ use Made\CmsPackage\Http\Controllers\Content\ListMediaController;
 use Made\CmsPackage\Http\Controllers\Content\ListMediaFoldersController;
 use Made\CmsPackage\Http\Controllers\Content\MediaLibraryController;
 use Made\CmsPackage\Http\Controllers\Content\MediaLinkController;
+use Made\CmsPackage\Http\Controllers\Content\MetaTagsController;
 use Made\CmsPackage\Http\Controllers\Content\MoveManyMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MoveMediaController;
 use Made\CmsPackage\Http\Controllers\Content\MovePageController;
@@ -63,6 +64,7 @@ use Made\CmsPackage\Http\Controllers\Content\ShowStripsController;
 use Made\CmsPackage\Http\Controllers\Content\StorePageController;
 use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateAltTextController;
+use Made\CmsPackage\Http\Controllers\Content\UpdateMetaTagsController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageMetaController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageShareImageController;
@@ -121,7 +123,7 @@ Route::prefix($prefix)
             // Every screen opens at its own address; until a screen is built, it shows that it is coming. A built screen
             // leaves the loop and keeps the name screens.<screen>, which the menu links to.
             foreach (Screen::cases() as $screen) {
-                if (in_array($screen, [Screen::Pages, Screen::Media], true)) {
+                if (in_array($screen, [Screen::Pages, Screen::Media, Screen::MetaTags], true)) {
                     continue;
                 }
 
@@ -130,6 +132,13 @@ Route::prefix($prefix)
                     ->defaults('screen', $screen->value)
                     ->name('screens.'.$screen->value);
             }
+
+            // The Meta-overzicht: every page with its title and description in Google, worked through one by one with a
+            // plain form that goes on to the next page.
+            Route::middleware(EnsureScreenAccess::using(Screen::MetaTags))->group(function (): void {
+                Route::get('meta-tags', MetaTagsController::class)->name('screens.meta-tags');
+                Route::put('meta-tags/{page}', UpdateMetaTagsController::class)->whereNumber('page')->name('meta-tags.update');
+            });
 
             // The pages screen: the pages in the order of the menu, a page with its basics, a new page, deleting and
             // restoring. Plain forms; a refusal goes back to the form with the error. The tree moves a page with JSON,

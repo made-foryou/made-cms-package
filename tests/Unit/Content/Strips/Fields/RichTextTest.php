@@ -114,3 +114,14 @@ it('keeps a long text whole when cleaning made it longer than the limit of the i
     expect(strlen((string) $stored))->toBeGreaterThan(RichText::MAX_LENGTH)
         ->and($field->render($stored))->toBe($stored);
 });
+
+it('gives its running text without markup, a block per line', function (): void {
+    $html = '<p>Wij trainen op <strong>dinsdag</strong>.</p><ul><li>Jeugd</li><li>Senioren</li></ul>'
+        .'<p>Kom&nbsp;langs &amp; speel<br>mee.</p><p> </p>';
+
+    expect(RichText::make('tekst')->prose($html))->toBe("Wij trainen op dinsdag.\nJeugd\nSenioren\nKom langs & speel\nmee.");
+});
+
+it('has no running text without text', function (mixed $value): void {
+    expect(RichText::make('tekst')->prose($value))->toBeNull();
+})->with([null, '', '<p> </p><ul><li></li></ul>', 12]);

@@ -32,12 +32,15 @@ use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Attention\EmptyPageSource;
 use Made\CmsPackage\Content\Attention\ImageWithoutAltSource;
 use Made\CmsPackage\Content\Attention\ManyH1Source;
+use Made\CmsPackage\Content\Attention\MetaDescriptionLengthSource;
 use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
+use Made\CmsPackage\Content\Attention\MetaTitleSharedSource;
 use Made\CmsPackage\Content\Attention\MetaTitleSource;
 use Made\CmsPackage\Content\Attention\PublicationFailedSource;
 use Made\CmsPackage\Content\Attention\PublicationOverdueSource;
 use Made\CmsPackage\Content\Attention\StaleDraftSource;
 use Made\CmsPackage\Content\Data\AttentionSources;
+use Made\CmsPackage\Content\Data\DescriptionSources;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\ServedAddress;
 use Made\CmsPackage\Content\Data\SitemapSources;
@@ -54,6 +57,7 @@ use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Content\Sitemap\PageSitemapSource;
 use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Content\Suggestions\PageTextDescriptionSource;
 use Made\CmsPackage\Http\Cookies\EditorDevice;
 use Made\CmsPackage\Http\Middleware\InjectLauncher;
 use Made\CmsPackage\Http\Responses\ThrottledResponse;
@@ -81,6 +85,7 @@ class CmsPackageServiceProvider extends ServiceProvider
 
         $this->registerSitemap();
         $this->registerAttention();
+        $this->registerSuggestions();
 
         // Route::madeCms(): the site serves the CMS pages with one line in its own routes. Registered here and not in
         // boot(), because the routes of a site may load as soon as its route provider boots, before this provider does.
@@ -239,9 +244,21 @@ class CmsPackageServiceProvider extends ServiceProvider
             new StaleDraftSource,
             new MetaDescriptionSource,
             new MetaTitleSource,
+            new MetaDescriptionLengthSource,
+            new MetaTitleSharedSource,
             new ImageWithoutAltSource,
             new ManyH1Source,
             new EmptyPageSource,
+        ]));
+    }
+
+    /**
+     * Where a proposed description in Google comes from (SuggestPageDescription): the text of the page now, an AI later.
+     */
+    private function registerSuggestions(): void
+    {
+        $this->app->bind(DescriptionSources::class, static fn (): DescriptionSources => new DescriptionSources([
+            new PageTextDescriptionSource,
         ]));
     }
 

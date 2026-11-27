@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Attention;
 
-use Made\CmsPackage\Content\Actions\CheckShownInGoogle;
-use Made\CmsPackage\Content\Actions\MeasureMeta;
+use Made\CmsPackage\Content\Actions\MeasurePageMeta;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
-use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Content\Models\Page;
 
 /**
@@ -17,9 +16,11 @@ use Made\CmsPackage\Content\Models\Page;
  */
 final readonly class MetaDescriptionSource implements AttentionSource
 {
-    public function items(Page $page): array
+    public function items(Page $page, AttentionContext $context): array
     {
-        if (! CheckShownInGoogle::run($page) || ! MeasureMeta::run(MetaField::Description, $page->meta_description)->missing) {
+        $measure = MeasurePageMeta::run($page);
+
+        if (! $measure->shown() || ! $measure->description->missing) {
             return [];
         }
 

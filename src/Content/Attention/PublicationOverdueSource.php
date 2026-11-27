@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Attention;
 
 use Carbon\CarbonImmutable;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
@@ -20,7 +21,7 @@ final readonly class PublicationOverdueSource implements AttentionSource
     /** The minutes the scheduler gets before a planned publication counts as late. */
     public const int OVERDUE_MINUTES = 5;
 
-    public function items(Page $page): array
+    public function items(Page $page, AttentionContext $context): array
     {
         if ($page->publish_at === null || $page->publish_at->greaterThanOrEqualTo(CarbonImmutable::now()->subMinutes(self::OVERDUE_MINUTES))) {
             return [];

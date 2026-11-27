@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Actions;
 
 use Lorisleiva\Actions\Concerns\AsAction;
-use Made\CmsPackage\Content\Enums\PageStatus;
+use Made\CmsPackage\Content\Enums\NotShownInGoogle;
 use Made\CmsPackage\Content\Models\Page;
 
 final class CheckShownInGoogle
@@ -18,6 +18,6 @@ final class CheckShownInGoogle
      */
     public function handle(Page $page): bool
     {
-        return $page->status === PageStatus::Published && $page->indexable && ! $page->hidden;
+        return NotShownInGoogle::of($page->status, $page->hidden, $page->indexable) === null;
     }
 }

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Attention\ManyH1Source;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
@@ -36,7 +37,7 @@ it('asks for one h1 when the strips a visitor sees hold more, and names their st
         storedStrip('tekst-foto', ['kop' => mainHeading('Over de club')]),
     ])->create();
 
-    expect((new ManyH1Source)->items($page))->toEqual([
+    expect((new ManyH1Source)->items($page, new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::ManyH1, AttentionSeverity::Medium, ['count' => 2], ['Hero', 'Tekst met foto']),
     ]);
 });
@@ -44,7 +45,7 @@ it('asks for one h1 when the strips a visitor sees hold more, and names their st
 it('leaves a page alone with one h1 a visitor sees', function (array $strips): void {
     $page = Page::factory()->published()->withStrips($strips)->create();
 
-    expect((new ManyH1Source)->items($page))->toBe([]);
+    expect((new ManyH1Source)->items($page, new AttentionContext))->toBe([]);
 })->with([
     'one h1' => [[storedStrip('hero', ['kop' => 'Welkom']), storedStrip('tekst-foto', ['kop' => 'Over de club'])]],
     'a second one in a hidden strip' => [[storedStrip('hero', ['kop' => 'Welkom']), storedStrip('tekst-foto', ['kop' => mainHeading('Over de club')], visible: false)]],
@@ -59,7 +60,7 @@ it('counts only the published strips, never the draft', function (): void {
         ->withDraft([...$published, storedStrip('tekst-foto', ['kop' => mainHeading('Over de club')])])
         ->create();
 
-    expect((new ManyH1Source)->items($page))->toBe([]);
+    expect((new ManyH1Source)->items($page, new AttentionContext))->toBe([]);
 });
 
 it('counts an h1 in a list, and names a strip once however many it holds', function (): void {
@@ -67,7 +68,7 @@ it('counts an h1 in a list, and names a strip once however many it holds', funct
         storedStrip('kaarten', ['kaarten' => [['id' => 'a', 'titel' => mainHeading('Jeugd')], ['id' => 'b', 'titel' => 'Senioren'], ['id' => 'c', 'titel' => mainHeading('Recreanten')]]]),
     ])->create();
 
-    expect((new ManyH1Source)->items($page))->toEqual([
+    expect((new ManyH1Source)->items($page, new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::ManyH1, AttentionSeverity::Medium, ['count' => 2], ['Kaarten']),
     ]);
 });
@@ -75,7 +76,7 @@ it('counts an h1 in a list, and names a strip once however many it holds', funct
 it('counts the h1 of a heading the strip renders from its default', function (): void {
     $page = Page::factory()->published()->withStrips([storedStrip('intro'), storedStrip('hero', ['kop' => 'Welkom'])])->create();
 
-    expect((new ManyH1Source)->items($page))->toEqual([
+    expect((new ManyH1Source)->items($page, new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::ManyH1, AttentionSeverity::Medium, ['count' => 2], ['Intro', 'Hero']),
     ]);
 });
@@ -87,13 +88,13 @@ it('names every type once, in the order of the page', function (): void {
         storedStrip('hero', ['kop' => 'Lid worden']),
     ])->create();
 
-    expect((new ManyH1Source)->items($page))->toEqual([
+    expect((new ManyH1Source)->items($page, new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::ManyH1, AttentionSeverity::Medium, ['count' => 3], ['Hero', 'Tekst met foto']),
     ]);
 });
 
 it('leaves a page alone that Google does not show', function (Closure $page): void {
-    expect((new ManyH1Source)->items($page()))->toBe([]);
+    expect((new ManyH1Source)->items($page(), new AttentionContext))->toBe([]);
 })->with([
     'never published' => [static fn (): Page => Page::factory()->withStrips([storedStrip('hero', ['kop' => 'Een']), storedStrip('hero', ['kop' => 'Twee'])])->create()],
     'noindex' => [static fn (): Page => Page::factory()->published()->withStrips([storedStrip('hero', ['kop' => 'Een']), storedStrip('hero', ['kop' => 'Twee'])])->create(['indexable' => false])],

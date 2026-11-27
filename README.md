@@ -184,7 +184,7 @@ AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [Role::C
 
 In the menu the screens sit in four groups, in this order: your site (pages), collections (news, media, messages), findability (meta tags, alt texts, links, redirects, sitemap, keywords) and management (users and roles, forms, backups, log, domain). `Screen::group()` gives the `ScreenGroup` of a screen.
 
-Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). The pages screen and the media library are built; the other screens show that they are coming until they are. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
+Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). The pages screen, the media library and the Meta-overzicht are built; the other screens show that they are coming until they are. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
 
 ```php
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
@@ -208,7 +208,7 @@ The pages screen at `/made-cms/pages` lists every page of the site in the order 
 - **Order and nesting**: drag a page by its grip to change the order, and to the right to hang it under the page above; a line says where it lands ("Bovenaan", "Onder Over ons"). Without a mouse, the buttons of a row (up, down, under the previous page, one level up) do the same and show on focus; a move is read out. The pages under a page move along and every address follows (`MovePage`). The tree hangs a page no deeper than three levels and puts nothing before or under the home page; "Ligt onder" on the page itself goes deeper.
 - **New page** (`/made-cms/pages/new`) asks one question per step: the name, from which the address follows, and the place: at the top or under another page. The page starts as an empty draft, last in the menu, and opens on the site to be filled.
 - **One page** (`/made-cms/pages/{page}`) changes the name, the address, the parent and whether the page is in the menu. The pages under it move along, and their addresses follow. The switch says the place of the page in the menu of the site, counting only what the site shows there: a draft says where it comes once published.
-- **How it is doing** ("Hoe hij ervoor staat"), the first card on that screen, lists what the page asks for attention, the urgent first, each with the way to what solves it: a planned publication a strip stopped or that is more than five minutes late, a draft of a published page that is open longer than `pages.stale_draft_days` (5) days (unless it is planned), a missing description or a title Google cuts off (only for a page Google shows), a photo on the page without an alt text ("Vul in bij Media", for whoever opens Media), more than one h1 in the strips visitors see, with the strips that hold them (only for a page Google shows; "Bekijk de koppen op de site" opens the overview Koppen of the edit shell for whoever chooses the level of a heading, and `/made-cms/pages/{page}/edit?view=headings` does the same), and a page that is still empty and was never published. The column "In het kort" beside the cards says it in one line. `ListPageAttention::run($page)` gives the same points; they come from small sources (`Content\Attention\AttentionSource`), so links add their own later.
+- **How it is doing** ("Hoe hij ervoor staat"), the first card on that screen, lists what the page asks for attention, the urgent first, each with the way to what solves it: a planned publication a strip stopped or that is more than five minutes late, a draft of a published page that is open longer than `pages.stale_draft_days` (5) days (unless it is planned), a missing description, a title or a description Google cuts off, or a title in Google another page Google shows has too, naming those pages (only for a page Google shows), a photo on the page without an alt text ("Vul in bij Media", for whoever opens Media), more than one h1 in the strips visitors see, with the strips that hold them (only for a page Google shows; "Bekijk de koppen op de site" opens the overview Koppen of the edit shell for whoever chooses the level of a heading, and `/made-cms/pages/{page}/edit?view=headings` does the same), and a page that is still empty and was never published. The column "In het kort" beside the cards says it in one line. `ListPageAttention::run($page)` gives the same points; they come from small sources (`Content\Attention\AttentionSource`, `items(Page $page, AttentionContext $context)`: the context is what a source may know of the other pages, worked out once), so links add their own later.
 - **Duplicating** ("Dupliceren" in the head of that screen) makes a new page from this one, such as another team page: a draft "{name} (kopie)" right after it, under the same parent, at its address plus `-kopie` (numbered when that address is taken; a slug that would be too long loses the end of its own part). The copy takes the type, the meta, the visibility, the place in the menu and the share image, and the strips as an editor works on them (the draft, else the published strips) as its draft, each strip under an id of its own; a strip whose type the site no longer has stays behind. The pages under it do not come along, and duplicating the home page gives an ordinary page at the top. The screen of the copy opens with "Team (kopie) is gemaakt als kopie van Team.". `DuplicatePage::run($page, editorId: $editor->id)` does the same.
 - **What is on it** ("Wat erop staat"), below the basics, lists the strips of the page as an editor works on them, each with its summary, its number of fields and "Bewerken", which opens the edit shell with that strip chosen (`/made-cms/pages/{page}/edit?strip={id}`). The column "In het kort" sums the page up: published or created when and by whom, its type, the page above it, its place in the menu, the pages below it and its strips. `SummarizePage::run($page, ListPages::run())` gives the same facts.
 - **How Google sees it**, a card of its own on that screen, changes the title and the description in Google, with counters that follow the typing and the result as Google shows it, and the switches "Staat in de sitemap" and "Mag Google hem tonen". It saves on its own and holds for the site at once; see [Page meta](#page-meta) for printing it. `UpdatePageMeta` stores it, `MeasureMeta` counts a text as Google gets it (60 characters of a title, 155 of a description).
@@ -579,6 +579,25 @@ The apps that show a shared link (WhatsApp, LinkedIn, Facebook) read the HTML th
     ],
 ],
 ```
+
+## Meta-overzicht
+
+The Meta-overzicht at `/made-cms/meta-tags` is where the SEO specialist (and the admin) works through the titles and descriptions of every page in Google at once. It lists every page in the order of the menu with two bars, for the title Google shows (its own, or "{name} · {site}" without one) against 60 characters and for the description against 155: red when it is missing or too long, amber above nine tenths of the limit. The filters "zonder omschrijving", "te lang" and "in orde" count only the pages Google shows (published, indexable, not hidden), the same pages the attention points count; "Alle pagina's" adds the others with why Google does not show them.
+
+"Werk de n punten af" opens the pages that need work one by one beside the list, in the order of the menu: what Google shows of it, the title and the description with bars that follow the typing, a description proposed from the text of the page, and "Opslaan en volgende" or "Overslaan". The address holds where the editor is (`?filter=missing&page=12&done=2`), so skipping holds only for this round. Saving puts the title and the description live at once and leaves the switches of the page as they are; the sitemap follows.
+
+```php
+use Made\CmsPackage\Content\Actions\MeasurePageMeta;
+use Made\CmsPackage\Content\Actions\OpenMetaOverview;
+use Made\CmsPackage\Content\Actions\SuggestPageDescription;
+use Made\CmsPackage\Content\Data\MetaSearch;
+
+MeasurePageMeta::run($page)->standing();          // MetaStanding::Missing, Long or Ok; null when Google does not show it
+OpenMetaOverview::run(new MetaSearch());          // every page with its measure, the filter and the page to work on
+SuggestPageDescription::run($page)?->text;        // "We trainen op dinsdag en donderdag in Mountain Network."
+```
+
+The proposal takes the first whole sentences, up to 155 characters, of the first long text or rich text a visitor sees on the page (never the draft), and proposes nothing below 30 characters. It comes from sources (`Content\Suggestions\DescriptionSource`, listed in `DescriptionSources`), so a source of its own, such as an AI, can join later; a proposal that does not fit is passed by.
 
 ## Sitemap and robots.txt
 
@@ -1179,6 +1198,8 @@ src/
 │   ├── Strips/     the strip type definition API: StripType, the field types and the StripTypes catalogue
 │   ├── PageTypes/  the page type definition API: PageType and the PageTypes catalogue
 │   ├── Sitemap/    the sources of the sitemap, its xml and the patterns of robots.txt
+│   ├── Attention/  the sources of what a page asks for attention
+│   ├── Suggestions/ the sources of a proposed description in Google
 │   ├── Actions/    e.g. RenderStrips, the strips of a page ready to render, and UploadMedia
 │   └── ...
 ├── Console/    technical layer: artisan commands

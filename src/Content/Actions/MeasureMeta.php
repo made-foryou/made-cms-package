@@ -20,12 +20,14 @@ final class MeasureMeta
     public function handle(MetaField $field, ?string $text): MetaLength
     {
         $length = mb_strlen(Str::squish((string) $text));
+        $tooLong = $length > $field->limit();
 
         return new MetaLength(
             length: $length,
             limit: $field->limit(),
             missing: $length === 0,
-            tooLong: $length > $field->limit(),
+            tooLong: $tooLong,
+            nearLimit: ! $tooLong && $length > $field->warnAbove(),
         );
     }
 }

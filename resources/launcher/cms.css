@@ -7832,3 +7832,335 @@ button.tekstlink.alarm {
         animation: none;
     }
 }
+
+/* The Meta-overzicht (design 9.1, 17.1, 17.2; dark 10.1, 18.1, 18.2): the filters, the pages in menu order with a bar
+   for their title and description, and the page to work through beside them. On a narrow screen the panel goes below
+   the list; a link that opens a page lands on it. The bars are svg with their fill as an attribute, so no style
+   attribute is needed. */
+
+.metastand {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+    margin-bottom: 28px;
+}
+
+.metastand-klaar {
+    font-size: 14px;
+    color: var(--made-inhoud-zwak);
+}
+
+.filter-bol.alarm {
+    background: var(--made-alarm);
+}
+
+.filter-bol.goed {
+    background: var(--made-status);
+}
+
+.metalijst {
+    display: flex;
+    flex: 1 1 380px;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.metalijst-kop {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 0 2px;
+    font-size: 14px;
+    color: var(--made-inhoud-zwak);
+}
+
+.metalijst-kolommen {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-subtiel);
+}
+
+.metarijen {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.metarij {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-verhoogd);
+    color: var(--made-inhoud);
+    text-decoration: none;
+}
+
+.metarij:hover {
+    border-color: var(--made-rand-sterk);
+}
+
+.metarij.open {
+    border-color: var(--made-amber);
+    box-shadow: inset 3px 0 0 var(--made-amber);
+}
+
+.metarij-tekst {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.metarij-naam {
+    font-family: var(--font-kop);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.metarij-pad,
+.metarij-reden {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+    overflow-wrap: anywhere;
+}
+
+.metarij-reden {
+    flex-shrink: 0;
+    max-width: 45%;
+    text-align: right;
+}
+
+.metabalken {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 6px;
+    width: 120px;
+}
+
+.metabalk {
+    display: block;
+    width: 100%;
+}
+
+.metabalk svg,
+.metavoortgang-balk {
+    display: block;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.metabalk-spoor {
+    fill: var(--made-rand);
+}
+
+.metabalk-vulling {
+    fill: var(--made-status);
+}
+
+.metabalk.krap .metabalk-vulling {
+    fill: var(--made-amber);
+}
+
+.metabalk.ontbreekt .metabalk-vulling,
+.metabalk.te-lang .metabalk-vulling {
+    fill: var(--made-alarm);
+}
+
+.metavoortgang-balk .metabalk-vulling {
+    fill: var(--made-accent);
+}
+
+.metalijst-uitleg {
+    margin: 6px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.metapaneel,
+.metaklaar {
+    position: sticky;
+    top: 24px;
+    flex: 1 1 460px;
+    min-width: 0;
+    gap: 22px;
+    padding: 26px;
+}
+
+.metapaneel:focus,
+.metaklaar:focus {
+    outline: none;
+}
+
+.metapaneel-kop {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+}
+
+.metapaneel-titel {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metapaneel-titel h2 {
+    margin: 0;
+}
+
+.metavoortgang {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    min-width: 120px;
+}
+
+.metavoortgang .stap {
+    width: 18px;
+    background: var(--made-rand);
+}
+
+.metavoortgang .stap.gedaan {
+    background: var(--made-accent);
+}
+
+.metavoortgang .stap.actief {
+    background: var(--made-inhoud);
+}
+
+.metavoortgang-tekst {
+    font-size: 13px;
+    color: var(--made-inhoud-zwak);
+}
+
+.google-bijschrift {
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6e7f78;
+}
+
+.metameter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.metameter .metabalk {
+    max-width: 320px;
+}
+
+.metameter-teller {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.metavoorstel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 14px 16px;
+    border: 1.5px dashed var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+}
+
+.metavoorstel-kop {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-subtiel);
+}
+
+.metavoorstel-tekst {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.metavoorstel-voet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.metavoorstel-lengte,
+.metapaneel-noot {
+    font-size: 13px;
+    color: var(--made-inhoud-zwak);
+}
+
+.metapaneel-voet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 18px;
+}
+
+.metapaneel-voet .knoppen {
+    align-items: center;
+    gap: 18px;
+}
+
+.metapaneel-noot {
+    margin: 0;
+}
+
+.metaklaar h2 {
+    margin: 0;
+}
+
+.metaklaar-merk {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+}
+
+/* In the dark the border colour is the colour of the cards (design 10.1, 18.1), so the track of a bar and the marks
+   still to come take the strong border, or they would not show. */
+@media (prefers-color-scheme: dark) {
+    .metabalk-spoor,
+    .metavoortgang .stap {
+        fill: var(--made-rand-sterk);
+        background: var(--made-rand-sterk);
+    }
+}
+
+@media (max-width: 720px) {
+    .metapaneel,
+    .metaklaar {
+        position: static;
+        padding: 20px;
+    }
+
+    .metabalken {
+        width: 88px;
+    }
+}

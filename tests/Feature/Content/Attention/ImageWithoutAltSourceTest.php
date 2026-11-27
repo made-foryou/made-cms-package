@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Attention\ImageWithoutAltSource;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
@@ -34,7 +35,7 @@ it('asks for the alt text of a photo on the working copy', function (): void {
     $photo = Media::factory()->create();
     $page = pageWithFiles([storedStrip('hero', ['foto' => $photo->id])]);
 
-    expect((new ImageWithoutAltSource)->items($page))->toEqual([
+    expect((new ImageWithoutAltSource)->items($page, new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::ImageWithoutAlt, AttentionSeverity::Medium, ['count' => 1, 'media' => $photo->id]),
     ]);
 });
@@ -47,7 +48,7 @@ it('counts every photo without an alt text once and gives the one the page shows
         storedStrip('hero', ['foto' => $first->id], visible: false, id: 'h2'),
     ]);
 
-    expect((new ImageWithoutAltSource)->items($page))->toEqual([
+    expect((new ImageWithoutAltSource)->items($page, new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::ImageWithoutAlt, AttentionSeverity::Medium, ['count' => 2, 'media' => $second->id]),
     ]);
 });
@@ -55,7 +56,7 @@ it('counts every photo without an alt text once and gives the one the page shows
 it('leaves a page alone whose files have an alt text or need none', function (Closure $media): void {
     $page = pageWithFiles([storedStrip('hero', ['foto' => $media()->id])]);
 
-    expect((new ImageWithoutAltSource)->items($page))->toBe([]);
+    expect((new ImageWithoutAltSource)->items($page, new AttentionContext))->toBe([]);
 })->with([
     'a photo with an alt text' => [static fn (): Media => Media::factory()->withAlt('Het eerste team')->create()],
     'a document' => [static fn (): Media => Media::factory()->document()->create()],
@@ -69,8 +70,8 @@ it('looks only at the working copy: a photo the draft took away no longer asks, 
     $removed = pageWithFiles([storedStrip('hero', ['foto' => $photo->id], id: 'h')], [storedStrip('hero', ['foto' => $described->id], id: 'h')]);
     $added = pageWithFiles([storedStrip('hero', ['foto' => $described->id], id: 'h')], [storedStrip('hero', ['foto' => $photo->id], id: 'h')]);
 
-    expect((new ImageWithoutAltSource)->items($removed))->toBe([])
-        ->and((new ImageWithoutAltSource)->items($added))->toEqual([
+    expect((new ImageWithoutAltSource)->items($removed, new AttentionContext))->toBe([])
+        ->and((new ImageWithoutAltSource)->items($added, new AttentionContext))->toEqual([
             new AttentionItem(AttentionReason::ImageWithoutAlt, AttentionSeverity::Medium, ['count' => 1, 'media' => $photo->id]),
         ]);
 });
@@ -78,5 +79,5 @@ it('looks only at the working copy: a photo the draft took away no longer asks, 
 it('leaves the share image alone, which its own card asks the alt text of', function (): void {
     $page = pageWithFiles([storedStrip('hero', ['kop' => 'Welkom'])], share: Media::factory()->create());
 
-    expect((new ImageWithoutAltSource)->items($page))->toBe([]);
+    expect((new ImageWithoutAltSource)->items($page, new AttentionContext))->toBe([]);
 });

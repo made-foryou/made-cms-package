@@ -214,4 +214,11 @@ final class Heading extends Field
 
         return ['text' => $value['text'], 'tag' => $value['tag']];
     }
+
+    public function headingLevels(mixed $value): array
+    {
+        $heading = $this->render($value);
+
+        return $heading === null ? [] : [$heading['tag']];
+    }
 }

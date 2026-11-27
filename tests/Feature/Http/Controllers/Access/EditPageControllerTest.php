@@ -531,3 +531,19 @@ it('opens the shell at the structure for a strip it cannot choose', function (st
     'an empty strip' => ['?strip='],
     'a list' => ['?strip[]=a'],
 ]);
+
+it('opens the shell at the overview Koppen for an editor who chooses the level of a heading', function (Role $role, string $query, ?string $view): void {
+    $page = Page::factory()->at('/over-ons')->withDraft([storedStrip('hero', id: 'a')])->create();
+
+    $config = editShellConfig((string) $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit'.$query)->getContent());
+
+    expect($config['view'])->toBe($view);
+})->with([
+    'the seo specialist' => [Role::SeoSpecialist, '?view=headings', 'headings'],
+    'the admin, with a strip chosen too' => [Role::Admin, '?view=headings&strip=a', 'headings'],
+    'the content manager, who has no overview Koppen' => [Role::ContentManager, '?view=headings', null],
+    'no view' => [Role::SeoSpecialist, '', null],
+    'another view' => [Role::SeoSpecialist, '?view=structure', null],
+    'a list' => [Role::SeoSpecialist, '?view[]=headings', null],
+]);

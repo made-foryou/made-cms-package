@@ -12,6 +12,9 @@ use Made\CmsPackage\Content\Actions\DeletePage;
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -177,6 +180,16 @@ describe('the row of a page', function (): void {
         Page::factory()->published()->withStrips([storedStrip()])->inMenu(false)->at('/teams')->create(['title' => 'Onze teams']);
 
         expect(pagesScreen())->toContain('<span class="boomrij-noot"><span class="boomrij-stip" aria-hidden="true"></span><span class="sr-only">Vraagt aandacht: </span>omschrijving leeg, niet in het menu</span>');
+    });
+
+    it('says on the row how many times the strips give an h1', function (): void {
+        app()->instance(StripTypes::class, new StripTypes([new InlineStripType('kop', [Heading::make('kop')->tag('h1')], 'Kop')]));
+        Page::factory()->published()->withMeta(null, 'Alle teams.')->at('/teams')
+            ->withStrips([storedStrip('kop', ['kop' => 'Onze teams']), storedStrip('kop', ['kop' => 'Jeugd'])])
+            ->create(['title' => 'Onze teams']);
+
+        expect(pagesScreen())->toContain('<span class="sr-only">Vraagt aandacht: </span>2 keer een H1</span>')
+            ->toContain('<span class="standkaart-sub">meer dan één H1</span>');
     });
 
     it('says on the row how many photos have no alt text', function (): void {

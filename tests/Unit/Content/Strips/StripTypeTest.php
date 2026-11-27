@@ -3,8 +3,12 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Validator;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
+use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 use Made\CmsPackage\Tests\Fixtures\Strips\Teaser;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Nested\Cards;
@@ -266,4 +270,21 @@ it('sums up a strip by its first text, then by the items of a list', function (a
 
 it('keeps a summary short', function (): void {
     expect(mb_strlen((string) (new Hero)->summary(['kop' => str_repeat('a', 200)])))->toBeLessThanOrEqual(123);
+});
+
+it('gives the levels of the headings a visitor gets, in the order of its fields and items, a missing one from its default', function (): void {
+    $type = new InlineStripType('banner', [
+        Heading::make('kop')->tag('h1')->default('Welkom'),
+        Text::make('label'),
+        Items::make('kaarten', [Heading::make('titel')->tag('h3')]),
+        Heading::make('slot'),
+    ]);
+
+    expect($type->headingLevels([
+        'kaarten' => [['id' => 'a', 'titel' => ['text' => 'Een', 'tag' => 'h1']], ['id' => 'b', 'titel' => 'Twee']],
+        'slot' => ['text' => 'Tot ziens', 'tag' => 'span'],
+        'weg' => ['text' => 'Oud', 'tag' => 'h1'],
+    ]))->toBe(['h1', 'h1', 'h3', 'span'])
+        ->and($type->headingLevels(['kop' => null]))->toBe([])
+        ->and((new Hero)->headingLevels(validHero()))->toBe([]);
 });

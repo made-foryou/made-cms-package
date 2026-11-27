@@ -259,3 +259,15 @@ it('tells the panel which fields of an item have emphasis', function (): void {
 
     expect(array_column($fields, 'emphasis', 'key'))->toBe(['kop' => true, 'label' => false]);
 });
+
+it('gives the levels of the headings of every item a visitor gets, a missing one from its default', function (): void {
+    $items = Items::make('kaarten', [Heading::make('titel')->tag('h3'), Text::make('tekst'), Heading::make('sub')->default(['text' => 'Meer', 'tag' => 'h4'])]);
+
+    expect($items->headingLevels([
+        ['id' => ITEM_A, 'titel' => ['text' => 'Een', 'tag' => 'h1'], 'sub' => null],
+        'geen item',
+        ['id' => ITEM_B, 'titel' => ['text' => '', 'tag' => 'h2'], 'tekst' => 'x'],
+    ]))->toBe(['h1', 'h4'])
+        ->and($items->headingLevels('geen lijst'))->toBe([])
+        ->and($items->headingLevels(null))->toBe([]);
+});

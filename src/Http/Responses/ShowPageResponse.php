@@ -223,15 +223,18 @@ final class ShowPageResponse
     }
 
     /**
-     * The facts the words of an attention point need: its details, and for photos without an alt text the name of the
-     * one the page shows first and how many others there are.
+     * The facts the words of an attention point need: its details, the names it is about in a sentence (the strips of
+     * more than one h1), and for photos without an alt text the name of the one the page shows first and how many
+     * others there are.
      *
      * @return array<string, int|string>
      */
     private static function attentionFacts(AttentionItem $item, PageMedia $media, string $locale): array
     {
+        $facts = $item->names === [] ? $item->details : [...$item->details, 'names' => self::listing($item->names, $locale)];
+
         if ($item->reason !== AttentionReason::ImageWithoutAlt) {
-            return $item->details;
+            return $facts;
         }
 
         $first = array_values(array_filter(
@@ -240,7 +243,7 @@ final class ShowPageResponse
         ))[0] ?? null;
 
         return [
-            ...$item->details,
+            ...$facts,
             'name' => $first === null
                 ? (string) __('made-cms-package::pages.show.attention.reasons.image_without_alt.unnamed', [], $locale)
                 : self::fileName($first),
@@ -474,7 +477,7 @@ final class ShowPageResponse
 
             $parts[] = $text('part', [
                 'change' => trans_choice('made-cms-package::pages.show.versions.'.$kind, count($names), [], $locale),
-                'names' => self::stripNames($names, $text, $locale),
+                'names' => self::listing(array_map(static fn (string $name): string => $text('name', ['name' => $name]), $names), $locale),
             ]);
         }
 
@@ -482,21 +485,23 @@ final class ShowPageResponse
     }
 
     /**
+     * The names in a sentence, up to three and the number of the rest: "Hero, Kaarten en Tekst met foto",
+     * "Hero, Kaarten, Tekst en 2 andere".
+     *
      * @param  list<string>  $names
-     * @param  callable(string, array<string, string>): string  $text
      */
-    private static function stripNames(array $names, callable $text, string $locale): string
+    private static function listing(array $names, string $locale): string
     {
-        $shown = array_map(static fn (string $name): string => $text('name', ['name' => $name]), array_slice($names, 0, 3));
+        $shown = array_slice($names, 0, 3);
         $rest = count($names) - count($shown);
 
         if ($rest > 0) {
-            return implode(', ', $shown).' '.trans_choice('made-cms-package::pages.show.versions.more', $rest, [], $locale);
+            return implode(', ', $shown).' '.trans_choice('made-cms-package::pages.show.list.more', $rest, [], $locale);
         }
 
         $last = (string) array_pop($shown);
 
-        return $shown === [] ? $last : implode(', ', $shown).' '.$text('and', []).' '.$last;
+        return $shown === [] ? $last : implode(', ', $shown).' '.__('made-cms-package::pages.show.list.and', [], $locale).' '.$last;
     }
 
     private static function typeName(PageTypes $types, ?string $type, string $locale): string

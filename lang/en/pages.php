@@ -64,6 +64,7 @@ return [
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
                 'image_without_alt' => 'photos without an alt text',
+                'many_h1' => 'more than one H1',
                 'empty' => 'still empty',
             ],
         ],
@@ -165,6 +166,12 @@ return [
                     'short' => '{1} photo without an alt text|[2,*] :count photos without an alt text',
                     'unnamed' => 'A photo on this page',
                 ],
+                'many_h1' => [
+                    'title' => ':count times an H1 in the strips',
+                    'meta' => 'In :names. One per page is enough; make the others an H2.',
+                    'action' => 'See the headings on the site',
+                    'short' => ':count times an H1',
+                ],
                 'empty' => [
                     'title' => 'Still empty',
                     'meta' => 'It holds no strips yet.',
@@ -230,6 +237,10 @@ return [
             ],
             'note' => 'Changes on this page are saved at once. Only what you edit on the site itself goes live with “Publish”.',
         ],
+        'list' => [
+            'and' => 'and',
+            'more' => '{1} and 1 other|[2,*] and :count others',
+        ],
         'versions' => [
             'heading' => 'What happened before',
             'note' => 'every publication is a version',
@@ -243,8 +254,6 @@ return [
             'removed' => '{1} 1 strip removed|[2,*] :count strips removed',
             'part' => ':change: :names',
             'name' => '‘:name’',
-            'and' => 'and',
-            'more' => '{1} and 1 other|[2,*] and :count others',
             'number' => 'Version :number',
             'live' => 'live now',
             'restore' => 'Restore',

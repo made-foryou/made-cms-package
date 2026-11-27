@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Made\CmsPackage\Access\Enums\Role;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\SyncMediaUsage;
@@ -13,6 +14,9 @@ use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaFolder;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\PageVersion;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
 
 beforeEach(function (): void {
     config(['app.url' => 'http://localhost', 'app.name' => 'TTV Merwestad']);
@@ -469,6 +473,43 @@ describe('the card "Hoe hij ervoor staat"', function (): void {
         'the owner' => [Role::Owner, false],
         'the seo specialist' => [Role::SeoSpecialist, false],
     ]);
+
+    it('asks for one h1, naming the strips, with the way to the overview Koppen only for an editor who chooses levels', function (Role $role, bool $linked): void {
+        app()->instance(StripTypes::class, new StripTypes([
+            new InlineStripType('hero', [Heading::make('kop')->tag('h1')], 'Hero'),
+            new InlineStripType('tekst-foto', [Heading::make('kop')], 'Tekst met foto'),
+        ]));
+        $this->actingAs(Editor::factory()->withRoles($role)->create(), 'made-cms');
+        $page = Page::factory()->published()->withMeta('Onze teams', 'Alle teams.')->at('/teams')
+            ->withStrips([storedStrip('hero', ['kop' => 'Welkom']), storedStrip('tekst-foto', ['kop' => ['text' => 'Over de club', 'tag' => 'h1']])])
+            ->create();
+
+        $html = pageScreen($page);
+
+        expect($html)
+            ->toContain('<span class="aandacht-titel"><span class="sr-only">Binnenkort: </span>2 keer een H1 in de stroken</span>')
+            ->toContain('<span class="punt-meta">In Hero en Tekst met foto. Eén per pagina is genoeg; maak de andere een H2.</span>')
+            ->and(str_contains($html, '<a class="tekstlink klein" href="/made-cms/pages/'.$page->id.'/edit?view=headings">Bekijk de koppen op de site</a>'))->toBe($linked);
+    })->with([
+        'the seo specialist' => [Role::SeoSpecialist, true],
+        'the admin' => [Role::Admin, true],
+        'the content manager' => [Role::ContentManager, false],
+        'the owner' => [Role::Owner, false],
+    ]);
+
+    it('names three strips with an h1 and counts the rest', function (): void {
+        app()->instance(StripTypes::class, new StripTypes(array_map(
+            static fn (string $label): InlineStripType => new InlineStripType(Str::slug($label), [Heading::make('kop')->tag('h1')], $label),
+            ['Hero', 'Intro', 'Teams', 'Locatie', 'Contact'],
+        )));
+        $page = Page::factory()->published()->withMeta('Onze teams', 'Alle teams.')->at('/teams')
+            ->withStrips(array_map(static fn (string $type): array => storedStrip($type, ['kop' => ucfirst($type)]), ['hero', 'intro', 'teams', 'locatie', 'contact']))
+            ->create();
+
+        expect(pageScreen($page))
+            ->toContain('5 keer een H1 in de stroken</span>')
+            ->toContain('<span class="punt-meta">In Hero, Intro, Teams en 2 andere. Eén per pagina is genoeg; maak de andere een H2.</span>');
+    });
 
     it('says in the column that an empty page that was never published is still empty', function (): void {
         $page = Page::factory()->at('/jeugd')->create(['title' => 'Jeugd']);

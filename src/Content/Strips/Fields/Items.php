@@ -309,6 +309,27 @@ final class Items extends Field
     }
 
     /**
+     * The levels of the headings of every item in order, a missing field from its default, as render() gives them.
+     */
+    public function headingLevels(mixed $value): array
+    {
+        $levels = [];
+
+        foreach (is_array($value) ? $value : [] as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            foreach ($this->fields as $field) {
+                $key = $field->getKey();
+                $levels = [...$levels, ...$field->headingLevels(array_key_exists($key, $item) ? $item[$key] : $field->getDefault())];
+            }
+        }
+
+        return $levels;
+    }
+
+    /**
      * The files of every item, in order, by the id of the item: "kaarten.{id}.foto". An item without an id that fits
      * in a path (stored without the Actions) goes by its position in the list.
      */

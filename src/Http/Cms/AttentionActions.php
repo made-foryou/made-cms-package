@@ -18,7 +18,8 @@ final class AttentionActions
 {
     /**
      * A photo without an alt text leads to Media, where its alt text holds everywhere: the one photo chosen, or the
-     * photos of the library without one when the page has more.
+     * photos of the library without one when the page has more. More than one h1 leads to the overview Koppen of the
+     * edit shell, only for an editor who chooses the level of a heading (Meta-overzicht).
      *
      * @param  list<Screen>  $screens  the screens of the editor (ListScreens)
      */
@@ -32,6 +33,7 @@ final class AttentionActions
                 MediaLinks::missingAlt((int) ($item->details['count'] ?? 0), (int) ($item->details['media'] ?? 0)),
                 Screen::Media,
             ],
+            AttentionReason::ManyH1 => [PageLinks::headings($page), Screen::MetaTags],
         };
 
         return $screen === null || in_array($screen, $screens, true) ? $url : null;

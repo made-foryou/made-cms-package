@@ -9,6 +9,10 @@ use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Strips\Fields\Heading;
+use Made\CmsPackage\Content\Strips\StripTypes;
+use Made\CmsPackage\Tests\Fixtures\Strips\InlineStripType;
+use Made\CmsPackage\Tests\Fixtures\Strips\Valid\Hero;
 
 beforeEach(function (): void {
     config(['app.url' => 'https://example.test', 'app.name' => 'TTV Merwestad']);
@@ -37,13 +41,30 @@ it('leaves out the deleted pages', function (): void {
     expect(ListAttentionByPage::run()->of($page->id)->isEmpty())->toBeTrue();
 });
 
-it('reads the pages, their addresses and their photos without an alt text once, however many pages there are', function (int $count): void {
-    useStripTypes();
+it('tells which pages give a visitor more than one h1 in their strips', function (): void {
+    app()->instance(StripTypes::class, new StripTypes([new InlineStripType('kop', [Heading::make('kop')->tag('h1')], 'Kop')]));
+    $teams = Page::factory()->published()->withMeta('Onze teams', 'Alle teams.')->at('/teams')
+        ->withStrips([storedStrip('kop', ['kop' => 'Onze teams']), storedStrip('kop', ['kop' => 'Jeugd'])])
+        ->create();
+    $about = Page::factory()->published()->withMeta('Over ons', 'Wie we zijn.')->at('/over-ons')
+        ->withStrips([storedStrip('kop', ['kop' => 'Over ons'])])
+        ->create();
 
-    // Published, shown in Google and without a title of their own: the title Google gets needs the address.
+    $attention = ListAttentionByPage::run();
+
+    expect(array_map(static fn (AttentionItem $item): AttentionReason => $item->reason, $attention->of($teams->id)->items))
+        ->toBe([AttentionReason::ManyH1])
+        ->and($attention->of($about->id)->isEmpty())->toBeTrue();
+});
+
+it('reads the pages, their addresses and their photos without an alt text once, however many pages there are', function (int $count): void {
+    app()->instance(StripTypes::class, new StripTypes([new Hero, new InlineStripType('kop', [Heading::make('kop')->tag('h1')], 'Kop')]));
+
+    // Published, shown in Google and without a title of their own: the title Google gets needs the address. Their
+    // strips give two h1's, which the source reads from the strips loaded with the page.
     for ($i = 0; $i < $count; $i++) {
         $page = Page::factory()->published()->at('/pagina-'.$i)
-            ->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id])])
+            ->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id]), storedStrip('kop', ['kop' => 'Een']), storedStrip('kop', ['kop' => 'Twee'])])
             ->create();
         SyncMediaUsage::run($page);
     }
@@ -52,5 +73,6 @@ it('reads the pages, their addresses and their photos without an alt text once, 
     $attention = ListAttentionByPage::run();
 
     expect(DB::getQueryLog())->toHaveCount(3)
-        ->and($attention->flagged())->toBe($count);
+        ->and($attention->flagged())->toBe($count)
+        ->and($attention->reasons())->toContain(AttentionReason::ImageWithoutAlt, AttentionReason::ManyH1);
 })->with([3, 30]);

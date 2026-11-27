@@ -37,8 +37,9 @@ final class EditPageResponse
      * @param  bool  $headingLevels  whether the editor chooses the level of a heading (Visitor::choosesHeadingLevels)
      * @param  MediaFolder|null  $folder  the folder the editor chose last in the picker (MediaFolderMemory); null for "Alle bestanden"
      * @param  string|null  $chosen  the id of the strip the shell opens with chosen; one it cannot choose opens the structure
+     * @param  bool  $headings  whether the shell opens at the overview Koppen, which only an editor who chooses levels has
      */
-    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, array $types, bool $headingLevels, ?MediaFolder $folder = null, ?string $chosen = null): Response
+    public static function make(Editor $editor, array $screens, Page $page, EditableStrips $strips, DraftChanges $changes, array $types, bool $headingLevels, ?MediaFolder $folder = null, ?string $chosen = null, bool $headings = false): Response
     {
         $locale = Locale::launcher();
         $t = fn (string $key, array $replace = []): string => (string) __('made-cms-package::cms.edit.'.$key, $replace, $locale);
@@ -104,6 +105,8 @@ final class EditPageResponse
                 // The strip to choose at once: only one of the working copy whose type the catalogue has, as the
                 // structure opens only those.
                 'chosen' => self::choosable($strips, $chosen),
+                // The view to open at once: the overview Koppen, only for an editor who has its tab.
+                'view' => $headings && $headingLevels ? 'headings' : null,
                 'types' => array_map(static fn (StripType $type): array => [
                     'key' => $type->key(),
                     'label' => $type->label(),

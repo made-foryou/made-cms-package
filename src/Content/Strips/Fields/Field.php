@@ -193,6 +193,18 @@ abstract class Field
     }
 
     /**
+     * The levels of the headings a visitor gets from a stored value, as render() gives them: a heading its level ("h1"
+     * to "h6", or "span" at "Geen kop"), none without a text; a list those of its items in order. Fields that are no
+     * heading give none.
+     *
+     * @return list<string>
+     */
+    public function headingLevels(mixed $value): array
+    {
+        return [];
+    }
+
+    /**
      * The labels that name a place in this field, from the rest of its path after its key: the label of the field
      * itself without a rest. A list names an item by its label and its number in the stored value. Null when the rest
      * is no place in it.

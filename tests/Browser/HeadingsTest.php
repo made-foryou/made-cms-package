@@ -153,3 +153,40 @@ it('shows a content manager the opbouw without the tab Koppen', function (): voi
         ->assertSeeIn('[data-slot="head-eyebrow"]', 'Opbouw')
         ->assertNoJavaScriptErrors();
 });
+
+it('opens the overview Koppen from the attention point of more than one h1 on the screen of the page', function (): void {
+    $this->actingAs(Editor::factory()->withRoles(Role::SeoSpecialist)->create(), 'made-cms');
+    $teams = Page::factory()->published()->withMeta('Onze teams', 'Alle teams van de club.')->at('/teams')->withStrips([
+        storedStrip('hero', ['kop' => ['text' => 'Onze teams', 'tag' => 'h1']], id: 'hero'),
+        storedStrip('cards', ['kop' => ['text' => 'Jeugd', 'tag' => 'h1'], 'kaarten' => [
+            ['id' => '7e3a4b5c-6d7e-4f8a-8b9c-1d2e3f4a5b6c', 'titel' => 'Welpen', 'tekst' => 'Op zaterdag'],
+        ]], id: 'cards'),
+    ])->create(['title' => 'Onze teams']);
+
+    $screen = visit('/made-cms/pages/'.$teams->id);
+
+    $screen->assertSee('2 keer een H1 in de stroken')
+        ->assertSee('In Hero en Kaarten. Eén per pagina is genoeg; maak de andere een H2.')
+        ->click('a[href$="/edit?view=headings"]');
+
+    expect($screen->script(waitUntil("document.querySelectorAll('[data-slot=\"headings-list\"] li').length === 4")))->toBeTrue()
+        ->and($screen->script(waitUntil(headingSignals().".includes('2 keer een H1')")))->toBeTrue()
+        ->and($screen->script('() => location.pathname + location.search'))->toBe('/made-cms/pages/'.$teams->id.'/edit');
+
+    $screen->assertAttribute('[data-slot="head-tab-headings"]', 'aria-selected', 'true')
+        ->assertSeeIn('[data-slot="head-eyebrow"]', 'Koppen')
+        ->assertMissing('[data-slot="structure-list"]')
+        ->assertNoJavaScriptErrors();
+});
+
+it('opens the opbouw for a content manager at the address of the overview Koppen, and drops it from the address', function (): void {
+    $this->actingAs(Editor::factory()->withRoles(Role::ContentManager)->create(), 'made-cms');
+    $shell = visit('/made-cms/pages/'.$this->page->id.'/edit?view=headings');
+
+    expect($shell->script(waitUntil(siteInFrame()."?.querySelector('made-cms-outlines')?.shadowRoot?.querySelectorAll('.omlijning').length === 2")))->toBeTrue()
+        ->and($shell->script('() => location.search'))->toBe('');
+
+    $shell->assertVisible('[data-slot="structure-list"]')
+        ->assertSeeIn('[data-slot="head-eyebrow"]', 'Opbouw')
+        ->assertNoJavaScriptErrors();
+});

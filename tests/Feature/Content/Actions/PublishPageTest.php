@@ -11,6 +11,7 @@ use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PagePublished;
 use Made\CmsPackage\Content\Exceptions\PageAlreadyPublished;
+use Made\CmsPackage\Content\Exceptions\PublicationRefused;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\PageVersion;
@@ -125,7 +126,7 @@ it('takes the planned publication and the note of a stopped one along', function
 it('keeps the planned publication when it refuses the draft', function (): void {
     $page = Page::factory()->withDraft([storedStrip('hero', ['kop' => null], id: 'a')])->scheduledAt(now()->addDay())->create();
 
-    expect(fn (): mixed => PublishPage::run($page))->toThrow(ValidationException::class)
+    expect(fn (): mixed => PublishPage::run($page))->toThrow(PublicationRefused::class)
         ->and($page->refresh()->publish_at)->not->toBeNull();
 });
 

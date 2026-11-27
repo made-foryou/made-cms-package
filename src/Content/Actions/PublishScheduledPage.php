@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Actions;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Enums\ScheduledPublicationOutcome;
 use Made\CmsPackage\Content\Events\ScheduledPublicationFailed;
+use Made\CmsPackage\Content\Exceptions\PublicationRefused;
 use Made\CmsPackage\Content\Models\Page;
 
 final class PublishScheduledPage
@@ -42,7 +42,7 @@ final class PublishScheduledPage
 
             try {
                 PutDraftLive::run($page, $strips, $page->scheduled_by);
-            } catch (ValidationException) {
+            } catch (PublicationRefused) {
                 $page->publish_at = null;
                 $page->scheduled_by = null;
                 $page->publish_failed_at = $moment;

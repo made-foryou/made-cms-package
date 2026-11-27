@@ -274,6 +274,17 @@ return [
             'label' => 'Zichtbaar voor bezoekers',
             'hint' => 'Uit betekent: alleen via de directe link, niet in menu, sitemap of Google.',
         ],
+        'schedule' => [
+            'label' => 'Publiceren op een moment',
+            'off_live' => 'Nu live. Zet dit aan om een datum te kiezen waarop wijzigingen live gaan.',
+            'off_new' => 'Nog niet live. Zet dit aan om een datum te kiezen waarop de pagina live gaat.',
+            'on' => 'Gaat :at live, met wat er dan in het concept staat.',
+            'nothing' => 'Er staat nog niets in het concept: zonder wijzigingen gebeurt er op dat moment niets.',
+            'late' => 'Stond gepland :at, maar is nog niet gepubliceerd.',
+            'moment' => 'Gaat live op',
+            'zone' => 'Tijd in :zone.',
+            'now' => 'Toch nu publiceren',
+        ],
         'children' => [
             'heading' => 'Pagina’s hieronder',
             'add' => 'Pagina hieronder',
@@ -427,6 +438,7 @@ return [
         'hidden' => ':title is verborgen voor bezoekers.',
         'shown' => ':title is weer zichtbaar voor bezoekers.',
         'duplicated' => ':title is gemaakt als kopie van :origin.',
+        'published' => ':title staat live.',
     ],
     'errors' => [
         'title_required' => 'Geef de pagina een naam.',
@@ -458,5 +470,9 @@ return [
         'duplicate_path_taken' => 'Een andere pagina kreeg net het adres van de kopie. Probeer het nog eens.',
         'duplicate_path_long' => 'Het adres van de kopie wordt langer dan 255 tekens. Geef deze pagina of een pagina erboven eerst een korter adres.',
         'duplicate_parent' => 'De pagina waar deze onder ligt, bestaat niet meer. Er is geen kopie gemaakt.',
+        'publish_at_invalid' => 'Kies de datum en de tijd waarop hij live gaat.',
+        'publish_at_passed' => 'Dat moment is al voorbij. Kies een moment in de toekomst.',
+        'publish_refused' => 'Niet gepubliceerd: een strook houdt hem tegen. Open de pagina op de site om te zien welke.',
+        'nothing_to_publish' => 'Er is niets te publiceren: deze pagina is al live zoals hij is.',
     ],
 ];

@@ -15,6 +15,9 @@ use Made\CmsPackage\Http\Cms\Shell;
  */
 final class PageRedirect
 {
+    /** The card "De basis" on the screen of a page, where a refusal of "Toch nu publiceren" goes back to. */
+    public const string BASICS = 'made-cms-basis';
+
     /** The card "Hoe Google hem ziet" on the screen of a page, where saving it and a refusal go back to. */
     public const string GOOGLE = 'made-cms-google';
 
@@ -106,6 +109,12 @@ final class PageRedirect
         }
 
         return new RestoredVersion($flash['number'], ($flash['replaced'] ?? false) === true, ($flash['draft'] ?? false) === true);
+    }
+
+    public static function published(Page $page): RedirectResponse
+    {
+        return redirect()->route('made-cms-package.pages.show', ['page' => $page->id])
+            ->with(Shell::NOTICE, ['text' => 'published', 'title' => $page->title]);
     }
 
     public static function visibilityChanged(Page $page): RedirectResponse

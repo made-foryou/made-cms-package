@@ -10,6 +10,9 @@ return [
     'dates' => [
         'today' => 'vandaag',
         'yesterday' => 'gisteren',
+        'tomorrow' => 'morgen',
+        'at' => 'op :day om :time',
+        'at_relative' => ':day om :time',
     ],
     'menu' => [
         'label' => 'Hoofdnavigatie',

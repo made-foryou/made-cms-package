@@ -75,6 +75,14 @@ final class PageLinks
         return self::url('made-cms-package.pages.duplicate', ['page' => $page->id]);
     }
 
+    /**
+     * Where "Toch nu publiceren" in the basics puts the draft of a page with a planned publication live at once.
+     */
+    public static function publishNow(Page $page): string
+    {
+        return self::url('made-cms-package.pages.publish.now', ['page' => $page->id]);
+    }
+
     public static function restore(Page|int $page): string
     {
         return self::url('made-cms-package.pages.restore', ['page' => self::id($page)]);

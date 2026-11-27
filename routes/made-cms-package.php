@@ -43,6 +43,7 @@ use Made\CmsPackage\Http\Controllers\Content\MoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
 use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
+use Made\CmsPackage\Http\Controllers\Content\PublishPageNowController;
 use Made\CmsPackage\Http\Controllers\Content\RememberMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RenameMediaController;
@@ -149,6 +150,7 @@ Route::prefix($prefix)
                     ->withTrashed()
                     ->name('pages.restore');
                 Route::post('pages/{page}/duplicate', DuplicatePageController::class)->whereNumber('page')->name('pages.duplicate');
+                Route::post('pages/{page}/publish-now', PublishPageNowController::class)->whereNumber('page')->name('pages.publish.now');
                 Route::post('pages/{page}/versions/{version:number}/restore', RestorePageVersionController::class)
                     ->scopeBindings()
                     ->whereNumber(['page', 'version'])

@@ -274,6 +274,17 @@ return [
             'label' => 'Visible to visitors',
             'hint' => 'Off means: only through the direct link, not in the menu, the sitemap or Google.',
         ],
+        'schedule' => [
+            'label' => 'Publish at a moment',
+            'off_live' => 'Live now. Turn this on to choose a date on which changes go live.',
+            'off_new' => 'Not live yet. Turn this on to choose a date on which the page goes live.',
+            'on' => 'Goes live :at, with what the draft holds by then.',
+            'nothing' => 'The draft holds nothing yet: without changes nothing happens at that moment.',
+            'late' => 'Was planned :at, but is not published yet.',
+            'moment' => 'Goes live on',
+            'zone' => 'Time in :zone.',
+            'now' => 'Publish now anyway',
+        ],
         'children' => [
             'heading' => 'Pages below',
             'add' => 'Page below',
@@ -427,6 +438,7 @@ return [
         'hidden' => ':title is hidden from visitors.',
         'shown' => ':title is visible to visitors again.',
         'duplicated' => ':title is made as a copy of :origin.',
+        'published' => ':title is live.',
     ],
     'errors' => [
         'title_required' => 'Give the page a name.',
@@ -458,5 +470,9 @@ return [
         'duplicate_path_taken' => 'Another page just took the address of the copy. Try again.',
         'duplicate_path_long' => 'The address of the copy gets longer than 255 characters. Give this page or a page above it a shorter address first.',
         'duplicate_parent' => 'The page this one lies under no longer exists. No copy was made.',
+        'publish_at_invalid' => 'Choose the date and the time it goes live.',
+        'publish_at_passed' => 'That moment has passed. Choose a moment in the future.',
+        'publish_refused' => 'Not published: a strip stops it. Open the page on the site to see which one.',
+        'nothing_to_publish' => 'There is nothing to publish: this page is live as it is.',
     ],
 ];

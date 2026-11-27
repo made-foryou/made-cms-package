@@ -10,6 +10,9 @@ return [
     'dates' => [
         'today' => 'today',
         'yesterday' => 'yesterday',
+        'tomorrow' => 'tomorrow',
+        'at' => 'on :day at :time',
+        'at_relative' => ':day at :time',
     ],
     'menu' => [
         'label' => 'Main navigation',

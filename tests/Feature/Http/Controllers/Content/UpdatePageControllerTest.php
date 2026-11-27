@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -151,4 +153,93 @@ it('notes the editor who saves the basics', function (): void {
     $this->put('made-cms/pages/'.$page->id, ['title' => 'Wie we zijn', 'slug' => 'over-ons', 'parent_id' => '', 'in_menu' => '1']);
 
     expect($page->refresh()->updated_by)->toBe($editor->id);
+});
+
+describe('Publiceren op een moment', function (): void {
+    beforeEach(function (): void {
+        $this->travelTo(CarbonImmutable::parse('2026-11-27 14:00:00'));
+        $this->page = Page::factory()->withDraft([])->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+        $this->basics = ['title' => 'Teams', 'slug' => 'teams', 'parent_id' => '', 'in_menu' => '1'];
+    });
+
+    it('plans the publication with the basics and says it is saved', function (): void {
+        $editor = Editor::factory()->create();
+        $this->actingAs($editor, 'made-cms');
+
+        $this->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'scheduled' => '1', 'publish_at' => '2026-11-28T09:00'])
+            ->assertRedirect('/made-cms/pages/'.$this->page->id);
+
+        expect($this->page->refresh()->publish_at?->toDateTimeString())->toBe('2026-11-28 09:00:00')
+            ->and($this->page->scheduled_by)->toBe($editor->id);
+
+        $this->get('made-cms/pages/'.$this->page->id)->assertSee('Teams is opgeslagen.');
+    });
+
+    it('takes a moment with seconds as the browser may send it', function (): void {
+        $this->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'scheduled' => '1', 'publish_at' => '2026-11-28T09:00:00']);
+
+        expect($this->page->refresh()->publish_at?->toDateTimeString())->toBe('2026-11-28 09:00:00');
+    });
+
+    it('reads the moment in the timezone of the app', function (): void {
+        config(['app.timezone' => 'Europe/Amsterdam']);
+
+        $this->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'scheduled' => '1', 'publish_at' => '2026-11-28T10:00']);
+
+        expect(DB::table('cms_pages')->where('id', $this->page->id)->value('publish_at'))->toStartWith('2026-11-28 09:00:00');
+    });
+
+    it('takes the planned publication away with the switch off', function (): void {
+        $this->page->forceFill(['publish_at' => '2026-11-28 09:00:00'])->save();
+
+        $this->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'scheduled' => '0', 'publish_at' => '2026-11-28T09:00']);
+
+        expect($this->page->refresh()->publish_at)->toBeNull();
+    });
+
+    it('keeps the planned publication when the form has no switch for it', function (): void {
+        $this->page->forceFill(['publish_at' => '2026-11-28 09:00:00'])->save();
+
+        $this->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'title' => 'Onze teams']);
+
+        expect($this->page->refresh()->publish_at?->toDateTimeString())->toBe('2026-11-28 09:00:00');
+    });
+
+    it('keeps a planned moment that passed when the basics are saved', function (): void {
+        $this->page->forceFill(['publish_at' => '2026-11-27 09:00:00'])->save();
+
+        $this->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'title' => 'Onze teams', 'scheduled' => '1', 'publish_at' => '2026-11-27T09:00'])
+            ->assertSessionHasNoErrors();
+
+        expect($this->page->refresh()->title)->toBe('Onze teams')
+            ->and($this->page->publish_at?->toDateTimeString())->toBe('2026-11-27 09:00:00');
+    });
+
+    it('refuses another moment that passed and saves nothing', function (): void {
+        $this->from('/made-cms/pages/'.$this->page->id)
+            ->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'title' => 'Onze teams', 'scheduled' => '1', 'publish_at' => '2026-11-27T13:00'])
+            ->assertRedirect('/made-cms/pages/'.$this->page->id)
+            ->assertSessionHasErrors(['publish_at' => 'Dat moment is al voorbij. Kies een moment in de toekomst.']);
+
+        expect($this->page->refresh()->title)->toBe('Teams')
+            ->and($this->page->publish_at)->toBeNull();
+    });
+
+    it('asks for the moment when the switch is on', function (string $moment): void {
+        $this->from('/made-cms/pages/'.$this->page->id)
+            ->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'scheduled' => '1', 'publish_at' => $moment])
+            ->assertSessionHasErrors(['publish_at' => 'Kies de datum en de tijd waarop hij live gaat.']);
+
+        expect($this->page->refresh()->publish_at)->toBeNull();
+    })->with(['', 'morgen', '28-11-2026 09:00']);
+
+    it('shows the refusal at the field with the switch on', function (): void {
+        $this->from('/made-cms/pages/'.$this->page->id)
+            ->put('made-cms/pages/'.$this->page->id, [...$this->basics, 'scheduled' => '1', 'publish_at' => '2026-11-27T13:00']);
+
+        expect((string) $this->get('made-cms/pages/'.$this->page->id)->getContent())
+            ->toContain('id="made-cms-scheduled" name="scheduled" value="1" checked aria-describedby')
+            ->toContain('value="2026-11-27T13:00"')
+            ->toContain('<p class="veld-fout" id="made-cms-publish_at-fout">Dat moment is al voorbij. Kies een moment in de toekomst.</p>');
+    });
 });

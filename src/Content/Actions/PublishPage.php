@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Made\CmsPackage\Content\Actions;
 
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Exceptions\PageAlreadyPublished;
+use Made\CmsPackage\Content\Exceptions\PublicationRefused;
 use Made\CmsPackage\Content\Models\Page;
 
 final class PublishPage
@@ -20,7 +20,7 @@ final class PublishPage
      * (PutDraftLive): it keeps it as the next version of the page and takes a planned publication along.
      *
      * @throws PageAlreadyPublished when the page is published and has no draft
-     * @throws ValidationException keyed by "strips.<strip id>.<field path>"
+     * @throws PublicationRefused keyed by "strips.<strip id>.<field path>"
      */
     public function handle(Page $page, ?int $editorId = null): Page
     {

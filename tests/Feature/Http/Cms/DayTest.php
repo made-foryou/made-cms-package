@@ -39,3 +39,19 @@ it('says a moment as its day in full with the time', function (): void {
         ->and(Day::moment(CarbonImmutable::parse('2024-03-12 10:00:00'), 'nl'))->toBe('12 maart 2024, 10:00')
         ->and(Day::moment(CarbonImmutable::parse('2026-10-20 14:12:00'), 'en'))->toBe('20 October, 2:12 PM');
 });
+
+it('says tomorrow in words', function (): void {
+    expect(Day::of(CarbonImmutable::parse('2026-11-24 09:00:00'), 'nl'))->toBe('morgen')
+        ->and(Day::long(CarbonImmutable::parse('2026-11-24 09:00:00'), 'nl'))->toBe('morgen')
+        ->and(Day::of(CarbonImmutable::parse('2026-11-24 09:00:00'), 'en'))->toBe('tomorrow');
+});
+
+it('says at which moment something happens, in a sentence', function (): void {
+    expect(Day::at(CarbonImmutable::parse('2026-11-23 16:00:00'), 'nl'))->toBe('vandaag om 16:00')
+        ->and(Day::at(CarbonImmutable::parse('2026-11-24 09:00:00'), 'nl'))->toBe('morgen om 09:00')
+        ->and(Day::at(CarbonImmutable::parse('2026-11-22 09:00:00'), 'nl'))->toBe('gisteren om 09:00')
+        ->and(Day::at(CarbonImmutable::parse('2026-12-14 09:00:00'), 'nl'))->toBe('op 14 december om 09:00')
+        ->and(Day::at(CarbonImmutable::parse('2027-01-04 09:00:00'), 'nl'))->toBe('op 4 januari 2027 om 09:00')
+        ->and(Day::at(CarbonImmutable::parse('2026-12-14 09:00:00'), 'en'))->toBe('on 14 December at 9:00 AM')
+        ->and(Day::at(CarbonImmutable::parse('2026-11-24 09:00:00'), 'en'))->toBe('tomorrow at 9:00 AM');
+});

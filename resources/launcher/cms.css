@@ -1890,6 +1890,41 @@ ul.lijst {
     gap: 10px;
 }
 
+/* "Publiceren op een moment": the moment hangs under its switch, in the same frame, only while the switch is on. */
+.planning-blok {
+    display: flex;
+    flex-direction: column;
+}
+
+.planning {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+    padding: 4px 16px 16px;
+    border: 1.5px solid var(--made-rand);
+    border-top: 0;
+    border-radius: 0 0 var(--made-radius-s) var(--made-radius-s);
+    background: var(--made-oppervlak);
+}
+
+.planning .veld {
+    flex: 0 1 280px;
+}
+
+.planning-blok:has(.schakel:checked) .schakelrij {
+    border-bottom: 0;
+    border-radius: var(--made-radius-s) var(--made-radius-s) 0 0;
+}
+
+.planning-blok:has(.schakel:not(:checked)) .planning {
+    display: none;
+}
+
+.planning-blok > .veld-fout {
+    margin-top: 8px;
+}
+
 /* The result in Google (design 15.2): the look of Google itself, so light in the dark too (16.2). The title stays on
    one line and the description on two, about where Google cuts them off. */
 .google {

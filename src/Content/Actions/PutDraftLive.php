@@ -9,6 +9,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PagePublished;
+use Made\CmsPackage\Content\Exceptions\PublicationRefused;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Strips\StripTypes;
 
@@ -31,7 +32,7 @@ final class PutDraftLive
      * the publication. Strips of a type that is no longer in the catalogue cannot be checked and are published as
      * they are.
      *
-     * @throws ValidationException keyed by "strips.<strip id>.<field path>", before anything is written
+     * @throws PublicationRefused keyed by "strips.<strip id>.<field path>", before anything is written
      */
     public function handle(Page $page, PageStrips $strips, ?int $editorId): void
     {
@@ -53,7 +54,7 @@ final class PutDraftLive
     }
 
     /**
-     * @throws ValidationException
+     * @throws PublicationRefused
      */
     private function check(PageStrips $strips): void
     {
@@ -76,7 +77,7 @@ final class PutDraftLive
         }
 
         if ($errors !== []) {
-            throw ValidationException::withMessages($errors);
+            throw PublicationRefused::withMessages($errors);
         }
     }
 }

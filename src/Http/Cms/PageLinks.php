@@ -116,6 +116,15 @@ final class PageLinks
         return $strip === null ? $url : $url.'?'.http_build_query(['strip' => $strip]);
     }
 
+    /**
+     * The edit shell opened at the overview Koppen, for an editor who chooses the level of a heading; anyone else gets
+     * the opbouw.
+     */
+    public static function headings(Page $page): string
+    {
+        return self::edit($page).'?'.http_build_query(['view' => 'headings']);
+    }
+
     private static function id(Page|int $page): int
     {
         return $page instanceof Page ? $page->id : $page;

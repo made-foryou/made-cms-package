@@ -31,6 +31,7 @@ use Made\CmsPackage\Console\Commands\PublishScheduledPagesCommand;
 use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Attention\EmptyPageSource;
 use Made\CmsPackage\Content\Attention\ImageWithoutAltSource;
+use Made\CmsPackage\Content\Attention\ManyH1Source;
 use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
 use Made\CmsPackage\Content\Attention\MetaTitleSource;
 use Made\CmsPackage\Content\Attention\PublicationFailedSource;
@@ -239,6 +240,7 @@ class CmsPackageServiceProvider extends ServiceProvider
             new MetaDescriptionSource,
             new MetaTitleSource,
             new ImageWithoutAltSource,
+            new ManyH1Source,
             new EmptyPageSource,
         ]));
     }

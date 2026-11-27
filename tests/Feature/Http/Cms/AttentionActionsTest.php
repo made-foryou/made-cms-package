@@ -44,6 +44,13 @@ it('points a photo without an alt text at Media with that photo chosen, more pho
         ->toBe('/made-cms/media?without_alt=1');
 });
 
+it('points more than one h1 at the overview Koppen of the edit shell for an editor who chooses the level of a heading', function (): void {
+    $page = Page::factory()->create();
+
+    expect(AttentionActions::url(attentionItem(AttentionReason::ManyH1, ['count' => 2]), $page, [Screen::Pages, Screen::MetaTags]))
+        ->toBe('/made-cms/pages/'.$page->id.'/edit?view=headings');
+});
+
 it('gives no way to a screen the editor does not open', function (AttentionReason $reason, array $screens): void {
     $page = Page::factory()->create();
 
@@ -53,4 +60,5 @@ it('gives no way to a screen the editor does not open', function (AttentionReaso
     [AttentionReason::Empty, [Screen::MetaTags, Screen::Media]],
     [AttentionReason::PublicationFailed, [Screen::MetaTags, Screen::Media]],
     [AttentionReason::ImageWithoutAlt, [Screen::Pages, Screen::AltTexts]],
+    [AttentionReason::ManyH1, [Screen::Pages, Screen::Media]],
 ]);

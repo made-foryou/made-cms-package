@@ -770,7 +770,7 @@ describe('the card "Bestanden op deze pagina"', function (): void {
             ->toContain('<a class="paginabestand" href="/made-cms/media?file='.$document->id.'">')
             ->toContain('<span class="paginabestand-beeld" data-kind="document">')
             ->toContain('<span class="paginabestand-naam">opstelling-najaar.pdf</span>')
-            ->not->toContain('<span class="beeldkaart-stip" role="img" aria-label="Geen alt-tekst"></span>')
+            ->not->toContain('<span class="beeldkaart-stip" aria-hidden="true"></span>')
             ->not->toContain('nog geen alt-tekst (de amber stip)')
             ->and(strpos($html, 'teamfoto-merwestad-1.webp'))->toBeLessThan(strpos($html, 'opstelling-najaar.pdf'))
             ->and(strpos($html, 'Pagina’s hieronder'))->toBeLessThan(strpos($html, 'Bestanden op deze pagina'))
@@ -783,7 +783,8 @@ describe('the card "Bestanden op deze pagina"', function (): void {
         SyncMediaUsage::run($page);
 
         expect(pageScreen($page))
-            ->toContain('<span class="beeldkaart-stip" role="img" aria-label="Geen alt-tekst"></span>')
+            ->toContain('<span class="beeldkaart-stip" aria-hidden="true"></span>')
+            ->toContain('<span class="paginabestand-naam">teamfoto-merwestad-1.webp<span class="sr-only">, geen alt-tekst</span></span>')
             ->toContain('<p class="kaart-tekst">Eén foto heeft nog geen alt-tekst (de amber stip). Vul je die in Media in, dan geldt hij overal. <a class="tekstlink" href="/made-cms/media?file='.$photo->id.'">Alt-tekst invullen</a></p>');
     });
 

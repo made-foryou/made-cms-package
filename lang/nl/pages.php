@@ -178,7 +178,7 @@ return [
             'open' => 'Open in Media',
             'empty' => 'Er staan nog geen bestanden op deze pagina.',
             'unavailable' => 'De bestanden zijn nu niet te tonen: de opslag van Media geeft geen adres waar ze te zien zijn.',
-            'no_alt' => 'Geen alt-tekst',
+            'no_alt' => 'geen alt-tekst',
             'alt' => '{1} Eén foto heeft nog geen alt-tekst (de amber stip). Vul je die in Media in, dan geldt hij overal.|[2,*] :count foto’s hebben nog geen alt-tekst (de amber stip). Vul je ze in Media in, dan gelden ze overal.',
             'alt_elsewhere' => '{1} Eén foto heeft nog geen alt-tekst (de amber stip). Wie Media beheert, vult hem in; dan geldt hij overal.|[2,*] :count foto’s hebben nog geen alt-tekst (de amber stip). Wie Media beheert, vult ze in; dan gelden ze overal.',
             'alt_link' => '{1} Alt-tekst invullen|[2,*] Alt-teksten invullen',

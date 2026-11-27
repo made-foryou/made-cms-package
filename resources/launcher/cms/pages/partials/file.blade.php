@@ -1,4 +1,4 @@
-{{-- One file of the card "Bestanden op deze pagina": its thumbnail, or the icon of its kind (a document as paper), and its name. --}}
+{{-- One file of the card "Bestanden op deze pagina": its thumbnail, or the icon of its kind (a document as paper), and its name; a screen reader hears the dot after it. --}}
 <span class="paginabestand-beeld" data-kind="{{ $file['kind'] }}">
     @if ($file['thumb'] !== null)
         <img src="{{ $file['thumb'] }}" alt="" loading="lazy" decoding="async">
@@ -10,7 +10,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
     @endif
     @if ($file['noAlt'])
-        <span class="beeldkaart-stip" role="img" aria-label="{{ $t('pages.show.files.no_alt') }}"></span>
+        <span class="beeldkaart-stip" aria-hidden="true"></span>
     @endif
 </span>
-<span class="paginabestand-naam">{{ $file['name'] }}</span>
+<span class="paginabestand-naam">{{ $file['name'] }}@if ($file['noAlt'])<span class="sr-only">, {{ $t('pages.show.files.no_alt') }}</span>@endif</span>

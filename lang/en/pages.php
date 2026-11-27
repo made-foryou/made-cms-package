@@ -178,7 +178,7 @@ return [
             'open' => 'Open in Media',
             'empty' => 'There are no files on this page yet.',
             'unavailable' => 'The files cannot be shown now: the storage of Media gives no address to see them at.',
-            'no_alt' => 'No alt text',
+            'no_alt' => 'no alt text',
             'alt' => '{1} One photo has no alt text yet (the amber dot). Fill it in in Media and it holds everywhere.|[2,*] :count photos have no alt text yet (the amber dot). Fill them in in Media and they hold everywhere.',
             'alt_elsewhere' => '{1} One photo has no alt text yet (the amber dot). Whoever manages Media fills it in; then it holds everywhere.|[2,*] :count photos have no alt text yet (the amber dot). Whoever manages Media fills them in; then they hold everywhere.',
             'alt_link' => '{1} Fill in the alt text|[2,*] Fill in the alt texts',

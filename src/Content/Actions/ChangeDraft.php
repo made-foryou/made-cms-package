@@ -15,8 +15,8 @@ final class ChangeDraft
     use AsAction;
 
     /**
-     * The one way to change the draft of a page: every Action that writes the draft, publishes it or throws it away
-     * runs its change through here.
+     * The one way to change the draft of a page: every Action that writes the draft, publishes it, throws it away or
+     * plans its publication runs its change through here.
      *
      * In a transaction it reads the page again with its row locked, so changes at the same time follow each other
      * instead of overwriting each other, and a page loaded before (by the route) never brings an old draft back. The

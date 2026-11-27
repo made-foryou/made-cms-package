@@ -19,6 +19,7 @@ use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
 use Made\CmsPackage\Content\Exceptions\PageSlugTooLong;
 use Made\CmsPackage\Content\Exceptions\ParentPageDeleted;
 use Made\CmsPackage\Content\Exceptions\ParentPageNotFound;
+use Made\CmsPackage\Content\Exceptions\PublicationMomentPassed;
 use Made\CmsPackage\Content\Exceptions\UnknownPageType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Content\Models\Route;
@@ -33,9 +34,10 @@ final class UpdatePage
     ) {}
 
     /**
-     * Changes the name, the address, the parent, the menu flag, whether visitors see a page and its type. A new parent
-     * puts the page last among its new siblings; the pages under it move along and every address follows. A new type
-     * leaves the strips as they are, also those it does not allow: it only decides which strip types can be added.
+     * Changes the name, the address, the parent, the menu flag, whether visitors see a page, its type and its planned
+     * publication (SchedulePublication, CancelScheduledPublication), all or nothing. A new parent puts the page last
+     * among its new siblings; the pages under it move along and every address follows. A new type leaves the strips as
+     * they are, also those it does not allow: it only decides which strip types can be added.
      *
      * @throws UnknownPageType when the type is not in the catalogue and the page does not have it already
      * @throws ParentPageNotFound
@@ -46,6 +48,7 @@ final class UpdatePage
      * @throws CircularPageMove
      * @throws PagePathTaken
      * @throws PagePathTooLong when the address of the page or of a page under it gets too long
+     * @throws PublicationMomentPassed when a new moment of the publication passed
      */
     public function handle(Page $page, PageChanges $changes): Page
     {
@@ -76,7 +79,7 @@ final class UpdatePage
         $changed = $moving || $page->isDirty();
         $hidden = $changes->hidden ?? $page->hidden;
 
-        if (! $changed && $hidden === $page->hidden) {
+        if (! $changed && $hidden === $page->hidden && $changes->schedule === null) {
             return $page;
         }
 
@@ -109,6 +112,12 @@ final class UpdatePage
                 }
 
                 SetPageVisibility::run($page, $hidden, $changes->editorId);
+
+                if ($changes->schedule?->at !== null) {
+                    SchedulePublication::run($page, $changes->schedule->at, $changes->editorId);
+                } elseif ($changes->schedule !== null) {
+                    CancelScheduledPublication::run($page, $changes->editorId);
+                }
             });
         } catch (UniqueConstraintViolationException) {
             // Another request stored a page at the address after the check: the unique index of cms_routes is the

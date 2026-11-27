@@ -48,6 +48,8 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property-read Page|null $parent
  * @property-read Collection<int, Page> $children
  * @property-read Collection<int, PageVersion> $versions
+ * @property-read Collection<int, MediaUsage> $mediaUsages
+ * @property-read Collection<int, MediaUsage> $usagesWithoutAlt
  * @property CarbonImmutable|null $created_at
  * @property int|null $created_by the editor who created the page (CreatePage); null when that is not known
  * @property CarbonImmutable|null $updated_at
@@ -153,6 +155,27 @@ class Page extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(PageVersion::class, 'page_id');
+    }
+
+    /**
+     * The places of files on the page, in every version (SyncMediaUsage).
+     *
+     * @return HasMany<MediaUsage, $this>
+     */
+    public function mediaUsages(): HasMany
+    {
+        return $this->hasMany(MediaUsage::class, 'page_id');
+    }
+
+    /**
+     * The places of files on the page that need an alt text and have none, in every version: a list of pages loads
+     * them at once for what asks for attention.
+     *
+     * @return HasMany<MediaUsage, $this>
+     */
+    public function usagesWithoutAlt(): HasMany
+    {
+        return $this->mediaUsages()->withoutAlt();
     }
 
     /**

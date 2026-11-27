@@ -63,6 +63,7 @@ return [
                 'stale_draft' => 'draft open for long',
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
+                'image_without_alt' => 'photos without an alt text',
                 'empty' => 'still empty',
             ],
         ],
@@ -157,6 +158,13 @@ return [
                     'action' => 'Shorten it below',
                     'short' => 'title too long',
                 ],
+                'image_without_alt' => [
+                    'title' => '{1} Photo without an alt text|[2,*] :count photos without an alt text',
+                    'meta' => '{1} :name. Google and screen readers cannot tell what is on it.|[2,*] :name and :others more. Google and screen readers cannot tell what is on them.',
+                    'action' => 'Fill it in at Media',
+                    'short' => '{1} photo without an alt text|[2,*] :count photos without an alt text',
+                    'unnamed' => 'A photo on this page',
+                ],
                 'empty' => [
                     'title' => 'Still empty',
                     'meta' => 'It holds no strips yet.',
@@ -164,6 +172,16 @@ return [
                     'short' => 'still empty',
                 ],
             ],
+        ],
+        'files' => [
+            'heading' => 'Files on this page',
+            'open' => 'Open in Media',
+            'empty' => 'There are no files on this page yet.',
+            'unavailable' => 'The files cannot be shown now: the storage of Media gives no address to see them at.',
+            'no_alt' => 'no alt text',
+            'alt' => '{1} One photo has no alt text yet (the amber dot). Fill it in in Media and it holds everywhere.|[2,*] :count photos have no alt text yet (the amber dot). Fill them in in Media and they hold everywhere.',
+            'alt_elsewhere' => '{1} One photo has no alt text yet (the amber dot). Whoever manages Media fills it in; then it holds everywhere.|[2,*] :count photos have no alt text yet (the amber dot). Whoever manages Media fills them in; then they hold everywhere.',
+            'alt_link' => '{1} Fill in the alt text|[2,*] Fill in the alt texts',
         ],
         'summary' => [
             'label' => 'In short',
@@ -198,6 +216,13 @@ return [
                 'label' => 'Strips',
                 'count' => '{0} None yet|[1,*] :count, :fields',
                 'fields' => '{0} without fields|{1} with 1 field|[2,*] with :count fields',
+            ],
+            'files' => [
+                'label' => 'Files',
+                'none' => 'None',
+                'image' => '{1} 1 photo|[2,*] :count photos',
+                'document' => '{1} 1 document|[2,*] :count documents',
+                'video' => '{1} 1 video|[2,*] :count videos',
             ],
             'created' => [
                 'label' => 'Created',

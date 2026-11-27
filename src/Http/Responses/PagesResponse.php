@@ -161,7 +161,12 @@ final class PagesResponse
         $published = $node->status === PageStatus::Published;
         $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.'.$key, $replace, $locale);
         $notes = array_map(
-            static fn (AttentionItem $item): string => $text('show.attention.reasons.'.$item->reason->value.'.short', $item->details),
+            static fn (AttentionItem $item): string => trans_choice(
+                'made-cms-package::pages.show.attention.reasons.'.$item->reason->value.'.short',
+                (int) ($item->details['count'] ?? 1),
+                $item->details,
+                $locale,
+            ),
             $attention->items,
         );
         $stale = array_filter($attention->items, static fn (AttentionItem $item): bool => $item->reason === AttentionReason::StaleDraft) !== [];

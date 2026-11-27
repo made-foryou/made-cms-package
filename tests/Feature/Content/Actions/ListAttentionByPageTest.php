@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\DB;
 use Made\CmsPackage\Content\Actions\ListAttentionByPage;
+use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -35,15 +37,20 @@ it('leaves out the deleted pages', function (): void {
     expect(ListAttentionByPage::run()->of($page->id)->isEmpty())->toBeTrue();
 });
 
-it('reads the pages and their addresses once, however many pages there are', function (int $count): void {
+it('reads the pages, their addresses and their photos without an alt text once, however many pages there are', function (int $count): void {
+    useStripTypes();
+
     // Published, shown in Google and without a title of their own: the title Google gets needs the address.
     for ($i = 0; $i < $count; $i++) {
-        Page::factory()->published()->at('/pagina-'.$i)->create();
+        $page = Page::factory()->published()->at('/pagina-'.$i)
+            ->withStrips([storedStrip('hero', ['foto' => Media::factory()->create()->id])])
+            ->create();
+        SyncMediaUsage::run($page);
     }
 
     DB::enableQueryLog();
     $attention = ListAttentionByPage::run();
 
-    expect(DB::getQueryLog())->toHaveCount(2)
+    expect(DB::getQueryLog())->toHaveCount(3)
         ->and($attention->flagged())->toBe($count);
 })->with([3, 30]);

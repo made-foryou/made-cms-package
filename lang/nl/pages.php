@@ -63,6 +63,7 @@ return [
                 'stale_draft' => 'concept staat lang open',
                 'meta_description_missing' => 'omschrijving leeg',
                 'meta_title_too_long' => 'titel te lang',
+                'image_without_alt' => 'foto’s zonder alt-tekst',
                 'empty' => 'nog leeg',
             ],
         ],
@@ -157,6 +158,13 @@ return [
                     'action' => 'Kort hem in hieronder',
                     'short' => 'titel te lang',
                 ],
+                'image_without_alt' => [
+                    'title' => '{1} Foto zonder alt-tekst|[2,*] :count foto’s zonder alt-tekst',
+                    'meta' => '{1} :name. Google en een schermlezer weten niet wat erop staat.|[2,*] :name en :others andere. Google en een schermlezer weten niet wat erop staat.',
+                    'action' => 'Vul in bij Media',
+                    'short' => '{1} foto zonder alt-tekst|[2,*] :count foto’s zonder alt-tekst',
+                    'unnamed' => 'Een foto op deze pagina',
+                ],
                 'empty' => [
                     'title' => 'Nog leeg',
                     'meta' => 'Er staan nog geen stroken op.',
@@ -164,6 +172,16 @@ return [
                     'short' => 'nog leeg',
                 ],
             ],
+        ],
+        'files' => [
+            'heading' => 'Bestanden op deze pagina',
+            'open' => 'Open in Media',
+            'empty' => 'Er staan nog geen bestanden op deze pagina.',
+            'unavailable' => 'De bestanden zijn nu niet te tonen: de opslag van Media geeft geen adres waar ze te zien zijn.',
+            'no_alt' => 'geen alt-tekst',
+            'alt' => '{1} Eén foto heeft nog geen alt-tekst (de amber stip). Vul je die in Media in, dan geldt hij overal.|[2,*] :count foto’s hebben nog geen alt-tekst (de amber stip). Vul je ze in Media in, dan gelden ze overal.',
+            'alt_elsewhere' => '{1} Eén foto heeft nog geen alt-tekst (de amber stip). Wie Media beheert, vult hem in; dan geldt hij overal.|[2,*] :count foto’s hebben nog geen alt-tekst (de amber stip). Wie Media beheert, vult ze in; dan gelden ze overal.',
+            'alt_link' => '{1} Alt-tekst invullen|[2,*] Alt-teksten invullen',
         ],
         'summary' => [
             'label' => 'In het kort',
@@ -198,6 +216,13 @@ return [
                 'label' => 'Stroken',
                 'count' => '{0} Nog geen|[1,*] :count, :fields',
                 'fields' => '{0} zonder velden|{1} met 1 veld|[2,*] met :count velden',
+            ],
+            'files' => [
+                'label' => 'Bestanden',
+                'none' => 'Geen',
+                'image' => '{1} 1 foto|[2,*] :count foto’s',
+                'document' => '{1} 1 document|[2,*] :count documenten',
+                'video' => '{1} 1 video|[2,*] :count video’s',
             ],
             'created' => [
                 'label' => 'Gemaakt',

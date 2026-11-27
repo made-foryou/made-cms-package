@@ -15,6 +15,7 @@ enum AttentionReason: string
     case StaleDraft = 'stale_draft';
     case MetaDescriptionMissing = 'meta_description_missing';
     case MetaTitleTooLong = 'meta_title_too_long';
+    case ImageWithoutAlt = 'image_without_alt';
     case Empty = 'empty';
 
     /**

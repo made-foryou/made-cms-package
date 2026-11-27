@@ -3,12 +3,16 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Storage;
 use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\ListPageMedia;
 use Made\CmsPackage\Content\Actions\ListPages;
 use Made\CmsPackage\Content\Actions\SummarizePage;
+use Made\CmsPackage\Content\Actions\SyncMediaUsage;
 use Made\CmsPackage\Content\Data\MenuPlace;
 use Made\CmsPackage\Content\Enums\MenuPlaceReason;
 use Made\CmsPackage\Content\Enums\PageState;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
 
 beforeEach(function (): void {
@@ -110,4 +114,16 @@ it('names every editor once and leaves out the unknown', function (): void {
 
     expect(SummarizePage::run($known, ListPages::run())->editors())->toBe([$editor->id])
         ->and(SummarizePage::run($unknown, ListPages::run())->editors())->toBe([]);
+});
+
+it('gives the files of the working copy, for the card and the count of "In het kort"', function (): void {
+    Storage::fake('public', ['url' => 'https://cdn.example.com']);
+    $photo = Media::factory()->create();
+    $page = Page::factory()->published()->withStrips([storedStrip('hero', ['foto' => $photo->id])])->create();
+    SyncMediaUsage::run($page);
+
+    $summary = SummarizePage::run($page, ListPages::run());
+
+    expect($summary->media)->toEqual(ListPageMedia::run($page))
+        ->and($summary->media->countPerKind())->toBe(['image' => 1, 'document' => 0, 'video' => 0]);
 });

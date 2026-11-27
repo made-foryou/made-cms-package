@@ -15,13 +15,14 @@ final class ListAttentionByPage
     /**
      * What every page asks for attention in a list of pages (the pages screen, later the start page and the menu of
      * the CMS): the points of ListPageAttention that let a page stand out there, so no list counts an empty page. The
-     * pages are read once with their addresses, which the title Google gets needs; a source reads only what is loaded.
+     * pages are read once with their addresses, which the title Google gets needs, and the places of their files without
+     * an alt text; a source reads only what is loaded.
      */
     public function handle(): PagesAttention
     {
         $pages = [];
 
-        foreach (Page::query()->with('route')->get() as $page) {
+        foreach (Page::query()->with(['route', 'usagesWithoutAlt'])->get() as $page) {
             $pages[$page->id] = ListPageAttention::run($page)->inLists();
         }
 

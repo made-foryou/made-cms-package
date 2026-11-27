@@ -13,10 +13,12 @@ use Made\CmsPackage\Content\Actions\MeasureShareImage;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Data\EditableStrip;
 use Made\CmsPackage\Content\Data\EditableStrips;
+use Made\CmsPackage\Content\Data\MediaFile;
 use Made\CmsPackage\Content\Data\MenuPlace;
 use Made\CmsPackage\Content\Data\MetaLength;
 use Made\CmsPackage\Content\Data\PageAttention;
 use Made\CmsPackage\Content\Data\PageHistory;
+use Made\CmsPackage\Content\Data\PageMedia;
 use Made\CmsPackage\Content\Data\PageMeta;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagePath;
@@ -41,6 +43,7 @@ use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\Day;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\MediaDetails;
+use Made\CmsPackage\Http\Cms\MediaLinks;
 use Made\CmsPackage\Http\Cms\Menu;
 use Made\CmsPackage\Http\Cms\PageLinks;
 use Made\CmsPackage\Http\Cms\Shell;
@@ -136,9 +139,10 @@ final class ShowPageResponse
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
             'meta' => self::meta($page, $screens, $meta, $fallbackTitle, $metaSaved),
             'share' => self::share($page, $screens, $meta, $share, $folder, $shareSaved),
-            'attention' => self::attention($page, $screens, $attention),
+            'attention' => self::attention($page, $screens, $attention, $summary->media),
             'strips' => self::strips($page, $summary->strips),
             'summary' => self::summary($pages, $types, $summary, $names),
+            'files' => self::files($page, $screens, $summary->media),
             'versions' => self::versions($page, $history, $restored, $names),
         ], $pages, $page);
     }
@@ -184,19 +188,25 @@ final class ShowPageResponse
      *     summary: array{text: string, hint: string|null, flagged: bool},
      * }
      */
-    private static function attention(Page $page, array $screens, PageAttention $attention): array
+    private static function attention(Page $page, array $screens, PageAttention $attention, PageMedia $media): array
     {
         $locale = Locale::launcher();
         $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.show.'.$key, $replace, $locale);
+        $point = static fn (AttentionItem $item, string $key): string => trans_choice(
+            'made-cms-package::pages.show.attention.reasons.'.$item->reason->value.'.'.$key,
+            (int) ($item->details['count'] ?? 1),
+            self::attentionFacts($item, $media, $locale),
+            $locale,
+        );
         $empty = $attention->count() === 1 && $attention->items[0]->reason === AttentionReason::Empty;
 
         return [
             'items' => array_map(static fn (AttentionItem $item): array => [
                 'severity' => $item->severity->value,
-                'title' => $text('attention.reasons.'.$item->reason->value.'.title', $item->details),
-                'meta' => $text('attention.reasons.'.$item->reason->value.'.meta', $item->details),
-                'action' => $text('attention.reasons.'.$item->reason->value.'.action', $item->details),
-                'url' => AttentionActions::url($item->reason, $page, $screens),
+                'title' => $point($item, 'title'),
+                'meta' => $point($item, 'meta'),
+                'action' => $point($item, 'action'),
+                'url' => AttentionActions::url($item, $page, $screens),
             ], $attention->items),
             'summary' => [
                 'text' => $empty
@@ -210,6 +220,94 @@ final class ShowPageResponse
                 'flagged' => ! $attention->isEmpty(),
             ],
         ];
+    }
+
+    /**
+     * The facts the words of an attention point need: its details, and for photos without an alt text the name of the
+     * one the page shows first and how many others there are.
+     *
+     * @return array<string, int|string>
+     */
+    private static function attentionFacts(AttentionItem $item, PageMedia $media, string $locale): array
+    {
+        if ($item->reason !== AttentionReason::ImageWithoutAlt) {
+            return $item->details;
+        }
+
+        $first = array_values(array_filter(
+            $media->files,
+            static fn (MediaFile $file): bool => $file->id === ($item->details['media'] ?? null),
+        ))[0] ?? null;
+
+        return [
+            ...$item->details,
+            'name' => $first === null
+                ? (string) __('made-cms-package::pages.show.attention.reasons.image_without_alt.unnamed', [], $locale)
+                : self::fileName($first),
+            'others' => (int) ($item->details['count'] ?? 1) - 1,
+        ];
+    }
+
+    /**
+     * The files on the working copy per kind, "3 foto’s, 1 document"; null for none.
+     *
+     * @param  callable(string, int, array<string, string>): string  $count
+     */
+    private static function fileCount(PageMedia $media, callable $count): ?string
+    {
+        $kinds = array_filter($media->countPerKind());
+
+        return $kinds === [] ? null : implode(', ', array_map(
+            static fn (string $kind, int $number): string => $count('files.'.$kind, $number, []),
+            array_keys($kinds),
+            $kinds,
+        ));
+    }
+
+    /**
+     * The card "Bestanden op deze pagina" (design 15.2): the files on the working copy small, in the order of the page,
+     * an amber dot on a photo without an alt text and a line about those. Only an editor who opens Media gets the
+     * ways there: a file opens chosen, "Open in Media" searches the library for the name of the page.
+     *
+     * @param  list<Screen>  $screens
+     * @return array{
+     *     available: bool,
+     *     items: list<array{name: string, kind: string, thumb: string|null, noAlt: bool, url: string|null}>,
+     *     searchUrl: string|null,
+     *     alt: array{text: string, link: string|null, url: string|null}|null,
+     * }
+     */
+    private static function files(Page $page, array $screens, PageMedia $media): array
+    {
+        $locale = Locale::launcher();
+        $library = in_array(Screen::Media, $screens, true);
+        $missing = count($media->withoutAlt);
+        $count = static fn (string $key): string => trans_choice('made-cms-package::pages.show.files.'.$key, $missing, [], $locale);
+
+        return [
+            'available' => $media->available,
+            'items' => array_map(static fn (MediaFile $file): array => [
+                'name' => self::fileName($file),
+                'kind' => $file->kind->value,
+                'thumb' => $file->thumb,
+                'noAlt' => in_array($file->id, $media->withoutAlt, true),
+                'url' => $library ? MediaLinks::file($file->id) : null,
+            ], $media->files),
+            'searchUrl' => $library ? MediaLinks::search($page->title) : null,
+            'alt' => $missing === 0 ? null : [
+                'text' => $count($library ? 'alt' : 'alt_elsewhere'),
+                'link' => $library ? $count('alt_link') : null,
+                'url' => $library ? MediaLinks::missingAlt($missing, $media->withoutAlt[0]) : null,
+            ],
+        ];
+    }
+
+    /**
+     * A file by the name an editor knows it by: its name with the extension of the file a visitor gets.
+     */
+    private static function fileName(MediaFile $file): string
+    {
+        return $file->name.'.'.$file->extension();
     }
 
     /**
@@ -257,6 +355,10 @@ final class ShowPageResponse
                 'fields' => $count('strips.fields', $summary->fields),
             ])],
         ];
+
+        if ($summary->media->available) {
+            $facts[] = ['label' => $text('files.label'), 'value' => self::fileCount($summary->media, $count) ?? $text('files.none')];
+        }
 
         if ($summary->createdAt !== null) {
             $facts[] = [

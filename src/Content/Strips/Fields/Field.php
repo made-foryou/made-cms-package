@@ -228,6 +228,16 @@ abstract class Field
     }
 
     /**
+     * The running text of a stored value as plain text, a paragraph per line, or null when the field holds none: the
+     * text a description in Google can be taken from (SuggestPageDescription). Only a long text and a rich text hold
+     * running text; a short text, a heading or a list does not.
+     */
+    public function prose(mixed $value): ?string
+    {
+        return null;
+    }
+
+    /**
      * What a type adds to its description.
      *
      * @return array<string, mixed>
@@ -235,6 +245,20 @@ abstract class Field
     protected function details(): array
     {
         return [];
+    }
+
+    /**
+     * The lines of a text with text in them, each on one line without the spaces around it, joined by line breaks; null
+     * when no line holds text.
+     */
+    protected static function paragraphs(string $text): ?string
+    {
+        $lines = array_values(array_filter(
+            array_map(self::line(...), preg_split('/\R/u', $text) ?: []),
+            static fn (?string $line): bool => $line !== null,
+        ));
+
+        return $lines === [] ? null : implode("\n", $lines);
     }
 
     /**

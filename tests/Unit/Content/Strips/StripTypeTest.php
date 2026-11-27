@@ -5,6 +5,8 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Validator;
 use Made\CmsPackage\Content\Strips\Fields\Heading;
 use Made\CmsPackage\Content\Strips\Fields\Items;
+use Made\CmsPackage\Content\Strips\Fields\LongText;
+use Made\CmsPackage\Content\Strips\Fields\RichText;
 use Made\CmsPackage\Content\Strips\Fields\Text;
 use Made\CmsPackage\Content\Strips\StripType;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
@@ -287,4 +289,22 @@ it('gives the levels of the headings a visitor gets, in the order of its fields 
     ]))->toBe(['h1', 'h1', 'h3', 'span'])
         ->and($type->headingLevels(['kop' => null]))->toBe([])
         ->and((new Hero)->headingLevels(validHero()))->toBe([]);
+});
+
+it('gives the running text of its fields in their order, a missing one from its default, never of a list', function (): void {
+    $type = new InlineStripType('tekst', [
+        Text::make('kop'),
+        LongText::make('intro')->default("Een standaard.\nMet twee regels."),
+        Items::make('kaarten', [LongText::make('tekst')]),
+        RichText::make('tekst'),
+        LongText::make('leeg'),
+    ]);
+
+    expect($type->prose([
+        'kop' => 'Welkom',
+        'kaarten' => [['id' => 'a', 'tekst' => 'Een kaart.']],
+        'tekst' => '<p>Wij trainen op dinsdag.</p>',
+        'leeg' => ' ',
+    ]))->toBe(["Een standaard.\nMet twee regels.", 'Wij trainen op dinsdag.'])
+        ->and($type->prose(['intro' => null]))->toBe([]);
 });

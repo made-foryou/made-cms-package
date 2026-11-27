@@ -155,7 +155,7 @@ final class ShowPageResponse
         $locale = Locale::launcher();
         $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.show.schedule.'.$key, $replace, $locale);
         $zone = config()->string('app.timezone');
-        $moment = $page->publish_at?->setTimezone($zone);
+        $moment = $page->publish_at;
         $live = $page->status === PageStatus::Published;
 
         $hint = match (true) {
@@ -167,7 +167,7 @@ final class ShowPageResponse
 
         return [
             'on' => $moment !== null,
-            'value' => $moment?->format('Y-m-d\TH:i'),
+            'value' => $moment === null ? null : Day::input($moment),
             'hint' => $hint,
             'zone' => $zone === 'Europe/Amsterdam' ? null : $text('zone', ['zone' => $zone]),
             'publishNowUrl' => PageLinks::publishNow($page),

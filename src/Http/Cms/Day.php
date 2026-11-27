@@ -9,12 +9,15 @@ use Carbon\CarbonImmutable;
 /**
  * A day as a screen of the CMS says it: short in a list ("vandaag", "gisteren", "morgen", "20 okt" in this year,
  * "12 mrt 2024" in another), in full in a sentence ("20 oktober", "12 maart 2024"), a moment as that day with its time
- * ("20 oktober, 14:12"), and a moment in a sentence ("op 14 november om 09:00", "morgen om 09:00").
+ * ("20 oktober, 14:12"), short ("14 nov 09:00"), and a moment in a sentence ("op 14 november om 09:00", "morgen om
+ * 09:00"). Every moment is said in the timezone of the app (app.timezone), the one an editor plans a moment in.
  */
 final class Day
 {
     public static function of(CarbonImmutable $moment, string $locale): string
     {
+        $moment = self::local($moment);
+
         // The short month of some languages ends with a dot ("okt."), which reads as the end of a sentence in a list.
         return self::relative($moment, $locale)
             ?? str_replace('.', '', $moment->settings(['locale' => $locale])->isoFormat($moment->isCurrentYear() ? 'D MMM' : 'D MMM YYYY'));
@@ -22,21 +25,42 @@ final class Day
 
     public static function long(CarbonImmutable $moment, string $locale): string
     {
+        $moment = self::local($moment);
+
         return self::relative($moment, $locale) ?? self::date($moment, $locale);
     }
 
     public static function moment(CarbonImmutable $moment, string $locale): string
     {
-        return self::long($moment, $locale).', '.self::time($moment, $locale);
+        return self::long($moment, $locale).', '.self::time(self::local($moment), $locale);
+    }
+
+    public static function shortMoment(CarbonImmutable $moment, string $locale): string
+    {
+        return self::of($moment, $locale).' '.self::time(self::local($moment), $locale);
     }
 
     public static function at(CarbonImmutable $moment, string $locale): string
     {
+        $moment = self::local($moment);
         $relative = self::relative($moment, $locale);
 
         return $relative === null
             ? (string) __('made-cms-package::cms.dates.at', ['day' => self::date($moment, $locale), 'time' => self::time($moment, $locale)], $locale)
             : (string) __('made-cms-package::cms.dates.at_relative', ['day' => $relative, 'time' => self::time($moment, $locale)], $locale);
+    }
+
+    /**
+     * The moment as a field of the type datetime-local holds it, in the timezone of the app.
+     */
+    public static function input(CarbonImmutable $moment): string
+    {
+        return self::local($moment)->format('Y-m-d\\TH:i');
+    }
+
+    private static function local(CarbonImmutable $moment): CarbonImmutable
+    {
+        return $moment->setTimezone(config()->string('app.timezone'));
     }
 
     private static function date(CarbonImmutable $moment, string $locale): string

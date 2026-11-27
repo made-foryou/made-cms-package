@@ -52,6 +52,12 @@ return [
         'discard_short' => 'Weggooien',
         'new_tab' => '(opent in een nieuw tabblad)',
         'discard_confirm' => 'Ja, gooi het concept weg',
+        'discard_scheduled' => 'De planning gaat ook weg.',
+        'scheduled' => 'Gepland · :moment',
+        'scheduled_text' => 'Je concept gaat :at live, met wat je tot dan wijzigt.',
+        'scheduled_late' => 'Je concept stond gepland :at, maar is nog niet gepubliceerd.',
+        'scheduled_publish' => 'Toch nu publiceren',
+        'scheduled_change' => 'Moment wijzigen',
         'bar_texts' => [
             'publishing' => 'Bezig met publiceren…',
             'published' => 'Gepubliceerd',

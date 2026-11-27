@@ -15,6 +15,10 @@
  * stays, with the strip that failed chosen and the reason on the line under the bar. "Bewerken stoppen" asks what to do
  * with a draft first, in a choice under the button; the editor leaves with "Stoppen zonder publiceren" (the draft is
  * kept) or "Publiceren". The addresses come from the server (`exits` in every state of the draft), which knows what visitors see.
+ *
+ * A planned publication (`scheduled` in the state) takes the place of "Publiceren": "Gepland · 14 nov 09:00" opens a
+ * choice under it with "Toch nu publiceren" and "Moment wijzigen", which leaves for the basics of the page like
+ * "‹ Pagina's". The draft is planned, so "Bewerken stoppen" then asks nothing.
  */
 
 const shell = document.querySelector('[data-edit-shell]');
@@ -33,6 +37,13 @@ const ui = {
     discardText: slot('bar-discard-text'),
     discardConfirm: slot('bar-discard-confirm'),
     publish: slot('bar-publish'),
+    scheduled: slot('bar-scheduled'),
+    scheduledSummary: slot('bar-scheduled-summary'),
+    scheduledLabel: slot('bar-scheduled-label'),
+    scheduledShort: slot('bar-scheduled-short'),
+    scheduledText: slot('bar-scheduled-text'),
+    scheduledChange: slot('bar-scheduled-change'),
+    scheduledPublish: slot('bar-scheduled-publish'),
     pages: slot('bar-pages'),
     pagesText: slot('bar-pages-text'),
     pagesWait: slot('bar-pages-wait'),
@@ -107,6 +118,33 @@ function write(long, short = long) {
     ui.state.textContent = (narrow.matches ? short : long) ?? '';
 }
 
+/* Publishing is off while the bar is busy or nothing is to publish, from "Publiceren" and from the planned choice. */
+function lockPublishing(locked) {
+    ui.publish.disabled = locked;
+
+    if (ui.scheduledPublish) {
+        ui.scheduledPublish.disabled = locked;
+    }
+}
+
+/* A planned publication takes the place of "Publiceren", with the moment as its text. */
+function showPlan(plan) {
+    if (! ui.scheduled) {
+        return;
+    }
+
+    ui.publish.hidden = plan !== null;
+    ui.scheduled.hidden = plan === null;
+    ui.scheduled.open = ui.scheduled.open && plan !== null;
+
+    if (plan !== null) {
+        ui.scheduledLabel.textContent = plan.label;
+        ui.scheduledShort.textContent = plan.short_label;
+        ui.scheduledSummary.setAttribute('aria-label', plan.label);
+        ui.scheduledText.textContent = plan.text;
+    }
+}
+
 function show(state) {
     draft = state;
     ui.page.textContent = state.live ? texts.live : texts.draft;
@@ -128,7 +166,8 @@ function show(state) {
         exits = state.exits;
         ui.stop.setAttribute('href', exits.stop);
     }
-    ui.publish.disabled = busy || ! state.publishable;
+    showPlan(state.scheduled ?? null);
+    lockPublishing(busy || ! state.publishable);
 }
 
 /* A message in place of the state, until the next change of the draft brings the state back. */
@@ -269,7 +308,7 @@ async function publish({ leave = false } = {}) {
 
     busy = true;
     clearNotice();
-    ui.publish.disabled = true;
+    lockPublishing(true);
     say(texts.publishing, 'busy');
 
     try {
@@ -303,7 +342,7 @@ async function publish({ leave = false } = {}) {
     } finally {
         if (! navigating) {
             busy = false;
-            ui.publish.disabled = ! draft?.publishable;
+            lockPublishing(! draft?.publishable);
         }
     }
 }
@@ -319,7 +358,7 @@ async function discard() {
 
     busy = true;
     clearNotice();
-    ui.publish.disabled = true;
+    lockPublishing(true);
     ui.discardConfirm.disabled = true;
     say(texts.discarding, 'busy');
 
@@ -341,7 +380,7 @@ async function discard() {
     }
 
     busy = false;
-    ui.publish.disabled = ! draft?.publishable;
+    lockPublishing(! draft?.publishable);
     ui.discardConfirm.disabled = false;
     say(texts.not_discarded_state);
     notify(status === 401 || status === 419 ? texts.expired : texts.failed);
@@ -390,7 +429,7 @@ function resting() {
     ui.progress.hidden = true;
     ui.stay.hidden = true;
     busy = false;
-    ui.publish.disabled = ! draft?.publishable;
+    lockPublishing(! draft?.publishable);
 
     if (draft) {
         write(draft.label, draft.short_label);
@@ -409,7 +448,7 @@ async function settled(origin) {
 
     busy = true;
     clearNotice();
-    ui.publish.disabled = true;
+    lockPublishing(true);
 
     const attempt = { cancelled: false };
     let failed = null;
@@ -483,10 +522,11 @@ async function stop() {
         return;
     }
 
-    // Counted again now that the panel stored its changes: only a draft that changes something asks what to do.
+    // Counted again now that the panel stored its changes: only a draft that changes something asks what to do, and
+    // only while it is not planned to go live by itself.
     await refresh();
 
-    if (! draft?.discardable) {
+    if (! draft?.discardable || draft?.scheduled) {
         navigate(exits.stop);
 
         return;
@@ -541,6 +581,17 @@ if (shell && ui.publish && ui.state) {
         publish();
     });
     ui.discardConfirm?.addEventListener('click', discard);
+    ui.scheduledPublish?.addEventListener('click', () => {
+        ui.scheduled.open = false;
+        publish();
+    });
+    ui.scheduledChange?.addEventListener('click', (event) => {
+        if (plain(event)) {
+            event.preventDefault();
+            ui.scheduled.open = false;
+            leave(ui.scheduledChange.getAttribute('href'), 'pages');
+        }
+    });
     ui.pages.addEventListener('click', (event) => {
         if (plain(event)) {
             event.preventDefault();
@@ -604,11 +655,18 @@ if (shell && ui.publish && ui.state) {
         } else if (ui.discard?.open) {
             ui.discard.open = false;
             ui.discard.querySelector('summary')?.focus();
+        } else if (ui.scheduled?.open) {
+            ui.scheduled.open = false;
+            ui.scheduledSummary.focus();
         }
     });
     document.addEventListener('click', (event) => {
         if (ui.discard?.open && ! ui.discard.contains(event.target)) {
             ui.discard.open = false;
+        }
+
+        if (ui.scheduled?.open && ! ui.scheduled.contains(event.target)) {
+            ui.scheduled.open = false;
         }
 
         if (! ui.choice.hidden && ! ui.choice.contains(event.target) && ! ui.stop.contains(event.target)) {

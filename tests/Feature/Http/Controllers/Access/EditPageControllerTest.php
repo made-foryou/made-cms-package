@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Dom\Element;
 use Dom\HTMLDocument;
 use Made\CmsPackage\Access\Enums\Role;
@@ -194,6 +195,35 @@ it('hides discarding and disables publishing when everything is live', function 
         ->and($html)->toMatch('/<button type="button" class="bewerkbalk-knop" data-slot="bar-publish" disabled>/');
 });
 
+it('shows a planned publication in place of Publiceren, with the way to publish at once or change the moment', function (): void {
+    $this->travelTo(CarbonImmutable::parse('2026-11-27 14:00:00'));
+    $page = Page::factory()->published()->at('/over-ons')
+        ->withStrips([storedStrip('cards', ['kop' => 'Teams'], id: 'a')])
+        ->withDraft([storedStrip('cards', ['kop' => 'Onze teams'], id: 'a')])
+        ->scheduledAt(CarbonImmutable::parse('2026-12-14 09:00:00'))
+        ->create();
+
+    $html = (string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')->getContent();
+
+    expect($html)->toMatch('/<button type="button" class="bewerkbalk-knop" data-slot="bar-publish" hidden>/')
+        ->and($html)->toContain('<details class="bevestig bewerkbalk-gepland" data-slot="bar-scheduled">')
+        ->and($html)->toContain('<summary class="bewerkbalk-knop" data-slot="bar-scheduled-summary" aria-label="Gepland · 14 dec 09:00"><span class="lang" data-slot="bar-scheduled-label">Gepland · 14 dec 09:00</span><span class="kort" aria-hidden="true" data-slot="bar-scheduled-short">14 dec 09:00</span></summary>')
+        ->and($html)->toContain('<p data-slot="bar-scheduled-text">Je concept gaat op 14 december om 09:00 live, met wat je tot dan wijzigt.</p>')
+        ->and($html)->toContain('<a class="knop stil" data-slot="bar-scheduled-change" href="/made-cms/pages/'.$page->id.'#made-cms-basis">Moment wijzigen</a>')
+        ->and($html)->toContain('<button type="button" class="knop" data-slot="bar-scheduled-publish">Toch nu publiceren</button>');
+});
+
+it('keeps the choice of a planned publication hidden without a plan', function (): void {
+    $page = Page::factory()->published()->at('/over-ons')->withDraft([storedStrip('cards', id: 'a')])->create();
+
+    $html = (string) $this->actingAs(Editor::factory()->create(), 'made-cms')
+        ->get('made-cms/pages/'.$page->id.'/edit')->getContent();
+
+    expect($html)->toContain('<details class="bevestig bewerkbalk-gepland" data-slot="bar-scheduled" hidden>')
+        ->and($html)->toMatch('/<button type="button" class="bewerkbalk-knop" data-slot="bar-publish">/');
+});
+
 it('offers no preview for a page without an address', function (): void {
     $page = Page::factory()->create();
 
@@ -223,6 +253,7 @@ it('hands the bar the addresses of the draft, its state and its texts', function
             'stop_title' => 'Deze pagina staat nog niet op de site',
             'stop_text' => 'Bezoekers zien hem pas na Publiceren. Je concept blijft bewaard. Je gaat terug naar Pagina’s.',
             'exits' => ['stop' => '/made-cms/pages/'.$page->id, 'publish' => '/over-ons'],
+            'scheduled' => null,
         ])
         ->and($config['texts']['bar'])->toMatchArray([
             'live' => 'Live',

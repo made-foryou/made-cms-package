@@ -2721,21 +2721,35 @@ ul.lijst {
 
 /* "Concept weggooien" opens a small surface below the bar with what goes and the button that does it. */
 
-.bewerkbalk-weggooien {
+.bewerkbalk-weggooien,
+.bewerkbalk-gepland {
     position: relative;
     flex-shrink: 0;
 }
 
-.bewerkbalk-weggooien summary {
+.bewerkbalk-weggooien summary,
+.bewerkbalk-gepland summary {
     display: block;
 }
 
-.bewerkbalk-weggooien[open] summary {
+.bewerkbalk-weggooien[open] summary,
+.bewerkbalk-gepland[open] summary {
     margin-bottom: 0;
 }
 
-.bewerkbalk-weggooien summary:focus-visible {
+.bewerkbalk-weggooien summary:focus-visible,
+.bewerkbalk-gepland summary:focus-visible {
     outline-color: var(--made-amber-licht);
+}
+
+/* A planned publication in place of "Publiceren": the moment on the button, the choice in a surface under it. */
+.bewerkbalk-gepland summary {
+    white-space: nowrap;
+    list-style: none;
+}
+
+.bewerkbalk-gepland summary::-webkit-details-marker {
+    display: none;
 }
 
 .bewerkbalk-vlak {
@@ -2889,6 +2903,7 @@ ul.lijst {
 .bewerkbalk[data-waiting] .bewerkbalk-link:not(summary, [data-slot="bar-stay"]),
 .bewerkbalk[data-waiting] .bewerkbalk-knop,
 .bewerkbalk[data-waiting] .bewerkbalk-weggooien,
+.bewerkbalk[data-waiting] .bewerkbalk-gepland,
 .bewerkbalk[data-waiting="stop"] .bewerkbalk-terug,
 .bewerkbalk[data-waiting="pages"] .bewerkbalk-stop {
     opacity: .45;

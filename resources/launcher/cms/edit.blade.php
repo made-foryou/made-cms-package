@@ -59,7 +59,18 @@
                     <p class="bewerkbalk-keuze-hint">{{ $t('cms.edit.stop_escape') }}</p>
                 </div>
             </span>
-            <button type="button" class="bewerkbalk-knop" data-slot="bar-publish"{{ $draft['publishable'] ? '' : ' disabled' }}>{{ $t('cms.edit.publish') }}</button>
+            <button type="button" class="bewerkbalk-knop" data-slot="bar-publish"{{ $draft['publishable'] ? '' : ' disabled' }}{{ $draft['scheduled'] === null ? '' : ' hidden' }}>{{ $t('cms.edit.publish') }}</button>
+            {{-- A planned publication takes the place of "Publiceren": the moment, and a choice to publish at once or change it. --}}
+            <details class="bevestig bewerkbalk-gepland" data-slot="bar-scheduled"{{ $draft['scheduled'] === null ? ' hidden' : '' }}>
+                <summary class="bewerkbalk-knop" data-slot="bar-scheduled-summary" aria-label="{{ $draft['scheduled']['label'] ?? '' }}"><span class="lang" data-slot="bar-scheduled-label">{{ $draft['scheduled']['label'] ?? '' }}</span><span class="kort" aria-hidden="true" data-slot="bar-scheduled-short">{{ $draft['scheduled']['short_label'] ?? '' }}</span></summary>
+                <div class="bewerkbalk-vlak">
+                    <p data-slot="bar-scheduled-text">{{ $draft['scheduled']['text'] ?? '' }}</p>
+                    <div class="bewerkbalk-keuze-knoppen">
+                        <a class="knop stil" data-slot="bar-scheduled-change" href="{{ $scheduleUrl }}">{{ $t('cms.edit.scheduled_change') }}</a>
+                        <button type="button" class="knop" data-slot="bar-scheduled-publish">{{ $t('cms.edit.scheduled_publish') }}</button>
+                    </div>
+                </div>
+            </details>
             <span class="avatar" aria-hidden="true">{{ $editor['initial'] ?? '' }}</span>
         </div>
         {{-- The full text of a refusal of the bar ("Niet opgeslagen: Hero — …"), on a line of its own under the bar. --}}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Http\Cms;
 
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Http\Responses\PageRedirect;
 
 /**
  * The urls of the pages screen, without scheme and host and with the base path of apps in a subdirectory.
@@ -73,6 +74,14 @@ final class PageLinks
     public static function duplicate(Page $page): string
     {
         return self::url('made-cms-package.pages.duplicate', ['page' => $page->id]);
+    }
+
+    /**
+     * The card "De basis" on the screen of a page, where its publication is planned.
+     */
+    public static function basics(Page $page): string
+    {
+        return self::show($page).'#'.PageRedirect::BASICS;
     }
 
     /**

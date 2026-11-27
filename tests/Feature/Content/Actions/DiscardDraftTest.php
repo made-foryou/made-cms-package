@@ -20,6 +20,27 @@ it('discards the draft and keeps the published strips', function (): void {
         ->and($stored->strips)->toBeStoredAs($published);
 });
 
+it('takes the planned publication and the note of a stopped one along with the draft', function (): void {
+    $page = Page::factory()->published()->withDraft([storedStrip(id: 'b')])
+        ->scheduledAt(now()->addDay())->publicationFailedAt(now()->subDay())->create();
+
+    DiscardDraft::run($page);
+
+    $stored = Page::query()->findOrFail($page->id);
+
+    expect($stored->publish_at)->toBeNull()
+        ->and($stored->scheduled_by)->toBeNull()
+        ->and($stored->publish_failed_at)->toBeNull();
+});
+
+it('keeps the planned publication without a draft to throw away', function (): void {
+    $page = Page::factory()->published()->scheduledAt(now()->addDay())->create();
+
+    DiscardDraft::run($page);
+
+    expect($page->refresh()->publish_at)->not->toBeNull();
+});
+
 it('dispatches an event for the page', function (): void {
     Event::fake([DraftDiscarded::class]);
     $page = Page::factory()->withDraft([storedStrip(id: 'a')])->create();

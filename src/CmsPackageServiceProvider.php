@@ -27,10 +27,13 @@ use Made\CmsPackage\Console\Commands\MediaThumbnailsCommand;
 use Made\CmsPackage\Console\Commands\MediaUsageCommand;
 use Made\CmsPackage\Console\Commands\MediaVariantsCommand;
 use Made\CmsPackage\Console\Commands\PrunePagesCommand;
+use Made\CmsPackage\Console\Commands\PublishScheduledPagesCommand;
 use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Attention\EmptyPageSource;
 use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
 use Made\CmsPackage\Content\Attention\MetaTitleSource;
+use Made\CmsPackage\Content\Attention\PublicationFailedSource;
+use Made\CmsPackage\Content\Attention\PublicationOverdueSource;
 use Made\CmsPackage\Content\Attention\StaleDraftSource;
 use Made\CmsPackage\Content\Data\AttentionSources;
 use Made\CmsPackage\Content\Data\EditMode;
@@ -142,15 +145,19 @@ class CmsPackageServiceProvider extends ServiceProvider
         $this->commands([
             CreateEditorCommand::class,
             PrunePagesCommand::class,
+            PublishScheduledPagesCommand::class,
             SitemapCommand::class,
             MediaUsageCommand::class,
             MediaThumbnailsCommand::class,
             MediaVariantsCommand::class,
         ]);
 
-        // Deleted pages can be restored for a while; after that they go for good, with the host's scheduler.
+        // With the host's scheduler: deleted pages can be restored for a while and go for good after that, and a
+        // planned publication goes live within the minute of its moment. Publishing every minute needs no lock against
+        // overlapping runs: a page is published with its row locked and only while it is still planned at that moment.
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             $schedule->command('made-cms:prune')->daily();
+            $schedule->command('made-cms:publish-scheduled')->everyMinute();
         });
 
         $this->publishes([
@@ -225,6 +232,8 @@ class CmsPackageServiceProvider extends ServiceProvider
     private function registerAttention(): void
     {
         $this->app->bind(AttentionSources::class, static fn (): AttentionSources => new AttentionSources([
+            new PublicationFailedSource,
+            new PublicationOverdueSource,
             new StaleDraftSource,
             new MetaDescriptionSource,
             new MetaTitleSource,

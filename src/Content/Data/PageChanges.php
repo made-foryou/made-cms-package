@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Data;
 
 /**
- * What an editor changes about a page in the CMS: its name, its address, its place, whether visitors see it and its type.
+ * What an editor changes about a page in the CMS: its name, its address, its place, whether visitors see it, its type
+ * and when its draft goes live by itself.
  */
 final readonly class PageChanges
 {
@@ -15,6 +16,7 @@ final readonly class PageChanges
      * @param  bool|null  $hidden  whether visitors only reach it through its address; null keeps it as it is
      * @param  int|null  $editorId  the editor who changes it; null when that is not known
      * @param  PageTypeChoice|null  $type  the type it gets; null keeps it as it is
+     * @param  ScheduleChoice|null  $schedule  the publication it plans; null keeps the plan as it is
      */
     public function __construct(
         public string $title,
@@ -24,5 +26,6 @@ final readonly class PageChanges
         public ?bool $hidden = null,
         public ?int $editorId = null,
         public ?PageTypeChoice $type = null,
+        public ?ScheduleChoice $schedule = null,
     ) {}
 }

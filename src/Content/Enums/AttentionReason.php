@@ -10,6 +10,8 @@ namespace Made\CmsPackage\Content\Enums;
  */
 enum AttentionReason: string
 {
+    case PublicationFailed = 'publication_failed';
+    case PublicationOverdue = 'publication_overdue';
     case StaleDraft = 'stale_draft';
     case MetaDescriptionMissing = 'meta_description_missing';
     case MetaTitleTooLong = 'meta_title_too_long';

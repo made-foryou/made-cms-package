@@ -2,20 +2,24 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Actions\UpdatePage;
 use Made\CmsPackage\Content\Data\PageChanges;
 use Made\CmsPackage\Content\Data\PageTypeChoice;
+use Made\CmsPackage\Content\Data\ScheduleChoice;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PageUpdated;
 use Made\CmsPackage\Content\Events\PageVisibilityChanged;
+use Made\CmsPackage\Content\Events\PublicationScheduled;
 use Made\CmsPackage\Content\Exceptions\CircularPageMove;
 use Made\CmsPackage\Content\Exceptions\HomePageProtected;
 use Made\CmsPackage\Content\Exceptions\InvalidPageSlug;
 use Made\CmsPackage\Content\Exceptions\PagePathTaken;
 use Made\CmsPackage\Content\Exceptions\PagePathTooLong;
+use Made\CmsPackage\Content\Exceptions\PublicationMomentPassed;
 use Made\CmsPackage\Content\Exceptions\UnknownPageType;
 use Made\CmsPackage\Content\Models\Page;
 use Made\CmsPackage\Tests\Fixtures\PageTypes\InlinePageType;
@@ -335,4 +339,56 @@ it('refuses a type the site does not define and changes nothing', function (): v
     expect(Page::query()->findOrFail($page->id))
         ->title->toBe('Teams')
         ->type->toBeNull();
+});
+
+it('plans the publication together with the other changes', function (): void {
+    Event::fake([PageUpdated::class, PublicationScheduled::class]);
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->published()->withDraft([])->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Onze teams', slug: 'teams', parentId: null, inMenu: true, editorId: $editor->id,
+        schedule: new ScheduleChoice(now()->addDay()->setTime(9, 0)->toImmutable())));
+
+    expect($page->refresh()->title)->toBe('Onze teams')
+        ->and($page->publish_at?->toDateTimeString())->toBe(now()->addDay()->setTime(9, 0)->toDateTimeString())
+        ->and($page->scheduled_by)->toBe($editor->id);
+    Event::assertDispatchedTimes(PageUpdated::class, 1);
+    Event::assertDispatchedTimes(PublicationScheduled::class, 1);
+});
+
+it('only plans the publication when nothing else changed', function (): void {
+    Event::fake([PageUpdated::class]);
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Teams', slug: 'teams', parentId: null, inMenu: true,
+        schedule: new ScheduleChoice(now()->addDay()->setTime(9, 0)->toImmutable())));
+
+    expect($page->refresh()->publish_at)->not->toBeNull();
+    Event::assertNotDispatched(PageUpdated::class);
+});
+
+it('takes the planned publication away', function (): void {
+    $page = Page::factory()->at('/teams')->scheduledAt(now()->addDay())->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Teams', slug: 'teams', parentId: null, inMenu: true, schedule: new ScheduleChoice(null)));
+
+    expect($page->refresh()->publish_at)->toBeNull();
+});
+
+it('keeps the planned publication when the changes leave it out', function (): void {
+    $moment = CarbonImmutable::parse('2026-11-28 09:00:00');
+    $page = Page::factory()->at('/teams')->scheduledAt($moment)->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    UpdatePage::run($page, new PageChanges(title: 'Onze teams', slug: 'teams', parentId: null, inMenu: true));
+
+    expect($page->refresh()->publish_at?->toDateTimeString())->toBe('2026-11-28 09:00:00');
+});
+
+it('refuses a moment that passed and changes nothing', function (): void {
+    $page = Page::factory()->at('/teams')->create(['title' => 'Teams', 'slug' => 'teams']);
+
+    expect(fn (): Page => UpdatePage::run($page, new PageChanges(title: 'Onze teams', slug: 'teams', parentId: null, inMenu: true,
+        schedule: new ScheduleChoice(now()->subHour()->toImmutable()))))->toThrow(PublicationMomentPassed::class);
+    expect($page->refresh()->title)->toBe('Teams')
+        ->and($page->publish_at)->toBeNull();
 });

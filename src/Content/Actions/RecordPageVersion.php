@@ -18,7 +18,7 @@ final class RecordPageVersion
 
     /**
      * Keeps the strips that go live as the next version of the page, with what they change compared to the strips that
-     * are live now. Only PublishPage runs it, inside the transaction of ChangeDraft with the row of the page locked and
+     * are live now. Only PutDraftLive runs it, inside the transaction of ChangeDraft with the row of the page locked and
      * before it writes the strips, so the numbers of a page follow each other and the page still holds what was live.
      */
     public function handle(Page $page, PageStrips $strips, CarbonImmutable $at, ?int $editorId): PageVersion

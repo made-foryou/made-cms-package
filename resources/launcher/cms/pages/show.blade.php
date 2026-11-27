@@ -101,11 +101,17 @@
                                 'checked' => ! $page['hidden'],
                             ])
                         @endunless
+                        @include('made-cms-package-launcher::cms.pages.partials.schedule')
                     </div>
                     <div class="knoppen">
                         <button type="submit" class="knop">{{ $t('pages.show.save') }}</button>
                     </div>
                 </form>
+                @if ($schedule['on'])
+                    <form id="made-cms-publish-now" method="post" action="{{ $schedule['publishNowUrl'] }}" hidden>
+                        @csrf
+                    </form>
+                @endif
             </section>
 
             @include('made-cms-package-launcher::cms.pages.partials.strips')

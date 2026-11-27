@@ -17,6 +17,10 @@ return [
         'pruned' => '{0} No pages removed for good.|{1} 1 page removed for good.|[2,*] :count pages removed for good.',
         'versions' => '{0} No older versions removed.|{1} 1 older version removed.|[2,*] :count older versions removed.',
     ],
+    'publish' => [
+        'published' => '{0} No planned pages published.|{1} 1 planned page published.|[2,*] :count planned pages published.',
+        'refused' => '{0} No planned publications stopped.|{1} 1 planned publication stopped by a strip: that page asks for attention.|[2,*] :count planned publications stopped by a strip: those pages ask for attention.',
+    ],
     'media_usage' => [
         'rebuilt' => 'Rebuilt the usage of media from :pages: :places.',
         'pages' => '{0} no pages|{1} 1 page|[2,*] :count pages',

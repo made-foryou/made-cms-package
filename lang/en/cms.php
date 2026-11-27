@@ -10,6 +10,9 @@ return [
     'dates' => [
         'today' => 'today',
         'yesterday' => 'yesterday',
+        'tomorrow' => 'tomorrow',
+        'at' => 'on :day at :time',
+        'at_relative' => ':day at :time',
     ],
     'menu' => [
         'label' => 'Main navigation',
@@ -49,6 +52,12 @@ return [
         'discard_short' => 'Discard',
         'new_tab' => '(opens in a new tab)',
         'discard_confirm' => 'Yes, discard the draft',
+        'discard_scheduled' => 'The plan goes as well.',
+        'scheduled' => 'Planned · :moment',
+        'scheduled_text' => 'Your draft goes live :at, with what you change until then.',
+        'scheduled_late' => 'Your draft was planned :at, but is not published yet.',
+        'scheduled_publish' => 'Publish now anyway',
+        'scheduled_change' => 'Change the moment',
         'bar_texts' => [
             'publishing' => 'Publishing…',
             'published' => 'Published',

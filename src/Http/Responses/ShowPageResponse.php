@@ -132,6 +132,7 @@ final class ShowPageResponse
                 'showUrl' => PageLinks::show($child->id),
             ], $node->children ?? []),
             'menuPlace' => self::menuPlace($pages, $pages->menuPlaceOf($page->id)),
+            'schedule' => self::schedule($page),
             'keepDays' => (int) config('made-cms-package.pages.keep_deleted_days', 30),
             'meta' => self::meta($page, $screens, $meta, $fallbackTitle, $metaSaved),
             'share' => self::share($page, $screens, $meta, $share, $folder, $shareSaved),
@@ -140,6 +141,37 @@ final class ShowPageResponse
             'summary' => self::summary($pages, $types, $summary, $names),
             'versions' => self::versions($page, $history, $restored, $names),
         ], $pages, $page);
+    }
+
+    /**
+     * The switch "Publiceren op een moment" in the basics: the planned moment in the timezone of the app, as the field
+     * of the browser holds it, the line that says when the draft goes live, and the timezone when it is not the one of
+     * the Netherlands.
+     *
+     * @return array{on: bool, value: string|null, hint: string, zone: string|null, publishNowUrl: string}
+     */
+    private static function schedule(Page $page): array
+    {
+        $locale = Locale::launcher();
+        $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.show.schedule.'.$key, $replace, $locale);
+        $zone = config()->string('app.timezone');
+        $moment = $page->publish_at;
+        $live = $page->status === PageStatus::Published;
+
+        $hint = match (true) {
+            $moment === null => $text($live ? 'off_live' : 'off_new'),
+            $moment->lessThanOrEqualTo(now()) => $text('late', ['at' => Day::at($moment, $locale)]),
+            $live && $page->draft_strips === null => $text('on', ['at' => Day::at($moment, $locale)]).' '.$text('nothing'),
+            default => $text('on', ['at' => Day::at($moment, $locale)]),
+        };
+
+        return [
+            'on' => $moment !== null,
+            'value' => $moment === null ? null : Day::input($moment),
+            'hint' => $hint,
+            'zone' => $zone === 'Europe/Amsterdam' ? null : $text('zone', ['zone' => $zone]),
+            'publishNowUrl' => PageLinks::publishNow($page),
+        ];
     }
 
     /**

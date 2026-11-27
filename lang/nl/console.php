@@ -17,6 +17,10 @@ return [
         'pruned' => '{0} Geen pagina’s definitief verwijderd.|{1} 1 pagina definitief verwijderd.|[2,*] :count pagina’s definitief verwijderd.',
         'versions' => '{0} Geen oudere versies opgeruimd.|{1} 1 oudere versie opgeruimd.|[2,*] :count oudere versies opgeruimd.',
     ],
+    'publish' => [
+        'published' => '{0} Geen geplande pagina’s gepubliceerd.|{1} 1 geplande pagina gepubliceerd.|[2,*] :count geplande pagina’s gepubliceerd.',
+        'refused' => '{0} Geen geplande publicaties tegengehouden.|{1} 1 geplande publicatie tegengehouden door een strook: die pagina vraagt aandacht.|[2,*] :count geplande publicaties tegengehouden door een strook: die pagina’s vragen aandacht.',
+    ],
     'media_usage' => [
         'rebuilt' => 'Gebruik van media opnieuw opgebouwd uit :pages: :places.',
         'pages' => '{0} geen pagina’s|{1} 1 pagina|[2,*] :count pagina’s',

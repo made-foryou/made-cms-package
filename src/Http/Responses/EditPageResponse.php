@@ -65,6 +65,7 @@ final class EditPageResponse
             'draft' => $draft,
             'counts' => PageStripsResponse::counts($strips),
             'pagesUrl' => $pagesUrl,
+            'scheduleUrl' => PageLinks::basics($page),
             'stopUrl' => $exits['stop'],
             // A relative address keeps the frame on the origin of the shell, whatever app.url says.
             'frameUrl' => $site === null ? null : $site.'?'.ResolvePage::QUERY.'='.ResolvePage::EDIT,

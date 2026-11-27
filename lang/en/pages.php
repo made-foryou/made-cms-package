@@ -58,6 +58,8 @@ return [
             'hidden_none' => 'everything is visible',
             'others' => '{1} :count other|[2,*] :count others',
             'reasons' => [
+                'publication_failed' => 'planned publication failed',
+                'publication_overdue' => 'planned publication late',
                 'stale_draft' => 'draft open for long',
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
@@ -125,6 +127,18 @@ return [
                 'low' => 'When you have time',
             ],
             'reasons' => [
+                'publication_failed' => [
+                    'title' => 'The planned publication did not go through',
+                    'meta' => 'A strip stopped it; the draft is still there.',
+                    'action' => 'Look at it and publish it on the site',
+                    'short' => 'planned publication failed',
+                ],
+                'publication_overdue' => [
+                    'title' => 'The planned publication did not happen',
+                    'meta' => 'Its moment passed, but the scheduler of the site does not run: ask your developer about schedule:run.',
+                    'action' => 'Publish it below',
+                    'short' => 'planned publication late',
+                ],
                 'stale_draft' => [
                     'title' => 'The draft has been open for :days days',
                     'meta' => 'Visitors still see the old text.',
@@ -259,6 +273,17 @@ return [
         'visible' => [
             'label' => 'Visible to visitors',
             'hint' => 'Off means: only through the direct link, not in the menu, the sitemap or Google.',
+        ],
+        'schedule' => [
+            'label' => 'Publish at a moment',
+            'off_live' => 'Live now. Turn this on to choose a date on which changes go live.',
+            'off_new' => 'Not live yet. Turn this on to choose a date on which the page goes live.',
+            'on' => 'Goes live :at, with what the draft holds by then.',
+            'nothing' => 'The draft holds nothing yet: without changes nothing happens at that moment.',
+            'late' => 'Was planned :at, but is not published yet.',
+            'moment' => 'Goes live on',
+            'zone' => 'Time in :zone.',
+            'now' => 'Publish now anyway',
         ],
         'children' => [
             'heading' => 'Pages below',
@@ -413,6 +438,7 @@ return [
         'hidden' => ':title is hidden from visitors.',
         'shown' => ':title is visible to visitors again.',
         'duplicated' => ':title is made as a copy of :origin.',
+        'published' => ':title is live.',
     ],
     'errors' => [
         'title_required' => 'Give the page a name.',
@@ -444,5 +470,9 @@ return [
         'duplicate_path_taken' => 'Another page just took the address of the copy. Try again.',
         'duplicate_path_long' => 'The address of the copy gets longer than 255 characters. Give this page or a page above it a shorter address first.',
         'duplicate_parent' => 'The page this one lies under no longer exists. No copy was made.',
+        'publish_at_invalid' => 'Choose the date and the time it goes live.',
+        'publish_at_passed' => 'That moment has passed. Choose a moment in the future.',
+        'publish_refused' => 'Not published: a strip stops it. Open the page on the site to see which one.',
+        'nothing_to_publish' => 'There is nothing to publish: this page is live as it is.',
     ],
 ];

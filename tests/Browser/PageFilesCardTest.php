@@ -38,17 +38,22 @@ beforeEach(function (): void {
 it('shows the files of the page small, a photo without an alt text with a dot, and opens one in Media chosen', function (): void {
     $card = visit('/made-cms/pages/'.$this->page->id)->resize(1280, 900);
 
-    expect($card->script(<<<'JS'
-        () => [...document.querySelectorAll('#made-cms-bestanden .paginabestand')].map((file) => ({
-            name: file.querySelector('.paginabestand-naam').firstChild.textContent,
-            shown: file.querySelector('img') === null ? null : file.querySelector('img').naturalWidth > 0,
-            dot: file.querySelector('.beeldkaart-stip') !== null,
-        }))
-        JS))->toBe([
-        ['name' => 'clubavond.webp', 'shown' => true, 'dot' => false],
-        ['name' => 'training-dinsdag.webp', 'shown' => true, 'dot' => true],
-        ['name' => 'opstelling-najaar.pdf', 'shown' => null, 'dot' => false],
-    ]);
+    // The thumbnails load lazily: the card comes into view first, and the photos may take a moment.
+    $card->script("() => document.querySelector('#made-cms-bestanden').scrollIntoView()");
+    $thumbs = "[...document.querySelectorAll('#made-cms-bestanden img')]";
+
+    expect($card->script(waitUntil("{$thumbs}.length === 2 && {$thumbs}.every((thumb) => thumb.complete && thumb.naturalWidth > 0)")))->toBeTrue()
+        ->and($card->script(<<<'JS'
+            () => [...document.querySelectorAll('#made-cms-bestanden .paginabestand')].map((file) => ({
+                name: file.querySelector('.paginabestand-naam').firstChild.textContent,
+                thumb: file.querySelector('img') !== null,
+                dot: file.querySelector('.beeldkaart-stip') !== null,
+            }))
+            JS))->toBe([
+            ['name' => 'clubavond.webp', 'thumb' => true, 'dot' => false],
+            ['name' => 'training-dinsdag.webp', 'thumb' => true, 'dot' => true],
+            ['name' => 'opstelling-najaar.pdf', 'thumb' => false, 'dot' => false],
+        ]);
 
     $card->assertSeeIn('#made-cms-bestanden', 'Eén foto heeft nog geen alt-tekst (de amber stip).')
         ->assertSeeIn('.paginakort-feiten', '2 foto’s, 1 document')

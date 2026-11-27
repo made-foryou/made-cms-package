@@ -247,7 +247,7 @@ it('ships every translation in Dutch and English', function (string $file): void
     $english = require __DIR__."/../../lang/en/{$file}.php";
 
     expect(array_keys(Arr::dot($english)))->toBe(array_keys(Arr::dot($dutch)));
-})->with(['pages', 'launcher', 'console', 'mail', 'strips', 'scan', 'media', 'cms', 'sitemap']);
+})->with(['pages', 'launcher', 'console', 'mail', 'strips', 'scan', 'media', 'cms', 'sitemap', 'meta']);
 
 it('registers the view namespace', function (): void {
     expect(app('view')->getFinder()->getHints())->toHaveKey('made-cms-package');

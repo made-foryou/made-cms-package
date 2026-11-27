@@ -487,6 +487,7 @@ return [
         'shown' => ':title is visible to visitors again.',
         'duplicated' => ':title is made as a copy of :origin.',
         'published' => ':title is live.',
+        'meta_saved' => 'The title and description of :title are live.',
     ],
     'errors' => [
         'title_required' => 'Give the page a name.',

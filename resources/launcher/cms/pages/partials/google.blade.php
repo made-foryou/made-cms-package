@@ -25,12 +25,14 @@
     <form class="formulier" method="post" action="{{ $meta['url'] }}" data-meta data-config="{{ json_encode($meta['config'], JSON_THROW_ON_ERROR) }}">
         @csrf
         @method('PUT')
-        <figure class="google">
-            <figcaption class="sr-only">{{ $t('pages.show.meta.preview') }}</figcaption>
-            <span class="google-adres">{{ $meta['address'] }}</span>
-            <span class="google-titel" data-meta-preview="title">{{ $meta['shownTitle'] }}</span>
-            <span class="google-tekst{{ $meta['description'] === null ? ' leeg' : '' }}" data-meta-preview="description">{{ $meta['description'] ?? $t('pages.show.meta.preview_empty') }}</span>
-        </figure>
+        @include('made-cms-package-launcher::cms.partials.google-result', [
+            'address' => $meta['address'],
+            'title' => $meta['shownTitle'],
+            'description' => $meta['description'],
+            'empty' => $t('pages.show.meta.preview_empty'),
+            'caption' => $t('pages.show.meta.preview'),
+            'captionShown' => false,
+        ])
         <div class="velden">
             <div @class(['veld', 'fout' => $errors->has('meta_title')])>
                 <label for="made-cms-meta_title">{{ $t('pages.show.meta.title.label') }}</label>

@@ -41,6 +41,7 @@ use Made\CmsPackage\Content\PageTypes\PageTypes;
 use Made\CmsPackage\Http\Cms\AttentionActions;
 use Made\CmsPackage\Http\Cms\CropStep;
 use Made\CmsPackage\Http\Cms\Day;
+use Made\CmsPackage\Http\Cms\GoogleResult;
 use Made\CmsPackage\Http\Cms\MediaBrowser;
 use Made\CmsPackage\Http\Cms\MediaDetails;
 use Made\CmsPackage\Http\Cms\MediaLinks;
@@ -543,7 +544,7 @@ final class ShowPageResponse
             'inSitemap' => $page->in_sitemap,
             'indexable' => $page->indexable,
             'hidden' => $page->hidden,
-            'address' => self::googleAddress($meta->canonical),
+            'address' => GoogleResult::address($meta->canonical),
             'titleCount' => self::counter(MeasureMeta::run(MetaField::Title, $meta->title), fallback: $page->meta_title === null),
             'descriptionCount' => self::counter(MeasureMeta::run(MetaField::Description, $meta->description), fallback: false),
             'url' => PageLinks::meta($page),
@@ -589,7 +590,7 @@ final class ShowPageResponse
             'file' => $file,
             'usable' => $share->own !== null,
             'preview' => self::sharePreview($share, $file),
-            'domain' => self::host($meta->canonical),
+            'domain' => GoogleResult::host($meta->canonical),
             'title' => $meta->title,
             'description' => $meta->description,
             'indexable' => $meta->indexable,
@@ -727,27 +728,6 @@ final class ShowPageResponse
         };
 
         return ['key' => $key, 'replace' => ['count' => $length->length, 'limit' => $length->limit], 'state' => $state];
-    }
-
-    /**
-     * The address above a result in Google: the host and the parts of the path, "ttvmerwestad.nl › teams".
-     */
-    private static function googleAddress(?string $canonical): string
-    {
-        $path = (string) parse_url((string) $canonical, PHP_URL_PATH);
-        $parts = array_map(rawurldecode(...), array_filter(explode('/', $path), static fn (string $part): bool => $part !== ''));
-
-        return implode(' › ', [self::host($canonical), ...$parts]);
-    }
-
-    /**
-     * The host of the canonical address, "ttvmerwestad.nl", else the host of the site.
-     */
-    private static function host(?string $canonical): string
-    {
-        $host = parse_url((string) $canonical, PHP_URL_HOST);
-
-        return is_string($host) && $host !== '' ? $host : Site::host();
     }
 
     /**

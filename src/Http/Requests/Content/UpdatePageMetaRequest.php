@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Http\Requests\Content;
 
 use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Data\PageMetaChanges;
+use Made\CmsPackage\Content\Enums\MetaField;
 use Made\CmsPackage\Http\Requests\LauncherRequest;
 use Made\CmsPackage\Http\Responses\PageRedirect;
 
@@ -21,8 +22,8 @@ final class UpdatePageMetaRequest extends LauncherRequest
     public function rules(): array
     {
         return [
-            'meta_title' => ['nullable', 'string', 'max:120'],
-            'meta_description' => ['nullable', 'string', 'max:320'],
+            'meta_title' => ['nullable', 'string', 'max:'.MetaField::Title->maxLength()],
+            'meta_description' => ['nullable', 'string', 'max:'.MetaField::Description->maxLength()],
         ];
     }
 

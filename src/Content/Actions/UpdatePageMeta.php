@@ -15,15 +15,16 @@ final class UpdatePageMeta
     use AsAction;
 
     /**
-     * Changes how Google sees a page. It holds for the site at once: the google fields are no part of the draft.
+     * Changes how Google sees a page. It holds for the site at once: the google fields are no part of the draft. A
+     * switch the change leaves out (the Meta-overzicht edits only the texts) keeps what the page has.
      */
     public function handle(Page $page, PageMetaChanges $changes): Page
     {
         $page->fill([
             'meta_title' => $this->oneLine($changes->title),
             'meta_description' => $this->oneLine($changes->description),
-            'in_sitemap' => $changes->inSitemap,
-            'indexable' => $changes->indexable,
+            'in_sitemap' => $changes->inSitemap ?? $page->in_sitemap,
+            'indexable' => $changes->indexable ?? $page->indexable,
         ]);
 
         if (! $page->isDirty()) {

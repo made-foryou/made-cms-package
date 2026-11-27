@@ -10,6 +10,7 @@
 ### Changed
 
 - An attention source (`Content\Attention\AttentionSource`) gets what it may know about the other pages: `items(Page $page, AttentionContext $context)` (issue #88). `ListAttentionByPage` makes the context once from the pages it reads, `ListPageAttention::run($page)` reads the pages Google shows once for a single page. A host that binds `AttentionSources` with a source of its own adds the second parameter.
+- `PageMetaChanges` takes the switches `inSitemap` and `indexable` as `?bool` (issue #88): null keeps what the page has, so a change of the texts alone leaves them be. Code that passes both keeps working.
 
 ## [v0.1.0](https://github.com/made-foryou/made-cms-package/releases/tag/v0.1.0) - 2026-11-27
 

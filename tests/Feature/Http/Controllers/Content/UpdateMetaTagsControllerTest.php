@@ -46,7 +46,24 @@ it('saves the title and the description, keeps the switches and goes on to the n
         ->and($a->in_sitemap)->toBeFalse()
         ->and($a->indexable)->toBeTrue();
 
-    $this->get('made-cms/meta-tags?filter=missing&page='.$b->id.'&done=3')
+    $panel = '<div class="melding" role="status">
+        <span class="bol goed" aria-hidden="true"></span>
+        <span class="melding-tekst">Titel en omschrijving van A staan live.</span>
+    </div>
+    <form class="formulier" method="post" action="/made-cms/meta-tags/'.$b->id.'"';
+
+    $this->get('made-cms/meta-tags?filter=missing&page='.$b->id.'&done=3')->assertSee($panel, false);
+    $this->get('made-cms/meta-tags?filter=missing&page='.$b->id.'&done=3')->assertDontSee('Titel en omschrijving van A staan live.');
+});
+
+it('says it in the finished card once the last point is put in order', function (): void {
+    $page = Page::factory()->published()->at('/a')->create(['title' => 'A']);
+
+    $this->put('made-cms/meta-tags/'.$page->id, ['meta_title' => '', 'meta_description' => 'Alles over A.'])
+        ->assertRedirect('/made-cms/meta-tags#made-cms-afwerken');
+
+    $this->get('made-cms/meta-tags')
+        ->assertSee('<section class="kaart metaklaar" id="made-cms-afwerken" tabindex="-1" aria-labelledby="made-cms-meta-klaar">', false)
         ->assertSee('Titel en omschrijving van A staan live.');
 });
 

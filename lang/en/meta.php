@@ -61,6 +61,7 @@ return [
         'save_next' => 'Save and next',
         'save' => 'Save',
         'skip' => 'Skip',
+        'saved' => 'The title and description of :title are live.',
         'note' => 'Saving puts it live at once; the sitemap follows by itself.',
     ],
     'finished' => [

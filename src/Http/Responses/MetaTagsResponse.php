@@ -35,8 +35,9 @@ final class MetaTagsResponse
 
     /**
      * @param  list<Screen>  $screens  the screens of the editor, in menu order (ListScreens)
+     * @param  string|null  $saved  the name of the page just saved, which the panel says once (MetaRedirect)
      */
-    public static function make(Editor $editor, array $screens, MetaOverview $overview): Response
+    public static function make(Editor $editor, array $screens, MetaOverview $overview, ?string $saved = null): Response
     {
         $round = $overview->rows->round();
 
@@ -65,6 +66,7 @@ final class MetaTagsResponse
             'limits' => self::limits(),
             'panel' => $overview->panel === null ? null : self::panel($overview, $overview->panel),
             'next' => self::nextSteps(),
+            'saved' => $saved === null ? null : self::text('panel.saved', ['title' => $saved]),
         ], $overview->rows->tree);
     }
 

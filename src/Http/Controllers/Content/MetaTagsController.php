@@ -9,6 +9,7 @@ use Made\CmsPackage\Access\Actions\ListScreens;
 use Made\CmsPackage\Content\Actions\OpenMetaOverview;
 use Made\CmsPackage\Http\Launcher\Visitor;
 use Made\CmsPackage\Http\Requests\Content\ShowMetaTagsRequest;
+use Made\CmsPackage\Http\Responses\MetaRedirect;
 use Made\CmsPackage\Http\Responses\MetaTagsResponse;
 
 /**
@@ -20,6 +21,6 @@ final class MetaTagsController
     {
         $editor = Visitor::requireEditor($request);
 
-        return MetaTagsResponse::make($editor, ListScreens::run($editor), OpenMetaOverview::run($request->toData()));
+        return MetaTagsResponse::make($editor, ListScreens::run($editor), OpenMetaOverview::run($request->toData()), MetaRedirect::justSaved($request));
     }
 }

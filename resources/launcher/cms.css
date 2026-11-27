@@ -8004,7 +8004,8 @@ button.tekstlink.alarm {
     padding: 26px;
 }
 
-.metapaneel:focus {
+.metapaneel:focus,
+.metaklaar:focus {
     outline: none;
 }
 
@@ -8140,6 +8141,16 @@ button.tekstlink.alarm {
     align-items: center;
     gap: 10px;
     font-weight: 700;
+}
+
+/* In the dark the border colour is the colour of the cards (design 10.1, 18.1), so the track of a bar and the marks
+   still to come take the strong border, or they would not show. */
+@media (prefers-color-scheme: dark) {
+    .metabalk-spoor,
+    .metavoortgang .stap {
+        fill: var(--made-rand-sterk);
+        background: var(--made-rand-sterk);
+    }
 }
 
 @media (max-width: 720px) {

@@ -25,6 +25,7 @@
             </div>
         @endif
     </div>
+    @include('made-cms-package-launcher::cms.meta.partials.saved')
     <form class="formulier" method="post" action="{{ $panel['url'] }}" data-meta data-config="{{ json_encode($panel['config'], JSON_THROW_ON_ERROR) }}">
         @csrf
         @method('PUT')

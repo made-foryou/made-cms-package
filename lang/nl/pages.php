@@ -487,7 +487,6 @@ return [
         'shown' => ':title is weer zichtbaar voor bezoekers.',
         'duplicated' => ':title is gemaakt als kopie van :origin.',
         'published' => ':title staat live.',
-        'meta_saved' => 'Titel en omschrijving van :title staan live.',
     ],
     'errors' => [
         'title_required' => 'Geef de pagina een naam.',

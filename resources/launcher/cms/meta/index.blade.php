@@ -50,9 +50,9 @@
         </section>
 
         @if ($panel !== null)
-            @include('made-cms-package-launcher::cms.meta.partials.panel', ['panel' => $panel])
+            @include('made-cms-package-launcher::cms.meta.partials.panel', ['panel' => $panel, 'saved' => $saved])
         @elseif ($finished)
-            @include('made-cms-package-launcher::cms.meta.partials.finished', ['next' => $next, 'limits' => $limits])
+            @include('made-cms-package-launcher::cms.meta.partials.finished', ['next' => $next, 'limits' => $limits, 'saved' => $saved])
         @endif
     </div>
 @endsection

@@ -61,6 +61,7 @@ return [
         'save_next' => 'Opslaan en volgende',
         'save' => 'Opslaan',
         'skip' => 'Overslaan',
+        'saved' => 'Titel en omschrijving van :title staan live.',
         'note' => 'Opslaan zet het direct live; de sitemap gaat vanzelf mee.',
     ],
     'finished' => [

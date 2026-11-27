@@ -21,7 +21,7 @@ it('points the meta of Google at its card on the screen of the page', function (
     $page = Page::factory()->create();
 
     expect(AttentionActions::url(attentionItem($reason), $page, []))->toBe('#made-cms-google');
-})->with([AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong, AttentionReason::MetaDescriptionTooLong]);
+})->with([AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong, AttentionReason::MetaDescriptionTooLong, AttentionReason::MetaTitleShared]);
 
 it('points the content of a page at the edit shell for an editor who opens the pages', function (AttentionReason $reason): void {
     $page = Page::factory()->create();

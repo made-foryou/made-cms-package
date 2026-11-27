@@ -5,6 +5,11 @@
 ### Added
 
 - The attention point "Google-omschrijving is te lang" (issue #88, medium): a page Google shows whose description is longer than the 155 characters Google shows says how long it is ("171 tekens; Google kapt af na ongeveer 155."), with "Kort hem in hieronder" to the card of Google. The pages screen shows it on the row and in the card of what asks for attention ("omschrijving te lang"), so the filter "Vraagt aandacht" counts the same pages as the Meta-overzicht. Hosts that published `lang/vendor/made-cms-package` add `pages.show.attention.reasons.meta_description_too_long` and `pages.index.state.reasons.meta_description_too_long`.
+- The attention point "Titel ook gebruikt door …" (issue #88, medium): a page Google shows under the same title in Google as another page Google shows (its own title or the one it gets without, whatever the spaces and capitals) names those pages ("Titel ook gebruikt door Contact en Lid worden"), with "Pas hem aan hieronder" to the card of Google. The pages screen shows it on the row ("titel dubbel"). Hosts that published `lang/vendor/made-cms-package` add `pages.show.attention.reasons.meta_title_shared` and `pages.index.state.reasons.meta_title_shared`.
+
+### Changed
+
+- An attention source (`Content\Attention\AttentionSource`) gets what it may know about the other pages: `items(Page $page, AttentionContext $context)` (issue #88). `ListAttentionByPage` makes the context once from the pages it reads, `ListPageAttention::run($page)` reads the pages Google shows once for a single page. A host that binds `AttentionSources` with a source of its own adds the second parameter.
 
 ## [v0.1.0](https://github.com/made-foryou/made-cms-package/releases/tag/v0.1.0) - 2026-11-27
 

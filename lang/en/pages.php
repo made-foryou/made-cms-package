@@ -64,6 +64,7 @@ return [
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
                 'meta_description_too_long' => 'description too long',
+                'meta_title_shared' => 'duplicate title',
                 'image_without_alt' => 'photos without an alt text',
                 'many_h1' => 'more than one H1',
                 'empty' => 'still empty',
@@ -165,6 +166,12 @@ return [
                     'meta' => ':length characters; Google cuts off after about :limit.',
                     'action' => 'Shorten it below',
                     'short' => 'description too long',
+                ],
+                'meta_title_shared' => [
+                    'title' => 'Title also used by :names',
+                    'meta' => 'Google can hardly tell the pages apart; give each page a title of its own.',
+                    'action' => 'Change it below',
+                    'short' => 'duplicate title',
                 ],
                 'image_without_alt' => [
                     'title' => '{1} Photo without an alt text|[2,*] :count photos without an alt text',

@@ -26,7 +26,7 @@ final class AttentionActions
     public static function url(AttentionItem $item, Page $page, array $screens): ?string
     {
         [$url, $screen] = match ($item->reason) {
-            AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong, AttentionReason::MetaDescriptionTooLong => ['#made-cms-google', null],
+            AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong, AttentionReason::MetaDescriptionTooLong, AttentionReason::MetaTitleShared => ['#made-cms-google', null],
             AttentionReason::PublicationOverdue => ['#made-cms-basis', null],
             AttentionReason::StaleDraft, AttentionReason::Empty, AttentionReason::PublicationFailed => [PageLinks::edit($page), Screen::Pages],
             AttentionReason::ImageWithoutAlt => [

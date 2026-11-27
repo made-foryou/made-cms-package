@@ -16,6 +16,7 @@ enum AttentionReason: string
     case MetaDescriptionMissing = 'meta_description_missing';
     case MetaTitleTooLong = 'meta_title_too_long';
     case MetaDescriptionTooLong = 'meta_description_too_long';
+    case MetaTitleShared = 'meta_title_shared';
     case ImageWithoutAlt = 'image_without_alt';
     case ManyH1 = 'many_h1';
     case Empty = 'empty';

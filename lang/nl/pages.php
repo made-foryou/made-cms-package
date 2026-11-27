@@ -64,6 +64,7 @@ return [
                 'meta_description_missing' => 'omschrijving leeg',
                 'meta_title_too_long' => 'titel te lang',
                 'meta_description_too_long' => 'omschrijving te lang',
+                'meta_title_shared' => 'titel dubbel',
                 'image_without_alt' => 'foto’s zonder alt-tekst',
                 'many_h1' => 'meer dan één H1',
                 'empty' => 'nog leeg',
@@ -165,6 +166,12 @@ return [
                     'meta' => ':length tekens; Google kapt af na ongeveer :limit.',
                     'action' => 'Kort hem in hieronder',
                     'short' => 'omschrijving te lang',
+                ],
+                'meta_title_shared' => [
+                    'title' => 'Titel ook gebruikt door :names',
+                    'meta' => 'Google houdt de pagina’s dan moeilijk uit elkaar; geef elke pagina een eigen titel.',
+                    'action' => 'Pas hem aan hieronder',
+                    'short' => 'titel dubbel',
                 ],
                 'image_without_alt' => [
                     'title' => '{1} Foto zonder alt-tekst|[2,*] :count foto’s zonder alt-tekst',

@@ -34,6 +34,7 @@ use Made\CmsPackage\Content\Attention\ImageWithoutAltSource;
 use Made\CmsPackage\Content\Attention\ManyH1Source;
 use Made\CmsPackage\Content\Attention\MetaDescriptionLengthSource;
 use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
+use Made\CmsPackage\Content\Attention\MetaTitleSharedSource;
 use Made\CmsPackage\Content\Attention\MetaTitleSource;
 use Made\CmsPackage\Content\Attention\PublicationFailedSource;
 use Made\CmsPackage\Content\Attention\PublicationOverdueSource;
@@ -241,6 +242,7 @@ class CmsPackageServiceProvider extends ServiceProvider
             new MetaDescriptionSource,
             new MetaTitleSource,
             new MetaDescriptionLengthSource,
+            new MetaTitleSharedSource,
             new ImageWithoutAltSource,
             new ManyH1Source,
             new EmptyPageSource,

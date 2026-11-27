@@ -62,7 +62,7 @@
             <button type="button" class="bewerkbalk-knop" data-slot="bar-publish"{{ $draft['publishable'] ? '' : ' disabled' }}{{ $draft['scheduled'] === null ? '' : ' hidden' }}>{{ $t('cms.edit.publish') }}</button>
             {{-- A planned publication takes the place of "Publiceren": the moment, and a choice to publish at once or change it. --}}
             <details class="bevestig bewerkbalk-gepland" data-slot="bar-scheduled"{{ $draft['scheduled'] === null ? ' hidden' : '' }}>
-                <summary class="bewerkbalk-knop" data-slot="bar-scheduled-summary" aria-label="{{ $draft['scheduled']['label'] ?? '' }}"><span class="lang" data-slot="bar-scheduled-label">{{ $draft['scheduled']['label'] ?? '' }}</span><span class="kort" aria-hidden="true" data-slot="bar-scheduled-short">{{ $draft['scheduled']['short_label'] ?? '' }}</span></summary>
+                <summary class="bewerkbalk-knop" data-slot="bar-scheduled-summary">{{ $draft['scheduled']['label'] ?? '' }}</summary>
                 <div class="bewerkbalk-vlak">
                     <p data-slot="bar-scheduled-text">{{ $draft['scheduled']['text'] ?? '' }}</p>
                     <div class="bewerkbalk-keuze-knoppen">

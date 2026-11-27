@@ -39,8 +39,6 @@ const ui = {
     publish: slot('bar-publish'),
     scheduled: slot('bar-scheduled'),
     scheduledSummary: slot('bar-scheduled-summary'),
-    scheduledLabel: slot('bar-scheduled-label'),
-    scheduledShort: slot('bar-scheduled-short'),
     scheduledText: slot('bar-scheduled-text'),
     scheduledChange: slot('bar-scheduled-change'),
     scheduledPublish: slot('bar-scheduled-publish'),
@@ -138,9 +136,7 @@ function showPlan(plan) {
     ui.scheduled.open = ui.scheduled.open && plan !== null;
 
     if (plan !== null) {
-        ui.scheduledLabel.textContent = plan.label;
-        ui.scheduledShort.textContent = plan.short_label;
-        ui.scheduledSummary.setAttribute('aria-label', plan.label);
+        ui.scheduledSummary.textContent = plan.label;
         ui.scheduledText.textContent = plan.text;
     }
 }

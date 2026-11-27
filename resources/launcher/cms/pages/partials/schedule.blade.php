@@ -14,15 +14,15 @@
         <div @class(['veld', 'fout' => $errors->has('publish_at')])>
             <label for="made-cms-publish_at">{{ $t('pages.show.schedule.moment') }}</label>
             <input id="made-cms-publish_at" type="datetime-local" name="publish_at" step="60" value="{{ old('publish_at', $schedule['value']) }}"@if ($described !== '') aria-describedby="{{ $described }}"@endif @error('publish_at') aria-invalid="true" @enderror>
-            @if ($schedule['zone'] !== null)
-                <p class="veld-hint" id="made-cms-publish_at-hint">{{ $schedule['zone'] }}</p>
-            @endif
             @error('publish_at')
                 <p class="veld-fout" id="made-cms-publish_at-fout">{{ $message }}</p>
             @enderror
         </div>
         @if ($schedule['on'])
             <button type="submit" class="knop stil" form="made-cms-publish-now">{{ $t('pages.show.schedule.now') }}</button>
+        @endif
+        @if ($schedule['zone'] !== null)
+            <p class="veld-hint" id="made-cms-publish_at-hint">{{ $schedule['zone'] }}</p>
         @endif
     </div>
     @error('publish')

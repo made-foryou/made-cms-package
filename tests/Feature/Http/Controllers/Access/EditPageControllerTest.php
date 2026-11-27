@@ -208,7 +208,7 @@ it('shows a planned publication in place of Publiceren, with the way to publish 
 
     expect($html)->toMatch('/<button type="button" class="bewerkbalk-knop" data-slot="bar-publish" hidden>/')
         ->and($html)->toContain('<details class="bevestig bewerkbalk-gepland" data-slot="bar-scheduled">')
-        ->and($html)->toContain('<summary class="bewerkbalk-knop" data-slot="bar-scheduled-summary" aria-label="Gepland · 14 dec 09:00"><span class="lang" data-slot="bar-scheduled-label">Gepland · 14 dec 09:00</span><span class="kort" aria-hidden="true" data-slot="bar-scheduled-short">14 dec 09:00</span></summary>')
+        ->and($html)->toContain('<summary class="bewerkbalk-knop" data-slot="bar-scheduled-summary">Gepland · 14 dec 09:00</summary>')
         ->and($html)->toContain('<p data-slot="bar-scheduled-text">Je concept gaat op 14 december om 09:00 live, met wat je tot dan wijzigt.</p>')
         ->and($html)->toContain('<a class="knop stil" data-slot="bar-scheduled-change" href="/made-cms/pages/'.$page->id.'#made-cms-basis">Moment wijzigen</a>')
         ->and($html)->toContain('<button type="button" class="knop" data-slot="bar-scheduled-publish">Toch nu publiceren</button>');

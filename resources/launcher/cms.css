@@ -1912,6 +1912,12 @@ ul.lijst {
     flex: 0 1 280px;
 }
 
+/* The timezone goes below the row, so "Toch nu publiceren" lines up with the field. */
+.planning > .veld-hint {
+    flex-basis: 100%;
+    margin-top: -4px;
+}
+
 .planning-blok:has(.schakel:checked) .schakelrij {
     border-bottom: 0;
     border-radius: var(--made-radius-s) var(--made-radius-s) 0 0;
@@ -2750,6 +2756,11 @@ ul.lijst {
 
 .bewerkbalk-gepland summary::-webkit-details-marker {
     display: none;
+}
+
+/* Wide enough for "Moment wijzigen" and "Toch nu publiceren" side by side. */
+.bewerkbalk-gepland .bewerkbalk-vlak {
+    width: min(400px, calc(100vw - 32px));
 }
 
 .bewerkbalk-vlak {

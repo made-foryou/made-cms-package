@@ -49,7 +49,6 @@ it('says when the draft goes live by itself, and that throwing it away takes the
         ->assertOk()
         ->assertJsonPath('draft.scheduled', [
             'label' => 'Gepland · 14 dec 09:00',
-            'short_label' => '14 dec 09:00',
             'text' => 'Je concept gaat op 14 december om 09:00 live, met wat je tot dan wijzigt.',
         ])
         ->assertJsonPath('draft.discard_text', 'Je wijziging gaat weg. De live versie blijft zoals hij is. De planning gaat ook weg.');
@@ -72,7 +71,6 @@ it('says when the draft goes live in English', function (): void {
     $this->getJson('made-cms/pages/'.$page->id.'/draft')
         ->assertJsonPath('draft.scheduled', [
             'label' => 'Planned · tomorrow 9:00 AM',
-            'short_label' => 'tomorrow 9:00 AM',
             'text' => 'Your draft goes live tomorrow at 9:00 AM, with what you change until then.',
         ]);
 });

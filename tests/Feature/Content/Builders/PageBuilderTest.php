@@ -199,6 +199,30 @@ it('only returns pages deleted before a moment, oldest first', function (): void
     expect(Page::query()->trashedBefore(now()->subDays(30)->toImmutable())->pluck('id')->all())->toBe([$older->id, $old->id]);
 });
 
+it('only returns pages planned to go live at or before a moment, the earliest first', function (): void {
+    $moment = CarbonImmutable::parse('2026-11-27 09:00:00');
+    $later = Page::factory()->scheduledAt($moment)->create();
+    $earlier = Page::factory()->scheduledAt($moment->subHour())->create();
+    $same = Page::factory()->scheduledAt($moment->subHour())->create();
+    Page::factory()->scheduledAt($moment->addMinute())->create();
+    Page::factory()->create();
+
+    expect(Page::query()->dueForPublication($moment)->pluck('id')->all())->toBe([$earlier->id, $same->id, $later->id]);
+});
+
+it('casts the planned publication of a page', function (): void {
+    $page = Page::factory()->scheduledAt(CarbonImmutable::parse('2026-11-27 09:00:00'))
+        ->publicationFailedAt(CarbonImmutable::parse('2026-11-20 08:00:00'))
+        ->create();
+
+    $page = Page::query()->findOrFail($page->id);
+
+    expect($page->publish_at)->toBeInstanceOf(CarbonImmutable::class)
+        ->and($page->publish_at?->toDateTimeString())->toBe('2026-11-27 09:00:00')
+        ->and($page->publish_failed_at?->toDateTimeString())->toBe('2026-11-20 08:00:00')
+        ->and($page->scheduled_by)->toBeNull();
+});
+
 it('orders deleted pages by the most recent deletion first', function (): void {
     $older = Page::factory()->deletedAt(now()->subDays(3))->create();
     $newest = Page::factory()->deletedAt(now()->subDay())->create();

@@ -106,6 +106,14 @@ final class PageBuilder extends Builder
     }
 
     /**
+     * Pages planned to go live at or before the moment, the earliest first: what made-cms:publish-scheduled publishes.
+     */
+    public function dueForPublication(CarbonImmutable $moment): self
+    {
+        return $this->where('publish_at', '<=', $moment)->orderBy('publish_at')->orderBy('id');
+    }
+
+    /**
      * Most recently deleted pages first.
      */
     public function recentlyDeleted(): self

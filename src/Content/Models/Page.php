@@ -41,6 +41,9 @@ use Made\CmsPackage\Database\Factories\Content\PageFactory;
  * @property list<StoredStrip>|null $draft_strips the draft editors work on; null when there is none
  * @property CarbonImmutable|null $draft_started_at when the draft that is there now began; null without a draft (ChangeDraft)
  * @property CarbonImmutable|null $published_at
+ * @property CarbonImmutable|null $publish_at the moment the draft goes live by itself; null when nothing is planned
+ * @property int|null $scheduled_by the editor who planned the publication; null without one or when that is not known
+ * @property CarbonImmutable|null $publish_failed_at the moment of a planned publication a strip stopped; null when none did
  * @property-read Route|null $route the address of the page on the site
  * @property-read Page|null $parent
  * @property-read Collection<int, Page> $children
@@ -106,11 +109,14 @@ class Page extends Model
             'share_image_id' => 'integer',
             'created_by' => 'integer',
             'updated_by' => 'integer',
+            'scheduled_by' => 'integer',
             'status' => PageStatus::class,
             'strips' => 'array',
             'draft_strips' => 'array',
             'draft_started_at' => 'immutable_datetime',
             'published_at' => 'immutable_datetime',
+            'publish_at' => 'immutable_datetime',
+            'publish_failed_at' => 'immutable_datetime',
             'deleted_at' => 'immutable_datetime',
         ];
     }

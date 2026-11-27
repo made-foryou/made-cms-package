@@ -7,6 +7,7 @@ namespace Made\CmsPackage\Database\Factories\Content;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
+use Made\CmsPackage\Access\Models\Editor;
 use Made\CmsPackage\Content\Data\Strip;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Models\Media;
@@ -140,6 +141,25 @@ final class PageFactory extends Factory
     public function withDraft(array $strips): self
     {
         return $this->state(fn (): array => ['draft_strips' => $strips, 'draft_started_at' => now()]);
+    }
+
+    /**
+     * Plans the publication of the page at a moment, by an editor or by nobody known.
+     */
+    public function scheduledAt(CarbonInterface $moment, Editor|int|null $by = null): self
+    {
+        return $this->state(fn (): array => [
+            'publish_at' => $moment,
+            'scheduled_by' => $by instanceof Editor ? $by->id : $by,
+        ]);
+    }
+
+    /**
+     * Notes that a strip stopped the publication planned at a moment.
+     */
+    public function publicationFailedAt(CarbonInterface $moment): self
+    {
+        return $this->state(fn (): array => ['publish_failed_at' => $moment]);
     }
 
     /**

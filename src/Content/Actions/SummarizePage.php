@@ -19,7 +19,8 @@ final class SummarizePage
      * A page in short, for the column "In het kort" and the card "Wat erop staat" of its screen.
      *
      * The tree is the one the screen read already (ListPages), so where the page lies and its place in the menu of the
-     * site cost no query of their own; the strips are those of the working copy, as the edit shell lists them.
+     * site cost no query of their own; the strips are those of the working copy, as the edit shell lists them, and so are
+     * its files (ListPageMedia).
      *
      * @param  PageTree  $pages  every page of the site
      */
@@ -42,6 +43,7 @@ final class SummarizePage
             publishedAt: $page->published_at,
             updatedAt: $page->updated_at?->toImmutable(),
             updatedBy: $page->updated_by,
+            media: ListPageMedia::run($page),
         );
     }
 }

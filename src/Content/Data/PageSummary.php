@@ -24,6 +24,7 @@ final readonly class PageSummary
      * @param  int|null  $createdBy  the editor who created it; null when that is not known
      * @param  CarbonImmutable|null  $publishedAt  when it was published last; null for a page never published
      * @param  int|null  $updatedBy  the editor who changed it last; null when that is not known
+     * @param  PageMedia  $media  the files on its working copy (ListPageMedia)
      */
     public function __construct(
         public PageState $state,
@@ -39,6 +40,7 @@ final readonly class PageSummary
         public ?CarbonImmutable $publishedAt,
         public ?CarbonImmutable $updatedAt,
         public ?int $updatedBy,
+        public PageMedia $media,
     ) {}
 
     /**

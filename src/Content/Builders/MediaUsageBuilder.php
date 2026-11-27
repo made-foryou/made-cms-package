@@ -32,6 +32,16 @@ final class MediaUsageBuilder extends Builder
     }
 
     /**
+     * The places of the files that need an alt text and have none, by the rule of the library (MediaBuilder::withoutAlt).
+     */
+    public function withoutAlt(): self
+    {
+        return $this->whereHas('media', static function (MediaBuilder $media): void {
+            $media->withoutAlt();
+        });
+    }
+
+    /**
      * The number of places these rows are: a place in the draft and in the published version of a page counts once,
      * as the library counts it.
      */

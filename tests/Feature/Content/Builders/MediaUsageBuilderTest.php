@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Made\CmsPackage\Content\Builders\MediaUsageBuilder;
+use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\MediaUsage;
 use Made\CmsPackage\Content\Models\Page;
 
@@ -38,4 +39,14 @@ it('returns the places of these files on any page, also a deleted one', function
     MediaUsage::factory()->create();
 
     expect(MediaUsage::query()->ofMedia([$here->media_id, $deleted->media_id])->orderBy('id')->pluck('id')->all())->toBe([$here->id, $deleted->id]);
+});
+
+it('returns the places of images without an alt text, never of a document or a video', function (): void {
+    $page = Page::factory()->create();
+    $without = MediaUsage::factory()->for($page)->create(['strip_id' => 'a']);
+    MediaUsage::factory()->for($page)->for(Media::factory()->withAlt('Het eerste team'))->create(['strip_id' => 'b']);
+    MediaUsage::factory()->for($page)->for(Media::factory()->document())->create(['strip_id' => 'c']);
+    MediaUsage::factory()->for($page)->for(Media::factory()->video())->create(['strip_id' => 'd']);
+
+    expect(MediaUsage::query()->withoutAlt()->pluck('id')->all())->toBe([$without->id]);
 });

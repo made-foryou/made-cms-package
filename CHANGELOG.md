@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/made-foryou/made-cms-package/compare/v0.1.0...main)
 
+### Added
+
+- The attention point "Google-omschrijving is te lang" (issue #88, medium): a page Google shows whose description is longer than the 155 characters Google shows says how long it is ("171 tekens; Google kapt af na ongeveer 155."), with "Kort hem in hieronder" to the card of Google. The pages screen shows it on the row and in the card of what asks for attention ("omschrijving te lang"), so the filter "Vraagt aandacht" counts the same pages as the Meta-overzicht. Hosts that published `lang/vendor/made-cms-package` add `pages.show.attention.reasons.meta_description_too_long` and `pages.index.state.reasons.meta_description_too_long`.
+
 ## [v0.1.0](https://github.com/made-foryou/made-cms-package/releases/tag/v0.1.0) - 2026-11-27
 
 The first tagged release. A site that followed the main branch until now finds under Changed, Removed and Security what it has to do, such as publishing the migrations again.

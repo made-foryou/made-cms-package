@@ -63,6 +63,7 @@ return [
                 'stale_draft' => 'draft open for long',
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
+                'meta_description_too_long' => 'description too long',
                 'image_without_alt' => 'photos without an alt text',
                 'many_h1' => 'more than one H1',
                 'empty' => 'still empty',
@@ -158,6 +159,12 @@ return [
                     'meta' => ':length characters; Google cuts off after about :limit.',
                     'action' => 'Shorten it below',
                     'short' => 'title too long',
+                ],
+                'meta_description_too_long' => [
+                    'title' => 'Google description is too long',
+                    'meta' => ':length characters; Google cuts off after about :limit.',
+                    'action' => 'Shorten it below',
+                    'short' => 'description too long',
                 ],
                 'image_without_alt' => [
                     'title' => '{1} Photo without an alt text|[2,*] :count photos without an alt text',

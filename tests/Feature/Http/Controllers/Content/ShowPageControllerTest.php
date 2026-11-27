@@ -405,6 +405,17 @@ describe('the card "Hoe hij ervoor staat"', function (): void {
             ], false);
     });
 
+    it('asks for a shorter description with the way to the card of Google', function (): void {
+        $page = Page::factory()->published()->at('/locatie')->withStrips([storedStrip()])
+            ->withMeta('Locatie', str_repeat('a', 171))->create(['title' => 'Locatie']);
+
+        expect(pageScreen($page))->toContain(
+            '<span class="aandacht-titel"><span class="sr-only">Binnenkort: </span>Google-omschrijving is te lang</span>',
+            '<span class="punt-meta">171 tekens; Google kapt af na ongeveer 155.</span>',
+            '<a class="tekstlink klein" href="#made-cms-google">Kort hem in hieronder</a>',
+        );
+    });
+
     it('says when the page asks for nothing', function (): void {
         $page = Page::factory()->published()->withMeta('Onze teams', 'Alle teams van de club.')->at('/teams')
             ->withStrips([storedStrip()])

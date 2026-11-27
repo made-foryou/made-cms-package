@@ -228,12 +228,15 @@ if (wizard) {
 }
 
 /*
- * The card "Hoe Google hem ziet" on the screen of a page (design 15.2): the counters under the title and the
- * description, the result in Google and the hint of the sitemap switch follow what the editor types. The server counts
- * the same way (MeasureMeta): the text on one line, in characters, missing before too long before the default title.
- * Without this script the card shows what is stored and saves the same. The texts come from data-config. Every change
- * is told as made-cms:meta {title, description} on the document, so the card "Hoe je link gedeeld wordt" (share.js)
- * shows the same title and description in its shared link.
+ * The card "Hoe Google hem ziet" on the screen of a page (design 15.2) and the panel of the Meta-overzicht (design
+ * 9.1): the counters under the title and the description, the result in Google and the hint of the sitemap switch
+ * follow what the editor types. The server counts the same way (MeasureMeta): the text on one line, in characters,
+ * missing before too long before near the limit (config.warn, from MetaField::warnAbove()) before the default title.
+ * The panel also has a bar per field ([data-meta-bar], its fill an attribute of the svg) with its words
+ * ([data-meta-said]), and a proposed description that "Gebruik dit voorstel" puts in the field. Without this script
+ * the form shows what is stored and saves the same. The texts come from data-config. Every change is told as
+ * made-cms:meta {title, description} on the document, so the card "Hoe je link gedeeld wordt" (share.js) shows the
+ * same title and description in its shared link.
  */
 
 const metaForm = document.querySelector('form[data-meta]');
@@ -250,17 +253,41 @@ if (metaForm) {
 
     const oneLine = (text) => text.replace(/\s+/g, ' ').trim();
 
+    const fill = (template, replace) => Object.entries(replace)
+        .reduce((text, [key, value]) => text.replace(`:${key}`, String(value)), template ?? '');
+
     const count = (name, text, fallback) => {
         const counter = metaForm.querySelector(`[data-meta-count="${name}"]`);
         const limit = config.limits?.[name] ?? 0;
         const length = [...text].length;
         const missing = length === 0;
         const tooLong = length > limit;
+        const near = !tooLong && config.warn?.[name] !== undefined && length > config.warn[name];
         const template = (missing && texts.missing) || (tooLong && texts.long) || (fallback && texts.fallback) || texts.count || '';
 
-        counter.textContent = template.replace(':count', String(length)).replace(':limit', String(limit));
+        counter.textContent = fill(template, { count: length, limit });
         counter.classList.toggle('ontbreekt', missing);
         counter.classList.toggle('te-lang', tooLong);
+        bar(name, length, limit, missing ? 'missing' : tooLong ? 'long' : near ? 'near' : 'fits');
+    };
+
+    const tones = { missing: 'ontbreekt', long: 'te-lang', near: 'krap', fits: 'past' };
+
+    const bar = (name, length, limit, state) => {
+        const element = metaForm.querySelector(`[data-meta-bar="${name}"]`);
+        const said = metaForm.querySelector(`[data-meta-said="${name}"]`);
+
+        if (!element) {
+            return;
+        }
+
+        element.classList.remove(...Object.values(tones));
+        element.classList.add(tones[state]);
+        element.querySelector('.metabalk-vulling')?.setAttribute('width', String(state === 'missing' || state === 'long' ? 100 : Math.round(length / limit * 100)));
+
+        if (said) {
+            said.textContent = fill(texts.said?.[state], { field: texts.fields?.[name] ?? '', count: length, limit });
+        }
     };
 
     const sync = () => {
@@ -284,5 +311,18 @@ if (metaForm) {
 
     metaForm.addEventListener('input', sync);
     metaForm.addEventListener('change', sync);
+
+    const suggestion = metaForm.querySelector('[data-meta-suggestion]');
+    const suggest = metaForm.querySelector('[data-meta-suggest]');
+
+    if (suggestion && suggest) {
+        suggest.hidden = false;
+        suggest.addEventListener('click', () => {
+            description.value = suggestion.textContent.trim();
+            description.dispatchEvent(new Event('input', { bubbles: true }));
+            description.focus();
+        });
+    }
+
     sync();
 }

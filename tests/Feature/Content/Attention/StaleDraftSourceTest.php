@@ -52,4 +52,6 @@ it('leaves a page alone that visitors never saw or that has no draft', function 
     'never published' => [static fn (): Page => Page::factory()->withDraft([storedStrip()])->draftSince(CarbonImmutable::now()->subDays(30))->create()],
     'without a draft' => [static fn (): Page => Page::factory()->published()->withStrips([storedStrip()])->create()],
     'a draft of which the start is not known' => [static fn (): Page => Page::factory()->published()->withDraft([storedStrip()])->create(['draft_started_at' => null])],
+    'a draft planned to go live' => [static fn (): Page => Page::factory()->published()->withDraft([storedStrip()])
+        ->draftSince(CarbonImmutable::now()->subDays(30))->scheduledAt(CarbonImmutable::now()->addDays(3))->create()],
 ]);

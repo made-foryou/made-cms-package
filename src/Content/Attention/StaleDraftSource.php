@@ -13,13 +13,14 @@ use Made\CmsPackage\Content\Models\Page;
 
 /**
  * A draft of a published page that is open longer than pages.stale_draft_days: visitors still see the older text. A
- * page that was never published has no older text, and a draft of which the start is not known is left alone.
+ * page that was never published has no older text, a draft of which the start is not known is left alone, and a draft
+ * planned to go live waits on purpose.
  */
 final readonly class StaleDraftSource implements AttentionSource
 {
     public function items(Page $page): array
     {
-        if ($page->status !== PageStatus::Published || $page->draft_strips === null || $page->draft_started_at === null) {
+        if ($page->status !== PageStatus::Published || $page->draft_strips === null || $page->draft_started_at === null || $page->publish_at !== null) {
             return [];
         }
 

@@ -58,6 +58,8 @@ return [
             'hidden_none' => 'alles is zichtbaar',
             'others' => ':count andere',
             'reasons' => [
+                'publication_failed' => 'geplande publicatie mislukt',
+                'publication_overdue' => 'planning verstreken',
                 'stale_draft' => 'concept staat lang open',
                 'meta_description_missing' => 'omschrijving leeg',
                 'meta_title_too_long' => 'titel te lang',
@@ -125,6 +127,18 @@ return [
                 'low' => 'Als je tijd hebt',
             ],
             'reasons' => [
+                'publication_failed' => [
+                    'title' => 'De geplande publicatie ging niet door',
+                    'meta' => 'Een strook hield hem tegen; het concept staat nog klaar.',
+                    'action' => 'Bekijk en publiceer op de site',
+                    'short' => 'geplande publicatie mislukt',
+                ],
+                'publication_overdue' => [
+                    'title' => 'De geplande publicatie is niet gebeurd',
+                    'meta' => 'Het moment is voorbij, maar de scheduler van de site draait niet: vraag je ontwikkelaar naar schedule:run.',
+                    'action' => 'Publiceer hem hieronder',
+                    'short' => 'planning verstreken',
+                ],
                 'stale_draft' => [
                     'title' => 'Het concept staat al :days dagen open',
                     'meta' => 'Bezoekers zien nog de oude tekst.',

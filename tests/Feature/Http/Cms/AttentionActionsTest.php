@@ -17,10 +17,16 @@ it('points the content of a page at the edit shell for an editor who opens the p
     $page = Page::factory()->create();
 
     expect(AttentionActions::url($reason, $page, [Screen::Pages]))->toBe('/made-cms/pages/'.$page->id.'/edit');
-})->with([AttentionReason::StaleDraft, AttentionReason::Empty]);
+})->with([AttentionReason::StaleDraft, AttentionReason::Empty, AttentionReason::PublicationFailed]);
+
+it('points a planned publication that is late at the basics, where it is published at once', function (): void {
+    $page = Page::factory()->create();
+
+    expect(AttentionActions::url(AttentionReason::PublicationOverdue, $page, []))->toBe('#made-cms-basis');
+});
 
 it('gives no way to a screen the editor does not open', function (AttentionReason $reason): void {
     $page = Page::factory()->create();
 
     expect(AttentionActions::url($reason, $page, [Screen::MetaTags, Screen::Media]))->toBeNull();
-})->with([AttentionReason::StaleDraft, AttentionReason::Empty]);
+})->with([AttentionReason::StaleDraft, AttentionReason::Empty, AttentionReason::PublicationFailed]);

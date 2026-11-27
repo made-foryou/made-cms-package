@@ -58,6 +58,8 @@ return [
             'hidden_none' => 'everything is visible',
             'others' => '{1} :count other|[2,*] :count others',
             'reasons' => [
+                'publication_failed' => 'planned publication failed',
+                'publication_overdue' => 'planned publication late',
                 'stale_draft' => 'draft open for long',
                 'meta_description_missing' => 'description empty',
                 'meta_title_too_long' => 'title too long',
@@ -125,6 +127,18 @@ return [
                 'low' => 'When you have time',
             ],
             'reasons' => [
+                'publication_failed' => [
+                    'title' => 'The planned publication did not go through',
+                    'meta' => 'A strip stopped it; the draft is still there.',
+                    'action' => 'Look at it and publish it on the site',
+                    'short' => 'planned publication failed',
+                ],
+                'publication_overdue' => [
+                    'title' => 'The planned publication did not happen',
+                    'meta' => 'Its moment passed, but the scheduler of the site does not run: ask your developer about schedule:run.',
+                    'action' => 'Publish it below',
+                    'short' => 'planned publication late',
+                ],
                 'stale_draft' => [
                     'title' => 'The draft has been open for :days days',
                     'meta' => 'Visitors still see the old text.',

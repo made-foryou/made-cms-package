@@ -22,7 +22,8 @@ final class AttentionActions
     {
         [$url, $screen] = match ($reason) {
             AttentionReason::MetaDescriptionMissing, AttentionReason::MetaTitleTooLong => ['#made-cms-google', null],
-            AttentionReason::StaleDraft, AttentionReason::Empty => [PageLinks::edit($page), Screen::Pages],
+            AttentionReason::PublicationOverdue => ['#made-cms-basis', null],
+            AttentionReason::StaleDraft, AttentionReason::Empty, AttentionReason::PublicationFailed => [PageLinks::edit($page), Screen::Pages],
         };
 
         return $screen === null || in_array($screen, $screens, true) ? $url : null;

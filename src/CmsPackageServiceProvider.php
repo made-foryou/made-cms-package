@@ -32,6 +32,8 @@ use Made\CmsPackage\Console\Commands\SitemapCommand;
 use Made\CmsPackage\Content\Attention\EmptyPageSource;
 use Made\CmsPackage\Content\Attention\MetaDescriptionSource;
 use Made\CmsPackage\Content\Attention\MetaTitleSource;
+use Made\CmsPackage\Content\Attention\PublicationFailedSource;
+use Made\CmsPackage\Content\Attention\PublicationOverdueSource;
 use Made\CmsPackage\Content\Attention\StaleDraftSource;
 use Made\CmsPackage\Content\Data\AttentionSources;
 use Made\CmsPackage\Content\Data\EditMode;
@@ -230,6 +232,8 @@ class CmsPackageServiceProvider extends ServiceProvider
     private function registerAttention(): void
     {
         $this->app->bind(AttentionSources::class, static fn (): AttentionSources => new AttentionSources([
+            new PublicationFailedSource,
+            new PublicationOverdueSource,
             new StaleDraftSource,
             new MetaDescriptionSource,
             new MetaTitleSource,

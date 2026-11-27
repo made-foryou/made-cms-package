@@ -81,6 +81,14 @@ final class PageLinks
     }
 
     /**
+     * Where the card "Wat er eerder gebeurde" puts a version of the page back as its draft.
+     */
+    public static function restoreVersion(Page $page, int $number): string
+    {
+        return self::url('made-cms-package.pages.versions.restore', ['page' => $page->id, 'version' => $number]);
+    }
+
+    /**
      * The edit shell: the page in the edit mode of the site, in a frame of the CMS; with a strip, opened with that
      * strip chosen.
      */

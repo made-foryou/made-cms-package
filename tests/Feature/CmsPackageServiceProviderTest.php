@@ -200,6 +200,10 @@ it('keeps deleted pages for thirty days', function (): void {
     expect(config('made-cms-package.pages.keep_deleted_days'))->toBe(30);
 });
 
+it('keeps the twenty newest versions of a page', function (): void {
+    expect(config('made-cms-package.pages.keep_versions'))->toBe(20);
+});
+
 it('appends the launcher middleware to the web middleware group', function (): void {
     /** @var FoundationKernel $kernel */
     $kernel = app(Kernel::class);
@@ -258,7 +262,7 @@ it('registers the publish tags promised in the README', function (string $tag): 
 
 it('ships the migrations for every context', function (string $table): void {
     expect(Schema::hasTable($table))->toBeTrue();
-})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes', 'cms_media_folders', 'cms_media', 'cms_media_usages', 'cms_sitemaps']);
+})->with(['cms_editors', 'cms_login_codes', 'cms_pages', 'cms_routes', 'cms_media_folders', 'cms_media', 'cms_media_usages', 'cms_sitemaps', 'cms_page_versions']);
 
 it('maps the page model to a morph alias without forcing a map on the host', function (): void {
     expect(Relation::getMorphedModel('cms_page'))->toBe(Page::class)

@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Validation\ValidationException;
+use Made\CmsPackage\Access\Models\Editor;
+use Made\CmsPackage\Content\Actions\ChangeDraft;
 use Made\CmsPackage\Content\Actions\PublishPage;
+use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Enums\PageStatus;
 use Made\CmsPackage\Content\Events\PagePublished;
 use Made\CmsPackage\Content\Exceptions\PageAlreadyPublished;
 use Made\CmsPackage\Content\Models\Media;
 use Made\CmsPackage\Content\Models\Page;
+use Made\CmsPackage\Content\Models\PageVersion;
 use Made\CmsPackage\Content\Strips\StripTypes;
 use Made\CmsPackage\Tests\Fixtures\Strips\Banner;
 use Made\CmsPackage\Tests\Fixtures\Strips\Downloads;
@@ -67,6 +71,40 @@ it('publishes the draft of a page that is already published', function (): void 
         ->and($stored->draft_strips)->toBeNull()
         ->and($stored->status)->toBe(PageStatus::Published)
         ->and($stored->published_at?->equalTo(now()))->toBeTrue();
+});
+
+it('keeps every publication as a version of the page', function (): void {
+    $this->freezeSecond();
+    $editor = Editor::factory()->create();
+    $first = [storedStrip('hero', publishableHero(), id: 'a')];
+    $second = [storedStrip('hero', publishableHero(), id: 'a'), storedStrip('cards', id: 'b')];
+    $page = Page::factory()->withDraft($first)->create();
+
+    PublishPage::run($page, $editor->id);
+    ChangeDraft::run($page, function (PageStrips $strips, Page $page) use ($second): void {
+        $page->draft_strips = $second;
+    });
+    PublishPage::run($page);
+
+    $versions = PageVersion::query()->ofPage($page)->newestFirst()->get();
+
+    expect($versions->pluck('number')->all())->toBe([2, 1])
+        ->and($versions[1]->strips)->toBeStoredAs($first)
+        ->and($versions[1]->published_by)->toBe($editor->id)
+        ->and($versions[1]->changes['first'])->toBeTrue()
+        ->and($versions[0]->strips)->toBeStoredAs($second)
+        ->and($versions[0]->changes['added'])->toBe(['b'])
+        ->and($versions[0]->published_by)->toBeNull()
+        ->and($versions[0]->published_at->equalTo(Page::query()->findOrFail($page->id)->published_at))->toBeTrue();
+});
+
+it('keeps no version of a publication it refuses', function (): void {
+    $page = Page::factory()->published()->withStrips([storedStrip('hero', publishableHero(), id: 'a')])->create();
+    $broken = Page::factory()->withDraft([storedStrip('hero', ['kop' => null], id: 'b')])->create();
+
+    expect(fn (): mixed => PublishPage::run($page))->toThrow(PageAlreadyPublished::class)
+        ->and(fn (): mixed => PublishPage::run($broken))->toThrow(ValidationException::class)
+        ->and(PageVersion::query()->count())->toBe(0);
 });
 
 it('dispatches an event for the published page', function (): void {

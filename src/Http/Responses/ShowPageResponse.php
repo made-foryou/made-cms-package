@@ -16,13 +16,16 @@ use Made\CmsPackage\Content\Data\EditableStrips;
 use Made\CmsPackage\Content\Data\MenuPlace;
 use Made\CmsPackage\Content\Data\MetaLength;
 use Made\CmsPackage\Content\Data\PageAttention;
+use Made\CmsPackage\Content\Data\PageHistory;
 use Made\CmsPackage\Content\Data\PageMeta;
 use Made\CmsPackage\Content\Data\PageNode;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\PageSummary;
 use Made\CmsPackage\Content\Data\PageTree;
+use Made\CmsPackage\Content\Data\RestoredVersion;
 use Made\CmsPackage\Content\Data\ShareImageDescription;
 use Made\CmsPackage\Content\Data\ShareImageFit;
+use Made\CmsPackage\Content\Data\VersionSummary;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\MenuPlaceReason;
 use Made\CmsPackage\Content\Enums\MetaField;
@@ -49,8 +52,8 @@ use Made\CmsPackage\Support\Site;
 
 /**
  * One page (design 15.2): what it asks for attention, its basics (name, address, place, menu flag and type), what is on
- * it, how Google sees it, how a shared link shows it (design 23), the pages under it and removing it, with the page in
- * short in the column "In het kort" beside the cards.
+ * it, how Google sees it, how a shared link shows it (design 23), the pages under it, its versions and removing it, with
+ * the page in short in the column "In het kort" beside the cards.
  */
 final class ShowPageResponse
 {
@@ -67,7 +70,9 @@ final class ShowPageResponse
      * @param  PageAttention  $attention  what the page asks for attention (ListPageAttention)
      * @param  PageTypes  $types  the page types of the site, to choose from in the basics
      * @param  PageSummary  $summary  the page in short (SummarizePage), for "Wat erop staat" and "In het kort"
-     * @param  array<int, string>  $names  the names of the editors the summary names, by id (NameEditors)
+     * @param  PageHistory  $history  the versions of the page (ListPageVersions), for "Wat er eerder gebeurde"
+     * @param  RestoredVersion|null  $restored  what putting a version back did right before
+     * @param  array<int, string>  $names  the names of the editors the summary and the versions name, by id (NameEditors)
      */
     public static function make(
         Editor $editor,
@@ -84,6 +89,8 @@ final class ShowPageResponse
         PageAttention $attention,
         PageTypes $types,
         PageSummary $summary,
+        PageHistory $history,
+        ?RestoredVersion $restored,
         array $names,
     ): Response {
         $node = $pages->find($page->id);
@@ -131,6 +138,7 @@ final class ShowPageResponse
             'attention' => self::attention($page, $screens, $attention),
             'strips' => self::strips($page, $summary->strips),
             'summary' => self::summary($pages, $types, $summary, $names),
+            'versions' => self::versions($page, $history, $restored, $names),
         ], $pages, $page);
     }
 
@@ -255,6 +263,106 @@ final class ShowPageResponse
             'updated' => $day($summary->updatedAt ?? $summary->publishedAt),
             'name' => (string) $name,
         ]);
+    }
+
+    /**
+     * The card "Wat er eerder gebeurde": every version with what it changed, its number, when and by whom it went live
+     * and "nu live" at the one visitors see, the way back for the others (asking first when a draft would go), and what
+     * putting one back did right before, with the way into the edit shell to look at it.
+     *
+     * @param  array<int, string>  $names
+     * @return array{
+     *     items: list<array{title: string, meta: string, live: bool, restoreUrl: string|null, label: string, confirm: string}>,
+     *     empty: string|null,
+     *     draft: bool,
+     *     restored: string|null,
+     *     editUrl: string,
+     * }
+     */
+    private static function versions(Page $page, PageHistory $history, ?RestoredVersion $restored, array $names): array
+    {
+        $locale = Locale::launcher();
+        $text = static fn (string $key, array $replace = []): string => (string) __('made-cms-package::pages.show.versions.'.$key, $replace, $locale);
+
+        $items = array_map(static function (VersionSummary $version) use ($page, $names, $text, $locale): array {
+            $name = $version->publishedBy === null ? null : ($names[$version->publishedBy] ?? null);
+            $meta = array_filter([
+                $text('number', ['number' => (string) $version->number]),
+                Day::moment($version->publishedAt, $locale),
+                $name,
+                $version->live ? $text('live') : null,
+            ], static fn (?string $part): bool => $part !== null);
+
+            return [
+                'title' => self::versionTitle($version, $text, $locale),
+                'meta' => implode(' · ', $meta),
+                'live' => $version->live,
+                'restoreUrl' => $version->live ? null : PageLinks::restoreVersion($page, $version->number),
+                'label' => $text('restore_label', ['number' => (string) $version->number]),
+                'confirm' => $text('confirm_button', ['number' => (string) $version->number]),
+            ];
+        }, $history->versions);
+
+        return [
+            'items' => $items,
+            'empty' => match (true) {
+                $items !== [] => null,
+                $page->status === PageStatus::Published => $text('none'),
+                default => $text('never'),
+            },
+            'draft' => $history->draft,
+            'restored' => $restored === null ? null : $text(
+                'restored'.($restored->draft ? '' : '_same').($restored->replacedDraft ? '_replaced' : ''),
+                ['number' => (string) $restored->number],
+            ),
+            'editUrl' => PageLinks::edit($page),
+        ];
+    }
+
+    /**
+     * What a version changed in one line: the first publication, else every kind of change with up to three strips by
+     * name ("2 stroken gewijzigd: ‘Teams’ en ‘Competitie’").
+     *
+     * @param  callable(string, array<string, string>): string  $text
+     */
+    private static function versionTitle(VersionSummary $version, callable $text, string $locale): string
+    {
+        if ($version->first) {
+            return $text('first', []);
+        }
+
+        $parts = [];
+
+        foreach (['added' => $version->added, 'changed' => $version->changed, 'moved' => $version->moved, 'removed' => $version->removed] as $kind => $names) {
+            if ($names === []) {
+                continue;
+            }
+
+            $parts[] = $text('part', [
+                'change' => trans_choice('made-cms-package::pages.show.versions.'.$kind, count($names), [], $locale),
+                'names' => self::stripNames($names, $text, $locale),
+            ]);
+        }
+
+        return $parts === [] ? $text('published', []) : implode('; ', $parts);
+    }
+
+    /**
+     * @param  list<string>  $names
+     * @param  callable(string, array<string, string>): string  $text
+     */
+    private static function stripNames(array $names, callable $text, string $locale): string
+    {
+        $shown = array_map(static fn (string $name): string => $text('name', ['name' => $name]), array_slice($names, 0, 3));
+        $rest = count($names) - count($shown);
+
+        if ($rest > 0) {
+            return implode(', ', $shown).' '.trans_choice('made-cms-package::pages.show.versions.more', $rest, [], $locale);
+        }
+
+        $last = (string) array_pop($shown);
+
+        return $shown === [] ? $last : implode(', ', $shown).' '.$text('and', []).' '.$last;
     }
 
     private static function typeName(PageTypes $types, ?string $type, string $locale): string

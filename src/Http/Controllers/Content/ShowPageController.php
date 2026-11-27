@@ -14,6 +14,7 @@ use Made\CmsPackage\Content\Actions\FindMediaFolder;
 use Made\CmsPackage\Content\Actions\ListEditableStrips;
 use Made\CmsPackage\Content\Actions\ListPageAttention;
 use Made\CmsPackage\Content\Actions\ListPages;
+use Made\CmsPackage\Content\Actions\ListPageVersions;
 use Made\CmsPackage\Content\Actions\ListParentOptions;
 use Made\CmsPackage\Content\Actions\MakeFallbackTitle;
 use Made\CmsPackage\Content\Actions\SummarizePage;
@@ -27,7 +28,7 @@ use Made\CmsPackage\Http\Session\MediaFolderMemory;
 
 /**
  * One page: what it asks for attention, its basics, what is on it, how Google sees it, how a shared link shows it, the
- * pages under it, removing it and the page in short. Right after the wizard: that it is ready.
+ * pages under it, its versions, removing it and the page in short. Right after the wizard: that it is ready.
  */
 final class ShowPageController
 {
@@ -42,6 +43,7 @@ final class ShowPageController
         }
 
         $summary = SummarizePage::run($page, $pages);
+        $history = ListPageVersions::run($page);
 
         return ShowPageResponse::make(
             editor: $editor,
@@ -58,7 +60,9 @@ final class ShowPageController
             attention: ListPageAttention::run($page),
             types: $types,
             summary: $summary,
-            names: NameEditors::run($summary->editors()),
+            history: $history,
+            restored: PageRedirect::justRestoredVersion($request, $page),
+            names: NameEditors::run([...$summary->editors(), ...$history->editors()]),
         );
     }
 }

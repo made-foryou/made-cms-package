@@ -1677,6 +1677,81 @@ ul.lijst {
     white-space: nowrap;
 }
 
+/* The versions of a page: a dot (green for the one visitors see), what changed and when, and the way back for an older
+   one. Asking first opens below the version, across the row. */
+
+.versies {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.versie {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--made-rand);
+}
+
+.versie:first-child {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.versie:last-child {
+    padding-bottom: 0;
+}
+
+.versie-stip {
+    flex-shrink: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--made-inhoud-subtiel);
+}
+
+.versie-stip.huidig {
+    background: var(--made-status);
+}
+
+/* The text gives way to the button, so a long change wraps within the row instead of pushing the button below it. */
+.versie .punt-tekst {
+    flex: 1 1 0;
+}
+
+.versie-titel {
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.versie-terug {
+    flex-shrink: 0;
+}
+
+.versie-terug .knop.stil {
+    min-height: 40px;
+    padding: 9px 14px;
+    font-size: 14px;
+}
+
+.versie-terug[open] {
+    flex-basis: 100%;
+    padding-left: 21px;
+}
+
+.versie-terug[open] summary {
+    margin-bottom: 10px;
+}
+
+.versie-terug .kaart-tekst {
+    margin-bottom: 12px;
+}
+
 .kaart {
     display: flex;
     flex-direction: column;
@@ -4564,6 +4639,7 @@ button.tekstlink.alarm {
 
     .punt,
     .aandachtspunt,
+    .versie,
     .boomrij,
     .strook,
     .schakelrij {
@@ -4573,6 +4649,19 @@ button.tekstlink.alarm {
     /* The way to what solves a point lines up with its text, past the dot (9px) and the gap (12px). */
     .aandachtspunt .tekstlink {
         margin-left: 21px;
+    }
+
+    /* The way back goes below the text, in line with it past the dot (9px) and the gap (12px). */
+    .versie .punt-tekst {
+        flex-basis: calc(100% - 21px);
+    }
+
+    .versie-terug {
+        margin-left: 21px;
+    }
+
+    .versie-terug[open] {
+        margin-left: 0;
     }
 
     .boomrij-acties {

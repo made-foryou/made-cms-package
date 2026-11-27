@@ -15,6 +15,7 @@ return [
     ],
     'prune' => [
         'pruned' => '{0} No pages removed for good.|{1} 1 page removed for good.|[2,*] :count pages removed for good.',
+        'versions' => '{0} No older versions removed.|{1} 1 older version removed.|[2,*] :count older versions removed.',
     ],
     'media_usage' => [
         'rebuilt' => 'Rebuilt the usage of media from :pages: :places.',

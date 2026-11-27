@@ -187,3 +187,14 @@ it('sums up its text without the asterisks of its emphasis, and with them withou
         ->and(Heading::make('kop')->emphasis()->summary(null))->toBeNull()
         ->and(Heading::make('kop')->summary(['text' => 'Jullie dag in *vertrouwde* handen', 'tag' => 'h2']))->toBe('Jullie dag in *vertrouwde* handen');
 });
+
+it('gives the level a visitor gets, or none without a text', function (mixed $value, array $levels): void {
+    expect(Heading::make('kop')->tag('h1')->tags(['h1', 'h2', 'span'])->headingLevels($value))->toBe($levels);
+})->with([
+    'a text with a level' => [['text' => 'Welkom', 'tag' => 'h2'], ['h2']],
+    'a text at no heading' => [['text' => 'Welkom', 'tag' => 'span'], ['span']],
+    'a text of a former text field' => ['Welkom', ['h1']],
+    'a level the developer took out of its levels' => [['text' => 'Welkom', 'tag' => 'h3'], ['h1']],
+    'an empty text' => [['text' => '', 'tag' => 'h2'], []],
+    'nothing' => [null, []],
+]);

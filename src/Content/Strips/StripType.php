@@ -227,6 +227,27 @@ abstract class StripType
     }
 
     /**
+     * The levels of the headings a visitor gets from these values, in the order of its fields and of the items of a
+     * list: as render() gives them, a missing field from its default, a heading without a text left out and "span" for
+     * one at "Geen kop". Where headings() describes the definition for the edit shell, this reads the content; the
+     * extra data of with() is no part of it.
+     *
+     * @param  array<string, mixed>  $values  stored values
+     * @return list<string>
+     */
+    final public function headingLevels(array $values): array
+    {
+        $levels = [];
+
+        foreach ($this->fields() as $field) {
+            $key = $field->getKey();
+            $levels = [...$levels, ...$field->headingLevels(array_key_exists($key, $values) ? $values[$key] : $field->getDefault())];
+        }
+
+        return $levels;
+    }
+
+    /**
      * The values as they are stored: rich text cleaned, links in their stored form.
      *
      * @param  array<string, mixed>  $values  validated values

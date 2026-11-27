@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Attention;
 
 use Made\CmsPackage\Content\Actions\ListWorkingCopyMedia;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
@@ -17,7 +18,7 @@ use Made\CmsPackage\Content\Models\Page;
  */
 final readonly class ImageWithoutAltSource implements AttentionSource
 {
-    public function items(Page $page): array
+    public function items(Page $page, AttentionContext $context): array
     {
         $ids = ListWorkingCopyMedia::run($page, $page->usagesWithoutAlt);
 

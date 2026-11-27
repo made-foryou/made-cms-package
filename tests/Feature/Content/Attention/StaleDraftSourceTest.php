@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
 use Made\CmsPackage\Content\Attention\StaleDraftSource;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
@@ -25,29 +26,29 @@ function pageWithDraftOf(float $days): Page
 }
 
 it('asks for attention once the draft of a published page is open longer than the configured days', function (): void {
-    expect((new StaleDraftSource)->items(pageWithDraftOf(6)))->toEqual([
+    expect((new StaleDraftSource)->items(pageWithDraftOf(6), new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::StaleDraft, AttentionSeverity::High, ['days' => 6]),
     ]);
 });
 
 it('counts whole days', function (): void {
-    expect((new StaleDraftSource)->items(pageWithDraftOf(7.9)))->toEqual([
+    expect((new StaleDraftSource)->items(pageWithDraftOf(7.9), new AttentionContext))->toEqual([
         new AttentionItem(AttentionReason::StaleDraft, AttentionSeverity::High, ['days' => 7]),
     ]);
 });
 
 it('leaves a draft alone up to the configured days', function (float $days): void {
-    expect((new StaleDraftSource)->items(pageWithDraftOf($days)))->toBe([]);
+    expect((new StaleDraftSource)->items(pageWithDraftOf($days), new AttentionContext))->toBe([]);
 })->with([0.0, 1.0, 5.0, 5.9]);
 
 it('follows the days of the config', function (): void {
     config(['made-cms-package.pages.stale_draft_days' => 1]);
 
-    expect((new StaleDraftSource)->items(pageWithDraftOf(2)))->toHaveCount(1);
+    expect((new StaleDraftSource)->items(pageWithDraftOf(2), new AttentionContext))->toHaveCount(1);
 });
 
 it('leaves a page alone that visitors never saw or that has no draft', function (Closure $page): void {
-    expect((new StaleDraftSource)->items($page()))->toBe([]);
+    expect((new StaleDraftSource)->items($page(), new AttentionContext))->toBe([]);
 })->with([
     'never published' => [static fn (): Page => Page::factory()->withDraft([storedStrip()])->draftSince(CarbonImmutable::now()->subDays(30))->create()],
     'without a draft' => [static fn (): Page => Page::factory()->published()->withStrips([storedStrip()])->create()],

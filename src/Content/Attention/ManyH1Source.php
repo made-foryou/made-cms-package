@@ -6,6 +6,7 @@ namespace Made\CmsPackage\Content\Attention;
 
 use Made\CmsPackage\Content\Actions\CheckShownInGoogle;
 use Made\CmsPackage\Content\Actions\ListShownStrips;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Data\PageStrips;
 use Made\CmsPackage\Content\Enums\AttentionReason;
@@ -23,7 +24,7 @@ final readonly class ManyH1Source implements AttentionSource
 {
     private const string MAIN = 'h1';
 
-    public function items(Page $page): array
+    public function items(Page $page, AttentionContext $context): array
     {
         if (! CheckShownInGoogle::run($page)) {
             return [];

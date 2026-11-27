@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Made\CmsPackage\Content\Attention;
 
 use Carbon\CarbonImmutable;
+use Made\CmsPackage\Content\Data\AttentionContext;
 use Made\CmsPackage\Content\Data\AttentionItem;
 use Made\CmsPackage\Content\Enums\AttentionReason;
 use Made\CmsPackage\Content\Enums\AttentionSeverity;
@@ -18,7 +19,7 @@ use Made\CmsPackage\Content\Models\Page;
  */
 final readonly class StaleDraftSource implements AttentionSource
 {
-    public function items(Page $page): array
+    public function items(Page $page, AttentionContext $context): array
     {
         if ($page->status !== PageStatus::Published || $page->draft_strips === null || $page->draft_started_at === null || $page->publish_at !== null) {
             return [];

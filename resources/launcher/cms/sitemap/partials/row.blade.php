@@ -1,6 +1,7 @@
 {{--
     A page in the list of the sitemap. Its switch is a plain form that cms.js sends once it changes; the screen comes
-    back here, with the focus on the switch and "Opgeslagen" beside it. Without a script the form has its own button.
+    back here, and cms.js puts the focus on the switch again (autofocus is left out by a browser on an address with a
+    fragment), with "Opgeslagen" beside it. Without a script the form has its own button.
 --}}
 <li class="sitemaprij" id="{{ $row['anchor'] }}"@if ($row['depth'] > 0) data-diepte="{{ $row['depth'] }}"@endif>
     <span class="sitemaprij-tekst">
@@ -18,7 +19,7 @@
             <input type="hidden" name="groep" value="{{ $row['choice']['group'] }}">
             <input type="hidden" name="in_sitemap" value="0">
             <label class="sitemaprij-schakel">
-                <input class="schakel" type="checkbox" role="switch" name="in_sitemap" value="1" aria-label="{{ $row['choice']['label'] }}"@if ($row['choice']['checked']) checked @endif @if ($row['choice']['saved']) autofocus @endif>
+                <input class="schakel" type="checkbox" role="switch" name="in_sitemap" value="1" aria-label="{{ $row['choice']['label'] }}"@if ($row['choice']['checked']) checked @endif @if ($row['choice']['saved']) data-refocus @endif>
                 <span aria-hidden="true">{{ $t('sitemap.screen.list.switch') }}</span>
             </label>
             @if ($row['choice']['saved'])

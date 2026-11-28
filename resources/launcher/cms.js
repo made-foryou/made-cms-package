@@ -333,6 +333,14 @@ for (const form of document.querySelectorAll('form[data-autosave]')) {
     form.addEventListener('change', () => form.requestSubmit());
 }
 
+// The switch that was just saved gets the focus back, where the screen came back to. Only after the load: going to the
+// fragment of the address takes the focus to the page, which is also why a browser leaves autofocus out there.
+const refocus = document.querySelector('[data-refocus]');
+
+if (refocus) {
+    window.addEventListener('load', () => setTimeout(() => refocus.focus({ preventScroll: true }), 0), { once: true });
+}
+
 // A form whose work takes a moment (making the sitemap again): its button says it is busy, and a second click sends
 // nothing more.
 for (const form of document.querySelectorAll('form[data-busy]')) {

@@ -8426,10 +8426,9 @@ button.tekstlink.alarm {
 
 .sitemaprij-keuze {
     display: flex;
-    flex: 0 0 auto;
+    flex: 0 0 220px;
     align-items: center;
     gap: 10px;
-    min-width: 120px;
 }
 
 .sitemaprij-schakel {
@@ -8450,8 +8449,7 @@ button.tekstlink.alarm {
 }
 
 .sitemaprij-elders {
-    flex: 0 0 auto;
-    min-width: 120px;
+    flex: 0 0 220px;
     font-size: 13px;
     color: var(--made-inhoud-subtiel);
 }

@@ -55,7 +55,7 @@ it('comes back at the page in its route group, with the focus on its switch and 
 
     preg_match('/<li class="sitemaprij" id="made-cms-sitemap-'.$page->id.'">.*?<\/li>/s', $screen, $row);
     expect($row[0])
-        ->toContain(' autofocus')
+        ->toContain(' data-refocus')
         ->toContain('<span class="sitemaprij-opgeslagen" role="status"><span class="bol goed" aria-hidden="true"></span>Opgeslagen</span>')
         ->toContain('Niet erin: uitgevinkt');
 

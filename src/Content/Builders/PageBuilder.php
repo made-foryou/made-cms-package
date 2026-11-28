@@ -59,6 +59,15 @@ final class PageBuilder extends Builder
     }
 
     /**
+     * The pages with only what their place in the sitemap needs (ListSitemapRows) and their last publication, its
+     * lastmod: the tree of the pages has their addresses already.
+     */
+    public function forSitemap(): self
+    {
+        return $this->select(['id', 'status', 'hidden', 'indexable', 'in_sitemap', 'published_at']);
+    }
+
+    /**
      * The pages whose switch keeps them in the sitemap; a page Google may not show or a hidden page stays out anyway.
      */
     public function inSitemap(): self

@@ -251,3 +251,12 @@ it('reads only what the measure of a page in Google needs, with its address', fu
         ->and($page->relationLoaded('route'))->toBeTrue()
         ->and($page->route?->path)->toBe('/teams');
 });
+
+it('reads only what says whether a page is in the sitemap', function (): void {
+    Page::factory()->published()->at('/teams')->withStrips([storedStrip()])->withDraft([storedStrip()])->create();
+
+    $page = Page::query()->forSitemap()->sole();
+
+    expect(array_keys($page->getAttributes()))->toEqualCanonicalizing(['id', 'status', 'hidden', 'indexable', 'in_sitemap', 'published_at'])
+        ->and($page->relationLoaded('route'))->toBeFalse();
+});

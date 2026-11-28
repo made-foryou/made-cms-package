@@ -29,6 +29,14 @@ final class AddressHitBuilder extends Builder
     }
 
     /**
+     * The counts of every address in the route group with this prefix ("" at the root).
+     */
+    public function inGroup(string $prefix): self
+    {
+        return $this->where('prefix', $prefix);
+    }
+
+    /**
      * The counts of the day of the moment and the days after it.
      */
     public function since(CarbonImmutable $day): self
@@ -105,6 +113,16 @@ final class AddressHitBuilder extends Builder
     public function lastDay(): ?CarbonImmutable
     {
         $day = $this->clone()->reorder()->toBase()->max('day');
+
+        return is_string($day) ? CarbonImmutable::parse($day)->startOfDay() : null;
+    }
+
+    /**
+     * The oldest day with a count still kept, or null when nothing is counted: since when the counts tell anything.
+     */
+    public function firstDay(): ?CarbonImmutable
+    {
+        $day = $this->clone()->reorder()->toBase()->min('day');
 
         return is_string($day) ? CarbonImmutable::parse($day)->startOfDay() : null;
     }

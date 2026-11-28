@@ -143,3 +143,25 @@ it('finds the counts before a day, to clean them up', function (): void {
     expect(AddressHit::query()->before(CarbonImmutable::today()->subDays(90))->count())->toBe(1)
         ->and(AddressHit::query()->since(CarbonImmutable::today()->subDays(90))->pluck('id')->all())->toBe([$kept->id]);
 });
+
+it('knows the oldest day it still counts', function (): void {
+    AddressHit::factory()->daysAgo(12)->create();
+    AddressHit::factory()->daysAgo(40)->at('/ander-adres')->create();
+
+    expect(AddressHit::query()->firstDay()?->toDateString())->toBe('2026-10-19');
+
+    AddressHit::query()->delete();
+
+    expect(AddressHit::query()->firstDay())->toBeNull();
+});
+
+it('reads the counts of one route group', function (): void {
+    $page = AddressHit::factory()->outcome(HitOutcome::Page)->from(VisitSource::Googlebot);
+
+    $page->at('/teams')->hits(4)->create();
+    $page->at('/contact')->hits(3)->create();
+    $page->at('/teams', 'nl')->hits(9)->create();
+
+    expect(AddressHit::query()->inGroup('')->totalHits())->toBe(7)
+        ->and(AddressHit::query()->inGroup('nl')->totalHits())->toBe(9);
+});

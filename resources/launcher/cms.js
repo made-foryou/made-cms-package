@@ -326,3 +326,63 @@ if (metaForm) {
 
     sync();
 }
+
+// A form that saves as soon as its switch changes (the list of the sitemap). requestSubmit sends it as a click on its
+// button would; the screen comes back at the same row. Without a script the form shows a button of its own.
+for (const form of document.querySelectorAll('form[data-autosave]')) {
+    form.addEventListener('change', () => form.requestSubmit());
+}
+
+// The switch that was just saved gets the focus back, where the screen came back to. Only after the load: going to the
+// fragment of the address takes the focus to the page, which is also why a browser leaves autofocus out there.
+const refocus = document.querySelector('[data-refocus]');
+
+if (refocus) {
+    window.addEventListener('load', () => setTimeout(() => refocus.focus({ preventScroll: true }), 0), { once: true });
+}
+
+// A form whose work takes a moment (making the sitemap again): its button says it is busy, and a second click sends
+// nothing more.
+for (const form of document.querySelectorAll('form[data-busy]')) {
+    form.addEventListener('submit', (event) => {
+        if (form.dataset.sending === 'true') {
+            event.preventDefault();
+
+            return;
+        }
+
+        form.dataset.sending = 'true';
+        const button = form.querySelector('button[type="submit"]');
+
+        if (button) {
+            button.textContent = form.dataset.busy;
+            button.setAttribute('aria-busy', 'true');
+            button.setAttribute('aria-disabled', 'true');
+        }
+    });
+}
+
+// "Instructie kopiëren": puts the text beside the button on the clipboard and says so. Where the browser refuses, the
+// text is selected, so the developer copies it by hand. The button shows only with a script.
+for (const button of document.querySelectorAll('button[data-copy]')) {
+    const frame = button.closest('.voor-developer');
+    const source = frame?.querySelector('[data-copy-source]');
+    const status = frame?.querySelector('[data-copy-status]');
+
+    if (!source || !status) {
+        continue;
+    }
+
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(source.textContent.trim());
+            status.classList.remove('let');
+            status.textContent = button.dataset.copied ?? '';
+        } catch {
+            window.getSelection()?.selectAllChildren(source);
+            status.classList.add('let');
+            status.textContent = button.dataset.refused ?? '';
+        }
+    });
+}

@@ -6,7 +6,6 @@ namespace Made\CmsPackage\Content\Actions;
 
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Made\CmsPackage\Content\Data\RobotsRule;
 use Made\CmsPackage\Content\Data\SitemapEntry;
 use Made\CmsPackage\Content\Data\SitemapError;
 use Made\CmsPackage\Content\Data\SitemapReason;
@@ -38,7 +37,7 @@ final class BuildSitemap
      */
     public function handle(string $prefix, SitemapReason $reason): Sitemap
     {
-        $rules = array_values(array_filter(ListRobotsRules::run(), fn (RobotsRule $rule): bool => $rule->concernsGoogle()));
+        $rules = ListGoogleRobotsRules::run();
         $addresses = [];
         $errors = [];
 
@@ -52,7 +51,7 @@ final class BuildSitemap
 
                 $path = SitePrefixes::path($prefix, $candidate->path);
 
-                if (array_any($rules, fn (RobotsRule $rule): bool => $rule->matches($path))) {
+                if ($rules->blocks($path)) {
                     $errors[] = new SitemapError($path, $candidate->label, SitemapErrorReason::Blocked);
 
                     continue;

@@ -35,7 +35,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Alt-teksten (`alt-texts`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#95) |
 | Links (`links`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #75 (#82); Beheerder ○ in #82 |
 | Redirects (`redirects`) | ✓ | ○ |  | ✓ |  | Vindbaarheid | #87 (#93); Beheerder ○ in #93 |
-| Sitemap (`sitemap`) | ✓ |  |  | ✓ |  | Vindbaarheid | #87 (#90, robots-regels #97) |
+| Sitemap (`sitemap`) | ✓ |  |  | ✓ |  | Vindbaarheid | gebouwd (#90); robots-regels #97 |
 | Zoekwoorden (`keywords`) | ✓ |  |  | ✓ |  | Vindbaarheid | nog geen epic ("Google en statistieken") |
 | Gebruikers en rollen (`editors`) | ✓ | ✓ |  |  |  | Beheer | #101 (#104) |
 | Formulieren (`forms`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
@@ -44,7 +44,7 @@ De namen en omschrijvingen komen uit `lang/nl/roles.php`. Een redacteur kan meer
 | Domein en certificaat (`domain`) | ✓ | ✓ |  |  |  | Beheer | nog geen epic |
 <!-- matrix:end -->
 
-Pagina's, Media en het Meta-overzicht zijn gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
+Pagina's, Media, het Meta-overzicht en Sitemap zijn gebouwd. Elk ander scherm heeft al een route (`made-cms/<scherm>`) met de juiste toegang, maar toont nog "komt eraan" (`UpcomingScreenController`).
 
 ## Altijd open
 
@@ -118,6 +118,8 @@ Sommige handelingen hebben geen eigen scherm. Ze vallen onder het scherm waar ze
 | 2026-11-27 | Het Meta-overzicht telt alleen de pagina's die Google toont (gepubliceerd, indexeerbaar, niet verborgen), net als de aandachtspunten. Een concept, een verborgen of een noindex-pagina staat alleen onder "Alle". | #88 |
 | 2026-11-27 | Een te lange omschrijving is een aandachtspunt, zodat het Meta-overzicht, de paginadetail en "Vraagt aandacht" dezelfde pagina's tellen. | #88 |
 | 2026-11-27 | "Overslaan" in het Meta-overzicht geldt alleen voor de ronde (in het adres); opslaan zet de titel en de omschrijving meteen live. | #88 |
+| 2026-11-28 | Het scherm Sitemap zet "in sitemap" per pagina aan of uit (een formulier per rij, dat bij een vinkje meteen opslaat) en maakt de sitemap met de hand opnieuw; de andere redenen (concept, verborgen, noindex) verander je bij de pagina. | #90 |
+| 2026-11-28 | Of `public/sitemap.xml` of `public/robots.txt` vóór het CMS gaan, controleert het scherm Sitemap bij het openen; een geplande controle komt pas met de startpagina. | #90 |
 
 ## Bijwerken
 

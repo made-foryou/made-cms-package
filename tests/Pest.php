@@ -393,6 +393,16 @@ function cacheRoutes(): void
 */
 
 /**
+ * A script for $page->script() that puts a clipboard in place of the browser's: one that takes the text, or refuses.
+ */
+function stubClipboard(bool $refuses): string
+{
+    $write = $refuses ? "() => Promise.reject(new Error('denied'))" : '(text) => { window.madeCmsCopied = text; return Promise.resolve(); }';
+
+    return "() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: {$write} } }); return true; }";
+}
+
+/**
  * A script for $page->script() that resolves to true once the JavaScript condition holds. Browser assertions do not
  * wait for it; use this after an animation or a reload.
  *
@@ -666,6 +676,38 @@ function aBrowser(): string
 function googlebot(): string
 {
     return 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+}
+
+/*
+|--------------------------------------------------------------------------
+| Public folder helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Points the public folder of the site at an empty folder of its own, removed after the test, and gives its path.
+ */
+function usePublicFolder(): string
+{
+    $folder = sys_get_temp_dir().'/made-cms-public-'.Str::random(8);
+    (new Filesystem)->ensureDirectoryExists($folder.'/nl');
+    app()->usePublicPath($folder);
+
+    test()->beforeApplicationDestroyed(static function () use ($folder): void {
+        (new Filesystem)->deleteDirectory($folder);
+    });
+
+    return $folder;
+}
+
+/**
+ * @param  list<string>  $locations
+ */
+function publicSitemap(array $locations): string
+{
+    $urls = implode('', array_map(fn (string $location): string => '<url><loc>'.$location.'</loc></url>', $locations));
+
+    return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'.$urls.'</urlset>';
 }
 
 /*

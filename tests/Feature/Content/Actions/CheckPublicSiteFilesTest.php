@@ -3,36 +3,8 @@
 declare(strict_types=1);
 
 use Carbon\CarbonImmutable;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Str;
 use Made\CmsPackage\Content\Actions\CheckPublicSiteFiles;
 use Made\CmsPackage\Content\Models\Page;
-
-/**
- * Points the public folder of the site at an empty folder of its own, removed after the test, and gives its path.
- */
-function usePublicFolder(): string
-{
-    $folder = sys_get_temp_dir().'/made-cms-public-'.Str::random(8);
-    (new Filesystem)->ensureDirectoryExists($folder.'/nl');
-    app()->usePublicPath($folder);
-
-    test()->beforeApplicationDestroyed(static function () use ($folder): void {
-        (new Filesystem)->deleteDirectory($folder);
-    });
-
-    return $folder;
-}
-
-/**
- * @param  list<string>  $locations
- */
-function publicSitemap(array $locations): string
-{
-    $urls = implode('', array_map(fn (string $location): string => '<url><loc>'.$location.'</loc></url>', $locations));
-
-    return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'.$urls.'</urlset>';
-}
 
 beforeEach(function (): void {
     config(['app.url' => 'https://www.ttvmerwestad.nl']);

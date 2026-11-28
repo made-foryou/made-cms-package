@@ -13,6 +13,7 @@ return [
         'tomorrow' => 'tomorrow',
         'at' => 'on :day at :time',
         'at_relative' => ':day at :time',
+        'days_ago' => '[2,*] :count days ago',
     ],
     'menu' => [
         'label' => 'Main navigation',

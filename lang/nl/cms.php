@@ -13,6 +13,7 @@ return [
         'tomorrow' => 'morgen',
         'at' => 'op :day om :time',
         'at_relative' => ':day om :time',
+        'days_ago' => '[2,*] :count dagen geleden',
     ],
     'menu' => [
         'label' => 'Hoofdnavigatie',

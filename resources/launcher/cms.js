@@ -326,3 +326,30 @@ if (metaForm) {
 
     sync();
 }
+
+// A form that saves as soon as its switch changes (the list of the sitemap). requestSubmit sends it as a click on its
+// button would; the screen comes back at the same row. Without a script the form shows a button of its own.
+for (const form of document.querySelectorAll('form[data-autosave]')) {
+    form.addEventListener('change', () => form.requestSubmit());
+}
+
+// A form whose work takes a moment (making the sitemap again): its button says it is busy, and a second click sends
+// nothing more.
+for (const form of document.querySelectorAll('form[data-busy]')) {
+    form.addEventListener('submit', (event) => {
+        if (form.dataset.sending === 'true') {
+            event.preventDefault();
+
+            return;
+        }
+
+        form.dataset.sending = 'true';
+        const button = form.querySelector('button[type="submit"]');
+
+        if (button) {
+            button.textContent = form.dataset.busy;
+            button.setAttribute('aria-busy', 'true');
+            button.setAttribute('aria-disabled', 'true');
+        }
+    });
+}

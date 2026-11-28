@@ -9,8 +9,9 @@ use Carbon\CarbonImmutable;
 /**
  * A day as a screen of the CMS says it: short in a list ("vandaag", "gisteren", "morgen", "20 okt" in this year,
  * "12 mrt 2024" in another), in full in a sentence ("20 oktober", "12 maart 2024"), a moment as that day with its time
- * ("20 oktober, 14:12"), short ("14 nov 09:00"), and a moment in a sentence ("op 14 november om 09:00", "morgen om
- * 09:00"). Every moment is said in the timezone of the app (app.timezone), the one an editor plans a moment in.
+ * ("20 oktober, 14:12"), short ("14 nov 09:00"), a moment in a sentence ("op 14 november om 09:00", "morgen om
+ * 09:00"), and a day that passed as how long ago ("vandaag", "gisteren", "3 dagen geleden"). Every moment is said in
+ * the timezone of the app (app.timezone), the one an editor plans a moment in.
  */
 final class Day
 {
@@ -48,6 +49,21 @@ final class Day
         return $relative === null
             ? (string) __('made-cms-package::cms.dates.at', ['day' => self::date($moment, $locale), 'time' => self::time($moment, $locale)], $locale)
             : (string) __('made-cms-package::cms.dates.at_relative', ['day' => $relative, 'time' => self::time($moment, $locale)], $locale);
+    }
+
+    /**
+     * How long ago a day was: today, yesterday, or the number of days, counted in whole days of the calendar.
+     */
+    public static function ago(CarbonImmutable $day, string $locale): string
+    {
+        $day = self::local($day)->startOfDay();
+        $days = (int) $day->diffInDays(self::local(CarbonImmutable::now())->startOfDay());
+
+        return match (true) {
+            $days <= 0 => (string) __('made-cms-package::cms.dates.today', [], $locale),
+            $days === 1 => (string) __('made-cms-package::cms.dates.yesterday', [], $locale),
+            default => trans_choice('made-cms-package::cms.dates.days_ago', $days, ['count' => $days], $locale),
+        };
     }
 
     /**

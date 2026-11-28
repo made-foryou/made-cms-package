@@ -55,3 +55,13 @@ it('says at which moment something happens, in a sentence', function (): void {
         ->and(Day::at(CarbonImmutable::parse('2026-12-14 09:00:00'), 'en'))->toBe('on 14 December at 9:00 AM')
         ->and(Day::at(CarbonImmutable::parse('2026-11-24 09:00:00'), 'en'))->toBe('tomorrow at 9:00 AM');
 });
+
+it('says how long ago a day was, in whole days of the calendar', function (string $day, string $nl, string $en): void {
+    expect(Day::ago(CarbonImmutable::parse($day), 'nl'))->toBe($nl)
+        ->and(Day::ago(CarbonImmutable::parse($day), 'en'))->toBe($en);
+})->with([
+    'today' => ['2026-11-23', 'vandaag', 'today'],
+    'yesterday, late' => ['2026-11-22 23:59:00', 'gisteren', 'yesterday'],
+    'two days' => ['2026-11-21', '2 dagen geleden', '2 days ago'],
+    'months' => ['2026-08-25', '90 dagen geleden', '90 days ago'],
+]);

@@ -8168,3 +8168,322 @@ button.tekstlink.alarm {
         width: 88px;
     }
 }
+
+/* The screen of the sitemap (design 9.6, 17.3, 17.12, 17.13; dark 10.5, 18.3, 18.12, 18.13): how it stands, the file
+   itself with how it starts, the files of the site that go before it, and every page with whether it is in it. A dot
+   says it in colour beside the words: green in, amber something to look at, grey a choice at the page. */
+
+.sitemapstand .bol,
+.sitemapbestand .bol,
+.sitemaprij .bol {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--made-inhoud-subtiel);
+}
+
+.sitemapstand .bol.goed,
+.sitemapbestand .bol.goed,
+.sitemaprij .bol.goed {
+    background: var(--made-status);
+}
+
+.sitemapstand .bol.let,
+.sitemaprij .bol.let {
+    background: var(--made-amber);
+}
+
+.standkaart.teller {
+    flex-basis: 300px;
+    gap: 8px;
+}
+
+.standkaart-kop {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.standkaart-bestanden {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 4px;
+}
+
+.standkaart-bestand {
+    font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    text-decoration: underline;
+    text-decoration-color: var(--made-accent);
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+}
+
+.sitemapbestand {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 28px;
+    scroll-margin-top: 24px;
+}
+
+.sitemapbestand-tekst {
+    display: flex;
+    flex: 1 1 360px;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.sitemapbestand-kop {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sitemapbestand-kop h2 {
+    margin: 0;
+}
+
+.sitemapbestand-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.sitemapbestand-uitleg {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--made-inhoud-zwak);
+}
+
+.sitemapbestand-knoppen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+}
+
+.sitemapbestand-hint,
+.sitemapbestand-samenvatting {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+.sitemapbestand-fouten-kop {
+    margin: 0;
+    font: 700 15px/1.3 var(--font-kop);
+}
+
+.sitemapbestand-fouten {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    list-style: none;
+}
+
+.sitemapbestand-fout-naam {
+    font-weight: 600;
+}
+
+.sitemapbestand-voorbeeld {
+    display: flex;
+    flex: 1 1 340px;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+}
+
+.sitemapbestand-voorbeeld-kop {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 18px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-subtiel);
+}
+
+.sitemapbestand-voorbeeld-kop .tekstlink {
+    font-size: 14px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--made-inhoud);
+}
+
+/* A piece of a file as it is, on the surface of emphasis, like the sitemap and robots.txt in the design. */
+.codeblok {
+    margin: 0;
+    padding: 16px 18px;
+    overflow-x: auto;
+    border-radius: var(--made-radius-s);
+    background: var(--made-oppervlak-nadruk);
+    color: var(--made-inhoud-op-nadruk);
+    font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+}
+
+.sitemaplijst-kolommen {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-subtiel);
+}
+
+.sitemaprijen {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1.5px solid var(--made-rand);
+    border-radius: var(--made-radius-m);
+    background: var(--made-oppervlak-verhoogd);
+    list-style: none;
+}
+
+.sitemaprij {
+    --sitemap-inspring: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--made-rand);
+    scroll-margin-top: 24px;
+}
+
+.sitemaprij:last-child {
+    border-bottom: 0;
+}
+
+.sitemaprij[data-diepte] {
+    padding-left: calc(18px + var(--sitemap-inspring));
+}
+
+.sitemaprij[data-diepte="2"] {
+    padding-left: calc(18px + var(--sitemap-inspring) * 2);
+}
+
+.sitemaprij[data-diepte="3"] {
+    padding-left: calc(18px + var(--sitemap-inspring) * 3);
+}
+
+.sitemaprij[data-diepte="4"] {
+    padding-left: calc(18px + var(--sitemap-inspring) * 4);
+}
+
+.sitemaprij-tekst {
+    display: flex;
+    flex: 1 1 200px;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.sitemaprij-naam {
+    font: 700 15px/1.3 var(--font-kop);
+}
+
+.sitemaprij-pad {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--made-inhoud-zwak);
+    overflow-wrap: anywhere;
+}
+
+.sitemaprij-datum {
+    flex: 0 0 110px;
+    font-size: 13px;
+    color: var(--made-inhoud-zwak);
+}
+
+.sitemaprij-reden {
+    display: inline-flex;
+    flex: 0 0 250px;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--made-inhoud-zwak);
+}
+
+.sitemaprij-keuze {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+    min-width: 120px;
+}
+
+.sitemaprij-schakel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.sitemaprij-opgeslagen {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--made-status);
+}
+
+.sitemaprij-elders {
+    flex: 0 0 auto;
+    min-width: 120px;
+    font-size: 13px;
+    color: var(--made-inhoud-subtiel);
+}
+
+a.sitemaprij-elders {
+    text-decoration: underline;
+    text-decoration-color: var(--made-accent);
+    text-underline-offset: 3px;
+}
+
+.sitemaplijst-noot {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--made-inhoud-zwak);
+}
+
+/* In the dark the border colour is the colour of the cards (design 10.5, 18.3), so the lines between the pages take a
+   veil of the light text, or they would not show. */
+@media (prefers-color-scheme: dark) {
+    .sitemaprij {
+        border-bottom-color: rgba(243, 241, 232, .12);
+    }
+}
+
+@media (max-width: 720px) {
+    .sitemaprij-datum,
+    .sitemaprij-reden {
+        flex-basis: auto;
+    }
+
+    .sitemaprij-tekst {
+        flex-basis: 100%;
+    }
+}

@@ -45,6 +45,7 @@ use Made\CmsPackage\Http\Controllers\Content\NewPageController;
 use Made\CmsPackage\Http\Controllers\Content\PagesController;
 use Made\CmsPackage\Http\Controllers\Content\PublishPageController;
 use Made\CmsPackage\Http\Controllers\Content\PublishPageNowController;
+use Made\CmsPackage\Http\Controllers\Content\RebuildSitemapController;
 use Made\CmsPackage\Http\Controllers\Content\RememberMediaFolderController;
 use Made\CmsPackage\Http\Controllers\Content\RemoveStripController;
 use Made\CmsPackage\Http\Controllers\Content\RenameMediaController;
@@ -61,6 +62,7 @@ use Made\CmsPackage\Http\Controllers\Content\ShowMediaOriginalController;
 use Made\CmsPackage\Http\Controllers\Content\ShowPageController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripController;
 use Made\CmsPackage\Http\Controllers\Content\ShowStripsController;
+use Made\CmsPackage\Http\Controllers\Content\SitemapScreenController;
 use Made\CmsPackage\Http\Controllers\Content\StorePageController;
 use Made\CmsPackage\Http\Controllers\Content\StripVisibilityController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateAltTextController;
@@ -69,6 +71,7 @@ use Made\CmsPackage\Http\Controllers\Content\UpdatePageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageMetaController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageShareImageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdatePageVisibilityController;
+use Made\CmsPackage\Http\Controllers\Content\UpdateSitemapPageController;
 use Made\CmsPackage\Http\Controllers\Content\UpdateStripController;
 use Made\CmsPackage\Http\Controllers\Content\UploadMediaController;
 use Made\CmsPackage\Http\Middleware\EnsureEditor;
@@ -123,7 +126,7 @@ Route::prefix($prefix)
             // Every screen opens at its own address; until a screen is built, it shows that it is coming. A built screen
             // leaves the loop and keeps the name screens.<screen>, which the menu links to.
             foreach (Screen::cases() as $screen) {
-                if (in_array($screen, [Screen::Pages, Screen::Media, Screen::MetaTags], true)) {
+                if (in_array($screen, [Screen::Pages, Screen::Media, Screen::MetaTags, Screen::Sitemap], true)) {
                     continue;
                 }
 
@@ -138,6 +141,14 @@ Route::prefix($prefix)
             Route::middleware(EnsureScreenAccess::using(Screen::MetaTags))->group(function (): void {
                 Route::get('meta-tags', MetaTagsController::class)->name('screens.meta-tags');
                 Route::put('meta-tags/{page}', UpdateMetaTagsController::class)->whereNumber('page')->name('meta-tags.update');
+            });
+
+            // The screen of the sitemap: what Google gets and why a page is in it or not. The switch of a page and making the
+            // file again are plain forms that come back at the page or the file.
+            Route::middleware(EnsureScreenAccess::using(Screen::Sitemap))->group(function (): void {
+                Route::get('sitemap', SitemapScreenController::class)->name('screens.sitemap');
+                Route::post('sitemap/build', RebuildSitemapController::class)->name('sitemap.build');
+                Route::put('sitemap/{page}', UpdateSitemapPageController::class)->whereNumber('page')->name('sitemap.update');
             });
 
             // The pages screen: the pages in the order of the menu, a page with its basics, a new page, deleting and

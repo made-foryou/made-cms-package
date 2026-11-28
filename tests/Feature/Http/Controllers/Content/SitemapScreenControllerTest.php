@@ -356,3 +356,56 @@ it('reads the screen in the same number of queries however many pages there are'
 
     expect($queries)->toBe($few);
 });
+
+it('warns when the site has a sitemap.xml of its own that goes before the CMS, with what is in it and what to do', function (): void {
+    sitemapScreenSite();
+    servePages();
+    file_put_contents(public_path('sitemap.xml'), publicSitemap(['https://ttvmerwestad.nl/', 'https://ttvmerwestad.nl/oud']));
+    touch(public_path('sitemap.xml'), CarbonImmutable::parse('2024-03-12 10:00:00')->getTimestamp());
+
+    $screen = sitemapScreen();
+
+    expect($screen)
+        ->toContain('<section class="sitemapmeldingen" aria-label="Waarschuwingen">')
+        ->toContain('<strong class="sitemapmelding-titel">De site heeft een eigen sitemap.xml, en die gaat vóór het CMS</strong>')
+        ->toContain('Vraagt Google /sitemap.xml op, dan krijgt hij dát bestand en niet deze sitemap. Het is voor het laatst gewijzigd op 12 maart 2024 en noemt 2 adressen; 2 pagina’s van nu ontbreken erin.')
+        ->toContain('<span class="voor-developer-kop">Voor de developer</span>')
+        ->toContain('<span class="voor-developer-tekst" data-copy-source>Verwijder public/sitemap.xml uit de site (of hernoem het), zodat het CMS het adres /sitemap.xml bedient. Zodra het bestand weg is, verdwijnt deze melding.</span>')
+        ->toContain('<button type="button" class="knop stil" data-copy data-copied="Instructie gekopieerd" data-refused="Kopiëren lukte niet; de instructie is geselecteerd, kopieer hem zelf." hidden>Instructie kopiëren</button>')
+        ->toContain('Jij hoeft hier verder niets te doen.')
+        ->toContain('Waarschijnlijk door de melding hieronder.');
+});
+
+it('says a sitemap.xml of its own is no sitemap search engines can read', function (): void {
+    servePages();
+    file_put_contents(public_path('sitemap.xml'), 'geen xml');
+    touch(public_path('sitemap.xml'), CarbonImmutable::parse('2026-11-20 10:00:00')->getTimestamp());
+
+    expect(sitemapScreen())->toContain('Het is voor het laatst gewijzigd op 20 november en is geen sitemap die zoekmachines kunnen lezen.');
+});
+
+it('warns when the robots.txt of the site does not name the sitemap', function (): void {
+    servePages();
+    file_put_contents(public_path('robots.txt'), "User-agent: *\nDisallow:\n");
+
+    $screen = sitemapScreen();
+
+    expect($screen)
+        ->toContain('<strong class="sitemapmelding-titel">De robots.txt van de site noemt de sitemap niet</strong>')
+        ->toContain('Haal public/robots.txt weg zodat het CMS hem maakt, of voeg deze regel toe: Sitemap: https://ttvmerwestad.nl/sitemap.xml')
+        ->not->toContain('Aanmelden hoeft niet');
+});
+
+it('does not warn about a robots.txt of the site that names the sitemap', function (): void {
+    servePages();
+    file_put_contents(public_path('robots.txt'), "User-agent: *\nDisallow:\n\nSitemap: https://ttvmerwestad.nl/sitemap.xml\n");
+
+    expect(sitemapScreen())->not->toContain('sitemapmeldingen');
+});
+
+it('does not warn without files of its own', function (): void {
+    servePages();
+
+    expect(sitemapScreen())->not->toContain('sitemapmeldingen')
+        ->not->toContain('Waarschijnlijk door de melding hieronder.');
+});

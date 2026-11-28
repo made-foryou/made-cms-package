@@ -8487,3 +8487,80 @@ a.sitemaprij-elders {
         flex-basis: 100%;
     }
 }
+
+/* The files of the site that go before those of the CMS (design 17.13): amber notices with a frame for the developer
+   and the instruction to copy. */
+.sitemapmeldingen {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sitemapmelding {
+    padding: 16px 18px;
+    font-size: 14.5px;
+}
+
+.sitemapmelding .melding-tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sitemapmelding-titel {
+    font-weight: 700;
+}
+
+.sitemapmelding-uitleg {
+    color: var(--made-inhoud-zwak);
+}
+
+.voor-developer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 12px 14px;
+    border: 1.5px dashed var(--made-rand-sterk);
+    border-radius: var(--made-radius-s);
+}
+
+.voor-developer-kop {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--made-inhoud-subtiel);
+}
+
+.voor-developer-tekst {
+    font: 13px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow-wrap: anywhere;
+}
+
+.voor-developer-knoppen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-top: 4px;
+}
+
+.voor-developer-status {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--made-status);
+}
+
+.voor-developer-status:empty {
+    display: none;
+}
+
+.voor-developer-status.let {
+    color: var(--made-inhoud);
+}
+
+.voor-developer-noot {
+    font-size: 13px;
+    color: var(--made-inhoud-zwak);
+}

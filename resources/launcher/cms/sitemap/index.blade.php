@@ -23,6 +23,9 @@
     @else
         @include('made-cms-package-launcher::cms.sitemap.partials.state', ['cards' => $cards])
         @include('made-cms-package-launcher::cms.sitemap.partials.file', ['file' => $file, 'group' => $group])
+        @if ($warnings !== [])
+            @include('made-cms-package-launcher::cms.sitemap.partials.warnings', ['warnings' => $warnings])
+        @endif
     @endif
 
     @include('made-cms-package-launcher::cms.sitemap.partials.list', ['rows' => $rows])

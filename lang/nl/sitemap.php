@@ -72,6 +72,27 @@ return [
                 'full' => 'past er niet meer in: Google leest hooguit 50.000 adressen per sitemap',
             ],
         ],
+        'warnings' => [
+            'label' => 'Waarschuwingen',
+            'developer' => 'Voor de developer',
+            'copy' => 'Instructie kopiëren',
+            'copied' => 'Instructie gekopieerd',
+            'copy_refused' => 'Kopiëren lukte niet; de instructie is geselecteerd, kopieer hem zelf.',
+            'nothing_to_do' => 'Jij hoeft hier verder niets te doen.',
+            'sitemap' => [
+                'title' => 'De site heeft een eigen sitemap.xml, en die gaat vóór het CMS',
+                'text' => 'In de map public/ van de site staat een sitemap.xml. Vraagt Google :path op, dan krijgt hij dát bestand en niet deze sitemap.',
+                'facts' => '{0} Het is voor het laatst gewijzigd op :day en noemt :addresses; er ontbreekt geen pagina van nu in.|{1} Het is voor het laatst gewijzigd op :day en noemt :addresses; 1 pagina van nu ontbreekt erin.|[2,*] Het is voor het laatst gewijzigd op :day en noemt :addresses; :count pagina’s van nu ontbreken erin.',
+                'addresses' => '{0} geen adressen|{1} 1 adres|[2,*] :count adressen',
+                'not_xml' => 'Het is voor het laatst gewijzigd op :day en is geen sitemap die zoekmachines kunnen lezen.',
+                'instruction' => 'Verwijder :file uit de site (of hernoem het), zodat het CMS het adres :path bedient. Zodra het bestand weg is, verdwijnt deze melding.',
+            ],
+            'robots' => [
+                'title' => 'De robots.txt van de site noemt de sitemap niet',
+                'text' => 'Ook public/robots.txt gaat vóór het CMS. Er staat geen regel Sitemap: in die naar deze sitemap wijst, dus zoekmachines moeten hem zelf zien te vinden.',
+                'instruction' => 'Haal public/robots.txt weg zodat het CMS hem maakt, of voeg deze regel toe: Sitemap: :url',
+            ],
+        ],
         'list' => [
             'heading' => 'Wat erop staat',
             'columns' => 'Gewijzigd · waarom wel of niet · in sitemap',

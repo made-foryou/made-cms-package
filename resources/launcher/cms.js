@@ -353,3 +353,28 @@ for (const form of document.querySelectorAll('form[data-busy]')) {
         }
     });
 }
+
+// "Instructie kopiëren": puts the text beside the button on the clipboard and says so. Where the browser refuses, the
+// text is selected, so the developer copies it by hand. The button shows only with a script.
+for (const button of document.querySelectorAll('button[data-copy]')) {
+    const frame = button.closest('.voor-developer');
+    const source = frame?.querySelector('[data-copy-source]');
+    const status = frame?.querySelector('[data-copy-status]');
+
+    if (!source || !status) {
+        continue;
+    }
+
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(source.textContent.trim());
+            status.classList.remove('let');
+            status.textContent = button.dataset.copied ?? '';
+        } catch {
+            window.getSelection()?.selectAllChildren(source);
+            status.classList.add('let');
+            status.textContent = button.dataset.refused ?? '';
+        }
+    });
+}

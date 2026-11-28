@@ -72,6 +72,27 @@ return [
                 'full' => 'no longer fits: Google reads at most 50,000 addresses per sitemap',
             ],
         ],
+        'warnings' => [
+            'label' => 'Warnings',
+            'developer' => 'For the developer',
+            'copy' => 'Copy the instruction',
+            'copied' => 'Instruction copied',
+            'copy_refused' => 'Copying did not work; the instruction is selected, copy it yourself.',
+            'nothing_to_do' => 'There is nothing more for you to do here.',
+            'sitemap' => [
+                'title' => 'The site has a sitemap.xml of its own, and it goes before the CMS',
+                'text' => 'The folder public/ of the site holds a sitemap.xml. When Google asks for :path, it gets that file and not this sitemap.',
+                'facts' => '{0} It last changed on :day and lists :addresses; no page of now is missing from it.|{1} It last changed on :day and lists :addresses; 1 page of now is missing from it.|[2,*] It last changed on :day and lists :addresses; :count pages of now are missing from it.',
+                'addresses' => '{0} no addresses|{1} 1 address|[2,*] :count addresses',
+                'not_xml' => 'It last changed on :day and is no sitemap search engines can read.',
+                'instruction' => 'Delete :file from the site (or rename it), so the CMS serves the address :path. As soon as the file is gone, this notice goes.',
+            ],
+            'robots' => [
+                'title' => 'The robots.txt of the site does not name the sitemap',
+                'text' => 'public/robots.txt goes before the CMS too. It has no line Sitemap: that points at this sitemap, so search engines have to find it themselves.',
+                'instruction' => 'Remove public/robots.txt so the CMS makes it, or add this line: Sitemap: :url',
+            ],
+        ],
         'list' => [
             'heading' => 'What is on it',
             'columns' => 'Changed · why or why not · in sitemap',

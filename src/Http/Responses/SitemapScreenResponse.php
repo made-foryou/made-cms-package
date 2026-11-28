@@ -62,6 +62,7 @@ final class SitemapScreenResponse
             ], $overview->prefixes) : [],
             'cards' => $sitemap === null ? [] : self::cards($overview, $sitemap, $cause),
             'file' => $sitemap === null ? null : self::file($overview, $sitemap, $cause, $built),
+            'warnings' => self::warnings($overview),
             'rows' => array_map(static fn (SitemapRow $row): array => self::row($row, $overview->prefix, $screens, $saved), $overview->rows->rows),
         ], $overview->rows->tree);
     }
@@ -179,6 +180,45 @@ final class SitemapScreenResponse
                 'reason' => self::text('file.error.'.(SitemapErrorReason::tryFrom($error['reason']) ?? SitemapErrorReason::NoAddress)->value),
             ], $sitemap->errors),
         ];
+    }
+
+    /**
+     * The files of the site that go before those of the CMS (design 17.13): amber, because nothing is broken, someone
+     * only reads the wrong file, each with what the developer does about it.
+     *
+     * @return list<array{title: string, text: string, instruction: string}>
+     */
+    private static function warnings(SitemapOverview $overview): array
+    {
+        $sitemapPath = SitePrefixes::path($overview->prefix, 'sitemap.xml');
+        $sitemap = $overview->files?->sitemap;
+        $robots = $overview->files?->robots;
+        $warnings = [];
+
+        if ($sitemap !== null) {
+            $day = Day::long($sitemap->modifiedAt, Locale::launcher());
+
+            $warnings[] = [
+                'title' => self::text('warnings.sitemap.title'),
+                'text' => self::text('warnings.sitemap.text', ['path' => $sitemapPath]).' '.($sitemap->addressCount === null
+                    ? self::text('warnings.sitemap.not_xml', ['day' => $day])
+                    : self::choice('warnings.sitemap.facts', (int) $sitemap->missingPages, [
+                        'day' => $day,
+                        'addresses' => self::choice('warnings.sitemap.addresses', $sitemap->addressCount),
+                    ])),
+                'instruction' => self::text('warnings.sitemap.instruction', ['file' => 'public'.$sitemapPath, 'path' => $sitemapPath]),
+            ];
+        }
+
+        if ($robots !== null && ! $robots->namesCmsSitemap) {
+            $warnings[] = [
+                'title' => self::text('warnings.robots.title'),
+                'text' => self::text('warnings.robots.text'),
+                'instruction' => self::text('warnings.robots.instruction', ['url' => Site::url($sitemapPath)]),
+            ];
+        }
+
+        return $warnings;
     }
 
     /**

@@ -393,6 +393,16 @@ function cacheRoutes(): void
 */
 
 /**
+ * A script for $page->script() that puts a clipboard in place of the browser's: one that takes the text, or refuses.
+ */
+function stubClipboard(bool $refuses): string
+{
+    $write = $refuses ? "() => Promise.reject(new Error('denied'))" : '(text) => { window.madeCmsCopied = text; return Promise.resolve(); }';
+
+    return "() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: {$write} } }); return true; }";
+}
+
+/**
  * A script for $page->script() that resolves to true once the JavaScript condition holds. Browser assertions do not
  * wait for it; use this after an animation or a reload.
  *

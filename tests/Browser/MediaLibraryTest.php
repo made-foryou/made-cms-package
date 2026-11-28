@@ -1312,16 +1312,6 @@ function libraryVersion(string $text): string
     return "! document.querySelector('[data-slot=\"details-foot\"]').hidden && document.querySelector('[data-slot=\"details-history\"]').textContent.includes('{$text}')";
 }
 
-/**
- * A script for $page->script() that puts a clipboard in place of the browser's: one that takes the text, or refuses.
- */
-function stubClipboard(bool $refuses): string
-{
-    $write = $refuses ? "() => Promise.reject(new Error('denied'))" : '(text) => { window.madeCmsCopied = text; return Promise.resolve(); }';
-
-    return "() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: {$write} } }); return true; }";
-}
-
 it('replaces a photo from the side column through the crop step, and the site shows the new version', function (): void {
     $photo = UploadMedia::run(new UploadedMedia(quadrants(2400, 1600), 'Teamfoto Merwestad 6.jpg', $this->teams->id));
     $page = Page::factory()->published()->at('/fotos')->withStrips([storedStrip('hero', ['kop' => ['text' => 'Foto’s', 'tag' => 'h1'], 'foto' => $photo->id], id: 'hero')])->create(['title' => 'Foto’s']);

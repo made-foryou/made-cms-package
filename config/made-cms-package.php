@@ -171,6 +171,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Address hits
+    |--------------------------------------------------------------------------
+    |
+    | The CMS counts the visits of the addresses Route::madeCms() answers, per
+    | day: an address without a page (a dead door), sitemap.xml, robots.txt
+    | and a page for a crawler. It keeps counts only: no ip address, user
+    | agent, cookie or moment of a single visit. made-cms:prune removes the
+    | counts older than keep_days (at least 30, the days the screens look
+    | back on) and the dead doors no one tried since.
+    |
+    | A bot that tries addresses adds at most new_paths_per_day dead doors a
+    | day; after that only the dead doors the CMS knows are counted.
+    |
+    | bots adds parts of a user agent (whatever their capitals) to the bots
+    | the package knows, such as curl and bingbot. bot_paths adds addresses
+    | bots look for, an address under one included, to those the package
+    | knows, such as /wp-admin: such a dead door weighs little.
+    |
+    */
+
+    'address_hits' => [
+        'keep_days' => 90,
+        'new_paths_per_day' => 100,
+        'bots' => [],
+        'bot_paths' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Strips
     |--------------------------------------------------------------------------
     |

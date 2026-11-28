@@ -16,6 +16,8 @@ return [
     'prune' => [
         'pruned' => '{0} No pages removed for good.|{1} 1 page removed for good.|[2,*] :count pages removed for good.',
         'versions' => '{0} No older versions removed.|{1} 1 older version removed.|[2,*] :count older versions removed.',
+        'address_hits' => '{0} No old counts of addresses removed.|{1} 1 old count of an address removed.|[2,*] :count old counts of addresses removed.',
+        'not_found_paths' => '{0} No dead doors removed.|{1} 1 dead door no one tried any more removed.|[2,*] :count dead doors no one tried any more removed.',
     ],
     'publish' => [
         'published' => '{0} No planned pages published.|{1} 1 planned page published.|[2,*] :count planned pages published.',

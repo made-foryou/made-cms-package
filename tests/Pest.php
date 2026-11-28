@@ -648,6 +648,28 @@ function requestAsTyped(string $uri): TestResponse
 
 /*
 |--------------------------------------------------------------------------
+| Traffic helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * The user agent of a person in a browser.
+ */
+function aBrowser(): string
+{
+    return 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15';
+}
+
+/**
+ * The user agent Googlebot calls itself by.
+ */
+function googlebot(): string
+{
+    return 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
+}
+
+/*
+|--------------------------------------------------------------------------
 | Scan helpers
 |--------------------------------------------------------------------------
 */

@@ -16,8 +16,10 @@ use Made\CmsPackage\Content\Actions\FindPublishedPage;
 use Made\CmsPackage\Content\Data\EditMode;
 use Made\CmsPackage\Content\Data\PagePath;
 use Made\CmsPackage\Content\Data\ServedAddress;
+use Made\CmsPackage\Content\Enums\HitOutcome;
 use Made\CmsPackage\Content\Exceptions\InvalidPagePath;
 use Made\CmsPackage\Http\Launcher\Visitor;
+use Made\CmsPackage\Http\Routing\AddressHits;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -33,6 +35,9 @@ use Symfony\Component\HttpFoundation\Response;
  * whatever its status, its working copy through RenderStrips, and a response that is never stored, may be framed by
  * the same origin and is not indexed. `?made-cms=preview` gives the same outside the frame, for "Voorvertoning" in a
  * tab of its own. For anyone else the parameter changes nothing: a draft stays a 404.
+ *
+ * It counts the address (AddressHits): a 404 as a dead door, a page for a crawler; never the redirect to the canonical
+ * address, an address that can be none, or an editor in the edit mode or the preview.
  */
 final class ResolvePage
 {
@@ -74,7 +79,13 @@ final class ResolvePage
             app()->instance(EditMode::class, EditMode::on());
         }
 
-        $page = ($editing ? FindPage::run($path) : FindPublishedPage::run($path)) ?? abort(404);
+        $page = $editing ? FindPage::run($path) : FindPublishedPage::run($path);
+
+        if ($page === null) {
+            AddressHits::count($request, HitOutcome::NotFound, $path, $editing);
+
+            abort(404);
+        }
 
         $canonical = $this->canonicalPath($route, $path);
 
@@ -83,6 +94,8 @@ final class ResolvePage
 
             return redirect()->to($query === null ? $canonical : $canonical.'?'.$query, 301);
         }
+
+        AddressHits::count($request, HitOutcome::Page, $path, $editing);
 
         $route->setParameter(self::PARAMETER, $page);
         app()->instance(ServedAddress::class, ServedAddress::of($page->id, $canonical));

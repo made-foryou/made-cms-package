@@ -16,6 +16,8 @@ return [
     'prune' => [
         'pruned' => '{0} Geen pagina’s definitief verwijderd.|{1} 1 pagina definitief verwijderd.|[2,*] :count pagina’s definitief verwijderd.',
         'versions' => '{0} Geen oudere versies opgeruimd.|{1} 1 oudere versie opgeruimd.|[2,*] :count oudere versies opgeruimd.',
+        'address_hits' => '{0} Geen oude tellingen van adressen opgeruimd.|{1} 1 oude telling van een adres opgeruimd.|[2,*] :count oude tellingen van adressen opgeruimd.',
+        'not_found_paths' => '{0} Geen dichte deuren opgeruimd.|{1} 1 dichte deur opgeruimd die niemand meer probeerde.|[2,*] :count dichte deuren opgeruimd die niemand meer probeerde.',
     ],
     'publish' => [
         'published' => '{0} Geen geplande pagina’s gepubliceerd.|{1} 1 geplande pagina gepubliceerd.|[2,*] :count geplande pagina’s gepubliceerd.',

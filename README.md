@@ -57,7 +57,7 @@ A site that already had pages before it got the table `cms_media_usages` runs `p
 
 ### Scheduler
 
-The package puts its own commands in the scheduler of the site: `made-cms:publish-scheduled` every minute, which puts a planned publication live within the minute of its moment, and `made-cms:prune` every day, which removes deleted pages and older versions for good. They only run when the host runs Laravel's scheduler every minute:
+The package puts its own commands in the scheduler of the site: `made-cms:publish-scheduled` every minute, which puts a planned publication live within the minute of its moment, and `made-cms:prune` every day, which removes deleted pages, older versions and old counts of addresses for good. They only run when the host runs Laravel's scheduler every minute:
 
 ```bash
 * * * * * cd /path-to-your-site && php artisan schedule:run >> /dev/null 2>&1
@@ -634,6 +634,30 @@ Sitemap: https://ttvmerwestad.nl/sitemap.xml
 - In a route group with a prefix the sitemap lives under the prefix (`/nl/sitemap.xml`, one per group), but robots.txt does not: robots only read the one at the root. A site that serves its pages only under a prefix serves its own `robots.txt` at the root, with a `Sitemap:` line for `https://…/nl/sitemap.xml`.
 - A route of the site for `sitemap.xml` or `robots.txt` above `Route::madeCms()` stays the site's own.
 - Another source of addresses (a collection, later) implements `Content\Sitemap\SitemapSource`; the package binds the sources in `SitemapSources`.
+
+## Address hits
+
+The CMS counts the visits of the addresses `Route::madeCms()` answers, so the SEO screens can say what happens on them without Google's data: an address without a page (a dead door, with the 404 a visitor got), `sitemap.xml` and `robots.txt`, and a page fetched by a crawler. Views of pages by people are not counted.
+
+**What is kept, for the privacy statement of the site:** counts per address, day, outcome and source, nothing else. No ip address, no user agent, no cookie and no moment of a single visit. The user agent and the referrer only decide the source of a visit (Google, another search engine, a link on the site with the address of that page, a link elsewhere, direct, Googlebot or another bot) and are never stored. Next to the counts the CMS keeps the addresses without a page that visitors tried, with when they were first and last seen and whether an editor ignored them.
+
+- Counting happens after the answer is sent (Laravel's `defer()`, also after a 404), so a visitor never waits for it, and a count that fails is reported but never breaks the page.
+- An editor in the edit mode or the preview is never counted. A bot that tries addresses adds at most `address_hits.new_paths_per_day` (100) new dead doors a day; after that only the ones the CMS knows are counted.
+- Googlebot is who calls itself so in its user agent: the counts are an indication, not proof.
+- `made-cms:prune` removes the counts older than `address_hits.keep_days` (90, at least 30) and the dead doors no one tried since; an ignored address stays.
+- Add bots and addresses bots look for to the ones the package knows:
+
+```php
+// config/made-cms-package.php
+'address_hits' => [
+    'keep_days' => 90,
+    'new_paths_per_day' => 100,
+    'bots' => ['UptimeMonitor'],
+    'bot_paths' => ['/joomla'],
+],
+```
+
+A host that published the config before adds this section to change these values; without it the package uses the values above.
 
 ## Rendering strips
 

@@ -16,16 +16,22 @@ final class UpdatePageMeta
 
     /**
      * Changes how Google sees a page. It holds for the site at once: the google fields are no part of the draft. A
-     * switch the change leaves out (the Meta-overzicht edits only the texts) keeps what the page has.
+     * switch the change leaves out (the Meta-overzicht edits only the texts) keeps what the page has, and so do the
+     * texts of a change that keeps them (the screen of the sitemap changes only its switch).
      */
     public function handle(Page $page, PageMetaChanges $changes): Page
     {
         $page->fill([
-            'meta_title' => $this->oneLine($changes->title),
-            'meta_description' => $this->oneLine($changes->description),
             'in_sitemap' => $changes->inSitemap ?? $page->in_sitemap,
             'indexable' => $changes->indexable ?? $page->indexable,
         ]);
+
+        if (! $changes->keepsTexts) {
+            $page->fill([
+                'meta_title' => $this->oneLine($changes->title),
+                'meta_description' => $this->oneLine($changes->description),
+            ]);
+        }
 
         if (! $page->isDirty()) {
             return $page;

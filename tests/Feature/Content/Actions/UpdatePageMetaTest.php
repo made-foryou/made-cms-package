@@ -113,3 +113,30 @@ it('tells nothing when only the texts it was given are what the page holds', fun
 
     Event::assertNotDispatched(PageMetaUpdated::class);
 });
+
+it('changes only whether the sitemap lists a page, and keeps its texts and whether Google may show it', function (): void {
+    Event::fake([PageMetaUpdated::class]);
+    $editor = Editor::factory()->create();
+    $page = Page::factory()->at('/privacy')->withMeta('Privacy · TTV Merwestad', 'Hoe we met je gegevens omgaan.')->noindex()->create();
+
+    UpdatePageMeta::run($page, PageMetaChanges::sitemap(false, $editor->id));
+
+    $page->refresh();
+
+    expect($page->in_sitemap)->toBeFalse()
+        ->and($page->meta_title)->toBe('Privacy · TTV Merwestad')
+        ->and($page->meta_description)->toBe('Hoe we met je gegevens omgaan.')
+        ->and($page->indexable)->toBeFalse()
+        ->and($page->updated_by)->toBe($editor->id);
+    Event::assertDispatchedTimes(PageMetaUpdated::class, 1);
+});
+
+it('tells nothing when the sitemap lists the page as it was asked to', function (): void {
+    Event::fake([PageMetaUpdated::class]);
+    $page = Page::factory()->at('/teams')->withMeta('Teams', null)->create();
+
+    UpdatePageMeta::run($page, PageMetaChanges::sitemap(true));
+
+    expect($page->refresh()->meta_title)->toBe('Teams');
+    Event::assertNotDispatched(PageMetaUpdated::class);
+});

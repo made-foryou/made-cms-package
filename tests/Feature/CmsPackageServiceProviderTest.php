@@ -213,6 +213,15 @@ it('keeps the twenty newest versions of a page', function (): void {
     expect(config('made-cms-package.pages.keep_versions'))->toBe(20);
 });
 
+it('keeps the counts of the addresses for ninety days and takes a hundred new dead doors a day', function (): void {
+    expect(config('made-cms-package.address_hits'))->toBe([
+        'keep_days' => 90,
+        'new_paths_per_day' => 100,
+        'bots' => [],
+        'bot_paths' => [],
+    ]);
+});
+
 it('appends the launcher middleware to the web middleware group', function (): void {
     /** @var FoundationKernel $kernel */
     $kernel = app(Kernel::class);

@@ -133,6 +133,8 @@ Use this skill when a Laravel application needs to integrate the Made Cms Packag
 - add Disallow rules in config: `'sitemap' => ['robots' => ['*' => ['/api/'], 'Googlebot' => ['/zoeken$']]]` (`*` and `$` as Google reads them); a page such a rule for `*` or Googlebot keeps away stays out of the sitemap as an error
 - in a group with a prefix the sitemap lives under it (`/nl/sitemap.xml`), robots.txt does not: a site that serves its pages only under a prefix serves its own `robots.txt` at the root with `Sitemap: https://…/nl/sitemap.xml`; a route of the site for `sitemap.xml` or `robots.txt` above `Route::madeCms()` stays the site's own
 
+- the screen Sitemap (`made-cms/sitemap`, the admin and the SEO specialist) shows the stored sitemap, when Googlebot last fetched it, the files of the site that go before it and every page with why it is in it or not (`ListSitemapRows::run($prefix)`, `SitemapStanding`); change only the switch of a page with `UpdatePageMeta::run($page, PageMetaChanges::sitemap(false, $editorId))`
+
 ### 8c. Address hits
 
 - the package counts the visits of the addresses `Route::madeCms()` answers, after the answer: an address without a page (a dead door), `sitemap.xml`, `robots.txt` and a page fetched by a crawler, per address, day, outcome and source; never a page view of a person, and never an editor in the edit mode or the preview; the app needs no code for it

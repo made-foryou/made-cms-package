@@ -184,7 +184,7 @@ AssignRoles::run(new RoleAssignment(by: $admin, editor: $editor, roles: [Role::C
 
 In the menu the screens sit in four groups, in this order: your site (pages), collections (news, media, messages), findability (meta tags, alt texts, links, redirects, sitemap, keywords) and management (users and roles, forms, backups, log, domain). `Screen::group()` gives the `ScreenGroup` of a screen.
 
-Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). The pages screen, the media library and the Meta-overzicht are built; the other screens show that they are coming until they are. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
+Every screen has its own route, `/made-cms/<screen>` (named `made-cms-package.screens.<screen>`, e.g. `/made-cms/redirects`). The pages screen, the media library, the Meta-overzicht and the screen Sitemap are built; the other screens show that they are coming until they are. The routes are guarded by the `EnsureScreenAccess` middleware: a guest is sent to the login page, an editor without a role for the screen gets a 403.
 
 ```php
 use Made\CmsPackage\Http\Middleware\EnsureScreenAccess;
@@ -634,6 +634,26 @@ Sitemap: https://ttvmerwestad.nl/sitemap.xml
 - In a route group with a prefix the sitemap lives under the prefix (`/nl/sitemap.xml`, one per group), but robots.txt does not: robots only read the one at the root. A site that serves its pages only under a prefix serves its own `robots.txt` at the root, with a `Sitemap:` line for `https://…/nl/sitemap.xml`.
 - A route of the site for `sitemap.xml` or `robots.txt` above `Route::madeCms()` stays the site's own.
 - Another source of addresses (a collection, later) implements `Content\Sitemap\SitemapSource`; the package binds the sources in `SitemapSources`.
+
+## Sitemap screen
+
+The screen Sitemap at `/made-cms/sitemap` (the admin and the SEO specialist) shows what Google gets, without data of Google itself:
+
+- **How it stands:** the addresses in the sitemap with when and why it was made ("Gemaakt vandaag, 11:20, bij het publiceren van Home"), the published pages kept out on purpose (hidden, noindex or unticked), and when Googlebot last fetched the sitemap, counted by the CMS itself (see [Address hits](#address-hits)). Without a fetch it says since when it counts and how often Googlebot did come to pages.
+- **The file itself:** how it starts, what belongs in it but is left out (no address, blocked by robots.txt, past 50,000 addresses), and "Opnieuw genereren", which makes the sitemap of every route group again by hand.
+- **Warnings:** a `public/sitemap.xml` or a `public/robots.txt` without the `Sitemap:` line of the CMS goes before the files of the CMS; the screen says so when it opens, with an instruction for the developer to copy.
+- **What is on it:** every page in the order of the menu, with its last publication and why it is in the sitemap or not. The switch "in sitemap" saves at once; the other reasons (a draft, hidden, noindex) change at the page itself.
+
+A site with more than one route group of `Route::madeCms()` chooses the group at the top (`?groep=nl`).
+
+```php
+use Made\CmsPackage\Content\Actions\ListSitemapRows;
+use Made\CmsPackage\Content\Actions\UpdatePageMeta;
+use Made\CmsPackage\Content\Data\PageMetaChanges;
+
+ListSitemapRows::run('')->rows[0]->standing;                        // SitemapStanding::In, Draft, Hidden, Noindex, Excluded, NoAddress or Blocked
+UpdatePageMeta::run($page, PageMetaChanges::sitemap(false, $editorId)); // only the switch; the texts stay
+```
 
 ## Address hits
 

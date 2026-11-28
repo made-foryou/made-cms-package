@@ -47,6 +47,7 @@ final class MetaTagsResponse
             'workUrl' => $round === [] ? null : MetaLinks::screen($overview->filter, $round[0]->id, panel: true),
             'workLabel' => self::choice('work', count($round)),
             'screenUrl' => Menu::url(Screen::MetaTags),
+            'anchor' => MetaLinks::PANEL,
             'filters' => array_map(static fn (MetaFilter $filter): array => [
                 'value' => $filter->value,
                 'label' => self::choice('filters.'.$filter->value, $overview->count($filter)),

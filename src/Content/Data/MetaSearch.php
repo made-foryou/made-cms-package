@@ -12,6 +12,11 @@ use Made\CmsPackage\Content\Enums\MetaFilter;
 final readonly class MetaSearch
 {
     /**
+     * More points than any site holds: an address or a form that says more is not a round.
+     */
+    public const int MAX_DONE = 10000;
+
+    /**
      * @param  MetaFilter|null  $filter  null leaves the choice to the screen
      * @param  int|null  $pageId  the page to open; null opens the first point
      * @param  int  $done  the points this round put in order, for "3 van 10"

@@ -15,11 +15,6 @@ use Made\CmsPackage\Http\Requests\LauncherRequest;
 final class ShowMetaTagsRequest extends LauncherRequest
 {
     /**
-     * More points than any site holds; a larger number is not a round.
-     */
-    private const int MAX_DONE = 10000;
-
-    /**
      * @return array<string, list<mixed>>
      */
     public function rules(): array
@@ -30,7 +25,7 @@ final class ShowMetaTagsRequest extends LauncherRequest
     public function toData(): MetaSearch
     {
         $page = filter_var($this->text('page'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-        $done = filter_var($this->text('done'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => self::MAX_DONE]]);
+        $done = filter_var($this->text('done'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => MetaSearch::MAX_DONE]]);
 
         return new MetaSearch(
             filter: MetaFilter::tryFrom($this->text('filter')),

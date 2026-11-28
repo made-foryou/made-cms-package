@@ -8,7 +8,7 @@
     $descriptionValue = (string) old('meta_description', $panel['description']);
     $counter = static fn (?string $state): string => trim('metameter-teller veld-teller '.($state ?? ''));
 @endphp
-<section class="kaart metapaneel" id="{{ \Made\CmsPackage\Http\Cms\MetaLinks::PANEL }}" tabindex="-1" aria-labelledby="made-cms-meta-pagina">
+<section class="kaart metapaneel" id="{{ $anchor }}" tabindex="-1" aria-labelledby="made-cms-meta-pagina">
     <div class="metapaneel-kop">
         <div class="metapaneel-titel">
             <span class="eyebrow">{{ $panel['place']['label'] ?? $panel['single'] }}</span>

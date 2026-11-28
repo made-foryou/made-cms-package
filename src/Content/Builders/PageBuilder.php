@@ -50,6 +50,15 @@ final class PageBuilder extends Builder
     }
 
     /**
+     * The pages with only what the measure of a page in Google needs (MeasurePageMeta, MakeAttentionContext) and their
+     * addresses: a list that compares titles never needs the strips, which can be large.
+     */
+    public function forMeta(): self
+    {
+        return $this->select(['id', 'title', 'status', 'hidden', 'indexable', 'meta_title', 'meta_description'])->with('route');
+    }
+
+    /**
      * The pages whose switch keeps them in the sitemap; a page Google may not show or a hidden page stays out anyway.
      */
     public function inSitemap(): self
